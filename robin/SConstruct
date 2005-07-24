@@ -43,18 +43,39 @@ src/robin/frontends/python/pythonobjects.cc
 LIBPREFIX = "lib"
 
 env = Environment()
-import commands
-if commands.getoutput("uname").startswith("CYGWIN"):
+env.Append(CPPPATH = ["src"])
+
+# Configure library prefix and auto-import flag for Cygwin
+import os
+if os.uname()[0].startswith("CYGWIN"):
 	env["SHLIBPREFIX"] = "lib"
 	env.Append(LINKFLAGS = "-Wl,--enable-auto-import")
 
+# Configure Python include and library
+import sys, distutils.sysconfig
+
+INCLUDEPY = distutils.sysconfig.get_config_var("INCLUDEPY")
+LIBPYCFG = os.path.join(distutils.sysconfig.get_config_var("LIBP"), "config")
+LIBPY = "python%i.%i" % sys.version_info[:2]
+
+pyenv = env.Copy()
+conf = Configure(pyenv)
+
+pyenv.Append(CPPPATH = [INCLUDEPY])
+pyenv.Append(LIBPATH = [".", LIBPYCFG])
+
+if not conf.CheckCXXHeader("Python.h"):
+	print "Missing Python.h !"
+	Exit(1)
+if not conf.CheckLib(LIBPY):
+	print "Missing library for -l%s !" % LIBPY
+	Exit(1)
+
 
 env.SharedLibrary("robin", Split(FOUNDATION_SRC) + \
-                       Split(REFLECTION_SRC) + \
-                       Split(REGISTRATION_SRC) + \
-                       Split(FRONTEND_FRAMEWORK_SRC), CPPPATH="src")
+                           Split(REFLECTION_SRC) + \
+                           Split(REGISTRATION_SRC) + \
+                           Split(FRONTEND_FRAMEWORK_SRC))
 
-env.SharedLibrary("robin-pyfe", Split(PYTHON_FRONTEND_SRC), 
-              CPPPATH=["src","/usr/include/python2.3"],
-              LIBS=["robin", "python2.3"],
-              LIBPATH=[".", "/usr/lib/python2.3/config/"])
+pyenv.SharedLibrary("robin_pyfe", Split(PYTHON_FRONTEND_SRC), 
+                    LIBS=["robin", LIBPY])
