@@ -1,43 +1,52 @@
-FOUNDATION_SRC = """src/robin/debug/trace.cc
+
+##################################################
+#
+# Robin C++ Library Targets
+#
+##################################################
+
+BuildDir('build', 'src')
+
+FOUNDATION_SRC = """build/robin/debug/trace.cc
 """
 
-REFLECTION_SRC = """src/robin/reflection/argumentsbuffer.cc
-src/robin/reflection/boundmethod.cc
-src/robin/reflection/cfunction.cc
-src/robin/reflection/class.cc
-src/robin/reflection/conversion.cc
-src/robin/reflection/conversiontable.cc
-src/robin/reflection/enumeratedtype.cc
-src/robin/reflection/fundamental_conversions.cc
-src/robin/reflection/instance.cc
-src/robin/reflection/interface.cc
-src/robin/reflection/intrinsic_type_arguments.cc
-src/robin/reflection/library.cc
-src/robin/reflection/low_level.cc
-src/robin/reflection/memorymanager.cc
-src/robin/reflection/method.cc
-src/robin/reflection/namespace.cc
-src/robin/reflection/overloadedset.cc
-src/robin/reflection/typeofargument.cc
+REFLECTION_SRC = """build/robin/reflection/argumentsbuffer.cc
+build/robin/reflection/boundmethod.cc
+build/robin/reflection/cfunction.cc
+build/robin/reflection/class.cc
+build/robin/reflection/conversion.cc
+build/robin/reflection/conversiontable.cc
+build/robin/reflection/enumeratedtype.cc
+build/robin/reflection/fundamental_conversions.cc
+build/robin/reflection/instance.cc
+build/robin/reflection/interface.cc
+build/robin/reflection/intrinsic_type_arguments.cc
+build/robin/reflection/library.cc
+build/robin/reflection/low_level.cc
+build/robin/reflection/memorymanager.cc
+build/robin/reflection/method.cc
+build/robin/reflection/namespace.cc
+build/robin/reflection/overloadedset.cc
+build/robin/reflection/typeofargument.cc
 """
 
-REGISTRATION_SRC = """src/robin/registration/mechanism.cc
-src/robin/registration/regdata.cc
+REGISTRATION_SRC = """build/robin/registration/mechanism.cc
+build/robin/registration/regdata.cc
 """
 
-FRONTEND_FRAMEWORK_SRC = """src/robin/frontends/framework.cc
+FRONTEND_FRAMEWORK_SRC = """build/robin/frontends/framework.cc
 """
 
-PYTHON_FRONTEND_SRC = """src/robin/frontends/python/enhancements.cc
-src/robin/frontends/python/facade.cc
-src/robin/frontends/python/inheritance.cc
-src/robin/frontends/python/module.cc
-src/robin/frontends/python/pythonadapters.cc
-src/robin/frontends/python/pythonconversions.cc
-src/robin/frontends/python/pythonfrontend.cc
-src/robin/frontends/python/pythoninterceptor.cc
-src/robin/frontends/python/pythonlowlevel.cc
-src/robin/frontends/python/pythonobjects.cc
+PYTHON_FRONTEND_SRC = """build/robin/frontends/python/enhancements.cc
+build/robin/frontends/python/facade.cc
+build/robin/frontends/python/inheritance.cc
+build/robin/frontends/python/module.cc
+build/robin/frontends/python/pythonadapters.cc
+build/robin/frontends/python/pythonconversions.cc
+build/robin/frontends/python/pythonfrontend.cc
+build/robin/frontends/python/pythoninterceptor.cc
+build/robin/frontends/python/pythonlowlevel.cc
+build/robin/frontends/python/pythonobjects.cc
 """
 
 LIBPREFIX = "lib"
@@ -79,3 +88,30 @@ env.SharedLibrary("robin", Split(FOUNDATION_SRC) + \
 
 pyenv.SharedLibrary("robin_pyfe", Split(PYTHON_FRONTEND_SRC), 
                     LIBS=["robin", LIBPY])
+
+
+##################################################
+#
+# Griffin Java Source-Analyzer
+#
+##################################################
+
+import os.path
+
+env = Environment()
+
+premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", "junit.jar", 
+            "xmlParserAPIs.jar"]
+premisedir = "./premises"
+
+env.Append(JAVACFLAGS = "-classpath '" + \
+               ";".join([os.path.join(premisedir, x) for x in premises]) + "'")
+
+
+def jarme(source, target, env):
+    os.system("jar cf %s -C build/griffin ." % target[0])
+
+
+griffin = env.Java("build/griffin", "src/griffin")
+env['BUILDERS']['Jar'] = Builder(action = jarme)
+jar = env.Jar("Griffin.jar", griffin)
