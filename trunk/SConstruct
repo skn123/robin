@@ -89,6 +89,8 @@ env.SharedLibrary("robin", Split(FOUNDATION_SRC) + \
 pyenv.SharedLibrary("robin_pyfe", Split(PYTHON_FRONTEND_SRC), 
                     LIBS=["robin", LIBPY])
 
+env.SharedLibrary("robin_stl", ["build/robin/modules/stl/stl_robin.cc"])
+
 
 ##################################################
 #

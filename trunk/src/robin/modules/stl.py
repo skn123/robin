@@ -4,9 +4,8 @@ import robin, os.path
 if os.path.islink(__file__): __file__ = os.readlink(__file__)
 here = os.path.dirname(__file__)
 machine = os.getenv("MACHINE")
-soext = 'so'
-lib = os.path.join(here, "lib/%s/stl_robin.%s")
-robin.loadLibrary(__name__, lib % (machine, soext))
+lib = "librobin_stl" + robin.soext
+robin.loadLibrary(__name__, lib)
 
 reallist = list
 
@@ -203,4 +202,4 @@ Vector.VectorOwner = Vector.STLOwner
 make_vector_weigher = make_container_weigher
 guess_vector_type = guess_container_type
 
-del soext, os
+del os
