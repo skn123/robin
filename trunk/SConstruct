@@ -106,8 +106,8 @@ premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", "junit.jar",
             "xmlParserAPIs.jar"]
 premisedir = "./premises"
 
-env.Append(JAVACFLAGS = "-classpath '" + \
-               ":".join([os.path.join(premisedir, x) for x in premises]) + "'")
+classpath = [os.path.join(premisedir, x) for x in premises]
+env.Append(JAVACFLAGS = "-classpath '%s'" % os.path.pathsep.join(classpath))
 
 
 def jarme(source, target, env):
