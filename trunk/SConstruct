@@ -55,8 +55,8 @@ env = Environment()
 env.Append(CPPPATH = ["src"])
 
 # Configure library prefix and auto-import flag for Cygwin
-import os
-if os.uname()[0].startswith("CYGWIN"):
+import os.path, conf
+if conf.isCygwin:
 	env["SHLIBPREFIX"] = "lib"
 	env.Append(LINKFLAGS = "-Wl,--enable-auto-import")
 
@@ -64,21 +64,32 @@ if os.uname()[0].startswith("CYGWIN"):
 import sys, distutils.sysconfig
 
 INCLUDEPY = distutils.sysconfig.get_config_var("INCLUDEPY")
-LIBPYCFG = os.path.join(distutils.sysconfig.get_config_var("LIBP"), "config")
-LIBPY = "python%i.%i" % sys.version_info[:2]
+LIBP = distutils.sysconfig.get_config_var("LIBP")
+EXEC_PREFIX = distutils.sysconfig.get_config_var("exec_prefix")
+if LIBP:
+	LIBPYCFG = os.path.join(LIBP, "config")
+else:
+	LIBPYCFG = os.path.join(EXEC_PREFIX, "libs")
+LIBPY1 = "python%i.%i" % sys.version_info[:2]
+LIBPY2 = "python%i%i" % sys.version_info[:2]
 
 pyenv = env.Copy()
-conf = Configure(pyenv)
+configure = Configure(pyenv)
 
 pyenv.Append(CPPPATH = [INCLUDEPY])
 pyenv.Append(LIBPATH = [".", LIBPYCFG])
 
-if not conf.CheckCXXHeader("Python.h"):
+if not configure.CheckCXXHeader("Python.h"):
 	print "Missing Python.h !"
 	Exit(1)
-if not conf.CheckLib(LIBPY):
-	print "Missing library for -l%s !" % LIBPY
-	Exit(1)
+if configure.CheckLib(LIBPY1):
+	LIBPY = LIBPY1
+else:
+	if configure.CheckLib(LIBPY2):
+		LIBPY = LIBPY2
+	else:
+		print "Missing library for -l%s or -l%s !" % (LIBPY1, LIBPY2)
+		Exit(1)
 
 
 env.SharedLibrary("robin", Split(FOUNDATION_SRC) + \
@@ -107,7 +118,7 @@ premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", "junit.jar",
 premisedir = "./premises"
 
 classpath = [os.path.join(premisedir, x) for x in premises]
-env.Append(JAVACFLAGS = "-classpath '%s'" % os.path.pathsep.join(classpath))
+env.Append(JAVACFLAGS = "-classpath '%s'" % conf.java_pathsep.join(classpath))
 
 
 def jarme(source, target, env):
