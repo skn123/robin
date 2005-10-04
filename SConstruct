@@ -92,15 +92,17 @@ else:
 		Exit(1)
 
 
-env.SharedLibrary("robin", Split(FOUNDATION_SRC) + \
-                           Split(REFLECTION_SRC) + \
-                           Split(REGISTRATION_SRC) + \
-                           Split(FRONTEND_FRAMEWORK_SRC))
+robin = env.SharedLibrary("robin", Split(FOUNDATION_SRC) + \
+                                   Split(REFLECTION_SRC) + \
+                                   Split(REGISTRATION_SRC) + \
+                                   Split(FRONTEND_FRAMEWORK_SRC))
 
-pyenv.SharedLibrary("robin_pyfe", Split(PYTHON_FRONTEND_SRC), 
-                    LIBS=["robin", LIBPY])
+pyfe = pyenv.SharedLibrary("robin_pyfe", Split(PYTHON_FRONTEND_SRC), 
+                           LIBS=["robin", LIBPY])
 
-env.SharedLibrary("robin_stl", ["build/robin/modules/stl/stl_robin.cc"])
+stl = env.SharedLibrary("robin_stl", ["build/robin/modules/stl/stl_robin.cc"])
+
+Default(robin, pyfe, stl)
 
 
 ##################################################
@@ -128,3 +130,8 @@ def jarme(source, target, env):
 griffin = env.Java("build/griffin", "src/griffin")
 env['BUILDERS']['Jar'] = Builder(action = jarme)
 jar = env.Jar("Griffin.jar", griffin)
+
+stl_dox = env.Command("build/stl.tag", "src/griffin/modules/stl", 
+                      "( cd src/griffin/modules/stl; doxygen )")
+
+Default(jar, stl_dox)

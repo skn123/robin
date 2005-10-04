@@ -1,0 +1,5 @@
+<program>
+  <class name="std::vector">
+    <template-parameter name="T"/>
+  </class>
+</program>

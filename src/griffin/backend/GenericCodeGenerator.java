@@ -627,10 +627,8 @@ public class GenericCodeGenerator
 			Aggregate supervised = 
 				m_supervisedTemplates.getSupervised(template.getFullName());
 			// Add instantiation
-			if (supervised != null)
-				investThisTemplateInstantiation(supervised, arguments, 
-				                                instanceList);
-			else if (m_subjectTemplates.contains(template) 
+			if (supervised != null
+			    || m_subjectTemplates.contains(template) 
 				|| !inhibitForeignTemplates)
 				investThisTemplateInstantiation(template, arguments, 
 				                                instanceList);
