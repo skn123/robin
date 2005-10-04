@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Griffin launcher script."""
 
-import os.path, sys
+import os.path, sys, conf
 
 here = os.path.dirname(__file__)
 
@@ -13,7 +13,7 @@ classpath = [os.path.join(here, premisedir, x) for x in premises]
 classpath += [os.path.join(here, "Griffin.jar")]
 
 cmd = "java -classpath '%s' backend.robin.Launcher" % \
-	 os.path.pathsep.join(classpath)
+	 conf.java_pathsep.join(classpath)
 
 
 if __name__ == "__main__":
