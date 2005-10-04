@@ -12,8 +12,11 @@ premisedir = "premises"
 classpath = [os.path.join(here, premisedir, x) for x in premises]
 classpath += [os.path.join(here, "Griffin.jar")]
 
-cmd = "java -classpath '%s' backend.robin.Launcher" % \
-	 conf.java_pathsep.join(classpath)
+doxpath = os.path.join(here, "build/dox-xml")
+stpath = os.path.join(here, "src/griffin/modules/stl")
+
+cmd = "java -Dgriffin.dox.path=%s -Dgriffin.st.path=%s -classpath '%s' backend.robin.Launcher" % \
+	 (doxpath, stpath, conf.java_pathsep.join(classpath))
 
 
 if __name__ == "__main__":

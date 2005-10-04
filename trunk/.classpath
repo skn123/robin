@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/griffin"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="premises/antlr-2.7.5.jar"/>
+	<classpathentry kind="lib" path="premises/junit.jar"/>
+	<classpathentry kind="lib" path="premises/jython.jar"/>
+	<classpathentry kind="lib" path="premises/xercesImpl.jar"/>
+	<classpathentry kind="lib" path="premises/xmlParserAPIs.jar"/>
+	<classpathentry kind="output" path="build/eclipse-bin"/>
+</classpath>
