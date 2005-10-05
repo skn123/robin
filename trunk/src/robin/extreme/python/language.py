@@ -1,2 +1,2 @@
 import robin, stl
-robin.loadLibrary(__name__, "liblanguage.so")
+robin.loadLibrary(__name__, "./liblanguage.so")
