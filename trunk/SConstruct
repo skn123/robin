@@ -55,7 +55,7 @@ env = Environment()
 env.Append(CPPPATH = ["src"])
 
 # Configure library prefix and auto-import flag for Cygwin
-import os.path, conf
+import os.path, griffin as conf
 if conf.isCygwin:
 	env["SHLIBPREFIX"] = "lib"
 	env.Append(LINKFLAGS = "-Wl,--enable-auto-import")
