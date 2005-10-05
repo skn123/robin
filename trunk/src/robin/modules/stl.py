@@ -164,7 +164,7 @@ class STLContainer(dict):
 			
 		def __del__(self):
 			del self.l[:]
-			self.l.extend(list(self.c()))
+			self.l.extend(reallist(self.c()))
 	
 	def __setitem__(self, key, value):
 		try:
