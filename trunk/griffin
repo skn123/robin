@@ -3,127 +3,126 @@
 
 import os.path, sys, conf
 
+def _parse_args(printUsage=False):
+    import optparse
 
+    usage = """
+%prog --in=<input> --out=<output> <class-names>
+
+Note:
+    if the input arguments have no keyword 'xml' or 'source',
+    griffin will try to intelligently guess it.
+
+Examples:
+  %prog --in='xml ./xml' --out='./4robin.cc' MyClass1 MyClass2
+  %prog -i './my_prog.h ./my_prog.cc' -o './my_robin_class.cc' MyClass
+    """.strip()
+
+    if printUsage:
+        sys.argv.append("-h")            
+
+    inhelp = "The input files (eather 'xml <xmldir>' or 'source <source-files>' default is './xml')"
+    outhelp = "The output robin file (defualt is './4robin.cc')"
+
+    formatter = optparse.TitledHelpFormatter(max_help_position = 30)
+    p = optparse.OptionParser(usage = usage, formatter = formatter)
+    p.add_option("-i", "--in", type="string", dest="input", default="./xml" , help=inhelp)
+    p.add_option("-o", "--out", metavar="FILE", default="./4robin.cc", help=outhelp)
+    return p.parse_args()    
+    
 class Griffin:
 
-	premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", \
-	            "junit.jar", "xmlParserAPIs.jar"]
-	premisedir = "premises"
+    premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", \
+                "junit.jar", "xmlParserAPIs.jar"]
+    premisedir = "premises"
 
-	DEFAULT_OUTFILE = "./4robin.cc"
+    DEFAULT_OUTFILE = "./4robin.cc"
 
 
-	def setXML(self, xmldir):
-		self.xmldir = xmldir
+    def setXML(self, xmldir):
+        self.xmldir = xmldir
 
-	def setSources(self, sources):
-		self.doxygen(sources)
-		self.xmldir = "./xml"
+    def setSources(self, sources):
+        self.doxygen(sources)
+        self.xmldir = "./xml"
 
-	def doxygen(self, sources):
-		import os.path
-		doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
-		           "TAGFILES = %s\n" \
-		           "GENERATE_HTML=No\nGENERATE_LATEX=No\n" % \
-		             (" ".join(sources), os.path.join(here, "build/stl.tag"))
-		open("Doxyfile", "w").write(doxyfile)
-		os.system("doxygen")
+    def doxygen(self, sources):
+        import os.path
+        doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
+                   "TAGFILES = %s\n" \
+                   "GENERATE_HTML=No\nGENERATE_LATEX=No\n" % \
+                     (" ".join(sources), os.path.join(here, "build/stl.tag"))
+        open("Doxyfile", "w").write(doxyfile)
+        os.system("doxygen")
 
-	def _command(self):
-		from os.path import join
-		classpath = [join(here, self.premisedir, x) for x in self.premises]
-		classpath += [join(here, "Griffin.jar")]
+    def _command(self):
+        from os.path import join
+        classpath = [join(here, self.premisedir, x) for x in self.premises]
+        classpath += [join(here, "Griffin.jar")]
 
-		doxpath = join(here, "build/dox-xml")
-		stpath = join(here, "src/griffin/modules/stl")
+        doxpath = join(here, "build/dox-xml")
+        stpath = join(here, "src/griffin/modules/stl")
 
-		cmd = "java -Dgriffin.dox.path=%s -Dgriffin.st.path=%s " \
+        cmd = "java -Dgriffin.dox.path=%s -Dgriffin.st.path=%s " \
               "-classpath '%s' backend.robin.Launcher" % \
-		          (doxpath, stpath, conf.java_pathsep.join(classpath))
-		return cmd
+                  (doxpath, stpath, conf.java_pathsep.join(classpath))
+        return cmd
 
-	def run(self, args):
-		os.system(" ".join([self._command(), self.xmldir] + args))
+    def run(self, args):
+        os.system(" ".join([self._command(), self.xmldir] + args))
 
-	def _argv(self, args):
-		"""Parse command-line arguments."""
-		arg_in = []
-		arg_out = []
-		arg_other = []
-		read_to = arg_other; read_limit = 0
-		for arg in args:
-			if arg == "-in":
-				read_to = arg_in; read_limit = 0
-			elif arg == "-out":
-				read_to = arg_out; read_limit = 1
-			else:
-				read_to.append(arg)
-				if read_limit > 0:
-					read_limit -= 1
-					if read_limit == 0:
-						read_to = arg_other
+    def _argv(self, args):
+        """Parse command-line arguments."""
+        arg_in = []
+        arg_out = []
+        arg_other = []
+        read_to = arg_other; read_limit = 0
+        for arg in args:
+            if arg == "-in":
+                read_to = arg_in; read_limit = 0
+            elif arg == "-out":
+                read_to = arg_out; read_limit = 1
+            else:
+                read_to.append(arg)
+                if read_limit > 0:
+                    read_limit -= 1
+                    if read_limit == 0:
+                        read_to = arg_other
 
-		if arg_other and not arg_in:
-			arg_in = arg_other[0:1]
-			arg_other = arg_other[1:]
-		if not arg_out:
-			arg_out = [self.DEFAULT_OUTFILE]
+        if arg_other and not arg_in:
+            arg_in = arg_other[0:1]
+            arg_other = arg_other[1:]
+        if not arg_out:
+            arg_out = [self.DEFAULT_OUTFILE]
 
-		return arg_in, arg_out, arg_other
+        return arg_in, arg_out, arg_other
 
-	def process(self, args):
-		"""Runs Griffin front-end and back-end using the given arguments."""
-		arg_in, arg_out, arg_other = self._argv(args)
+    def process(self, options, classNames):
+        """Runs Griffin front-end and back-end using the given arguments."""
+        
+        if options.input is None:
+            _parse_args(printUsage=True)
 
-		if len(arg_in) > 0:
-			if arg_in[0] in ["xml", "sources"]:
-				input_type = arg_in[0]
-				arg_in = arg_in[1:]
-			else:
-				# - try to intelligently guess input type
-				import os.path
-				if os.path.isfile(arg_in[0]):
-					input_type = "sources"
-				else:
-					input_type = "xml"
-		else:
-			input_type = "none"
+        arg_in = options.input.split(" ")
+        if arg_in[0] in ["xml", "sources"]:
+            input_type = arg_in[0]
+            arg_in = arg_in[1:]
+        else:
+            # - try to intelligently guess input type
+            import os.path
+            if os.path.isfile(arg_in[0]):
+                input_type = "sources"
+            else:
+                input_type = "xml"
 
-		# Set input source
-		if input_type == "sources":
-			self.setSources(arg_in)
-		elif input_type == "xml":
-			if len(arg_in) == 0:
-				self.setXML("xml")
-			else:
-				self.setXML(arg_in[0])
-		else:
-			print "No input specified. Quit."
-			raise SystemExit
+        if input_type == "sources":
+            self.setSources(arg_in)
+        else:
+            self.setXML(arg_in[0])
 
-		# engage
-		self.run(arg_out + arg_other)
-
+        self.run([options.out] + classNames)
 
 here = os.path.dirname(__file__)
 
-
-
 if __name__ == "__main__":
-	if sys.argv[1:]:
-		g = Griffin()
-		g.process(sys.argv[1:])
-	else:
-		print
-		print "Usage: griffin -in <input> -out <output-file> <class-names>"
-		print
-		print "Where:"
-		print "  <input> is either 'xml <xmldir>'"
-		print "                 or 'sources <source-files>' (space-delimited)"
-		print "                 or '<xmldir>'"
-		print "                 or '<source-files>'"
-		print "          (in the last two cases griffin will intelligently"
-		print "           guess the input type)"
-		print "  <output-file> is a filename and defaults to './4robin.cc'"
-		print "  <class-names> is a space-delimited list of classes to analyze"
-		print
+    Griffin().process(*_parse_args())
