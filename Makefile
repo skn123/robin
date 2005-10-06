@@ -1,7 +1,8 @@
+ver = 1.0
 
 prefix = /usr/local
 exec_prefix = /usr/local
-site_packages = /usr/local/lib/python2.4/site-packages
+site_packages = /usr/lib/python2.4/site-packages
 python = python
 
 pydir = $(site_packages)/robin
@@ -11,8 +12,8 @@ jardir = $(libdir)/griffin
 soext = .so
 
 INSTALLABLE_FILES = \
-	$(libdir)/librobin$(soext) \
-	$(libdir)/librobin_pyfe$(soext) \
+	$(libdir)/librobin-$(ver)$(soext) \
+	$(libdir)/librobin_pyfe-$(ver)$(soext) \
 	$(libdir)/librobin_stl$(soext) \
 	$(scriptdir)/griffin \
 	$(jardir)/Griffin.jar \
@@ -67,8 +68,8 @@ $(jardir)/dox-xml: build/dox-xml
 
 uninstall:
 	-rm -f $(INSTALLABLE_FILES)
-	-rm -r $(pydir)
-	-rm -r $(jardir)
+	-rm -fr $(pydir)
+	-rm -fr $(jardir)
 
 extreme_python = src/robin/extreme/python
 

@@ -2,6 +2,7 @@ import imp, string, os.path, __builtin__
 
 libdir = os.path.dirname(__file__)
 model = ["RELEASE", "DEBUG"][os.environ.has_key("ROBIN_DEBUG")]
+ver = "1.0"
 
 # Detect architecture
 try:
@@ -11,7 +12,7 @@ except AttributeError:
 arch = uname.translate(string.maketrans("-_","  ")).split()[0].lower()
 soext = { 'windows': ".dll", 'cygwin': ".dll", 'hp': ".sl" }.get(arch, ".so")
 
-target = "librobin_pyfe" + soext
+target = "librobin_pyfe-1.0" + soext
 
 imp.load_dynamic("robin", os.path.join(libdir, target))
 __builtin__.double = double

@@ -5,6 +5,8 @@
 #
 ##################################################
 
+ver = "1.0"
+
 BuildDir('build', 'src')
 
 FOUNDATION_SRC = """build/robin/debug/trace.cc
@@ -96,13 +98,13 @@ else:
 		Exit(1)
 
 
-robin = env.SharedLibrary("robin", Split(FOUNDATION_SRC) + \
-                                   Split(REFLECTION_SRC) + \
-                                   Split(REGISTRATION_SRC) + \
-                                   Split(FRONTEND_FRAMEWORK_SRC))
+robin = env.SharedLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
+                                        Split(REFLECTION_SRC) + \
+                                        Split(REGISTRATION_SRC) + \
+                                        Split(FRONTEND_FRAMEWORK_SRC))
 
-pyfe = pyenv.SharedLibrary("robin_pyfe", Split(PYTHON_FRONTEND_SRC), 
-                           LIBS=["robin", LIBPY])
+pyfe = pyenv.SharedLibrary("robin_pyfe-"+ver, Split(PYTHON_FRONTEND_SRC), 
+                           LIBS=["robin-"+ver, LIBPY])
 
 stl = env.SharedLibrary("robin_stl", ["build/robin/modules/stl/stl_robin.cc"])
 
