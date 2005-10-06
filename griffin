@@ -11,7 +11,11 @@ class Griffin:
 	premisedir = "premises"
 
 	DEFAULT_OUTFILE = "./4robin.cc"
+	GRIFFIN_JAR = "Griffin.jar"
 
+
+	def __init__(self):
+		self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
 
 	def setXML(self, xmldir):
 		self.xmldir = xmldir
@@ -35,20 +39,24 @@ class Griffin:
 	def _command(self):
 		from os.path import join
 		classpath = [join(here, self.premisedir, x) for x in self.premises]
-		classpath += [join(here, "Griffin.jar")]
+		classpath += [self.griffin_bin]
 
 		doxpath = join(here, "build/dox-xml")
 		stpath = join(here, "src/griffin/modules/stl")
 		if not os.path.isfile(doxpath): doxpath = os.path.join(here, "dox-xml")
 		if not os.path.isfile(stpath): stpath = here
 
-		cmd = "java -Dgriffin.dox.path=%s -Dgriffin.st.path=%s " \
+		cmd = "java -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
               "-classpath '%s' backend.robin.Launcher" % \
-		          (doxpath, stpath, conf.java_pathsep.join(classpath))
+		          (conf.classpath([doxpath]), 
+			conf.classpath([stpath]), conf.classpath(classpath))
 		return cmd
 
 	def run(self, args):
 		os.system(" ".join([self._command(), self.xmldir] + args))
+
+	def _opt_eclipse(self):
+		self.griffin_bin = os.path.join(here, "build/eclipse-bin")
 
 	def _argv(self, args):
 		"""Parse command-line arguments."""
@@ -61,6 +69,8 @@ class Griffin:
 				read_to = arg_in; read_limit = 0
 			elif arg == "-out":
 				read_to = arg_out; read_limit = 1
+			elif arg == "-eclipse":
+				self._opt_eclipse()
 			else:
 				read_to.append(arg)
 				if read_limit > 0:

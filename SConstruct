@@ -54,6 +54,10 @@ LIBPREFIX = "lib"
 env = Environment()
 env.Append(CPPPATH = ["src"])
 
+# Debug mode (for developers)
+if ARGUMENTS.get('debug', 0):
+	env.Append(CXXFLAGS = "-g")
+
 # Configure library prefix and auto-import flag for Cygwin
 import os.path, griffin as conf
 if conf.isCygwin:
