@@ -74,7 +74,8 @@ public class SupervisedTemplates {
 	private static void traversePath(String stPath, 
 		DefDocumentProcessor processor)
 	{
-		String[] pathElements = stPath.split(":");
+		String pathSep = System.getProperty("path.separator");
+		String[] pathElements = stPath.split(pathSep);
 		for (int i = 0; i < pathElements.length; i++) {
 			File pathElement = new File(pathElements[i]);
 			// Get all path elements ending with STXML_EXTENSION
@@ -82,6 +83,11 @@ public class SupervisedTemplates {
 				public boolean accept(File dir, String name) 
 				{ return name.endsWith(STXML_EXTENSION); }
 			});
+			if (stElements == null) {
+				System.err.println("*** WARNING: supervised template " 
+						+ "directory " + pathElement + " is invalid.");
+				continue;
+			}
 			// Process the elements found
 			for (int j = 0; j < stElements.length; j++) {
 				try {
