@@ -1,12 +1,15 @@
 """Basic platform-dependant configuration"""
 
 import os, os.path
+import string
 
 # Detect architecture
 try:
 	uname = os.uname()[0]
 except AttributeError:
 	uname = os.getenv("OS")
+arch = uname.translate(string.maketrans("-_","  ")).split()[0].lower()
+soext = { 'windows': ".dll", 'cygwin': ".dll", 'hp': ".sl" }.get(arch, ".so")
 
 isCygwin = uname.startswith("CYGWIN")
 

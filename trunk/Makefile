@@ -9,7 +9,14 @@ pydir = $(site_packages)/robin
 libdir = $(exec_prefix)/lib
 scriptdir = $(prefix)/bin
 jardir = $(libdir)/griffin
-soext = .so
+soext := ${shell $(python) -c "import griffin; print griffin.soext"}
+cpu = ${shell uname -m}
+target = ${shell $(python) -c "import griffin; print griffin.arch"}
+
+install = install -D
+cp-r = cp -r
+sed = sed
+echo = echo
 
 INSTALLABLE_FILES = \
 	$(libdir)/librobin-$(ver)$(soext) \
@@ -32,39 +39,39 @@ default all:
 install: $(INSTALLABLE_FILES) $(INSTALLABLE_DIRS) ;
 
 $(pydir)/robin.py: robin.py
-	install -D $< $@
-	sed -i -e 's@libdir =.*@libdir = "$(libdir)"@' $@
+	$(install) $< $@
+	$(sed) -i -e 's@libdir =.*@libdir = "$(libdir)"@' $@
 
 $(pydir)/griffin.py: griffin.py
-	install -D $< $@
+	$(install) $< $@
 
 $(pydir)/%.py: src/robin/modules/%.py
-	install -D $< $@
+	$(install) $< $@
 
 $(pydir).pth:
-	echo robin > $@
+	$(echo) robin > $@
 
 $(libdir)/%$(soext): %$(soext)
-	install -D $< $@
+	$(install) $< $@
 
 $(scriptdir)/griffin: griffin
-	install -D $< $@
-	sed -i -e 's@here =.*@here = "$(jardir)"@' $@
+	$(install) $< $@
+	$(sed) -i -e 's@here =.*@here = "$(jardir)"@' $@
 
 $(jardir)/Griffin.jar: Griffin.jar
-	install -D $< $@
+	$(install) $< $@
 
 $(jardir)/premises: $(jardir)/Griffin.jar premises
-	cp -r premises $@
+	$(cp-r) premises $@
 
 $(jardir)/stl.st.xml: src/griffin/modules/stl/stl.st.xml
-	install -D $< $@
+	$(install) $< $@
 
 $(jardir)/stl.tag: build/stl.tag
-	install -D $< $@
+	$(install) $< $@
 
 $(jardir)/dox-xml: build/dox-xml
-	cp -r $< $(jardir)
+	$(cp-r) $< $(jardir)
 
 uninstall:
 	-rm -f $(INSTALLABLE_FILES)
@@ -95,3 +102,19 @@ protocols-test:
 test: language-test protocols-test
 	( cd $(extreme_python) && \
 	        $(python) test_cases.py LanguageTest ProtocolsTest )
+
+manifest:
+	$(MAKE) -n install prefix=/demo exec_prefix=/demo site_packages=/demo \
+	  install=install cp-r=install \
+	   | grep '^install' | awk '{ print $$2; }' \
+	   | xargs --replace find {} -type f -o -name .svn -prune -false \
+	   > manifest
+	echo Makefile >> manifest
+	echo configure >> manifest
+
+.PHONY: distrib
+
+distrib: manifest
+	mkdir -p distrib/robin
+	tar cf - --files-from manifest | ( cd distrib/robin && tar xf - )
+	tar zcf robin-1.0.0.$(cpu).$(target).tar.gz -C distrib robin
