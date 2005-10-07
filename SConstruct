@@ -57,6 +57,8 @@ env = Environment()
 env.Append(CPPPATH = ["src"])
 
 # Debug mode (for developers)
+robin_opts = Options()
+robin_opts.Add(BoolOption('debug', 'Set a value to compile a debug version', 0))
 if ARGUMENTS.get('debug', 0):
 	env.Append(CXXFLAGS = "-g")
 
@@ -141,3 +143,90 @@ stl_dox = env.Command("build/stl.tag", "src/griffin/modules/stl",
                       "( cd src/griffin/modules/stl; doxygen )")
 
 Default(jar, stl_dox)
+
+##################################################
+#
+# Install all the packages.
+#
+##################################################
+def get_site_packages_dir():
+    import sys
+    for element in sys.path:
+        if element.endswith("/site-packages"):
+            return element
+    # Failed to find site-packages directory
+    print "** Error: couldn't locate 'site-packages' in your Python " \
+          "installation"
+    sys.exit(1)
+
+env = Environment()
+install_opts = Options()
+install_opts.AddOptions(
+                PathOption("prefix", "Installation prefix directory", "/usr"),
+                PathOption("exec_prefix",
+                    "Installation prefix directory for platform-dependant files", "/usr"),
+                ("with_python", "Determines which Python interpreter to use", "python"),
+             )
+
+prefix = ARGUMENTS.get('prefix', "/usr")
+exec_prefix = ARGUMENTS.get('exec_prefix', "/usr")
+python = ARGUMENTS.get('woth_python', "python")
+site_packages = get_site_packages_dir()
+
+### Install python packages.
+pydir = site_packages + "/robin"
+env.Install(pydir, ["robin.py", "griffin.py"])
+env.Install(pydir, ["src/robin/modules/" + file for file in [
+                       "stl.py", "robinhelp.py", "document.py", "pickle_weakref.py",]])
+env.Alias('install', pydir)
+env.Install(pydir + "/html", ["src/robin/modules/" + file for file in [
+                                 "html/__init__.py", "html/textformat.py"]])
+env.Alias('install', pydir + "/html")
+
+### Install Robin Libraries.
+ver = "1.0"
+soext = ".so"
+libdir = exec_prefix + "/lib"
+robin = "librobin-%s%s" % (ver, soext)
+robin_pyfe = "librobin_pyfe-%s%s" % (ver, soext)
+robin_stl = "librobin_stl%s" % (soext)
+env.Install(libdir, [robin, robin_pyfe, robin_stl])
+env.Alias('install', libdir)
+
+### Install Griffin jars.
+jardir = libdir + "/griffin"
+env.Install(jardir, ["Griffin.jar", "src/griffin/modules/stl/stl.st.xml", "build/stl.tag"])
+env.Alias('install', jardir)
+        
+### Install launch Scripts.
+scriptdir = prefix + "/bin"
+env.Install(scriptdir, ["griffin"])
+env.Alias('install', scriptdir)
+        
+##################################################
+#
+# Show help for the different targets.
+#
+##################################################
+
+helpstring = ""
+helpline = "="*45 + "\n"
+targetList = COMMAND_LINE_TARGETS
+if not targetList:
+    # Default target.
+    helpstring += "\nMaking the default target (compiling robin and griffin).\n"
+    targetList += map(str, DEFAULT_TARGETS)
+
+if "librobin-1.0.so" in targetList or \
+   "librobin_pyfe-1.0.so" in targetList or \
+   "librobin_stl.so" in targetList:
+    helpstring += "\nFlags for compiling the SharedObjects of robin\n"
+    helpstring += helpline
+    helpstring += robin_opts.GenerateHelpText(env)
+
+if "install" in targetList:
+    helpstring += "\nFlags for installing Robin and Griffin\n"
+    helpstring += helpline
+    helpstring += install_opts.GenerateHelpText(env)
+
+Help(helpstring)
