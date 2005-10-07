@@ -4,13 +4,7 @@ libdir = os.path.dirname(__file__)
 model = ["RELEASE", "DEBUG"][os.environ.has_key("ROBIN_DEBUG")]
 ver = "1.0"
 
-# Detect architecture
-try:
-	uname = os.uname()[0]
-except AttributeError:
-	uname = os.getenv("OS")
-arch = uname.translate(string.maketrans("-_","  ")).split()[0].lower()
-soext = { 'windows': ".dll", 'cygwin': ".dll", 'hp': ".sl" }.get(arch, ".so")
+from griffin import uname, arch, soext
 
 target = "librobin_pyfe-1.0" + soext
 
