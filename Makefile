@@ -9,6 +9,7 @@ pydir = $(site_packages)/robin
 libdir = $(exec_prefix)/lib
 scriptdir = $(prefix)/bin
 jardir = $(libdir)/griffin
+sopre := ${shell $(python) -c "import griffin; print griffin.sopre"}
 soext := ${shell $(python) -c "import griffin; print griffin.soext"}
 cpu = ${shell uname -m}
 target = ${shell $(python) -c "import griffin; print griffin.arch"}
@@ -19,9 +20,9 @@ sed = sed
 echo = echo
 
 INSTALLABLE_FILES = \
-	$(libdir)/librobin-$(ver)$(soext) \
-	$(libdir)/librobin_pyfe-$(ver)$(soext) \
-	$(libdir)/librobin_stl$(soext) \
+	$(libdir)/$(sopre)robin-$(ver)$(soext) \
+	$(libdir)/$(sopre)robin_pyfe-$(ver)$(soext) \
+	$(libdir)/$(sopre)robin_stl$(soext) \
 	$(scriptdir)/griffin \
 	$(jardir)/Griffin.jar \
 	$(pydir).pth \

@@ -301,6 +301,9 @@ PyObject *pyunsigned_char;
 } // end of namespace Robin
 
 extern "C"
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
 void initrobin()
 {
 	using Robin::Python::PythonFrontend;

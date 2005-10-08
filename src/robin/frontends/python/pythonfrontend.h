@@ -21,7 +21,11 @@
 #include <robin/frontends/frontend.h>
 
 
-extern "C" void initrobin();
+extern "C"
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void initrobin();
 
 struct _dictobject;
 

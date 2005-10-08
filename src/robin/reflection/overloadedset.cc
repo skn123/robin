@@ -96,6 +96,26 @@ public:
 		}
 	};
 
+	class KeyCompareFunctor
+	{
+	public:
+		bool operator()(const Key& key1,
+						const Key& key2) const
+		{
+			if (key1.group < key2.group) return true;
+			if (key1.group > key2.group) return false;
+			if (key1.nargs < key2.nargs) return true;
+			if (key1.nargs > key2.nargs) return false;
+			for (size_t i = 0; i < key1.nargs; ++i) {
+				if (&*(key1.args[i]) < &*(key2.args[i])) return true;
+				if (&*(key1.args[i]) > &*(key2.args[i])) return false;
+				if (key1.insights[i] < key2.insights[i]) return true;
+				if (key1.insights[i] > key2.insights[i]) return false;
+			}
+			return false;
+		}
+	};
+
 	typedef Pattern::Cache<Key, size_t, OverloadedSet::Cache> Internal;
 	Internal actual_cache;
 

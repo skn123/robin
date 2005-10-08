@@ -45,6 +45,8 @@ union Insight
 
 inline bool operator==(Insight a, Insight b) { return a.i_ptr == b.i_ptr; }
 inline bool operator!=(Insight a, Insight b) { return a.i_ptr != b.i_ptr; }
+inline bool operator< (Insight a, Insight b) { return a.i_ptr < b.i_ptr; }
+inline bool operator> (Insight a, Insight b) { return a.i_ptr > b.i_ptr; }
 
 
 } // end of namespace Robin

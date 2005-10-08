@@ -4,9 +4,9 @@ libdir = os.path.dirname(__file__)
 model = ["RELEASE", "DEBUG"][os.environ.has_key("ROBIN_DEBUG")]
 ver = "1.0"
 
-from griffin import uname, arch, soext
+from griffin import uname, arch, soext, sopre
 
-target = "librobin_pyfe-1.0" + soext
+target = sopre + "robin_pyfe-1.0" + soext
 
 imp.load_dynamic("robin", os.path.join(libdir, target))
 __builtin__.double = double

@@ -87,9 +87,14 @@ configure = Configure(pyenv)
 pyenv.Append(CPPPATH = [INCLUDEPY])
 pyenv.Append(LIBPATH = [".", LIBPYCFG])
 
+if conf.arch == "windows":
+	env.Append(CXXFLAGS = "/EHsc")
+	pyenv.Append(CXXFLAGS = "/EHsc")
 if not configure.CheckCXXHeader("Python.h"):
 	print "Missing Python.h !"
 	Exit(1)
+if configure.CheckCXXHeader("ext/hash_map"):
+	env.Append(CXXFLAGS = '-DWITH_EXT_HASHMAP')
 if configure.CheckLib(LIBPY1):
 	LIBPY = LIBPY1
 else:
@@ -100,10 +105,16 @@ else:
 		Exit(1)
 
 
-robin = env.SharedLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
-                                        Split(REFLECTION_SRC) + \
-                                        Split(REGISTRATION_SRC) + \
-                                        Split(FRONTEND_FRAMEWORK_SRC))
+if conf.arch == "windows":
+	robin = env.StaticLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
+	                                        Split(REFLECTION_SRC) + \
+	                                        Split(REGISTRATION_SRC) + \
+	                                        Split(FRONTEND_FRAMEWORK_SRC))
+else:
+	robin = env.SharedLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
+	                                        Split(REFLECTION_SRC) + \
+	                                        Split(REGISTRATION_SRC) + \
+	                                        Split(FRONTEND_FRAMEWORK_SRC))
 
 pyfe = pyenv.SharedLibrary("robin_pyfe-"+ver, Split(PYTHON_FRONTEND_SRC), 
                            LIBS=["robin-"+ver, LIBPY])
@@ -152,7 +163,7 @@ Default(jar, stl_dox)
 def get_site_packages_dir():
     import sys
     for element in sys.path:
-        if element.endswith("/site-packages"):
+        if element.endswith("/site-packages") or element.endswith("\\site-packages"):
             return element
     # Failed to find site-packages directory
     print "** Error: couldn't locate 'site-packages' in your Python " \

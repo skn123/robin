@@ -10,11 +10,14 @@
  * Generic Cache
  */
 
+#ifdef WITH_EXT_HASHMAP
 #include <ext/hash_map>
 namespace std {
 	using __gnu_cxx::hash_map;
 }
-using __gnu_cxx::hash_map;
+#else
+#include <map>
+#endif
 
 #ifndef PATTERN_CACHE_H
 #define PATTERN_CACHE_H
@@ -35,9 +38,14 @@ class Cache
 private:
 	typedef typename HashTraits::KeyHashFunctor KeyHashFunctor;
 	typedef typename HashTraits::KeyIdentityFunctor KeyIdentityFunctor;
+	typedef typename HashTraits::KeyCompareFunctor KeyCompareFunctor;
 
-	typedef hash_map<Key, Result, 
+#ifdef WITH_EXT_HASHMAP
+	typedef std::hash_map<Key, Result, 
 					 KeyHashFunctor, KeyIdentityFunctor> cache_map;
+#else
+	typedef std::map<Key, Result, KeyCompareFunctor> cache_map;
+#endif
 
 	cache_map latest;
 
