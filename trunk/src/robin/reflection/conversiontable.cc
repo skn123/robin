@@ -62,6 +62,20 @@ public:
 		}
 	};
 
+	class KeyCompareFunctor
+	{
+	public:
+		bool operator()(const Key& key1, const Key& key2) const
+		{
+			return (key1.pSource < key2.pSource) ||
+				( (key1.pSource == key2.pSource) &&
+				  (key1.pTarget < key2.pTarget) ) ||
+				( (key1.pSource == key2.pSource) && 
+				  (key1.pTarget == key2.pTarget) && 
+				  (key1.insight < key2.insight) );
+		}
+	};
+
 	typedef Pattern::Cache<Key, Handle<ConversionRoute>, Cache> Internal;
 	Internal actual_cache;
 

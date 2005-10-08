@@ -10,6 +10,7 @@ except AttributeError:
 	uname = os.getenv("OS")
 arch = uname.translate(string.maketrans("-_","  ")).split()[0].lower()
 soext = { 'windows': ".dll", 'cygwin': ".dll", 'hp': ".sl" }.get(arch, ".so")
+sopre = { 'windows': "" }.get(arch, "lib")
 
 isCygwin = uname.startswith("CYGWIN")
 
