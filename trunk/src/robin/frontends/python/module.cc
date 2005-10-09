@@ -255,10 +255,10 @@ public:
 
 PyMethodDef PythonFrontend::Module::methods[] = {
 	{ "loadLibrary", &py_loadLibrary, METH_VARARGS, 
-	  "loadLibrary(string libfile)\nloads a library "
+	  "loadLibrary([libname], libfile)\nloads a library "
 	  "using Robin's registration mechanism." },
 	{ "classByName", &py_classByName, METH_VARARGS, 
-	  "classByName(string classname)\nFetches a registered class from Robin's "
+	  "classByName(classname)\nFetches a registered class from Robin's "
 	  "internal registry." },
 	{ "declareTemplate", &py_setTemplateObject, METH_VARARGS,
 	  "declareTemplate(string templatename, object pytemplate)\n"
