@@ -1,4 +1,4 @@
-INPUT = tag_vector.h
+INPUT = tag_vector.h tag_pair.h
 
 GENERATE_HTML = No
 GENERATE_LATEX = No

@@ -551,22 +551,55 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
  *
  * @param classname a literal name
  * @param templatename set to the name of the template in case one was found
+ * @param templateargs set to the names of all template arguments in case a
+ * template was found
  * @return <b>true</b> if 'classname' is a template instance, in which case
  * 'templatename' is set to the full name of the appropriate template.
  * <b>false</b> otherwise.
  */
 bool PythonFrontend::getTemplateName(const std::string& classname,
-									 std::string& templatename,
-									 std::string& templatearg)
+                                     std::string& templatename,
+                                     std::vector<std::string>& templateargs)
 {
+	// find the first <
 	int lt = classname.find('<');
 
+	// if it wasn't found, this is not a template
 	if (lt == -1) {
 		return false;
 	}
 	else {
+		// extract the template name
 		templatename = classname.substr(0, lt);
-		templatearg = classname.substr(lt + 2, classname.size() - lt - 4);
+		
+		// extract all of the arguments by taking all characters between the <>
+		std::string templatearg = 
+			classname.substr(lt + 2, classname.size() - lt - 4);
+		// split the string by commas
+		while (templatearg.size()) {
+			// find the next comma
+			int i;
+			int parenthesisCount = 0;
+			for (i = 0; i < templatearg.size(); ++i) {
+				if ((templatearg[i] == ',') && (parenthesisCount == 0)) {
+					break;
+				}
+				if (templatearg[i] == '<') {
+					parenthesisCount++;
+				}
+				if (templatearg[i] == '>') {
+					parenthesisCount--;
+				}
+			}
+
+			// get the next template argument
+			std::string currrentarg = templatearg.substr(0,i);
+			templateargs.push_back(currrentarg);
+
+			// erase the current argument from the arg string
+			templatearg.erase(templatearg.begin(), templatearg.begin() + i + 1);
+		}
+		
 		return true;
 	}
 }
@@ -588,11 +621,11 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
 TemplateObject *PythonFrontend::exposeTemplate(const std::string& classname,
 											   std::string& templatename)
 {
-	std::string templatearg;
+	std::vector<std::string> templateargs;
 	TemplateObject *pytemplate;
 
 	// Get the template name
-	if (getTemplateName(classname, templatename, templatearg)) {
+	if (getTemplateName(classname, templatename, templateargs)) {
 		// Look whether the template is already registered
 		templatenameassoc::const_iterator templfind = 
 			m_templatesByName.find(templatename);
@@ -605,20 +638,37 @@ TemplateObject *PythonFrontend::exposeTemplate(const std::string& classname,
 			pytemplate = templfind->second;
 		}
 
-		// Locate the class being used as the template argument
-		PyObject *pyargument = identifyTemplateArgument(*this, templatearg);
+		// Locate all classes being used as the template arguments
+		PyObject *pyarguments = NULL;
+		// If this is only one item, just use it instead of the tuple
+		if (templateargs.size() == 1) {
+			pyarguments = identifyTemplateArgument(*this, templateargs[0]);
+		}
+		// If there are more than one argument, use a tuple
+		else {
+			pyarguments = PyTuple_New(templateargs.size());
+			for (size_t i = 0; i < templateargs.size(); ++i) {
+				PyObject *pyargument = 
+					identifyTemplateArgument(*this, templateargs[i]);
+				if (!pyargument) {
+					return NULL;
+				}
+				PyTuple_SetItem(pyarguments, i, pyargument);
+			}
+		}
 
-		if (pyargument) {
+		if (pyarguments) {
 			// Update the dictionary with the current element
 			PyObject_SetItem((PyObject*)pytemplate,
-							 pyargument,
+							 pyarguments,
 							 (PyObject*)getClassObject(classname));
 		}
 
 		return pytemplate;
 	}
-	else
+	else {
 		return NULL;
+	}
 }
 
 /**

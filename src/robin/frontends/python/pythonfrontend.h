@@ -136,7 +136,8 @@ public:
 
 protected:
 	bool getTemplateName(const std::string& classname, 
-						 std::string& templatename, std::string& templatearg);
+	                     std::string& templatename,
+	                     std::vector<std::string>& templateargs);
 	TemplateObject *exposeTemplate(const std::string& classname,
 								   std::string& templatename);
 
