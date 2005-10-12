@@ -93,8 +93,8 @@ scripting_element InstanceAdapter::get(basic_block data)
 /**
  * EnumeratedAdapter constructor.
  */
-EnumeratedAdapter::EnumeratedAdapter(Handle<EnumeratedType> enumtype)
-	: m_type(enumtype)
+EnumeratedAdapter::EnumeratedAdapter(EnumeratedTypeObject *pyenumtype)
+	: m_type(pyenumtype)
 {
 }
 
@@ -111,9 +111,9 @@ void EnumeratedAdapter::put(ArgumentsBuffer& argsbuf, scripting_element value)
 scripting_element EnumeratedAdapter::get(basic_block data)
 {
 	int enumvalue = LowLevel::reinterpret_lowlevel<int>(data);
-	Handle<EnumeratedConstant> constant(new EnumeratedConstant(m_type,
-															   enumvalue));
-	PyObject *object = new EnumeratedConstantObject(constant);
+	Handle<EnumeratedConstant> constant
+		(new EnumeratedConstant(m_type->getUnderlying(), enumvalue));
+	PyObject *object = new EnumeratedConstantObject(m_type, constant);
 	return (scripting_element)object;
 }
 

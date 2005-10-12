@@ -332,14 +332,14 @@ void initrobin()
 	// Add some stuff to the module
 	Py_XINCREF(&Robin::Python::FunctionTypeObject);
 	Py_XINCREF(&Robin::Python::ClassTypeObject);
-	Py_XINCREF(&Robin::Python::EnumeratedConstantTypeObject);
+	Py_XINCREF(&Robin::Python::EnumeratedTypeTypeObject);
 
 	PyModule_AddObject(module, "FunctionType", 
 					   (PyObject*)&Robin::Python::FunctionTypeObject);
 	PyModule_AddObject(module, "ClassType", 
 					   (PyObject*)&Robin::Python::ClassTypeObject);
-	PyModule_AddObject(module, "EnumeratedConstantType", 
-					   (PyObject*)&Robin::Python::EnumeratedConstantTypeObject);
+	PyModule_AddObject(module, "EnumeratedTypeType", 
+					   (PyObject*)&Robin::Python::EnumeratedTypeTypeObject);
 	PyModule_AddObject(module, "double", Robin::Python::pydouble =
 					   PyCObject_FromVoidPtr((void*)"double", 0));
 	PyModule_AddObject(module, "char", Robin::Python::pychar =

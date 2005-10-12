@@ -33,6 +33,7 @@ struct _dictobject;
 namespace Robin {
 
 class Class;
+class EnumeratedType;
 
 /**
  * @brief A complete front-end for the Python scripting environment.
@@ -40,6 +41,7 @@ class Class;
 namespace Python { 
 
 class ClassObject;
+class EnumeratedTypeObject;
 class Facade;
 
 typedef _dictobject TemplateObject;
@@ -127,6 +129,9 @@ public:
 	//@{
 	ClassObject    *getClassObject(Handle<Robin::Class> clas) const;
 	ClassObject    *getClassObject(const std::string& name) const;
+	EnumeratedTypeObject    
+	               *getEnumeratedTypeObject(Handle<EnumeratedType> enumtype) 
+		const;
 	TemplateObject *getTemplateObject(const std::string& name) const;
 	void            setTemplateObject(const std::string& name,
 									  TemplateObject *pytemplate);
@@ -145,6 +150,9 @@ protected:
 	    classassoc;
 	typedef std::map<std::string, Robin::Python::ClassObject*> 
 	    classnameassoc;
+	typedef std::map<const Robin::EnumeratedType*, 
+					 Robin::Python::EnumeratedTypeObject*> 
+	    enumassoc;
 	typedef std::map<std::string, Robin::Python::TemplateObject*> 
 	    templatenameassoc;
 	typedef std::list<Handle<UserDefinedTranslator> >
@@ -152,6 +160,7 @@ protected:
 
 	mutable classassoc        m_classes;
 	mutable classnameassoc    m_classesByName;
+	mutable enumassoc         m_enums;
 	templatenameassoc         m_templatesByName;
 	userdefinedtypelist       m_userTypes;
 

@@ -24,13 +24,12 @@
 
 namespace Robin {
 
-class EnumeratedType;
-
 
 namespace Python {
 
 
 class ClassObject;
+class EnumeratedTypeObject;
 
 
 //@{
@@ -221,14 +220,14 @@ private:
 class EnumeratedAdapter : public Adapter
 {
 public:
-	EnumeratedAdapter(Handle<EnumeratedType> enumtype);
+	EnumeratedAdapter(EnumeratedTypeObject *pyenumtype);
 	virtual ~EnumeratedAdapter();
 
 	virtual void put(ArgumentsBuffer& argsbuf, scripting_element value);
 	virtual scripting_element get(basic_block data);
 
 private:
-	Handle<EnumeratedType> m_type;
+	EnumeratedTypeObject *m_type;
 };
 
 
