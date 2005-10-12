@@ -19,14 +19,14 @@ truetype = { double: float, long: int, ulong: int, uint: int, \
 	     char: str, uchar: str, schar: str,
 	     longlong: long, ulonglong: long}
 
-def sum_tuples(tuplelst):
+def _sum_tuples(tuplelst):
 	sumlst = [0 for i in tuplelst[0]]
 	for curtuple in tuplelst:
 		for i in range(len(curtuple)):
 			sumlst[i] = sumlst[i] + curtuple[i]
 	return tuple(sumlst)
 
-def make_vector_functor(vectype, volatile = False):
+def _make_vector_functor(vectype, volatile = False):
 	def make_any_vector(lst, vectype = vectype):
 		vec = vectype()
 		for item in lst:
@@ -37,7 +37,7 @@ def make_vector_functor(vectype, volatile = False):
 
 	return make_any_vector
 
-def make_list_functor(listtype, volatile = False):
+def _make_list_functor(listtype, volatile = False):
 	def make_any_list(lst, listtype = listtype):
 		l = listtype()
 		for item in lst:
@@ -48,7 +48,7 @@ def make_list_functor(listtype, volatile = False):
 
 	return make_any_list
 
-def make_set_functor(settype, volatile = False):
+def _make_set_functor(settype, volatile = False):
 	def make_any_set(lst, settype = settype):
 		set = settype()
 		for item in lst:
@@ -59,7 +59,18 @@ def make_set_functor(settype, volatile = False):
 
 	return make_any_set
 
-def make_container_weigher(el):
+def _make_map_functor(maptype, volatile = False):
+	def make_any_map(dic, maptype = maptype):
+		map = maptype()
+		for item in dic.keys():
+			map.insert((item,dic[item]))
+		if volatile:
+			map.__owner__ = STLContainer.STLOwner(dic, map)
+		return map
+
+	return make_any_map
+
+def _make_container_weigher(el):
 	def weigh_any_container(insight, el = el):
 		if insight is el:
 			w = (0, 1, 0, 0)
@@ -75,36 +86,72 @@ def make_container_weigher(el):
 
 def _vector_from_list(vl, el = None):
 	if el:
-		vl.__from__[[]] = make_vector_functor(vl), 2, make_container_weigher(el)
+		vl.__from__[[]] = _make_vector_functor(vl), 2, _make_container_weigher(el)
 		vl.__from_volatile__[[]] = \
-				make_vector_functor(vl, True), 2, make_container_weigher(el)
+				_make_vector_functor(vl, True), 2, _make_container_weigher(el)
 	else:
-		vl.__from__[[]] = make_vector_functor(vl)
-		vl.__from_volatile__[[]] = make_vector_functor(vl, True)
+		vl.__from__[[]] = _make_vector_functor(vl)
+		vl.__from_volatile__[[]] = _make_vector_functor(vl, True)
 	vl.__getslice__ = lambda self, fr, to: [self[i] for i in xrange(fr,to)]
 
 def _list_from_list(ll, el = None):
 	if el:
-		ll.__from__[[]] = make_list_functor(ll), 2, make_container_weigher(el)
+		ll.__from__[[]] = _make_list_functor(ll), 2, _make_container_weigher(el)
 		ll.__from_volatile__[[]] = \
-				make_list_functor(ll, True), 2, make_container_weigher(el)
+				_make_list_functor(ll, True), 2, _make_container_weigher(el)
 	else:
-		ll.__from__[[]] = make_list_functor(ll)
-		ll.__from_volatile__[[]] = make_list_functor(ll, True)
+		ll.__from__[[]] = _make_list_functor(ll)
+		ll.__from_volatile__[[]] = _make_list_functor(ll, True)
 	ll.__len__ = lambda self: len([i for i in gen(self)])
 	ll.__getitem__ = lambda self, index: [i for i in gen(self)][index]
 
 def _set_from_list(sl, el = None):
 	if el:
-		sl.__from__[[]] = make_set_functor(sl), 2, make_container_weigher(el)
+		sl.__from__[[]] = _make_set_functor(sl), 2, _make_container_weigher(el)
 		sl.__from_volatile__[[]] = \
-				make_set_functor(sl, True), 2, make_container_weigher(el)
+				_make_set_functor(sl, True), 2, _make_container_weigher(el)
 	else:
-		sl.__from__[[]] = make_set_functor(sl)
-		sl.__from_volatile__[[]] = make_set_functor(sl, True)
+		sl.__from__[[]] = _make_set_functor(sl)
+		sl.__from_volatile__[[]] = _make_set_functor(sl, True)
 	sl.__len__ = lambda self: len([i for i in gen(self)])
 	sl.__getitem__ = lambda self, index: [i for i in gen(self)][index]
 
+def _map_from_dict(md, el = None):
+	print "// map to dict coupling", md, el
+	if el:
+		print "// element =", el
+		md.__from__[{}] = _make_map_functor(md), 2, _make_container_weigher(el)
+		print "// element =", el
+		md.__from_volatile__[{}] = \
+				_make_map_functor(md, True), 2, _make_container_weigher(el)
+	else:
+		print "// element = None"
+		md.__from__[{}] = _make_map_functor(md)
+		md.__from_volatile__[{}] = _make_map_functor(md, True)
+	def getitem(self, key):
+		try:
+			self.find(key)
+		except RuntimeError:
+			raise TypeError("map key and value must be of the type " + str(self))
+		if self.find(key) == self.end():
+			raise KeyError(key)
+		return getattr(self,"operator[]")(key)
+	md.__getitem__ = md.__getsubscript__ = getitem
+	def setitem(self, key, value):
+		self.insert((key,value))
+	md.__setitem__ = md.__setsubscript__ = setitem
+	def delitem(self, key):
+		self.erase(key)
+	md.__delitem__ = md.__delsubscript__ = delitem
+	def size(self):
+		return self.size()
+	md.__len__ = md.__mapsize__ = size
+
+def _map_to_dict(md):
+	d = { }
+	for item in gen(md):
+		d[item.first] = item.second
+	return d
 
 def _pair_with_tuple(pr):
 	pr.__getitem__ = lambda self,i: (self.first, self.second)[i]
@@ -112,14 +159,9 @@ def _pair_with_tuple(pr):
 
 	pr.__from__[()] = lambda (first,second): pr(first, second)
 
-def vector_from_list(vl):
-	import warnings
-	warnings.warn("The function stl.vector_from_list() is deprecated. " + \
-				  "Use stl.couple() instead.")
-	_vector_from_list(vl)
-
 def build_vector(vectype, datalist):
-	"""stl.build_vector(vectype, datalist) --> a vectype object
+	"""
+	stl.build_vector(vectype, datalist) --> a vectype object
 	Builds an instance of the given vector 'vectype' with the elements of
 	'datalist'.
 	Placement is done using std::vector<T>::push_back; element types must
@@ -142,16 +184,20 @@ def couple(stltype, prefix = None, element = None):
 		prefix = stltype.__name__.split("<")[0]
 	
 	if prefix == "std::vector":
-		_vector_from_list(stltype, element or guess_container_type(prefix, stltype))
+		_vector_from_list(stltype, element or _guess_container_type(prefix, stltype))
 		stltype.__to__ = reallist
 	elif prefix == "std::list":
-		_list_from_list(stltype, element or guess_container_type(prefix, stltype))
+		_list_from_list(stltype, element or _guess_container_type(prefix, stltype))
 		stltype.__to__ = reallist
 	elif prefix == "std::set":
-		_set_from_list(stltype, element or guess_container_type(prefix, stltype))
+		_set_from_list(stltype, element or _guess_container_type(prefix, stltype))
 		stltype.__to__ = reallist
 	elif prefix == "std::pair":
 		_pair_with_tuple(stltype)
+		stltype.__to__ = tuple
+	elif prefix == "std::map":
+		_map_from_dict(stltype, element)
+		stltype.__to__ = _map_to_dict
 	else:
 		raise TypeError, "invalid STL prefix: " + prefix
 
@@ -195,17 +241,21 @@ robin.declareTemplate("std::set", set)
 pair = STLContainer()
 robin.declareTemplate("std::pair", pair)
 
+# std::map
+map = STLContainer()
+robin.declareTemplate("std::map", map)
+
 # generators
 def gen(container):
 	iter = container.begin()
-	while iter != container.end():
+	while not iter == container.end():
 		yield getattr(iter, "operator *")()
 		getattr(iter, "operator++")()
 
 # backward compatibility
 Vector = STLContainer
 Vector.VectorOwner = Vector.STLOwner
-make_vector_weigher = make_container_weigher
+make_vector_weigher = _make_container_weigher
 guess_vector_type = guess_container_type
 
 del os
