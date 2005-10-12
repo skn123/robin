@@ -181,10 +181,40 @@ public:
 
 /**
  */
+class EnumeratedTypeObject : public PyTypeObject
+{
+public:
+	EnumeratedTypeObject(Handle<EnumeratedType> underlying);
+	~EnumeratedTypeObject();
+
+	PyObject *__new__(PyObject *args, PyObject *kw);
+	PyObject *__repr__();
+
+	static PyObject *__new__    (PyTypeObject *self, 
+								 PyObject *args, PyObject *kw);
+	static PyObject *__call__   (PyObject *self, 
+								 PyObject *args, PyObject *kw);
+	static PyObject *__repr__(PyObject *self);
+	static void      __dealloc__(PyObject *self);
+
+	/**
+	 * @name Access
+	 */
+	//@{
+	Handle<EnumeratedType> getUnderlying() const;
+	//@}
+
+private:
+	Handle<EnumeratedType> m_underlying;
+};
+
+/**
+ */
 class EnumeratedConstantObject : public PyObject
 {
 public:
-	EnumeratedConstantObject(Handle<EnumeratedConstant> underlying);
+	EnumeratedConstantObject(EnumeratedTypeObject *pytype,
+							 Handle<EnumeratedConstant> underlying);
 	~EnumeratedConstantObject();
 
 	PyObject *__repr__();
@@ -241,6 +271,7 @@ private:
 bool ClassObject_Check(PyObject *object);
 PyObject *ClassObject_GetDict(PyObject *object);
 bool InstanceObject_Check(PyObject *object);
+bool EnumeratedConstantObject_Check(PyObject *object);
 
 // Pascal string services
 void PyPascalString_deallocator(void *);
@@ -250,7 +281,7 @@ bool PyPascalString_Check(PyObject *object);
 
 extern PyTypeObject FunctionTypeObject;
 extern PyTypeObject ClassTypeObject;
-extern PyTypeObject EnumeratedConstantTypeObject;
+extern PyTypeObject EnumeratedTypeTypeObject;
 
 
 } // end of namespace Python

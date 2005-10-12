@@ -115,6 +115,51 @@ PyTypeObject ClassTypeObject = {
 	0
 };
 
+PyTypeObject EnumeratedTypeTypeObject = {
+	PyObject_HEAD_INIT(&PyType_Type)
+    0,
+    "Robin::Python::EnumeratedTypeObject",
+    sizeof(ClassObject),
+    0,
+    EnumeratedTypeObject::__dealloc__,    /*tp_dealloc*/
+    0,                                    /*tp_print*/
+    0,                                    /*tp_getattr*/
+    0,                                    /*tp_setattr*/
+    0,                                    /*tp_compare*/
+    EnumeratedTypeObject::__repr__,       /*tp_repr*/
+    0,                                    /*tp_as_number*/
+    0,                                    /*tp_as_sequence*/
+    0,                                    /*tp_as_mapping*/
+    PyType_Type.tp_hash,                  /*tp_hash */
+	EnumeratedTypeObject::__call__,       /*tp_call*/
+	0,                                    /*tp_str*/
+	0,                                    /*tp_getattro*/
+	0,                                    /*tp_setattro*/
+	0,                                    /*tp_as_buffer*/
+	Py_TPFLAGS_BASETYPE | 
+	Py_TPFLAGS_HAVE_CLASS,                /*tp_flags*/
+	"",                                   /*tp_doc*/
+	0,                                    /*tp_traverse*/
+	0,                                    /*tp_clear*/
+	0,                                    /*tp_richcompare*/
+	0, /* tp_weakoffset */
+	0, /* tp_iter */
+	0, /* tp_iternext */
+	0, /* tp_methods */
+	0, /* tp_members */
+	0, /* tp_getset */
+	&PyType_Type, /* tp_base */
+	0, /* tp_dict */
+	0, /* tp_descr_get */
+	0, /* tp_descr_set */
+	0, /* tp_dictoffset */
+	0, /* tp_init */ 
+	0, /* tp_alloc */
+	0, /* tp_new */
+	0, 0, 
+	0
+};
+
 PyNumberMethods EnumeratedConstantNumberMethods = {
 	0, 0, 0,
 	0, 0, 0,
@@ -128,34 +173,6 @@ PyNumberMethods EnumeratedConstantNumberMethods = {
 	EnumeratedConstantObject::__int__
 };
 
-PyTypeObject EnumeratedConstantTypeObject = {
-	PyObject_HEAD_INIT(&PyType_Type)
-    0,
-    "Robin::Python::EnumeratedConstantObject",
-    sizeof(EnumeratedConstantObject),
-    0,
-    EnumeratedConstantObject::__dealloc__,/*tp_dealloc*/
-    0,                                    /*tp_print*/
-    0,                                    /*tp_getattr*/
-    0,                                    /*tp_setattr*/
-    0,                                    /*tp_compare*/
-    EnumeratedConstantObject::__repr__,   /*tp_repr*/
-    &EnumeratedConstantNumberMethods,     /*tp_as_number*/
-    0,                                    /*tp_as_sequence*/
-    0,                                    /*tp_as_mapping*/
-    0,                                    /*tp_hash */
-	0,                                    /*tp_call*/
-	0,                                    /*tp_str*/
-	0,                                    /*tp_getattro*/
-	0,                                    /*tp_setattro*/
-	0,                                    /*tp_as_buffer*/
-	Py_TPFLAGS_HAVE_RICHCOMPARE |
-	Py_TPFLAGS_CHECKTYPES,                /*tp_flags*/
-	"",                                   /*tp_doc*/
-	0,                                    /*tp_traverse*/
-	0,                                    /*tp_clear*/
-	EnumeratedConstantObject::__richcmp__,/*tp_richcompare*/
-};
 
 PyMappingMethods ConversionHookMappingMethods = {
 	0,                                     /*mp_length*/
@@ -983,13 +1000,128 @@ PyObject *InstanceObject::__repr__()
 }
 
 /**
+ * ClassObject constructor.
+ */
+EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
+	: m_underlying(underlying)
+{
+	PyObject_Init((PyObject*)this, &EnumeratedTypeTypeObject);
+
+	ob_size = sizeof(EnumeratedTypeObject);
+
+    tp_name = (char *)malloc(underlying->name().size() + 1);
+	strcpy(tp_name, underlying->name().c_str());
+	tp_basicsize = sizeof(EnumeratedConstantObject);
+	tp_dealloc = EnumeratedConstantObject::__dealloc__;
+	tp_print = NULL;
+	tp_getattr = NULL;
+	tp_setattr = NULL;
+	tp_compare = NULL;
+	tp_repr = EnumeratedConstantObject::__repr__;
+	tp_richcompare = EnumeratedConstantObject::__richcmp__;
+
+	tp_as_number = &EnumeratedConstantNumberMethods;
+	tp_as_sequence = NULL;
+	tp_as_mapping = NULL;
+
+	tp_hash = NULL;
+	tp_call = NULL;
+	tp_str = NULL;
+	tp_getattro = NULL;
+	tp_setattro = NULL;
+
+	tp_as_buffer = NULL;
+
+	// Support the new class model
+	tp_flags = Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_CLASS | 
+	           Py_TPFLAGS_CHECKTYPES | Py_TPFLAGS_HAVE_RICHCOMPARE;
+	tp_base = &PyBaseObject_Type;
+
+	tp_new = &__new__;
+}
+
+EnumeratedTypeObject::~EnumeratedTypeObject()
+{
+}
+
+PyObject *EnumeratedTypeObject::__new__(PyObject *args, PyObject *kw)
+{
+	long value;
+
+	if (!PyArg_ParseTuple(args, "i", &value)) return NULL;
+
+	Handle<EnumeratedConstant> enumconst(new EnumeratedConstant(m_underlying,
+																value));
+	EnumeratedConstantObject *pyenumconst =
+		new EnumeratedConstantObject(this, enumconst);
+
+	return pyenumconst;
+}
+
+/**
+ * Constructs a textual representation of the enumerated type having the
+ * form:
+ * <code>&lt;Robin enum 'enum-name'&gt;</code>
+ */
+PyObject *EnumeratedTypeObject::__repr__()
+{
+	const char *format = "<Robin enum '%s'>";
+	std::string name = getUnderlying()->name();
+	// Format the string
+	char *buffer = new char[strlen(format) + name.size()];
+	sprintf(buffer, format, name.c_str());
+	// Return string to Python
+	PyObject *fmt = PyString_FromString(buffer);
+	delete[] buffer;
+	return fmt;
+}
+
+Handle<EnumeratedType> EnumeratedTypeObject::getUnderlying() const
+{
+	return m_underlying;
+}
+
+/**
+ * (static) New protocol function - invokes EnumeratedTypeObject::__new__
+ */
+PyObject *EnumeratedTypeObject::__new__(PyTypeObject *self, PyObject *args,
+										PyObject *kw)
+{
+	return ((EnumeratedTypeObject *)self)->__new__(args, kw);
+}
+
+/**
+ * (static) Call protocol function - invokes EnumeratedTypeObject::__call__
+ */
+PyObject *EnumeratedTypeObject::__call__(PyObject *self, PyObject *args,
+										 PyObject *kw)
+{
+	return ((EnumeratedTypeObject *)self)->__new__(args, kw);
+}
+
+/**
+ * (static) Repr protocol function - invokes EnumeratedTypeObject::__repr__
+ */
+PyObject *EnumeratedTypeObject::__repr__(PyObject *self)
+{
+	return ((EnumeratedTypeObject *)self)->__repr__();
+}
+
+void EnumeratedTypeObject::__dealloc__(PyObject *self)
+{
+	delete (EnumeratedTypeObject *)self;
+}
+
+/**
  * EnumeratedConstantObject constructor.
  */
-EnumeratedConstantObject::EnumeratedConstantObject(Handle<EnumeratedConstant>
+EnumeratedConstantObject::EnumeratedConstantObject(EnumeratedTypeObject *
+												   pytype,
+												   Handle<EnumeratedConstant>
 												   underlying)
 	: m_underlying(underlying)
 {
-	PyObject_Init(this, &EnumeratedConstantTypeObject);
+	PyObject_Init(this, pytype);
 }
 
 EnumeratedConstantObject::~EnumeratedConstantObject()
@@ -1033,14 +1165,22 @@ PyObject *EnumeratedConstantObject::__richcmp__(PyObject *self,
 												PyObject *other,
 												int opid)
 {
+	PyObject *decision;
+
 	// - only compare if objects are of the same type (both enums)
-	if (PyObject_Type(other) == (PyObject*)&EnumeratedConstantTypeObject) {
+	if (PyObject_Type(PyObject_Type(other)) ==
+		(PyObject*)&EnumeratedTypeTypeObject) {
 		EnumeratedConstantObject *myself = (EnumeratedConstantObject*)self;
-		return PyInt_FromLong(myself
-			->__richcmp__((EnumeratedConstantObject*)other, opid));
+		if (myself->__richcmp__((EnumeratedConstantObject*)other, opid))
+			decision = Py_True;
+		else
+			decision = Py_False;
 	}
-	else
-		return PyInt_FromLong(0); // false
+	else 
+		decision = Py_False;
+
+	Py_XINCREF(decision);
+	return decision;
 }
 
 /**
@@ -1113,7 +1253,7 @@ PyObject *EnumeratedConstantObject::__aop__(PyObject *self, PyObject *other,
 	bool typeerror = false;
 
 	// Translate 'self' to an integer value
-	if (PyObject_TypeCheck(self, &EnumeratedConstantTypeObject)) {
+	if (EnumeratedConstantObject_Check(self)) {
 		self_value =
 			((EnumeratedConstantObject*)self)->m_underlying->getValue();
 	}
@@ -1125,7 +1265,7 @@ PyObject *EnumeratedConstantObject::__aop__(PyObject *self, PyObject *other,
 	}
 
 	// Translate 'other' to an integer value
-	if (PyObject_TypeCheck(other, &EnumeratedConstantTypeObject)) {
+	if (EnumeratedConstantObject_Check(other)) {
 		other_value =
 			((EnumeratedConstantObject*)other)->m_underlying->getValue();
 	}
@@ -1263,6 +1403,18 @@ PyObject *ClassObject_GetDict(PyObject *object)
 bool InstanceObject_Check(PyObject *object)
 {
 	return ClassObject_Check(PyObject_Type(object));
+}
+
+/**
+ * Service routine, checks whether a Python object is an 
+ *EnumeratedConstantObject.
+ *
+ * @param object a Python object to check
+ */
+bool EnumeratedConstantObject_Check(PyObject *object)
+{
+	return PyObject_TypeCheck(PyObject_Type(object),
+							  &EnumeratedTypeTypeObject);
 }
 
 /**

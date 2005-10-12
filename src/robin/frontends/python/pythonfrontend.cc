@@ -298,7 +298,7 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 	const
 {
 	PyObject *object = reinterpret_cast<PyObject*>(element);
-	PyObject *obtype;
+	PyObject *obtype = PyObject_Type(object);
 	Handle<TypeOfArgument> user;
 
 	if (object == Py_True || object == Py_False)
@@ -315,13 +315,12 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 		return ArgumentPythonTuple;
 	else if (PyLong_Check(object))
 		return ArgumentPythonLong;
-	else if (PyObject_Type(obtype = (PyObject*)PyObject_Type(object)) 
-			 == (PyObject*)&ClassTypeObject) {
+	else if (PyObject_Type(obtype) == (PyObject*)&ClassTypeObject) {
 		// - instance object
 		Handle<Class> clas = ((ClassObject*)obtype)->getUnderlying();
 		return clas->getRefArg();
 	}
-	else if (obtype == (PyObject*)&EnumeratedConstantTypeObject) {
+	else if (PyObject_Type(obtype) == (PyObject*)&EnumeratedTypeTypeObject) {
 		// - enumerated constant object
 		Handle<EnumeratedConstant> enumconst = 
 			((EnumeratedConstantObject*)object)->getUnderlying();
@@ -442,8 +441,11 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 													   owned));
 		}
 		else if (basetype.spec == TYPE_USERDEFINED_ENUM) {
+			// - find the enum object
+			EnumeratedTypeObject *enumobj = 
+				getEnumeratedTypeObject(basetype.objenum);
 			// - create enum adapter
-			return Handle<Adapter>(new EnumeratedAdapter(basetype.objenum));
+			return Handle<Adapter>(new EnumeratedAdapter(enumobj));
 		}
 		else
 			throw UnsupportedInterfaceException();
@@ -506,13 +508,16 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !ename_iter->done(); ename_iter->next()) {
 		std::string name = ename_iter->value();
 		Handle<EnumeratedType> enumtype = globals->lookupEnum(name);
+		EnumeratedTypeObject *pyenumtype = getEnumeratedTypeObject(enumtype);
+		insertIntoNamespace(newcomer.name(), module, 
+							name, (PyObject*)pyenumtype);
 		// Get the list of constants belonging to this type
 		std::vector<Handle<EnumeratedConstant> > enumconstants =
 			listOfConstants(enumtype);
 		// Create objects representing enum constants
 		for (std::vector<Handle<EnumeratedConstant> >::iterator ci =
 				 enumconstants.begin(); ci != enumconstants.end(); ++ci) {
-			PyObject *obj = new EnumeratedConstantObject(*ci);
+			PyObject *obj = new EnumeratedConstantObject(pyenumtype, *ci);
 			insertIntoNamespace(newcomer.name(), module, 
 								(*ci)->getLiteral(), obj);
 		}
@@ -743,6 +748,25 @@ ClassObject *PythonFrontend::getClassObject(const std::string& name) const
 	else {
 		assert(classfind->second != NULL);
 		return classfind->second;
+	}
+}
+
+/**
+ * Finds a Python::EnumeratedTypeObject via a Robin::EnumeratedType reference.
+ * Returns <b>NULL</b> if none exist.
+ */
+EnumeratedTypeObject *PythonFrontend
+	::getEnumeratedTypeObject(Handle<EnumeratedType> enumtype) const
+{
+	enumassoc::const_iterator enumfind = m_enums.find(&*enumtype);
+	// If class exists in map, return associated value.
+	if (enumfind == m_enums.end()) {
+		// - create a new enum object for that type
+		return (m_enums[&*enumtype] = new EnumeratedTypeObject(enumtype));
+	}
+	else {
+		assert(enumfind->second != NULL);
+		return enumfind->second;
 	}
 }
 

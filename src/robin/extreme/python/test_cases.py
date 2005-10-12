@@ -137,6 +137,11 @@ class LanguageTest(TestCase):
 		p.shorten(5)
 		p.ushorten(5)
 
+	def testEnums(self):
+		self.failUnless(type(language.EM) is language.Em);
+		self.assertEquals(type(language.EM), language.Em);
+		language.Em(1)
+
 
 class ThreadingTest(TestCase):
 
