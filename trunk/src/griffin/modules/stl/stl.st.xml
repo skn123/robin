@@ -2,4 +2,8 @@
   <class name="std::vector">
     <template-parameter name="T"/>
   </class>
+  <class name="std::pair">
+    <template-parameter name="T1"/>
+    <template-parameter name="T2"/>
+  </class>
 </program>

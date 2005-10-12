@@ -191,6 +191,10 @@ robin.declareTemplate("std::list", list)
 set = STLContainer()
 robin.declareTemplate("std::set", set)
 
+# std::pair
+pair = STLContainer()
+robin.declareTemplate("std::pair", pair)
+
 # generators
 def gen(container):
 	iter = container.begin()
