@@ -2,8 +2,18 @@
   <class name="std::vector">
     <template-parameter name="T"/>
   </class>
+  <class name="std::list">
+    <template-parameter name="T"/>
+  </class>
+  <class name="std::set">
+    <template-parameter name="T"/>
+  </class>
   <class name="std::pair">
     <template-parameter name="T1"/>
     <template-parameter name="T2"/>
+  </class>
+  <class name="std::map">
+    <template-parameter name="KEY"/>
+    <template-parameter name="VALUE"/>
   </class>
 </program>

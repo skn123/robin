@@ -2,7 +2,7 @@
 namespace std {
 
 template < class T >
-class vector
+class set
 {
 public:
 	class iterator
@@ -14,18 +14,20 @@ public:
 		bool operator!=(const iterator &i) const;
 	};
 	
-	vector();
-	vector(const std::vector<T>& other);
+	set();
+	set(const std::set<T>& other);
 
 	iterator begin();
 	iterator end();
 	
 	unsigned long size() const;
 	bool empty() const;
-	T operator[](unsigned long index) const;
-
-	void push_back(const T &element);
+	
+	void insert(const T &element);
 	void erase(iterator pos);
+	void erase(const T &element);
+
+	iterator find(const T &element);
 	
 	~vector();
 };
