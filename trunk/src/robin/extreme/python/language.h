@@ -287,8 +287,18 @@ namespace StandardLibrary
 		UsingVectors(std::vector<double> data) : m_data(data), m_id(0) { }
 		UsingVectors(std::vector<long> data) : m_id(1) { }
 		UsingVectors(std::vector<std::string> data) : m_id(2) { }
+		UsingVectors(std::vector<long long> data) : m_id(3) { }
+		UsingVectors(std::vector<unsigned long long> data) : m_id(4) { }
 
 		std::vector<double> get() const { return m_data; }
+		std::vector<std::vector<double> > getv() const { 
+			std::vector<std::vector<double> > vd;
+			vd.push_back(m_data);
+			return vd;
+		};
+
+		void atof(std::vector<char> a) { m_data.push_back(::atof(&a[0])); }
+		void atof(std::vector<signed char> a) { }
 
 		int getVectorType() { return m_id; }
 

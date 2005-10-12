@@ -44,9 +44,13 @@ namespace Python {
 
 const std::string PythonFrontend::DATAMEMBER_PREFIX = ".data_";
 extern PyObject *pydouble;
+extern PyObject *pychar;
+extern PyObject *pylong_long;
 extern PyObject *pyunsigned_long;
 extern PyObject *pyunsigned_int;
+extern PyObject *pyunsigned_long_long;
 extern PyObject *pyunsigned_char;
+extern PyObject *pysigned_char;
 
 
 namespace {
@@ -159,10 +163,15 @@ namespace {
 		if      (templatearg == "int")      return (PyObject*)&PyInt_Type;
 		else if (templatearg == "float")    return (PyObject*)&PyFloat_Type;
 		else if (templatearg == "long")     return (PyObject*)&PyLong_Type;
-		else if (templatearg == "double")        return pydouble;
-		else if (templatearg == "unsigned long") return pyunsigned_long;
-		else if (templatearg == "unsigned int")  return pyunsigned_int;
-		else if (templatearg == "unsigned char") return pyunsigned_char;
+		else if (templatearg == "long long")       return pylong_long;
+		else if (templatearg == "char")            return pychar;
+		else if (templatearg == "double")          return pydouble;
+		else if (templatearg == "unsigned int")    return pyunsigned_int;
+		else if (templatearg == "unsigned long")   return pyunsigned_long;
+		else if (templatearg == "unsigned long long")
+			                                       return pyunsigned_long_long;
+		else if (templatearg == "unsigned char")   return pyunsigned_char;
+		else if (templatearg == "signed char")     return pysigned_char;
 		else if (templatearg == "char*")    return (PyObject*)&PyString_Type;
 		else
 			return (PyObject*)fe.getClassObject(templatearg);
