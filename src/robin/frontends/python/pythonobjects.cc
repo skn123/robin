@@ -1355,8 +1355,9 @@ int ConversionHookObject::__setsubscript__(PyObject *sub, PyObject *val)
 
 	// Create a handler
 	Handle<PyCallableWithInstance> handler = pycallableFactory(callable);
-	if (PyErr_Occurred()) 
+	if (PyErr_Occurred()) {
 		return -1;
+	}
 
 	// Assign to applicable conversion slot
 	Handle<Conversion> conv(pyweigher 

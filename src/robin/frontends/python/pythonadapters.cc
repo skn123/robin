@@ -36,6 +36,8 @@ Handle<TypeOfArgument> ArgumentPythonList
 	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
 Handle<TypeOfArgument> ArgumentPythonTuple
 	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
+Handle<TypeOfArgument> ArgumentPythonDict
+	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
 Handle<TypeOfArgument> ArgumentPythonLong
 	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
 
