@@ -11,9 +11,12 @@ target = sopre + "robin_pyfe-1.0" + soext
 imp.load_dynamic("robin", os.path.join(libdir, target))
 __builtin__.double = double
 __builtin__.char = char
+__builtin__.longlong = longlong
 __builtin__.ulong = ulong
 __builtin__.uint = uint
 __builtin__.uchar = uchar
+__builtin__.ulonglong = ulonglong
+__builtin__.schar = schar
 
 ldinfo = { 'm': arch, 'so': soext, \
            'suffix': "", 'confdir': "." }

@@ -116,33 +116,41 @@ public:
 		if (!PyArg_ParseTuple(args, "OO", &sourcetype, &desttype))
 			return NULL;
 
-		if (!PyType_Check(sourcetype) || !PyType_Check(desttype)) {
+		if (!PyType_Check(sourcetype) || 
+			!(PyType_Check(desttype) /*|| PyCObject_Check(desttype)*/)) {
 			PyErr_SetString(PyExc_TypeError, "expected 2 types");
 			return NULL;
 		}
 
-		source = masquerade((PyTypeObject*)sourcetype);
-		dest   = masquerade((PyTypeObject*)desttype);
-
+		// Compute conversion
 		Conversion::Weight w;
-		try {
-			Handle<TypeOfArgument> 
-				toasrc = fe->detectType((scripting_element)source),
-				toadst = fe->detectType((scripting_element)dest);
-			Handle<ConversionRoute> convRoute = 
-				ConversionTableSingleton::getInstance()->
-				bestSingleRoute(*toasrc, *toadst);
-			w = convRoute->totalWeight();
-		}
-		catch(const NoApplicableConversionException& ) {
-			w = Conversion::Weight::INFINITE;
-		}
-		catch (const std::exception& ) {
-			w = Conversion::Weight::INFINITE;
-		}
 
-		PyMem_Del(source);
-		PyMem_Del(dest);
+		if (PyCObject_Check(desttype)) {
+			w = Conversion::Weight::INFINITE;
+		}
+		else {
+			source = masquerade((PyTypeObject*)sourcetype);
+			dest   = masquerade((PyTypeObject*)desttype);
+
+			try {
+				Handle<TypeOfArgument> 
+					toasrc = fe->detectType((scripting_element)source),
+					toadst = fe->detectType((scripting_element)dest);
+				Handle<ConversionRoute> convRoute = 
+					ConversionTableSingleton::getInstance()->
+					bestSingleRoute(*toasrc, *toadst);
+				w = convRoute->totalWeight();
+			}
+			catch(const NoApplicableConversionException& ) {
+				w = Conversion::Weight::INFINITE;
+			}
+			catch (const std::exception& ) {
+				w = Conversion::Weight::INFINITE;
+			}
+
+			PyMem_Del(source);
+			PyMem_Del(dest);
+		}
 
 		PyObject* wtuple =
 			Py_BuildValue("(iiii)", 
@@ -292,9 +300,12 @@ Handle<PythonFrontend> PythonFrontend::Module::fe;
 
 PyObject *pydouble;
 PyObject *pychar;
+PyObject *pylong_long;
 PyObject *pyunsigned_long;
 PyObject *pyunsigned_int;
+PyObject *pyunsigned_long_long;
 PyObject *pyunsigned_char;
+PyObject *pysigned_char;
 
 } // end of namespace Robin::Python
 
@@ -333,12 +344,19 @@ void initrobin()
 					   PyCObject_FromVoidPtr((void*)"double", 0));
 	PyModule_AddObject(module, "char", Robin::Python::pychar =
 					   PyCObject_FromVoidPtr((void*)"char", 0));
-	PyModule_AddObject(module, "ulong", Robin::Python::pyunsigned_long =
-					   PyCObject_FromVoidPtr((void*)"unsigned long", 0));
+	PyModule_AddObject(module, "longlong", Robin::Python::pylong_long =
+					   PyCObject_FromVoidPtr((void*)"long long", 0));
 	PyModule_AddObject(module, "uint", Robin::Python::pyunsigned_int =
 					   PyCObject_FromVoidPtr((void*)"unsigned int", 0));
+	PyModule_AddObject(module, "ulong", Robin::Python::pyunsigned_long =
+					   PyCObject_FromVoidPtr((void*)"unsigned long", 0));
+	PyModule_AddObject(module, "ulonglong", 
+					   Robin::Python::pyunsigned_long_long =
+					   PyCObject_FromVoidPtr((void*)"unsigned long long", 0));
 	PyModule_AddObject(module, "uchar", Robin::Python::pyunsigned_char =
 					   PyCObject_FromVoidPtr((void*)"unsigned char", 0));
+	PyModule_AddObject(module, "schar", Robin::Python::pysigned_char =
+					   PyCObject_FromVoidPtr((void*)"signed char", 0));
 
 #define _QUOTE(X) (#X)
 #define QUOTE(X) (_QUOTE(X))

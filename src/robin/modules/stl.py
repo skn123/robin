@@ -15,7 +15,9 @@ ofstream = std.ofstream
 string = std.string
 string.__to__ = str
 
-truetype = { double: float, long: int, ulong: int, uint: int, char: str, uchar: str}
+truetype = { double: float, long: int, ulong: int, uint: int, \
+	     char: str, uchar: str, schar: str,
+	     longlong: long, ulonglong: long}
 
 def sum_tuples(tuplelst):
 	sumlst = [0 for i in tuplelst[0]]
@@ -63,7 +65,7 @@ def make_container_weigher(el):
 			w = (0, 1, 0, 0)
 		else:
 			w = robin.weighConversion(
-				truetype.get(insight, insight),
+				insight,
 				truetype.get(el, el))
 			w = sum_tuples( [w, (0, 1, 0, 0)] )
 		return w

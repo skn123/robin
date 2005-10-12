@@ -88,16 +88,25 @@ class LanguageTest(TestCase):
 
 	def testVectors(self):
 		import stl
-		ve = language.StandardLibrary.UsingVectors([])
-		vl = language.StandardLibrary.UsingVectors([1,2,3])
-		vd = language.StandardLibrary.UsingVectors([1.0,2.0,3.0])
-		vs = language.StandardLibrary.UsingVectors(["one","two","three"])
+		ve =  language.StandardLibrary.UsingVectors([])
+		vl =  language.StandardLibrary.UsingVectors([1,2,3])
+		vd =  language.StandardLibrary.UsingVectors([1.0,2.0,3.0])
+		vs =  language.StandardLibrary.UsingVectors(["one","two","three"])
+		vll = language.StandardLibrary.UsingVectors([1l,2l,5l])
 		self.assertEquals(vl.getVectorType(), 1,
 						  "vector<double> favoured over vector<long>")
 		self.assertEquals(vd.getVectorType(), 0,
 						  "vector<long> favoured over vector<double>")
 		self.assertEquals(vs.getVectorType(), 2,
 						  "vector<string> not favoured over others")
+		self.assertEquals(vll.getVectorType(), 3,
+						  "vector<long long> not favoured over others")
+
+	def testVectorOfChar(self):
+		import stl
+		ve =  language.StandardLibrary.UsingVectors([])
+		ve.atof(['0','.','5','\0'])
+		self.assertEquals([0.5], ve.get())
 		
 	def testExceptions(self):
 		try:
