@@ -163,7 +163,11 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 					.getGeneral();
 			}
 		}
-		return getName().equals(structure.getName());
+		// The routine can be a constructor if the name is the same as the class
+		// name, or if it is the same as the last word in the fully qualified
+		// name of the class
+		return (getName().equals(structure.getName()) ||
+		        structure.getName().endsWith("::" + getName()));
 	}
 	
 	/**
