@@ -5,7 +5,7 @@ template <class KEY, class VALUE>
 class map
 {
 public:
-	typedef pair<const KEY,VALUE> value_type;
+	typedef pair<KEY,VALUE> value_type;
 	
 	class iterator
 	{
@@ -22,12 +22,12 @@ public:
 	iterator end();
 
 	bool empty() const;
-	int size() const;
-	
+	unsigned long size() const;	
 	VALUE& operator[](const KEY &key);
-	int erase(const KEY &key);
-	//void insert(const pair<const KEY,VALUE> &val);
 	iterator find(const KEY &key);
+	
+	int erase(const KEY &key);
+	void insert(const pair<KEY,VALUE> &val);
 
 	~map();
 };

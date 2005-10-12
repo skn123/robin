@@ -243,6 +243,7 @@ public:
 // Python-specific argument types
 extern Handle<TypeOfArgument> ArgumentPythonList;
 extern Handle<TypeOfArgument> ArgumentPythonTuple;
+extern Handle<TypeOfArgument> ArgumentPythonDict;
 extern Handle<TypeOfArgument> ArgumentPythonLong;
 
 

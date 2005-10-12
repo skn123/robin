@@ -313,6 +313,8 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 		return ArgumentPythonList;
 	else if (PyTuple_Check(object))
 		return ArgumentPythonTuple;
+	else if (PyDict_Check(object))
+		return ArgumentPythonDict;
 	else if (PyLong_Check(object))
 		return ArgumentPythonLong;
 	else if (PyObject_Type(obtype) == (PyObject*)&ClassTypeObject) {

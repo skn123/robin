@@ -16,8 +16,8 @@ string = std.string
 string.__to__ = str
 
 truetype = { double: float, long: int, ulong: int, uint: int, \
-	     char: str, uchar: str, schar: str,
-	     longlong: long, ulonglong: long}
+             char: str, uchar: str, schar: str,
+             longlong: long, ulonglong: long}
 
 def _sum_tuples(tuplelst):
 	sumlst = [0 for i in tuplelst[0]]
@@ -117,17 +117,13 @@ def _set_from_list(sl, el = None):
 	sl.__getitem__ = lambda self, index: [i for i in gen(self)][index]
 
 def _map_from_dict(md, el = None):
-	print "// map to dict coupling", md, el
-	#if el:
-	#	print "// element =", el
-	#	md.__from__[{}] = _make_map_functor(md), 2, _make_container_weigher(el)
-	#	print "// element =", el
-	#	md.__from_volatile__[{}] = \
-	#			_make_map_functor(md, True), 2, _make_container_weigher(el)
-	#else:
-	#	print "// element = None"
-	#	md.__from__[{}] = _make_map_functor(md)
-	#	md.__from_volatile__[{}] = _make_map_functor(md, True)
+	if el:
+		md.__from__[{}] = _make_map_functor(md), 2, _make_container_weigher(el)
+		md.__from_volatile__[{}] = \
+				_make_map_functor(md, True), 2, _make_container_weigher(el)
+	else:
+		md.__from__[{}] = _make_map_functor(md)
+		md.__from_volatile__[{}] = _make_map_functor(md, True)
 	def getitem(self, key):
 		try:
 			self.find(key)
