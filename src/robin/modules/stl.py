@@ -118,16 +118,16 @@ def _set_from_list(sl, el = None):
 
 def _map_from_dict(md, el = None):
 	print "// map to dict coupling", md, el
-	if el:
-		print "// element =", el
-		md.__from__[{}] = _make_map_functor(md), 2, _make_container_weigher(el)
-		print "// element =", el
-		md.__from_volatile__[{}] = \
-				_make_map_functor(md, True), 2, _make_container_weigher(el)
-	else:
-		print "// element = None"
-		md.__from__[{}] = _make_map_functor(md)
-		md.__from_volatile__[{}] = _make_map_functor(md, True)
+	#if el:
+	#	print "// element =", el
+	#	md.__from__[{}] = _make_map_functor(md), 2, _make_container_weigher(el)
+	#	print "// element =", el
+	#	md.__from_volatile__[{}] = \
+	#			_make_map_functor(md, True), 2, _make_container_weigher(el)
+	#else:
+	#	print "// element = None"
+	#	md.__from__[{}] = _make_map_functor(md)
+	#	md.__from_volatile__[{}] = _make_map_functor(md, True)
 	def getitem(self, key):
 		try:
 			self.find(key)
