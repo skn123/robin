@@ -78,7 +78,7 @@ def _make_container_weigher(el):
 			w = robin.weighConversion(
 				insight,
 				truetype.get(el, el))
-			w = sum_tuples( [w, (0, 1, 0, 0)] )
+			w = _sum_tuples( [w, (0, 1, 0, 0)] )
 		return w
 
 	return weigh_any_container
