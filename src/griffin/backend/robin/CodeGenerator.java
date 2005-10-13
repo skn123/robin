@@ -360,6 +360,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				interceptor.getScope().addMember(
 						newRoutine, Specifiers.Visibility.PUBLIC, 
 						Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+
+				// If the current function has some default arguments, increment
+				// the function pointer to the last function
+				int defaultArgumentCount = 
+					Utils.countParameters(routine) -
+					Utils.minimalArgumentCount(routine);
+				funcCounter += defaultArgumentCount;
 				
 				// Write the function header
 				m_output.write("\tvirtual ");
@@ -415,27 +422,31 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				
 				// Write the call to __callback
 				m_output.write("\t\t");
-				if (! routine.getReturnType().equals(new Type(new Type.TypeNode(Primitive.VOID)))) 
+				if (! routine.getReturnType().equals(
+						new Type(new Type.TypeNode(Primitive.VOID)))) {
 					m_output.write("basic_block result = ");
+				}
 				m_output.write("__callback(twin, ");
 				m_output.write("scope_" + 
 						interceptor.getScope().hashCode() + 
 						" + " +
-						(funcCounter+i) + 
+						funcCounter + 
 						", ");
 				m_output.write("args);\n");
 				
 				// Write the return statement
-				if (! routine.getReturnType().equals(new Type(new Type.TypeNode(Primitive.VOID)))) {
+				if (! routine.getReturnType().equals(
+						new Type(new Type.TypeNode(Primitive.VOID)))) {
 					Type returnType = routine.getReturnType();
 					Type touchupType = Filters.getTouchup(routine.getReturnType());
-					if (touchupType != null)
+					if (touchupType != null) {
 						returnType = touchupType;
+					}
 					
 					int parenNest = 0;
 					
 					m_output.write("\t\treturn ");
-					
+				
 					if (needsExtraReferencing(returnType)) {
 						m_output.write("*std::auto_ptr< ");
 						m_output.write(returnType.formatCpp());
@@ -464,6 +475,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 					m_output.write(";\n");
 				}
 				m_output.write("\t}\n\n");
+
+				// Increment the function pointer counter
+				funcCounter++;
 			}
 			
 			// Write private sections of class

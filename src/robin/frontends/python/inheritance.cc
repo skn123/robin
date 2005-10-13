@@ -86,7 +86,8 @@ PyObject *Implementor::__new__(PyTypeObject *type,
 	}
 
 	// Find the implementor
-	for (btype = type; btype->tp_new != &__new__; btype = btype->tp_base) ;
+	// TODO verify that this comparison always works
+	for (btype = type; btype->tp_base != &PyBaseObject_Type; btype = btype->tp_base);
 	Implementor *implementor = (Implementor*)btype;
 	ClassObject *interface = implementor->tp_implements;
 
