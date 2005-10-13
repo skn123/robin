@@ -158,8 +158,17 @@ namespace {
 
 
 	PyObject *identifyTemplateArgument(PythonFrontend& fe,
-									   const std::string& templatearg)
+									   const std::string& templateargname)
 	{
+		std::string templatearg = templateargname;
+		
+		// remove the unnecessary modifiers (just const for now)
+		if (templatearg.substr(0,6) == "const ") {
+			templatearg.erase(templatearg.begin(),
+			                  templatearg.begin() + 6);
+		}
+
+		// identify the argument
 		if      (templatearg == "int")      return (PyObject*)&PyInt_Type;
 		else if (templatearg == "float")    return (PyObject*)&PyFloat_Type;
 		else if (templatearg == "long")     return (PyObject*)&PyLong_Type;
@@ -172,7 +181,7 @@ namespace {
 			                                       return pyunsigned_long_long;
 		else if (templatearg == "unsigned char")   return pyunsigned_char;
 		else if (templatearg == "signed char")     return pysigned_char;
-		else if (templatearg == "char*")    return (PyObject*)&PyString_Type;
+		else if (templatearg == "char *")    return (PyObject*)&PyString_Type;
 		else
 			return (PyObject*)fe.getClassObject(templatearg);
 	}
@@ -342,8 +351,10 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 
 /**
  * Gives value insight.
- * The only insight currently supplied is for list: in this case, the frontend
- * will return the type of the first element on the list.
+ * The only insight currently supplied is for lists and dictionaries:
+ * in this case, the frontend will return the type of the first element.
+ * In a list this is the first element of the list.
+ * In a dictionary this is a tuple containing the first key and it's value.
  */
 Insight PythonFrontend::detectInsight(scripting_element element) const
 {
@@ -353,6 +364,15 @@ Insight PythonFrontend::detectInsight(scripting_element element) const
 	if (PyList_Check(object) && PyList_Size(object) > 0) {
 		PyObject *first = PyList_GetItem(object, 0);
 		insight.i_ptr = PyObject_Type(first);
+	}
+	else if (PyDict_Check(object) && PyDict_Size(object) > 0) {
+		PyObject *items = PyDict_Items(object);
+		PyObject *first = PyList_GetItem(items, 0);
+		PyObject *types = PyList_New(2);
+		PyList_SetItem(types, 0, PyObject_Type(PyTuple_GetItem(first, 0)));
+		PyList_SetItem(types, 1, PyObject_Type(PyTuple_GetItem(first, 1)));
+		Py_XDECREF(items);
+		insight.i_ptr = types;
 	}
 	else {
 		insight.i_ptr = 0;
@@ -576,17 +596,28 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
 		return false;
 	}
 	else {
+		// find the last > that closes this one
+		int gt = classname.rfind('>');
+		// if there is no final bracket (this cannot possibly happen)
+		assert(gt < classname.length());
+		// if this is not the last character, then this could be a class inside
+		// a template class, such as std::vector<int>::iterator
+		if (gt != (classname.length() - 1)) {
+			return false;
+		}
+		
 		// extract the template name
 		templatename = classname.substr(0, lt);
-		
+
 		// extract all of the arguments by taking all characters between the <>
 		std::string templatearg = 
-			classname.substr(lt + 2, classname.size() - lt - 4);
+			classname.substr(lt + 2, gt - lt - 3);
 		// split the string by commas
+		int parenthesisCount;
 		while (templatearg.size()) {
 			// find the next comma
 			int i;
-			int parenthesisCount = 0;
+			parenthesisCount = 0;
 			for (i = 0; i < templatearg.size(); ++i) {
 				if ((templatearg[i] == ',') && (parenthesisCount == 0)) {
 					break;

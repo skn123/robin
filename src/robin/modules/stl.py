@@ -76,13 +76,28 @@ def _make_container_weigher(el):
 			w = (0, 1, 0, 0)
 		else:
 			w = robin.weighConversion(
-				insight,
-				truetype.get(el, el))
+					insight,
+					truetype.get(el, el))
 			w = _sum_tuples( [w, (0, 1, 0, 0)] )
 		return w
 
 	return weigh_any_container
 
+def _make_map_weigher(el):
+	def weigh_any_map(insight, el = el):
+		total_weight = (0, 0, 0, 0)
+		for i in range(len(insight)):
+			if insight[i] is el[i]:
+				w = (0, 1, 0, 0)
+			else:
+				w = robin.weighConversion(
+						insight,
+						truetype.get(el[i], el[i]))
+				w = _sum_tuples( [w, (0, 1, 0, 0)] )
+			total_weight = _sum_tuples( [total_weight, w] )
+		return total_weight
+
+	return weigh_any_map
 
 def _vector_from_list(vl, el = None):
 	if el:
@@ -118,9 +133,9 @@ def _set_from_list(sl, el = None):
 
 def _map_from_dict(md, el = None):
 	if el:
-		md.__from__[{}] = _make_map_functor(md), 2, _make_container_weigher(el)
+		md.__from__[{}] = _make_map_functor(md), 2, _make_map_weigher(el)
 		md.__from_volatile__[{}] = \
-				_make_map_functor(md, True), 2, _make_container_weigher(el)
+				_make_map_functor(md, True), 2, _make_map_weigher(el)
 	else:
 		md.__from__[{}] = _make_map_functor(md)
 		md.__from_volatile__[{}] = _make_map_functor(md, True)
@@ -146,7 +161,10 @@ def _map_from_dict(md, el = None):
 def _map_to_dict(md):
 	d = { }
 	for item in gen(md):
-		d[item.first] = item.second
+		if isinstance(item,tuple):
+			d[item[0]] = item[1]
+		else:
+			d[item.first] = item.second
 	return d
 
 def _pair_with_tuple(pr):
