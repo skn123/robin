@@ -7,5 +7,7 @@
 	<classpathentry kind="lib" path="premises/jython.jar"/>
 	<classpathentry kind="lib" path="premises/xercesImpl.jar"/>
 	<classpathentry kind="lib" path="premises/xmlParserAPIs.jar"/>
+	<classpathentry kind="lib" path="premises/swt.jar"/>
+	<classpathentry kind="lib" path="premises/jface.jar"/>
 	<classpathentry kind="output" path="build/eclipse-bin"/>
 </classpath>
