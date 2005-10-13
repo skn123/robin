@@ -10,20 +10,21 @@ public:
 	class iterator
 	{
 	public:
-		pair<const KEY,VALUE>& operator*();
+		pair<KEY,VALUE> operator*();
 		iterator& operator++();
 		bool operator==(const iterator &i) const;
 		bool operator!=(const iterator &i) const;
 	};
 		
 	map();
+	map(const map<KEY,VALUE> &other);
 
 	iterator begin();
 	iterator end();
 
 	bool empty() const;
 	unsigned long size() const;	
-	VALUE& operator[](const KEY &key);
+	VALUE operator[](const KEY &key);
 	iterator find(const KEY &key);
 	
 	int erase(const KEY &key);
