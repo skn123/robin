@@ -96,7 +96,7 @@ public class DocumentComponentRegistry {
 		private String m_document;
 		private String m_component_id;
 	
-		private static Pattern m_id_cap_pattern = Pattern.compile("_1[a-z][0-9]+\\b");
+		private static Pattern m_id_cap_pattern = Pattern.compile("_1[a-f0-9]+$");
 	}
 
 	/**
