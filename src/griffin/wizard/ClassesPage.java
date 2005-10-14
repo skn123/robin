@@ -15,10 +15,12 @@ import org.eclipse.swt.widgets.Text;
  */
 
 public class ClassesPage extends WizardPage {
+    public static final String DESCRIPTION_STR = "Choose what classes to wrap";
+    
     public ClassesPage() {
         super("Classes");
         this.setTitle("Classes stage");
-        this.setDescription("Choose what classes to wrap");
+        this.setDescription(DESCRIPTION_STR);
     }
 
     public void createControl(Composite parent) {
@@ -38,8 +40,10 @@ public class ClassesPage extends WizardPage {
             public void modifyText(ModifyEvent e) {
                 if (classesBox.getText().equals("")) {
                     setPageComplete(false);
+                    setMessage("You must specify at least one class or function to wrap.", ERROR);
                 } else {
                     setPageComplete(true);
+                    setMessage(DESCRIPTION_STR);
                 }
             }
         });
