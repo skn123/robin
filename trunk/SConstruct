@@ -135,7 +135,7 @@ import os.path
 env = Environment()
 
 premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", "junit.jar", 
-            "xmlParserAPIs.jar"]
+            "xmlParserAPIs.jar", "swt.jar", "jface.jar"]
 premisedir = "./premises"
 
 classpath = [os.path.join(premisedir, x) for x in premises]
