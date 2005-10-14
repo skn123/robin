@@ -1,5 +1,16 @@
 package wizard;
+import java.io.IOException;
+import java.util.logging.Level;
+
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.MessageBox;
+
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.dox.DoxygenAnalyzer;
+
+import backend.robin.Launcher;
 /*
  * Created on 12/10/2005 by Misha.
  */
@@ -14,9 +25,39 @@ public class GriffinWizard extends Wizard {
 
     @Override
     public boolean performFinish() {
-        // TODO Auto-generated method stub
-        System.out.println("FINISH!");
+        MessageBox box = new MessageBox(this.getShell(), SWT.ICON_ERROR | SWT.OK);
+        box.setText("Error!");
+        FilesPage filesPage = (FilesPage)this.getPage("Files");
+        ClassesPage classesPage = (ClassesPage)this.getPage("Classes");
+        String xmlDir = filesPage.getDoxygenXmlDir();
+        if (!filesPage.isDoxygen()) {
+            xmlDir = doDoxygen(filesPage.getSourceList());
+        }
+        if ((xmlDir == null) || (xmlDir.equals(""))) {
+            return true;
+        }
+        DoxygenAnalyzer dox = new DoxygenAnalyzer(xmlDir);
+        dox.logger.setLevel(Level.OFF);
+        try {
+            Launcher.execute(dox.processIndex(), classesPage.getClasses(), filesPage.getOutputFile(), false);
+            return true;
+        } catch (IOException e) {
+            box.setMessage("Output error: " + e);
+        } catch (MissingInformationException e) {
+            box.setMessage("Some information is missing" + e);
+        } catch (ElementNotFoundException e) {
+            box.setMessage("Failed to read index: " + e);
+        }
+        box.open();
         return true;
+    }
+    
+    private String doDoxygen(String[] sourceFiles) {
+        MessageBox box = new MessageBox(this.getShell(), SWT.ICON_ERROR | SWT.OK);
+        box.setText("Error!");
+        box.setMessage("Running griffin straight on sources throw the wizard is not implemented yet.");
+        box.open();
+        return null;
     }
 }
 
