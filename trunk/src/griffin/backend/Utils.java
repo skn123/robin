@@ -25,6 +25,7 @@ import sourceanalysis.Type.TypeNode;
  * A class which contains some static methods for the use in backend
  * authorship.
  */
+@SuppressWarnings("unchecked")
 public class Utils {
 
 	/**
@@ -85,10 +86,8 @@ public class Utils {
 		if (root.getKind() == Type.TypeNode.NODE_TEMPLATE_INSTANTIATION) {
 			// Get the template
 			Enumeration cen = root.children();
-			Type.TypeNode basenode = (Type.TypeNode)cen.nextElement();
-			Entity template = (Aggregate)basenode.getBase();
+			cen.nextElement();     // - skip base node
 			// Get the children
-			int index = 0;
 			while (cen.hasMoreElements()) {
 				// Get user object of child
 				DefaultMutableTreeNode element = 
@@ -575,8 +574,6 @@ public class Utils {
 											ProgramDatabase program)
 		throws MissingInformationException
 	{
-		Entity metaEntity = seekOriginalTemplate(with);
-		
 		// Scan each and every routine in the global namespace
 		List matches = new LinkedList();
 		if (with.isTemplated()) return matches;
@@ -640,6 +637,41 @@ public class Utils {
 		throws MissingInformationException
 	{
 		return isAbstract(entity, defaultInstanceMap);
+	}
+	
+	/**
+	 * Checks whether the given aggregate is polymorphic, by checking if
+	 * any of its methods is either virtual or pure virtual, and doing
+	 * this check recursively for all of its ancestors as well.
+	 * 
+	 * @param subject the aggregate to check
+	 * @return <b>true</b> is the aggregate is polymorphic, <b>false</b>
+	 * otherwise
+	 * @throws MissingInformationException if there is not enough information
+	 * in the program database to make this decision.
+	 */ 
+	public static boolean isPolymorphic(Aggregate subject)
+		throws MissingInformationException
+	{
+		// Go over the methods of the aggregate and for each one, check if
+		// it is virtual or pure virtual
+		for (Iterator methodIter = subject.getScope().routineIterator();
+			 methodIter.hasNext(); ) {
+			ContainedConnection connection =
+				(ContainedConnection)methodIter.next();
+			if (connection.getVirtuality() != Specifiers.Virtuality.NON_VIRTUAL)
+				return true;
+		}
+		// Perform check recursively for all base classes
+		for (Iterator baseIter = subject.baseIterator();
+			 baseIter.hasNext(); ) {
+			InheritanceConnection connection =
+				(InheritanceConnection)baseIter.next();
+			if (isPolymorphic(connection.getBase()))
+				return true;
+		}
+		// None of the previous checks produced a positive result
+		return false;
 	}
 	
 	/**
@@ -727,8 +759,6 @@ public class Utils {
 				substitution.put(replace, with); 
 			}
 			else if (templateParameter instanceof DataTemplateParameter) {
-				DataTemplateParameter dataParameter =
-					(DataTemplateParameter)templateParameter;
 				macros.put(templateParameter.getName(), templateArgument);
 			}
 		}
@@ -1099,7 +1129,6 @@ public class Utils {
 							(TemplateParameter)tpi.next();
 						String parameterName = parameter.getName();
 						TemplateArgument argument = fin_targs[index];
-						String argumentName = argument.toCpp();
 						// - check criteria
 						if (name.startsWith(parameterName + "::")) {
 							// - replace with actual argument string and 

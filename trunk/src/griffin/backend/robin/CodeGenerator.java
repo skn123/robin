@@ -17,6 +17,7 @@ import backend.Utils;
 /**
  * Generates flat wrappers and registration code for Robin.
  */
+@SuppressWarnings("unchecked")
 public class CodeGenerator extends backend.GenericCodeGenerator {
 
 	/**
@@ -31,6 +32,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_uidNext = 0;
 		m_globalDataMembers = new LinkedList();
 		m_interceptorMethods = new HashSet();
+		m_downCasters = new LinkedList();
 		
 		// Register touchups for special types
 		Type voidptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
@@ -128,7 +130,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				(ContainedConnection)fi.next();
 			Field field = (Field)connection.getContained();
 
-			if (Filters.isAvailable(field, connection)) {
+			if (Filters.isAvailableStatic(field, connection)) {
 				m_globalDataMembers.add(field);
 			}
 		}
@@ -512,7 +514,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			boolean hasClone = Filters.isCloneable(subject);
 			List additional = Utils.findGloballyScopedOperators(subject, m_program);
 			// Create upcasts
-			generateUpCastFlatWrappers(subject);
+			generateUpDownCastFlatWrappers(subject);
 			// Grab all the routines from subject aggregate
 			for (Iterator routineIter = subject.getScope().routineIterator();
 				routineIter.hasNext(); ) {
@@ -581,7 +583,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext() ;)
 		{
 			Routine func = (Routine)funcIter.next();
-			String proto = Utils.reconstructPrototype(func);
 			if (Filters.isAvailable(func)) {
 				// - align the number of arguments
 				int minArgs = Utils.minimalArgumentCount(func),
@@ -696,6 +697,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			Field field = (Field)fieldIter.next();
 			if (Filters.isAvailable(field, field.getContainer()))
 				generateRegistrationLine(field, false);
+		}
+		// - enter downcast functions
+		for (Iterator downIter = m_downCasters.iterator(); 
+		     downIter.hasNext(); ) {
+			m_output.write("{ " + downIter.next() + " },\n");
 		}
 		m_output.write(END_OF_LIST);
 		m_output.flush();
@@ -930,10 +936,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				Parameter param = (Parameter)pi.next();
 				// Get parameter attributes
 				Type type = flatUnalias(param.getType());
-				Entity base = type.getBaseType();
-				int pointers = type.getPointerDegree();
-				boolean reference = type.isReference();
-				
 				// Print name of argument
 				if (!first) m_output.write(", ");
 				if (needsExtraReferencing(type)) m_output.write("*");
@@ -1288,29 +1290,54 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	}
 	
 	/**
-	 * Generates up-cast wrappers for a class.
+	 * Generates up-cast and down-cast wrappers for a class.
+	 * 
 	 * @param subject class
 	 * @throws IOException if output operation fails
+	 * @throws MissingInformationException 
 	 */
-	private void generateUpCastFlatWrappers(Aggregate subject)
-		throws IOException
+	private void generateUpDownCastFlatWrappers(Aggregate subject)
+		throws IOException, MissingInformationException
 	{
 		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext();) {
 			InheritanceConnection connection =
 				(InheritanceConnection)baseIter.next();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				 Aggregate base = (Aggregate)connection.getBase();
+				 String basename = "";
+					 
 				 if (base.isTemplated()) {
-				 	m_output.write(Utils.templateCppExpression(base, 
-				 		connection.getBaseTemplateArguments()));
+				 	basename = Utils.templateCppExpression(base, 
+				 		connection.getBaseTemplateArguments());
 				 }
 				 else {
-				 	m_output.write(Utils.cleanFullName(base));
+				 	basename = Utils.cleanFullName(base);
 				 }
-				 m_output.write(" *upcast_" + uid(subject.getScope())
-				 	+ "_to_" + uid(base.getScope()) + "(");
-				 m_output.write(Utils.cleanFullName(subject));
-				 m_output.write("*self) { return self; }\n");
+				 
+				 String derivedname = Utils.cleanFullName(subject);
+				 String derived2base = uid(subject.getScope()) + "_to_" + uid(base.getScope());
+				 String base2derived = uid(base.getScope()) + "_to_" + uid(subject.getScope());
+				 
+				 m_output.write(
+						 basename + " *upcast_" + derived2base
+						 + "(" + derivedname + " *self) { return self; }\n");
+				 
+				 if (Utils.isPolymorphic(base)) {
+					 m_output.write(
+							 derivedname + " *downcast_" + base2derived
+							 + "(" + basename + " *self)");
+					 m_output.write(" { return dynamic_cast<" + derivedname
+							 + "*>(self); }\n");
+					 m_output.write(
+							 "RegData downcast_" + base2derived + "_proto[] = {\n" 
+							 + "\t{\"arg0\", \"*" + basename + "\", 0, 0},\n"
+							 + END_OF_LIST);
+					 m_downCasters.add("\"dynamic_cast< " + derivedname 
+							 + " >\", "
+							 + "\"&" + derivedname + "\", "
+							 + "downcast_" + base2derived + "_proto, "
+							 + "(void*)&downcast_" + base2derived);
+				 }
 			}
 		}
 	}
@@ -1621,11 +1648,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	}
 
 	// Private members
-	private Writer m_protos;
 	private Map m_uidMap;
 	private int m_uidNext;
 	private List m_globalDataMembers;
-	
+	private List m_downCasters;
+
 	private Set m_interceptorMethods;
 	
 	// Code skeletons

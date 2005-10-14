@@ -221,6 +221,23 @@ public class Filters {
 		}
 	}
 
+	static boolean isAvailableStatic(Field field, ContainedConnection up)
+	{
+		try {
+			return (up.getVisibility() == Specifiers.Visibility.PUBLIC
+					&& (up.getContainer() instanceof Aggregate 
+							&& up.getStorage() == Specifiers.Storage.STATIC
+						|| up.getContainer() instanceof Namespace
+							&& up.getStorage() != Specifiers.Storage.STATIC)
+					&& field.getType().isFlat()
+					&& !field.getType().isArray()
+					&& !isExplicitlyExcluded(field));
+		}
+		catch (MissingInformationException e) {
+			return false;
+		}
+	}
+	
 	/**
 	 * Checks if the user specifically requested the return value of a
 	 * function to be borrowed (which means the CodeGenerator will signify
@@ -317,7 +334,7 @@ public class Filters {
 	{
 		try {
 			Type type = field.getType();
-			Entity base = type.getBaseType();
+			type.getBaseType(); // - make sure base type is present
 			ContainedConnection uplink = field.getContainer();
 			return (uplink != null 
 					&& uplink.getContainer() instanceof Aggregate)
