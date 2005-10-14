@@ -42,6 +42,7 @@ namespace Python {
 
 class ClassObject;
 class EnumeratedTypeObject;
+class FunctionObject;
 class Facade;
 
 typedef _dictobject TemplateObject;
@@ -132,6 +133,7 @@ public:
 	EnumeratedTypeObject    
 	               *getEnumeratedTypeObject(Handle<EnumeratedType> enumtype) 
 		const;
+	FunctionObject *getFunctionObject(const std::string& name) const;
 	TemplateObject *getTemplateObject(const std::string& name) const;
 	void            setTemplateObject(const std::string& name,
 									  TemplateObject *pytemplate);
@@ -140,11 +142,15 @@ public:
 	//@}
 
 protected:
+	enum TemplateKind { T_CLASS, T_FUNCTION };
+
 	bool getTemplateName(const std::string& classname, 
 	                     std::string& templatename,
 	                     std::vector<std::string>& templateargs);
-	TemplateObject *exposeTemplate(const std::string& classname,
+	TemplateObject *exposeTemplate(TemplateKind kind,
+								   const std::string& classname,
 								   std::string& templatename);
+	void *getRegisteredObject(TemplateKind kind, const std::string& name);
 
 	typedef std::map<const Robin::Class*, Robin::Python::ClassObject*> 
 	    classassoc;
@@ -153,6 +159,8 @@ protected:
 	typedef std::map<const Robin::EnumeratedType*, 
 					 Robin::Python::EnumeratedTypeObject*> 
 	    enumassoc;
+	typedef std::map<std::string, Robin::Python::FunctionObject*>
+		funcnameassoc;
 	typedef std::map<std::string, Robin::Python::TemplateObject*> 
 	    templatenameassoc;
 	typedef std::list<Handle<UserDefinedTranslator> >
@@ -161,6 +169,7 @@ protected:
 	mutable classassoc        m_classes;
 	mutable classnameassoc    m_classesByName;
 	mutable enumassoc         m_enums;
+	mutable funcnameassoc     m_functionsByName;
 	templatenameassoc         m_templatesByName;
 	userdefinedtypelist       m_userTypes;
 

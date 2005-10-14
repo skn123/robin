@@ -523,6 +523,8 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 			pyroutine->setName(name);
 			pyroutine->inModule(module);
 			insertIntoNamespace(newcomer.name(), module, name, pyroutine);
+			// Register in function map
+			m_functionsByName[name] = pyroutine;
 		}
 	}
 	// Expose enumerated types
@@ -565,7 +567,17 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !tname_iter->done(); tname_iter->next()) {
 		// Create or access a template object if necessary
 		std::string classname = tname_iter->value(), templatename;
-		TemplateObject *pytemplate = exposeTemplate(classname,
+		TemplateObject *pytemplate = exposeTemplate(T_CLASS, classname,
+													templatename);
+		if (pytemplate)
+			insertIntoNamespace(newcomer.name(), module, templatename, 
+								(PyObject*)pytemplate);
+	}
+	for (hiterator tfname_iter = globals->enumerateFunctions();
+		 !tfname_iter->done(); tfname_iter->next()) {
+		// Create or access a template object if necessary
+		std::string funcname = tfname_iter->value(), templatename;
+		TemplateObject *pytemplate = exposeTemplate(T_FUNCTION, funcname,
 													templatename);
 		if (pytemplate)
 			insertIntoNamespace(newcomer.name(), module, templatename, 
@@ -647,7 +659,9 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
  * template. If the dictionary does not exist yet, it is created and added to
  * the template registry.
  *
- * @param classname the full name of the template instance in normal form,
+ * @param kind either T_CLASS or T_FUNCTION according to the group to which
+ * this template instance belongs: class template or function template
+ * @param elemname the full name of the template instance in normal form,
  * for example "std::vector< int >".
  * @param templatename assigned with the string comprising of the left portion
  * of the template specification, for example "std::vector".
@@ -656,14 +670,15 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
  * template instance at all; in that case nothing will be done and the return
  * value will be <b>NULL</b>.
  */
-TemplateObject *PythonFrontend::exposeTemplate(const std::string& classname,
+TemplateObject *PythonFrontend::exposeTemplate(TemplateKind kind,
+											   const std::string& elemname,
 											   std::string& templatename)
 {
 	std::vector<std::string> templateargs;
 	TemplateObject *pytemplate;
 
 	// Get the template name
-	if (getTemplateName(classname, templatename, templateargs)) {
+	if (getTemplateName(elemname, templatename, templateargs)) {
 		// Look whether the template is already registered
 		templatenameassoc::const_iterator templfind = 
 			m_templatesByName.find(templatename);
@@ -699,7 +714,7 @@ TemplateObject *PythonFrontend::exposeTemplate(const std::string& classname,
 			// Update the dictionary with the current element
 			PyObject_SetItem((PyObject*)pytemplate,
 							 pyarguments,
-							 (PyObject*)getClassObject(classname));
+							 (PyObject*)getRegisteredObject(kind, elemname));
 		}
 
 		return pytemplate;
@@ -707,6 +722,15 @@ TemplateObject *PythonFrontend::exposeTemplate(const std::string& classname,
 	else {
 		return NULL;
 	}
+}
+
+void *PythonFrontend::getRegisteredObject(TemplateKind kind,
+										  const std::string& name)
+{
+	switch (kind) {
+	case T_CLASS:    return getClassObject(name);
+	case T_FUNCTION: return getFunctionObject(name);
+	};
 }
 
 /**
@@ -781,6 +805,24 @@ ClassObject *PythonFrontend::getClassObject(const std::string& name) const
 	else {
 		assert(classfind->second != NULL);
 		return classfind->second;
+	}
+}
+
+/**
+ * Finds a Python::FunctionObject by literal name.
+ * Returns <b>NULL</b> if none exist.
+ */
+FunctionObject *PythonFrontend::getFunctionObject(const std::string& name) 
+	const
+{
+	funcnameassoc::const_iterator funcfind = m_functionsByName.find(name);
+	// If class exists in map, return associated value.
+	if (funcfind == m_functionsByName.end()) {
+		return NULL;
+	}
+	else {
+		assert(funcfind->second != NULL);
+		return funcfind->second;
 	}
 }
 

@@ -168,6 +168,8 @@ class NonAbstract : public Abstract
 {
 public:
 	virtual const void *abstraction() const { return 0; }
+
+	static Interface *factorize() { return new NonAbstract; }
 };
 
 // ----------------------------------------------------------------------

@@ -142,6 +142,12 @@ class LanguageTest(TestCase):
 		self.assertEquals(type(language.EM), language.Em);
 		language.Em(1)
 
+	def testDynamicCast(self):
+		ii = language.NonAbstract.factorize()
+		ii_a = language.dynamic_cast[language.Abstract](ii)
+		ii_na = language.dynamic_cast[language.NonAbstract](ii_a)
+		ii_na.abstraction()
+
 
 class ThreadingTest(TestCase):
 
