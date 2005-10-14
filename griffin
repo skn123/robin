@@ -43,8 +43,8 @@ class Griffin:
 
 		doxpath = join(here, "build/dox-xml")
 		stpath = join(here, "src/griffin/modules/stl")
-		if not os.path.isfile(doxpath): doxpath = os.path.join(here, "dox-xml")
-		if not os.path.isfile(stpath): stpath = here
+		if not os.path.isdir(doxpath): doxpath = os.path.join(here, "dox-xml")
+		if not os.path.isdir(stpath): stpath = here
 
 		cmd = "java -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
               "-classpath '%s' backend.robin.Launcher" % \
