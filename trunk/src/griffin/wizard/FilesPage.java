@@ -3,6 +3,8 @@ import org.eclipse.jface.preference.DirectoryFieldEditor;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
@@ -18,10 +20,12 @@ import org.eclipse.swt.widgets.List;
  */
 
 public class FilesPage extends WizardPage {
+    public static final String DESCRIPTION_STR = "Choose the files to wrap and the output file";
+    
     public FilesPage() {
         super("Files");
         this.setTitle("Files stage");
-        this.setDescription("Choose the files to wrap and the output file");
+        this.setDescription(DESCRIPTION_STR);
     }
     
     public void createControl(Composite parent) {
@@ -37,6 +41,51 @@ public class FilesPage extends WizardPage {
 
         // set the composite to be in the page.
         this.setControl(composite);
+    }
+    
+    /**
+     * Check if all needed is filled, and set pagecomplete status to true if it does.
+     */
+    private void letContinue() {
+        // Check if everything is loaded yet (you don't want to validate
+        // continuation if things are not loaded.
+        if (this.getControl() != null) {
+            this.setPageComplete(this.validateInputFiles() && this.validateOutputFiles());
+        }
+    }
+    
+    /**
+     * Check if the input files boxes are filled.
+     * 
+     * @return true if everything's ok.
+     */
+    private boolean validateInputFiles() {
+        boolean ok = false;
+        if (this.isDoxygen()) {
+            ok = !this.getDoxygenXmlDir().equals("");        
+        } else {
+            ok = this.getSourceList().length != 0;
+        }
+        if (!ok) {
+            this.setMessage("Input files are not set", ERROR);
+            return false;
+        }
+        this.setMessage(DESCRIPTION_STR);
+        return true;
+    }
+    
+    /**
+     * Check if the output files boxes are filled.
+     * 
+     * @return true if everything's ok.
+     */
+    private boolean validateOutputFiles() {
+        if (this.getOutputFile().equals("")) {
+            this.setMessage("Output file is not set", ERROR);
+            return false;
+        }
+        this.setMessage(DESCRIPTION_STR);
+        return true;
     }
     
     /**
@@ -103,6 +152,7 @@ public class FilesPage extends WizardPage {
         for (int i = 0; i < buttons.length; ++i) {
             buttons[i].setEnabled(!b);
         }
+        letContinue();
     }
     
     /**
@@ -122,6 +172,11 @@ public class FilesPage extends WizardPage {
         this.doxygenXmlDirField = new DirectoryFieldEditor("xmlInput", "Doxygen's XML dir:", this.doxygenXmlDirComposite);
         this.doxygenXmlDirField.setStringValue("xml\\");
         this.doxygenXmlDirField.setEmptyStringAllowed(false);
+        this.doxygenXmlDirField.getTextControl(this.doxygenXmlDirComposite).addModifyListener(new ModifyListener() {
+            public void modifyText(ModifyEvent e) {
+                letContinue();
+            }           
+        });
     }
     
     private void sourceFiles(Composite parent) {
@@ -169,6 +224,7 @@ public class FilesPage extends WizardPage {
                         sourceList.add(file);
                     }
                 }
+                letContinue();
             }
             // Never called.
             public void widgetDefaultSelected(SelectionEvent e) {}
@@ -180,6 +236,7 @@ public class FilesPage extends WizardPage {
         removeButton.addSelectionListener(new SelectionListener() {
             public void widgetSelected(SelectionEvent e) {
                 sourceList.remove(sourceList.getSelectionIndices());
+                letContinue();
             }
             // Never called.
             public void widgetDefaultSelected(SelectionEvent e) {}
@@ -213,6 +270,11 @@ public class FilesPage extends WizardPage {
         this.outputFileField.setFileExtensions(extensions);
         this.outputFileField.setEmptyStringAllowed(false);
         this.outputFileField.setStringValue("4robin.cc");
+        this.outputFileField.getTextControl(outputComposite).addModifyListener(new ModifyListener() {
+            public void modifyText(ModifyEvent e) {
+                letContinue();
+            }
+        });
     }
 
     public boolean isDoxygen() {
