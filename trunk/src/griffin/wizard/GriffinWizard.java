@@ -34,7 +34,7 @@ public class GriffinWizard extends Wizard {
             xmlDir = doDoxygen(filesPage.getSourceList());
         }
         if ((xmlDir == null) || (xmlDir.equals(""))) {
-            return true;
+            return false;
         }
         DoxygenAnalyzer dox = new DoxygenAnalyzer(xmlDir);
         dox.logger.setLevel(Level.OFF);
@@ -49,7 +49,7 @@ public class GriffinWizard extends Wizard {
             box.setMessage("Failed to read index: " + e);
         }
         box.open();
-        return true;
+        return false;
     }
     
     private String doDoxygen(String[] sourceFiles) {
