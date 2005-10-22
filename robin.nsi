@@ -172,7 +172,7 @@ FunctionEnd
 Function un.onInit
     ReadRegStr $0 HKLM "Software\Robin" "GriffinVer"
     ${If} $0 == ""
-        SectionSetFlags ${unSecGriffin} ${SECTION_OFF}
+        !insertmacro UnselectSection ${unSecGriffin}
         SectionSetText  ${unSecGriffin} ""
         SectionSetFlags ${unSecRobin} ${SF_RO}
         !insertmacro SelectSection ${unSecRobin}
