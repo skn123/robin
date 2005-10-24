@@ -183,6 +183,7 @@ protected:
 
 public:
 	static const std::string DATAMEMBER_PREFIX;
+	static const std::string SINKMEMBER_PREFIX;
 };
 
 } // end of namespace Robin::Python

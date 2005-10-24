@@ -43,6 +43,7 @@ namespace Python {
 
 
 const std::string PythonFrontend::DATAMEMBER_PREFIX = ".data_";
+const std::string PythonFrontend::SINKMEMBER_PREFIX = ".sink_";
 extern PyObject *pydouble;
 extern PyObject *pychar;
 extern PyObject *pylong_long;
