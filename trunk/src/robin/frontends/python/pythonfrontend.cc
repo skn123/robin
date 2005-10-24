@@ -543,8 +543,12 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		for (std::vector<Handle<EnumeratedConstant> >::iterator ci =
 				 enumconstants.begin(); ci != enumconstants.end(); ++ci) {
 			PyObject *obj = new EnumeratedConstantObject(pyenumtype, *ci);
+			PyObject *namespaces = splitName(name);
+			PyList_SetItem(namespaces,
+			               PyList_Size(namespaces) - 1,
+			               PyString_FromString((*ci)->getLiteral().c_str()));
 			insertIntoNamespace(newcomer.name(), module, 
-								(*ci)->getLiteral(), obj);
+								namespaces, obj);
 		}
 	}
 	// Apply aliases
