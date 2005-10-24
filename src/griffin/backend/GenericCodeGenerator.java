@@ -148,10 +148,13 @@ public class GenericCodeGenerator
 				m_globalFuncs.add(routine);
 			}
 		}
-		// Look in inner namespace scopes
+		// Find namespaces and look in inner namespace scopes
 		for (Iterator nsiter = scope.namespaceIterator(); nsiter.hasNext(); ) {
 			ContainedConnection connection = (ContainedConnection)nsiter.next();
 			Namespace namespace = (Namespace)connection.getContained();
+			if (namespace.getName().equals(componentname)) {
+				autocollect(namespace.getScope());
+			}
 			collect(namespace.getScope(), componentname);
 		}
 	}
