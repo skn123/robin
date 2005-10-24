@@ -771,10 +771,10 @@ void ClassObject::x_optimizeMethodTable() const
 	for (size_t methindex = 0; methindex < method_names.size(); ++methindex) {
 		const char *name = strdup(method_names[methindex].c_str());
 		// - data members are given their "real" name, ".data_" chopped
-		if (strncmp(name, DATAMEMBER_PREFIX.c_str(), DATAMEMBER_PREFIX.size()))
-			m_x_methods[methindex].name = name;
-		else
+		if (0 == strncmp(name, DATAMEMBER_PREFIX.c_str(), DATAMEMBER_PREFIX.size()))
 			m_x_methods[methindex].name = name + DATAMEMBER_PREFIX.size();
+		else
+			m_x_methods[methindex].name = name;
 		// - the internal name holds this method's Robin-given name
 		m_x_methods[methindex].internal_name = name;
 		// - a handle to the method's implementation is associated
@@ -923,16 +923,37 @@ int InstanceObject::__setattr__(PyObject *self, char *name, PyObject *val)
 /**
  * Implements the set-attribute protocol; provides the syntax i.__owner__ = o
  * which causes o to be kept alive as long as i is.
+ * Also, allows setting of internal members of the class via i.varname = val
+ * syntax.
  */
 int InstanceObject::__setattr__(char *name, PyObject *val)
 {
 	if (strcmp(name, "__owner__") == 0) {
+		// - set the owner
 		keepAlive(val);
 		return 0;
 	}
 	else {
-		PyErr_SetString(PyExc_AttributeError, name);
-		return -1;
+		const std::string &SINKMEMBER_PREFIX = PythonFrontend::SINKMEMBER_PREFIX;
+		const char *internal_name;
+		try {
+			Handle<CallableWithInstance> meth = 
+				((ClassObject*)ob_type)->findInstanceMethod(
+					(SINKMEMBER_PREFIX + name).c_str(), &internal_name);
+			if (!meth) throw NoSuchMethodException();
+
+			// - data member setter
+			ActualArgumentList args;
+			args.push_back(val);
+			meth->callUpon(*m_underlying, args);
+			return 0;
+		}
+		catch (const std::exception &e) {
+			// - attribute error
+			PyErr_SetString(PyExc_AttributeError,
+			                (std::string(name) + ": " + e.what()).c_str());
+			return -1;
+		}
 	}
 }
 
