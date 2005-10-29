@@ -1,0 +1,17 @@
+PROJECT_NAME = "External Enumeration Class"
+
+INPUT = ./external_enumeration.h 
+OUTPUT_DIRECTORY = doxumentation 
+EXTRACT_ALL = YES 
+EXTRACT_PRIVATE = NO 
+EXTRACT_STATIC = YES 
+MACRO_EXPANSION = YES 
+PREDEFINED = __doxygen __cplusplus 
+
+GENERATE_HTML = NO
+GENERATE_LATEX = NO 
+GENERATE_XML = YES 
+STRIP_UNSUPPORTED_TAGS = NO 
+WARNINGS = YES
+
+GENERATE_TAGFILE = external.tag

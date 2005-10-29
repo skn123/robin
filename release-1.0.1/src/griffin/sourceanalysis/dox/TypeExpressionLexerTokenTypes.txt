@@ -1,0 +1,33 @@
+// $ANTLR 2.7.5 (20050128): src/sourceanalysis/dox/TypeExpression.g -> TypeExpressionLexerTokenTypes.txt$
+TypeExpressionLexer    // output token vocab name
+WS=4
+KEY=5
+OPEN_PAREN=6
+CLOSE_PAREN=7
+OPEN_BRACKET=8
+CLOSE_BRACKET=9
+OPEN_ANGLE=10
+CLOSE_ANGLE=11
+STAR=12
+AMPERSAND=13
+COMMA=14
+ID=15
+INT=16
+QUAD=17
+ELLIPSIS=18
+LITERAL_const="const"=19
+LITERAL_volatile="volatile"=20
+LITERAL_char="char"=21
+LITERAL_wchar="wchar"=22
+LITERAL_bool="bool"=23
+LITERAL_short="short"=24
+LITERAL_int="int"=25
+LITERAL_long="long"=26
+LITERAL_signed="signed"=27
+LITERAL_unsigned="unsigned"=28
+LITERAL_float="float"=29
+LITERAL_double="double"=30
+LITERAL_void="void"=31
+LITERAL_virtual="virtual"=32
+LITERAL_MUTABLE="MUTABLE"=33
+LITERAL_register="register"=34
