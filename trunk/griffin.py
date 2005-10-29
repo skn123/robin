@@ -21,6 +21,9 @@ if isCygwin:
 		return commands.getoutput("cygpath -w -p '%s'" % \
 			":".join(elements))
 else:
-	java_pathsep = os.path.pathsep
+	try:
+		java_pathsep = os.path.pathsep
+	except AttributeError:
+		java_pathsep = os.pathsep # Python 2.2 and older
 	def classpath(elements):
 		return ":".join(elements)

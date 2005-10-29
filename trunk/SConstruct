@@ -6,6 +6,7 @@
 ##################################################
 
 ver = "1.0"
+fullver = "1.0.1"
 
 BuildDir('build', 'src')
 
@@ -86,6 +87,7 @@ configure = Configure(pyenv)
 
 pyenv.Append(CPPPATH = [INCLUDEPY])
 pyenv.Append(LIBPATH = [".", LIBPYCFG])
+pyenv.Append(CXXFLAGS = "-D_VERSION=" + fullver)
 
 if conf.arch == "windows":
 	env.Append(CXXFLAGS = "/EHsc")
