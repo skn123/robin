@@ -239,6 +239,8 @@ void PythonFrontend::initialize() const
 	Handle<Conversion> hlong2ushort(new TrivialConversion);
 	Handle<Conversion> hlong2ulong(new TrivialConversion);
 	Handle<Conversion> hlong2bool(new TrivialConversion);
+	Handle<Conversion> hint2longlong(new TrivialConversion);
+	Handle<Conversion> hint2ulonglong(new TrivialConversion);
 	Handle<Conversion> hpylong2longlong(new TrivialConversion);
 	Handle<Conversion> hpylong2ulonglong(new TrivialConversion);
 	Handle<Conversion> hbool2long(new TrivialConversion);
@@ -261,6 +263,10 @@ void PythonFrontend::initialize() const
 	hlong2ulong      ->setTargetType(ArgumentULong);
 	hlong2bool       ->setSourceType(ArgumentLong);
 	hlong2bool       ->setTargetType(ArgumentBoolean);
+	hint2longlong    ->setSourceType(ArgumentInt);
+	hint2longlong    ->setTargetType(ArgumentLongLong);
+	hint2ulonglong   ->setSourceType(ArgumentInt);
+	hint2ulonglong   ->setTargetType(ArgumentULongLong);
 	hpylong2longlong ->setSourceType(ArgumentPythonLong);
 	hpylong2longlong ->setTargetType(ArgumentLongLong);
 	hpylong2ulonglong->setSourceType(ArgumentPythonLong);
@@ -287,6 +293,8 @@ void PythonFrontend::initialize() const
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2short);
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2ushort);
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2ulong);
+	ConversionTableSingleton::getInstance()->registerConversion(hint2longlong);
+	ConversionTableSingleton::getInstance()->registerConversion(hint2ulonglong);
 	ConversionTableSingleton::getInstance()->registerConversion(hpylong2longlong);
 	ConversionTableSingleton::getInstance()->registerConversion(hpylong2ulonglong);
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2bool);
