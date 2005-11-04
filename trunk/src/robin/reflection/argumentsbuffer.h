@@ -64,13 +64,11 @@ public:
     void pushInt(int value);
     void pushChar(char value);
     void pushLong(long value);
-	void pushLongLong(long long value);
 	void pushFloat(float value);
 	void pushPointer(const void *value);
 
 	inline void push(int value)         { pushInt(value); }
 	inline void push(long value)        { pushLong(value); }
-	inline void push(long long value)   { pushLongLong(value); }
 	inline void push(char value)        { pushChar(value); }
 	inline void push(float value)       { pushFloat(value); }
 	inline void push(const void *value) { pushPointer(value); }

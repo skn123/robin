@@ -68,23 +68,6 @@ void ArgumentsBuffer::pushLong(long value)
 }
 
 /**
- * Pushes a 'long long' value on the stack.
- */
-void ArgumentsBuffer::pushLongLong(long long value)
-{
-#define LONGLONG_BLOCKS \
-       (sizeof(long long) + sizeof(basic_block) / 2) / sizeof(basic_block)
-
-	union {
-		long long value;
-		basic_block rep[LONGLONG_BLOCKS];
-	} l;
-	l.value = value;
-	memcpy(m_pend, l.rep, sizeof(l.rep));
-	m_pend += LONGLONG_BLOCKS;
-}
-
-/**
  * Pushes a 'float' value of the stack.
  */
 void ArgumentsBuffer::pushFloat(float value)

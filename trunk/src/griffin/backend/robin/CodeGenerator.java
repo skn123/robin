@@ -59,7 +59,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"\treturn new double(val);\n" +
 						"}\n" +
 						"double touchdown(double* val)\n{\n" +
-						"\treturn *val;\n" +
+						"\treturn *std::auto_ptr<double>(val);\n" +
 						"}\n"));
 		Type longlongptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		longlongptr.getRootNode().add(new Type.TypeNode(Primitive.LONGLONG));
@@ -69,6 +69,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						longlongptr,
 						"long long *touchup(long long val)\n{\n" +
 						"\treturn new long long(val);\n" +
+						"}\n" +
+						"long long touchdown(long long* val)\n{\n" +
+						"\treturn *std::auto_ptr<long long>(val);\n" +
 						"}\n"));
 		Type ulonglongptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		ulonglongptr.getRootNode().add(new Type.TypeNode(Primitive.ULONGLONG));
@@ -78,6 +81,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						ulonglongptr,
 						"unsigned long long *touchup(unsigned long long val)\n{\n" +
 						"\treturn new unsigned long long(val);\n" +
+						"}\n" +
+						"unsigned long long touchdown(unsigned long long* val)\n{\n" +
+						"\treturn *std::auto_ptr<unsigned long long>(val);\n" +
 						"}\n"));
 	}
 	
@@ -440,7 +446,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				if (! routine.getReturnType().equals(
 						new Type(new Type.TypeNode(Primitive.VOID)))) {
 					Type returnType = routine.getReturnType();
-					Type touchupType = Filters.getTouchup(routine.getReturnType());
+					Type touchupType = Filters.getTouchup(returnType);
 					if (touchupType != null) {
 						returnType = touchupType;
 					}
@@ -465,11 +471,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 								routine.getReturnType().formatCpp() + 
 								" (*)(" + 
 								touchupType.formatCpp() + ")) ");
-						m_output.write("touchdown)(result)");
+						m_output.write("touchdown)(");
 					}
 					else {
-						m_output.write("SameClass< basic_block >::same)(result)");
+						m_output.write("SameClass< basic_block >::same)(");
 					}
+
+					m_output.write("result)");
 					
 					for (int paren = 0; paren < parenNest; ++paren)
 						m_output.write(")");
@@ -766,7 +774,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	
 	private boolean isSmallPrimitive(Entity base)
 	{
-		return (base instanceof Primitive && !base.getName().equals("double"));
+		return (base instanceof Primitive) &&
+		       (!base.getName().equals("double")) &&
+		       (!base.getName().equals("long long")) &&
+			   (!base.getName().equals("unsigned long long"));
 	}
 
 	/**
@@ -840,13 +851,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		else {
 			String declarator = wrapperName;
-			if (isPrimitive(returnType.getBaseType()))
+			if (isPrimitive(returnType.getBaseType())) {
 				returnType = dereference(returnType);
+			}
 			touchupReturnType = Filters.getTouchup(returnType);
-			if (touchupReturnType != null)
+			if (touchupReturnType != null) {
 				returnType = touchupReturnType;
-			else if (needsExtraReferencing(returnType))
+			}
+			else if (needsExtraReferencing(returnType)) {
 				declarator = "*" + declarator;
+			}
 			m_output.write(Utils.cleanFormatCpp(returnType,declarator));
 		}
 		
@@ -938,8 +952,19 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				Type type = flatUnalias(param.getType());
 				// Print name of argument
 				if (!first) m_output.write(", ");
-				if (needsExtraReferencing(type)) m_output.write("*");
-				m_output.write("arg" + paramCount);
+				// If this is one of the "special" primitives, touchdown
+				if (isPrimitive(type.getBaseType()) &&
+				    !isSmallPrimitive(type.getBaseType())) {
+					m_output.write("touchdown(arg" + paramCount + ")");
+				}
+				// If it is another type that needs dereferencing
+				else if (needsExtraReferencing(type)) {
+					m_output.write("*");
+				}
+				// If this is just a normal type
+				else {
+					m_output.write("arg" + paramCount);
+				}
 				first = false;
 			}
 		}

@@ -42,8 +42,9 @@ public:
 
 class PyLongTraits {
 public:
-	static long long as(PyObject *pyobj) { return PyLong_AsLongLong(pyobj); }
-	static PyObject *from(long long val) { return PyLong_FromLongLong(val); }
+	static long long as(PyObject *pyobj)     { return PyLong_AsLongLong(pyobj); }
+	static PyObject *from(long long val)     { return PyLong_FromLongLong(val); }
+	static long long *asref(PyObject *pyobj) { return new long long(as(pyobj)); }
 };
 
 class PyBoolTraits : public PyIntTraits {
@@ -68,9 +69,7 @@ public:
 class PyFloatTraits {
 public:
 	static double as(PyObject *pyobj)      { return PyFloat_AsDouble(pyobj); }
-	static double *asref(PyObject *pyobj) {
-		// @@@ encapsulation of float type is broken here
-		return &(((PyFloatObject*)(pyobj))->ob_fval); }
+	static double *asref(PyObject *pyobj)  { return new double(as(pyobj));   }
 	static PyObject *from(double val)      { return PyFloat_FromDouble(val); }
 };	
 
