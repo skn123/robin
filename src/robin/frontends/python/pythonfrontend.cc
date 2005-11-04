@@ -409,7 +409,7 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 				(new SmallPrimitivePythonAdapter<long, PyIntTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_LONG_LONG)
 			return Handle<Adapter>
-				(new AllocatedBigPrimitivePythonAdapter<long long,
+				(new AllocatedPrimitivePythonAdapter<long long,
 				                                   PyLongTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_ULONG)
 			return Handle<Adapter>
@@ -417,7 +417,7 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 			                                       PyIntTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_ULONG_LONG)
 			return Handle<Adapter>
-				(new AllocatedBigPrimitivePythonAdapter<unsigned long long,
+				(new AllocatedPrimitivePythonAdapter<unsigned long long,
 				                                   PyLongTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_SHORT)
 			return Handle<Adapter>
