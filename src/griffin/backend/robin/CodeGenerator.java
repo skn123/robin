@@ -953,13 +953,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				// Print name of argument
 				if (!first) m_output.write(", ");
 				// If this is one of the "special" primitives, touchdown
-				if (isPrimitive(type.getBaseType()) &&
+				if (needsExtraReferencing(type) &&
+				    isPrimitive(type.getBaseType()) &&
 				    !isSmallPrimitive(type.getBaseType())) {
 					m_output.write("touchdown(arg" + paramCount + ")");
 				}
 				// If it is another type that needs dereferencing
 				else if (needsExtraReferencing(type)) {
-					m_output.write("*");
+					m_output.write("*arg" + paramCount);
 				}
 				// If this is just a normal type
 				else {
