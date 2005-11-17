@@ -119,11 +119,17 @@ void CFunction::call(void *thisarg) const
  */
 basic_block CFunction::call(const ArgumentsBuffer& args) const
 {
+	const LowLevel *lowlevel;
+	try {
+		lowlevel = &(FrontendsFramework::activeFrontend()->getLowLevel());
+	}
+	catch (EnvironmentVacuumException &e)
+	{
+		lowlevel = new LowLevel();
+	}
+	
     try {
-		return FrontendsFramework::
-					activeFrontend()->
-						getLowLevel().
-							call_lowlevel(m_functionSymbol, args.getBuffer());
+		lowlevel->call_lowlevel(m_functionSymbol, args.getBuffer());
     }
     catch (std::exception& e) {
 		std::string uw = e.what();
