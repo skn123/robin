@@ -33,6 +33,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_globalDataMembers = new LinkedList();
 		m_interceptorMethods = new HashSet();
 		m_downCasters = new LinkedList();
+		m_interceptors = new LinkedList();
 		
 		// Register touchups for special types
 		Type voidptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
@@ -104,6 +105,40 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		else
 			return ((Integer)got).intValue();  
+	}
+
+	/**
+	 * Finds the given class within the global namespace, listing it for
+	 * interceptor creation later.
+	 *
+	 * @param classname the name of the class to create an interceptor for
+	 */
+	public void investInterceptor(String classname)
+	{
+		investInterceptor(m_program.getGlobalNamespace().getScope(), classname);
+	}
+
+	/**
+	 * Finds the given class within the given scope, listing it for
+	 * interceptor creation later.
+	 *
+	 * @param scope the scope in which to search for the class
+	 * @param classname the name of the class to create an interceptor for
+	 */
+	public void investInterceptor(Scope scope, String classname)
+	{
+		// Go through all of the Aggregates, searching for the given name
+		for (Iterator aggiter = scope.aggregateIterator(); aggiter.hasNext(); ) {
+			// Find class
+			ContainedConnection connection = (ContainedConnection)aggiter.next();
+			Aggregate agg = (Aggregate)connection.getContained();
+			if (agg.getName().equals(classname)) {
+				// Add to interceptors
+				if (!agg.isTemplated() || !m_separateClassTemplates) {
+					m_interceptors.add( agg );
+				}
+			}
+		}
 	}
 
 	/**
@@ -272,8 +307,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	}
 	
 	/**
-	 * Creates definitions of interceptor classes to wrap the abstract classes in
-	 * the code, so that they can be implemented in the frontend.
+	 * Creates definitions of interceptor classes to wrap the classes marked
+	 * for interceptor creation, so that they can be implemented or extended
+	 * in the frontend.
 	 * @throws IOException
 	 * @throws MissingInformationException
 	 */
@@ -284,15 +320,15 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		Set newSubjects = new HashSet();
 		
 		// Generate interceptor class decleration
-		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
+		for (Iterator subjectIter = m_interceptors.iterator(); subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
 			
 			// Check if the class is a template instantiation, and if so skip it
 			if (subject.isSpecialized()) continue;
 			
-			// Get the unimplemented method list of the class
-			Collection unimplementedMethods = Utils.unimplementedMethods(subject, m_instanceMap);
-			if (unimplementedMethods.isEmpty()) continue;
+			// Get the virtual method list of the class
+			Collection virtualMethods = Utils.virtualMethods(subject, m_instanceMap);
+			if (virtualMethods.isEmpty()) continue;
 			
 			// This counter counts how many functions come before the unimplemented ones
 			int funcCounter = 0;
@@ -358,7 +394,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			
 			// Write functions in interceptor class, and add them to the griffin class
 			int i = 0;
-			for (Iterator funcIter = unimplementedMethods.iterator();
+			for (Iterator funcIter = virtualMethods.iterator();
 				funcIter.hasNext(); ++i) {
 				Routine routine = (Routine) funcIter.next();
 				
@@ -1679,6 +1715,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private List m_globalDataMembers;
 	private List m_downCasters;
 
+	private List m_interceptors;
 	private Set m_interceptorMethods;
 	
 	// Code skeletons
