@@ -1357,6 +1357,71 @@ public class Utils {
 	}
 	
 	/**
+	 * Collects all the virtual methods that are in the given class - including
+	 * those inherited from base classes.
+	 * @param subject a class to observe
+	 * @param instanceMap a map containing mappings from template expressions
+	 * (in the format returned by templateExpression) to Aggregate entities
+	 * that have been instantiated for them
+	 * @return a collection of Routine objects which are declared virtual in 
+	 * the subject, or in any of it's ancestors
+	 * @throws MissingInformationException
+	 */
+	public static Collection virtualMethods(Aggregate subject,
+			Map instanceMap) throws MissingInformationException
+	{
+		List virtual = new LinkedList();
+		
+		// Get virtual methods from base classes
+		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
+		{
+			InheritanceConnection bconnection =
+				(InheritanceConnection)baseIter.next();
+			Aggregate base = bconnection.getBase();
+			TemplateArgument targs[] = bconnection.getBaseTemplateArguments();
+			if (targs != null) {
+				String expr = templateExpression(base, targs);
+				if (instanceMap != null) 
+					base = (Aggregate)instanceMap.get(expr);
+			}
+			if (base == null) continue;
+			// - recursively fetch the virtual methods in the base class
+			Collection baseVirtual = virtualMethods(base, instanceMap);
+			for (Iterator virtIter = baseVirtual.iterator(); virtIter.hasNext(); )
+				virtual.add(virtIter.next());
+		}
+
+		// Add virtual methods declared in this class
+		for (Iterator subjectMethodIter = subject.getScope().routineIterator();
+		     subjectMethodIter.hasNext(); ) {
+
+			ContainedConnection rconnection =
+				(ContainedConnection)subjectMethodIter.next();
+			Routine myMethod = (Routine)rconnection.getContained();
+
+			if (rconnection.getVirtuality() 
+			    != Specifiers.Virtuality.NON_VIRTUAL &&
+				!myMethod.isDestructor()) {
+				boolean found = false;
+				
+				for (Iterator virtIter = virtual.iterator(); virtIter.hasNext(); ) {
+					Routine virtMethod = (Routine)virtIter.next();
+					if (hasCompatibleSignatures(virtMethod, myMethod)) {
+						found = true;
+						break;
+					}
+				}
+				
+				if (!found) {
+					virtual.add(myMethod); 
+				}
+			}
+		}
+		
+		return virtual;
+	}
+	
+	/**
 	 * Collects all the pure-virtual methods that are not supplied with a body
 	 * in the given class - including those inherited from abstract base 
 	 * classes. 

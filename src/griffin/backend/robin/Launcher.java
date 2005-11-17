@@ -103,6 +103,10 @@ public class Launcher {
 		}
 		else {
 			for (int i = 0; i < classnames.length; ++i) {
+				if (classnames[i].startsWith("@")) {
+					classnames[i] = classnames[i].substring(1);
+					codegen.investInterceptor(classnames[i]);
+				}
 				codegen.collect(classnames[i]);
 			}
 		}
@@ -116,7 +120,7 @@ public class Launcher {
 
 		codegen.generateIncludeDirectives();
 		codegen.generatePreface();
-		if (interceptors) codegen.generateInterceptors();
+		codegen.generateInterceptors();
 		codegen.generateRoutineWrappers();
 		codegen.generateConstantWrappers();
 		codegen.generateEnumeratedTypeWrappers();
