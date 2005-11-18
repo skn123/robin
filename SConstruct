@@ -48,6 +48,7 @@ build/robin/frontends/python/pythonadapters.cc
 build/robin/frontends/python/pythonconversions.cc
 build/robin/frontends/python/pythonfrontend.cc
 build/robin/frontends/python/pythoninterceptor.cc
+build/robin/frontends/python/pythonerrorhandler.cc
 build/robin/frontends/python/pythonlowlevel.cc
 build/robin/frontends/python/pythonobjects.cc
 """

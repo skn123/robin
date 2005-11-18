@@ -37,6 +37,7 @@ class TypeOfArgument;
 class Library;
 class LowLevel;
 class Interceptor;
+class ErrorHandler;
 
 /**
  * @class Frontend
@@ -195,6 +196,13 @@ public:
 	 */
 	virtual
 	const Interceptor& getInterceptor() const = 0;
+
+	/**
+	 * Returns an error handler which can be used to set and retrieve errors
+	 * from the target scripting environment and from the C++ code.
+	 */
+	virtual
+	ErrorHandler& getErrorHandler() = 0;
 	//@}
 
 };

@@ -8,6 +8,7 @@
 
 #include "../../debug/trace.h"
 #include "pythonlowlevel.h"
+#include "pythonerrorhandler.h"
 
 
 namespace Robin {
@@ -53,18 +54,20 @@ basic_block PythonInterceptor::callback(scripting_element twin,
 		fprintf(stderr, "\n");
 	}
 
-	// Invoke python method
+	// Find python method
 	char *methname = const_cast<char*>(signature.name.c_str());
 	PyObject *method = PyObject_GetAttrString(pytwin, methname);
 	if (!method) {
 		throw std::runtime_error("method '" + signature.name + 
 								 "' is not implemented.");
 	}
+	// Invoke python method
 	PyObject *result = PyObject_CallObject(method, pyargs);
 	Py_XDECREF(method);
 	Py_XDECREF(pyargs);
-	if (!result)
+	if (!result) {
 		reportCallbackError();
+	}
 
 	if (dbg::trace.on()) {
 		fprintf(stderr, "// PythonInterceptor::callback: returned '");
@@ -107,8 +110,13 @@ void PythonInterceptor::reportCallbackError() const
 {
 	// Ouch! Exception raised by callback function.
 	// Translate Python error into a C++ exception.
+	// However, preserve the original stack trace for later
 	PyObject *exc_type, *exc_value, *exc_tb;
 	PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+	// - store the error information
+	PyObject *errinfo = Py_BuildValue("OOO", exc_type, exc_value, exc_tb);
+	FrontendsFramework::activeFrontend()->getErrorHandler().setError(errinfo);
+	// - process the error information
 	PyObject *exc_type_repr = PyObject_GetAttrString(exc_type, "__name__");
 	PyObject *exc_value_repr = PyObject_Str(exc_value);
 	// - format an error string
