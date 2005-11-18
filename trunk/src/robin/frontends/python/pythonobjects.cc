@@ -28,6 +28,7 @@
 #include "enhancements.h"
 #include "pythonadapters.h"
 #include "pythonfrontend.h"
+#include "pythonerrorhandler.h"
 
 namespace {
 
@@ -342,9 +343,23 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 			return_value = m_underlying->call(pass_args);
 	}
 	catch (const UserExceptionOccurredException& e) {
-		// - translate exception to Python
-		PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
-		return NULL;
+		// - retrieve the current error information, if possible
+		PyObject *errinfo = (PyObject*)
+			FrontendsFramework::activeFrontend()->
+				getErrorHandler().getError();
+		FrontendsFramework::activeFrontend()->getErrorHandler().setError(NULL);
+		if (errinfo) {
+			// - restore previous error information
+			PyObject *exc_type, *exc_value, *exc_tb;
+			PyArg_ParseTuple(errinfo, "OOO", &exc_type, &exc_value, &exc_tb);
+			PyErr_Restore(exc_type, exc_value, exc_tb);
+			return NULL;
+		}
+		else {
+			// - translate exception to Python
+			PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
+			return NULL;
+		}
 	}
 	catch (const std::exception& e) {
 		PyErr_SetString(PyExc_RuntimeError, e.what());
@@ -514,9 +529,23 @@ PyObject *ClassObject::__call__(PyObject *args, PyObject *kw)
 		return_value = m_underlying->createInstance(pass_args);
 	}
 	catch (const UserExceptionOccurredException& e) {
-		// - translate exception to Python
-		PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
-		return NULL;
+		// - retrieve the current error information, if possible
+		PyObject *errinfo = (PyObject*)
+			FrontendsFramework::activeFrontend()->
+				getErrorHandler().getError();
+		FrontendsFramework::activeFrontend()->getErrorHandler().setError(NULL);
+		if (errinfo) {
+			// - restore previous error information
+			PyObject *exc_type, *exc_value, *exc_tb;
+			PyArg_ParseTuple(errinfo, "OOO", &exc_type, &exc_value, &exc_tb);
+			PyErr_Restore(exc_type, exc_value, exc_tb);
+			return NULL;
+		}
+		else {
+			// - translate exception to Python
+			PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
+			return NULL;
+		}
 	}
 	catch (const std::exception& e) {
 		PyErr_SetString(PyExc_RuntimeError, e.what());

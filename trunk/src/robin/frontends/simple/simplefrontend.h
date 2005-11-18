@@ -98,6 +98,9 @@ public:
 
 	virtual
 	const Interceptor& getInterceptor() const;
+
+	virtual
+	ErrorHandler& getErrorHandler();
 	//@}
 
 	/**

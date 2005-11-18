@@ -231,6 +231,14 @@ const Interceptor& SimpleFrontend::getInterceptor() const
 }
 
 /**
+ * Returns the error handler for this frontend.
+ */
+ErrorHandler& SimpleFrontend::getErrorHandler()
+{
+	assert(false);
+}
+
+/**
  * Destructor
  */
 SimpleFrontend::~SimpleFrontend()

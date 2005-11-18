@@ -35,6 +35,7 @@
 // Python Low Level includes
 #include "pythonlowlevel.h"
 #include "pythoninterceptor.h"
+#include "pythonerrorhandler.h"
 
 
 namespace Robin {
@@ -219,11 +220,14 @@ PythonFrontend::PythonFrontend()
 {
 	m_lowLevel = new PythonLowLevel();
 	m_interceptor = new PythonInterceptor();
+	m_errorHandler = new PythonErrorHandler();
 }
 
 PythonFrontend::~PythonFrontend()
 {
 	delete m_lowLevel;
+	delete m_interceptor;
+	delete m_errorHandler;
 }
 
 /**
@@ -782,6 +786,14 @@ const LowLevel& PythonFrontend::getLowLevel() const
 const Interceptor& PythonFrontend::getInterceptor() const
 {
 	return *m_interceptor;
+}
+
+/**
+ * Retruns the error handler for this frontend.
+ */
+ErrorHandler& PythonFrontend::getErrorHandler()
+{
+	return *m_errorHandler;
 }
 
 /**
