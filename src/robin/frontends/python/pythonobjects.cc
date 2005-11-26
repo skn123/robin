@@ -404,8 +404,13 @@ PyObject *FunctionObject::__getattr__(const char *name)
 		return pyowned(ret);
 	}
 	else if (strcmp(name, "__module__") == 0) {
-		PyObject *ret = m_in_module ? m_in_module : Py_None;
-		return PyString_FromString(PyModule_GetName(ret));
+		if (m_in_module)
+			return PyString_FromString(PyModule_GetName(m_in_module));
+		else if (m_self)
+			// get the module from the instance object containing this function
+			return PyObject_GetAttrString(m_self, "__module__");
+		else
+			return pyowned(Py_None);
 	}
 	else if (strcmp(name, "__name__") == 0) {
 		return PyString_FromString(m_name.c_str());
@@ -922,6 +927,10 @@ PyObject *InstanceObject::__getattr__(const char *attrname)
 							  PyString_FromString(current));
 		}
 		return methodsList;
+	}
+	else if (strcmp(attrname, "__module__") == 0) {
+		// get the module from the class object
+		return PyObject_GetAttrString(PyObject_Type(this), "__module__");
 	}
 	// - "__" prefix is reserved for slots
 	else if (attrname[0] == '_' && attrname[1] == '_') {
