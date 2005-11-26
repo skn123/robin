@@ -3,6 +3,7 @@
 
 // Robin includes
 #include "typeofargument.h"
+#include "backtrace.h"
 
 namespace Robin {
 
@@ -22,6 +23,15 @@ public:
 	 * @param error the information of the error that has occured
 	 */
 	virtual void setError(scripting_element error) = 0;
+
+	/**
+	 * Sets the error to be the given exception, along with the it's backtrace.
+	 *
+	 * @param exc the exception that has occured
+	 * @param trace the backtrace of the exception
+	 */
+	virtual void setError(const std::exception &exc,
+	                      const Backtrace &trace) = 0;
 
 	/**
 	 * Retrieves the error set in the scripting environment.

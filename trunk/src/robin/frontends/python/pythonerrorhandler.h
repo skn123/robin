@@ -10,9 +10,13 @@ namespace Python {
 class PythonErrorHandler : public ErrorHandler
 {
 public:
+	PythonErrorHandler();
 	virtual ~PythonErrorHandler() { }
 
 	virtual void setError(scripting_element error);
+	
+	virtual void setError(const std::exception &exc,
+	                      const Backtrace &trace);
 
 	virtual scripting_element getError();
 
