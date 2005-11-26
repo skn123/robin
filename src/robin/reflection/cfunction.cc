@@ -119,13 +119,15 @@ void CFunction::call(void *thisarg) const
  */
 basic_block CFunction::call(const ArgumentsBuffer& args) const
 {
+	static LowLevel defaultLowLevel;
+	
 	const LowLevel *lowlevel;
 	try {
 		lowlevel = &(FrontendsFramework::activeFrontend()->getLowLevel());
 	}
 	catch (EnvironmentVacuumException &e)
 	{
-		lowlevel = new LowLevel();
+		lowlevel = &defaultLowLevel;
 	}
 	
     try {
