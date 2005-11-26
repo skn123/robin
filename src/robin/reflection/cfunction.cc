@@ -15,6 +15,8 @@
 
 #include "cfunction.h"
 
+#include "backtrace.h"
+#include "error_handler.h"
 #include "../debug/trace.h"
 #include <robin/frontends/framework.h>
 
@@ -121,9 +123,11 @@ basic_block CFunction::call(const ArgumentsBuffer& args) const
 {
 	static LowLevel defaultLowLevel;
 	
-	const LowLevel *lowlevel;
+	const LowLevel   *lowlevel = NULL;
+	ErrorHandler *errorhandler = NULL;
 	try {
-		lowlevel = &(FrontendsFramework::activeFrontend()->getLowLevel());
+		lowlevel     = &(FrontendsFramework::activeFrontend()->getLowLevel());
+		errorhandler = &(FrontendsFramework::activeFrontend()->getErrorHandler());
 	}
 	catch (EnvironmentVacuumException &e)
 	{
@@ -136,6 +140,11 @@ basic_block CFunction::call(const ArgumentsBuffer& args) const
     catch (std::exception& e) {
 		std::string uw = e.what();
 		dbg::trace << "// @FIRST-CHANCE-EXCEPTION: " << uw << dbg::endl;
+		if (errorhandler) {
+			if (!errorhandler->getError()) {
+				errorhandler->setError(e, Backtrace::generateFromHere());
+			}
+		}
 		throw UserExceptionOccurredException(uw);
     }
     catch (...) {
