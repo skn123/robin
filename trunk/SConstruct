@@ -14,6 +14,7 @@ FOUNDATION_SRC = """build/robin/debug/trace.cc
 """
 
 REFLECTION_SRC = """build/robin/reflection/argumentsbuffer.cc
+build/robin/reflection/backtrace.cc
 build/robin/reflection/boundmethod.cc
 build/robin/reflection/cfunction.cc
 build/robin/reflection/class.cc
@@ -46,9 +47,9 @@ build/robin/frontends/python/inheritance.cc
 build/robin/frontends/python/module.cc
 build/robin/frontends/python/pythonadapters.cc
 build/robin/frontends/python/pythonconversions.cc
+build/robin/frontends/python/pythonerrorhandler.cc
 build/robin/frontends/python/pythonfrontend.cc
 build/robin/frontends/python/pythoninterceptor.cc
-build/robin/frontends/python/pythonerrorhandler.cc
 build/robin/frontends/python/pythonlowlevel.cc
 build/robin/frontends/python/pythonobjects.cc
 """
