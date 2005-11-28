@@ -108,10 +108,10 @@ else:
 		print "Missing library for -l%s or -l%s !" % (LIBPY1, LIBPY2)
 		Exit(1)
 
-# Add additional libraries
-env.Append(LINKFLAGS = "-ldl")
+# Add additional flags
+env.Append(LINKFLAGS = "-Wl,-z,defs")
 
-# Configure robin
+# Set up targets
 if conf.arch == "windows":
 	robin = env.StaticLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
 	                                        Split(REFLECTION_SRC) + \
@@ -121,9 +121,9 @@ else:
 	robin = env.SharedLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
 	                                        Split(REFLECTION_SRC) + \
 	                                        Split(REGISTRATION_SRC) + \
-	                                        Split(FRONTEND_FRAMEWORK_SRC))
+	                                        Split(FRONTEND_FRAMEWORK_SRC),
+	                          LIBS=["dl","iberty"])
 
-# Set up targets
 pyfe = pyenv.SharedLibrary("robin_pyfe-"+ver, Split(PYTHON_FRONTEND_SRC), 
                            LIBS=["robin-"+ver, LIBPY])
 
