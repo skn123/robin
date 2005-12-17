@@ -2,7 +2,7 @@ ver = 1.0
 
 prefix = /usr/local
 exec_prefix = /usr/local
-site_packages = /usr/lib/python2.4/site-packages
+site_packages = /usr/local/lib/python2.4/site-packages
 python = python
 
 pydir = $(site_packages)/robin
@@ -80,9 +80,11 @@ uninstall:
 	-rm -fr $(jardir)
 
 extreme_python = src/robin/extreme/python
+SELF = PATH=$(PWD):$$PATH LD_LIBRARY_PATH=$(PWD) PYTHONPATH=$(PWD)
+. = .
 
-language-test:
-	$(scriptdir)/griffin -in $(extreme_python)/language.h            \
+language-test@%:
+	$($*)/griffin -in $(extreme_python)/language.h            \
 	        -out $(extreme_python)/liblanguage_robin.cc              \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
@@ -92,15 +94,23 @@ language-test:
 	g++ -shared $(extreme_python)/liblanguage_robin.cc               \
 	        -o $(extreme_python)/liblanguage.so
 
-protocols-test:
-	$(scriptdir)/griffin -in $(extreme_python)/protocols.h           \
+protocols-test@%:
+	$($*)/griffin -in $(extreme_python)/protocols.h                     \
 	        -out $(extreme_python)/libprotocols_robin.cc             \
 	        Times
 	g++ -shared $(extreme_python)/libprotocols_robin.cc              \
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
-test: language-test protocols-test
+test: language-test@. protocols-test@.
+	( cd $(extreme_python) && \
+	        $(SELF) $(python) test_cases.py LanguageTest ProtocolsTest )
+
+justtest:
+	( cd $(extreme_python) && \
+	        $(SELF) $(python) test_cases.py LanguageTest ProtocolsTest )
+
+systest: language-test@scriptdir protocols-test@scriptdir
 	( cd $(extreme_python) && \
 	        $(python) test_cases.py LanguageTest ProtocolsTest )
 

@@ -83,6 +83,7 @@ else:
 	LIBPYCFG = os.path.join(EXEC_PREFIX, "libs")
 LIBPY1 = "python%i.%i" % sys.version_info[:2]
 LIBPY2 = "python%i%i" % sys.version_info[:2]
+AUXLIBS = []
 
 pyenv = env.Copy()
 configure = Configure(pyenv)
@@ -99,6 +100,11 @@ if not configure.CheckCXXHeader("Python.h"):
 	Exit(1)
 if configure.CheckCXXHeader("ext/hash_map"):
 	env.Append(CXXFLAGS = '-DWITH_EXT_HASHMAP')
+if configure.CheckCXXHeader("libiberty.h") and configure.CheckLib("iberty"):
+	env.Append(CXXFLAGS = '-DWITH_LIBERTY')
+	AUXLIBS.append("iberty")
+if configure.CheckLib("dl"):
+	AUXLIBS.append("dl")
 if configure.CheckLib(LIBPY1):
 	LIBPY = LIBPY1
 else:
@@ -109,7 +115,7 @@ else:
 		Exit(1)
 
 # Add additional flags
-env.Append(LINKFLAGS = "-Wl,-z,defs")
+#env.Append(LINKFLAGS = "-Wl,-z,defs")
 
 # Set up targets
 if conf.arch == "windows":
@@ -122,7 +128,7 @@ else:
 	                                        Split(REFLECTION_SRC) + \
 	                                        Split(REGISTRATION_SRC) + \
 	                                        Split(FRONTEND_FRAMEWORK_SRC),
-	                          LIBS=["dl","iberty"])
+	                          LIBS = AUXLIBS)
 
 pyfe = pyenv.SharedLibrary("robin_pyfe-"+ver, Split(PYTHON_FRONTEND_SRC), 
                            LIBS=["robin-"+ver, LIBPY])
