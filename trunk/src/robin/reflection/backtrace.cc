@@ -1,7 +1,7 @@
 #include "backtrace.h"
 
 /*** Linux Backtrace ***/
-#ifdef __linux
+#if defined(__linux) && defined(WITH_LIBERTY)
 #include <execinfo.h>
 #include "../debug/demangle.h"
 namespace {

@@ -640,7 +640,7 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
 
 		// extract all of the arguments by taking all characters between the <>
 		std::string templatearg = 
-			classname.substr(lt + 2, gt - lt - 3);
+			classname.substr(lt + 2, gt - lt - 3) + ",";
 		// split the string by commas
 		int parenthesisCount;
 		while (templatearg.size()) {
