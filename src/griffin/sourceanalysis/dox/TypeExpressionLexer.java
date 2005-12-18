@@ -1,4 +1,4 @@
-// $ANTLR 2.7.5 (20050128): "src/sourceanalysis/dox/TypeExpression.g" -> "TypeExpressionLexer.java"$
+// $ANTLR 2.7.5 (20050128): "src/griffin/sourceanalysis/dox/TypeExpression.g" -> "TypeExpressionLexer.java"$
 
 package sourceanalysis.dox;
 
@@ -253,9 +253,9 @@ tryAgain:
 			match("virtual");
 			break;
 		}
-		case 's':
+		case 'm':
 		{
-			match("static");
+			match("mutable");
 			break;
 		}
 		case 'M':
@@ -288,8 +288,19 @@ tryAgain:
 			match("typename");
 			break;
 		}
-		default:
+		case 'c':
 		{
+			match("class");
+			break;
+		}
+		default:
+			if ((LA(1)=='s') && (LA(2)=='t') && (LA(3)=='a')) {
+				match("static");
+			}
+			else if ((LA(1)=='s') && (LA(2)=='t') && (LA(3)=='r')) {
+				match("struct");
+			}
+		else {
 			throw new NoViableAltForCharException((char)LA(1), getFilename(), getLine(), getColumn());
 		}
 		}
@@ -423,7 +434,7 @@ tryAgain:
 		int _saveIndex;
 		
 		boolean synPredMatched15 = false;
-		if (((_tokenSet_0.member(LA(1))))) {
+		if (((_tokenSet_0.member(LA(1))) && (_tokenSet_1.member(LA(2))) && (_tokenSet_2.member(LA(3))))) {
 			int _m15 = mark();
 			synPredMatched15 = true;
 			inputState.guessing++;
@@ -444,7 +455,7 @@ tryAgain:
 				_ttype = antlr.Token.SKIP;
 			}
 		}
-		else if ((_tokenSet_1.member(LA(1)))) {
+		else if ((_tokenSet_3.member(LA(1))) && (true) && (true)) {
 			{
 			switch ( LA(1)) {
 			case 'a':  case 'b':  case 'c':  case 'd':
@@ -618,14 +629,24 @@ tryAgain:
 	
 	
 	private static final long[] mk_tokenSet_0() {
-		long[] data = { 0L, 25898171758551056L, 0L, 0L};
+		long[] data = { 0L, 25933390490378256L, 0L, 0L};
 		return data;
 	}
 	public static final BitSet _tokenSet_0 = new BitSet(mk_tokenSet_0());
 	private static final long[] mk_tokenSet_1() {
-		long[] data = { 0L, 576460745995190270L, 0L, 0L};
+		long[] data = { 0L, 158842184259342336L, 0L, 0L};
 		return data;
 	}
 	public static final BitSet _tokenSet_1 = new BitSet(mk_tokenSet_1());
+	private static final long[] mk_tokenSet_2() {
+		long[] data = { 0L, 5931324067024896L, 0L, 0L};
+		return data;
+	}
+	public static final BitSet _tokenSet_2 = new BitSet(mk_tokenSet_2());
+	private static final long[] mk_tokenSet_3() {
+		long[] data = { 0L, 576460745995190270L, 0L, 0L};
+		return data;
+	}
+	public static final BitSet _tokenSet_3 = new BitSet(mk_tokenSet_3());
 	
 	}

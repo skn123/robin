@@ -11,6 +11,9 @@ options {
  */
  
 class TypeExpressionLexer extends Lexer;
+options {
+    k = 3;
+}
 
  WS  :   (' '
     |   '\t'
@@ -20,7 +23,7 @@ class TypeExpressionLexer extends Lexer;
     ;
     
 protected
-KEY : "virtual" | "static" | "MUTABLE" | "register" | "DLLTAG" | "inline" | "friend" | "typename";
+KEY : "virtual" | "static" | "mutable" | "MUTABLE" | "register" | "DLLTAG" | "inline" | "friend" | "typename" | "struct" | "class" ;
 
 OPEN_PAREN: '(' ;
 CLOSE_PAREN: ')' ;
