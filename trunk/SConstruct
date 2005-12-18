@@ -164,6 +164,13 @@ griffin = env.Java("build/griffin", "src/griffin")
 env['BUILDERS']['Jar'] = Builder(action = jarme)
 jar = env.Jar("Griffin.jar", griffin)
 
+typeexpr = env.Command("src/griffin/sourceanalysis/dox/" + 
+			"TypeExpressionParser.java",
+			"src/griffin/sourceanalysis/dox/TypeExpression.g",
+			"java -cp premises/antlr-2.7.5.jar antlr.Tool "
+                        "-o src/griffin/sourceanalysis/dox "
+                        "src/griffin/sourceanalysis/dox/TypeExpression.g")
+
 stl_dox = env.Command("build/stl.tag", "src/griffin/modules/stl", 
                       "( cd src/griffin/modules/stl; doxygen )")
 
