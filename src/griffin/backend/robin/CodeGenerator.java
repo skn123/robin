@@ -17,7 +17,6 @@ import backend.Utils;
 /**
  * Generates flat wrappers and registration code for Robin.
  */
-@SuppressWarnings("unchecked")
 public class CodeGenerator extends backend.GenericCodeGenerator {
 
 	/**

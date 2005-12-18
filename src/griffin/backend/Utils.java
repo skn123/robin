@@ -25,7 +25,6 @@ import sourceanalysis.Type.TypeNode;
  * A class which contains some static methods for the use in backend
  * authorship.
  */
-@SuppressWarnings("unchecked")
 public class Utils {
 
 	/**
