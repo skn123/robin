@@ -53,6 +53,13 @@ bool PyBoolTraits::as(PyObject *pyobj)
 		return PyIntTraits::as(pyobj);
 }
 
+PyObject *PyBoolTraits::from(bool val)
+{
+	PyObject *result = val ? Py_True : Py_False;
+	Py_XINCREF(result);
+	return result;
+}
+
 
 /**
  * InstanceAdapter constructor.
