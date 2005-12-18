@@ -9,7 +9,7 @@ namespace Robin {
 //==================================================
 enum endianity_t { BIG, LITTLE };
 
-#ifdef __linux
+#ifdef __i386__
 const endianity_t MACH_ENDIAN = LITTLE;
 #else
 const endianity_t MACH_ENDIAN = BIG;

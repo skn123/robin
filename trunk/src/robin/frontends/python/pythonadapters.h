@@ -47,9 +47,10 @@ public:
 	static long long *asref(PyObject *pyobj) { return new long long(as(pyobj)); }
 };
 
-class PyBoolTraits : public PyIntTraits {
+class PyBoolTraits {
 public:
 	static bool as(PyObject *pyobj);
+	static PyObject *from(bool val);
 };
 
 class Py1CharStringTraits {
