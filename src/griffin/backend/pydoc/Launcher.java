@@ -9,6 +9,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.logging.Level;
 
+import backend.Launcher.PropertyPage;
+
 import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
@@ -16,7 +18,7 @@ import sourceanalysis.dox.DoxygenAnalyzer;
 import sourceanalysis.view.TemplateBank;
 import sourceanalysis.view.TemplateReader;
 
-public class Launcher {
+public class Launcher extends backend.Launcher {
 
 	/**
 	 * 
@@ -27,52 +29,71 @@ public class Launcher {
 
 	public static void main(String[] args)
 	{
-		if (args.length < 4) {
-			System.err.println("*** ERROR: not enough arguments.");
-			System.err.println("    Usage: backend.pydoc.Launcher "
-				+ "template-file intermediate output classnames");
+		PropertyPage properties = new PropertyPage();
+		properties.addString("templatefile", null);
+		
+		new Launcher().main("backend.pydoc.Launcher", args, properties);
+	}
+	
+	/**
+	 * Runs the Python documentation back-end and generates output.
+	 */
+	public void execute(ProgramDatabase program, PropertyPage properties)
+		throws IOException, MissingInformationException 
+	{
+		String outfile = properties.getString("outfile");
+		String[] classnames = properties.getStringArray("classes");
+		String templatefile = properties.getString("templatefile");
+		
+		if (templatefile == null) {
+			System.err.println("*** ERROR: template filename not provided"
+					+ " (specify --templatefile=)");
 			System.exit(1);
 		}
+		
+		execute(program, templatefile, outfile, classnames);
+	}
+	
+	/**
+	 * Runs the Python documentation back-end and generates output.
+	 * 
+	 * @param program
+	 * @param templatefile
+	 * @param outfile
+	 * @param classnames
+	 * @throws IOException
+	 * @throws MissingInformationException
+	 */
+	private void execute(ProgramDatabase program, String templatefile, String outfile, String[] classnames)
+		throws IOException, MissingInformationException
+	{
 		// Read templates
 		TemplateBank templates = null;
 		try {
-			templates = TemplateReader.readTemplatesFromFile(args[0]);
+			templates = TemplateReader.readTemplatesFromFile(templatefile);
 		}
 		catch (IOException e) {
 			System.err.println("*** FATAL: cannot read template definition"
 				+ " file: " + e);
 			System.exit(1);
 		}
-		// Read the program database
-		DoxygenAnalyzer dox = new DoxygenAnalyzer(args[1]);
-		dox.logger.setLevel(Level.WARNING);
-		try {
-			ProgramDatabase p = dox.processIndex();
-		
-			OutputStream cfile = new FileOutputStream(args[2]);
-			CodeGenerator codegen =
-				new CodeGenerator(p, new OutputStreamWriter(cfile), 
-				                  templates);
-				
-			// Collect targets
-			for (int i = 3; i < args.length; ++i) {
-				String arg = args[i];
-				if (arg.equals("Auto")) codegen.autocollect();
-				else codegen.collect(arg);
-			}
 
-			codegen.generateClassDocumentation();
+		// Create code generator
+		OutputStream cfile = new FileOutputStream(outfile);
+		CodeGenerator codegen =
+			new CodeGenerator(program, new OutputStreamWriter(cfile), 
+			                  templates);
+			
+		// Collect targets
+		for (int i = 0; i < classnames.length; ++i) {
+			String classname = classnames[i];
+			if (classname.equals("Auto")) codegen.autocollect();
+			else codegen.collect(classname);
+		}
 
-			cfile.close();
-		}
-		catch (ElementNotFoundException e) {
-			System.err.println("*** ERROR: failed to read index: " + e);
-		}
-		catch (IOException e) {
-			System.err.println("*** ERROR: output error: " + e);
-		}
-		catch (MissingInformationException e) {
-			System.err.println("*** ERROR: some information is missing.");
-		}
+		// Generate output
+		codegen.generateClassDocumentation();
+
+		cfile.close();
 	}
 }

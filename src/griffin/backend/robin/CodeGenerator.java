@@ -1056,11 +1056,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write(")\n{\n\treturn new " + alias.getFullName());
 		m_output.write("(arg0);\n}\n");
 		// Create an access method to retrieve stored type
-		m_output.write(alias.getAliasedType()
+		Type realType = alias.getAliasedType();
+		Type touchupType = Filters.getTouchup(realType);
+		m_output.write((touchupType == null ? realType : touchupType)
 			.formatCpp("routine_unalias_" + uid(alias)));
 		m_output.write("(");
 		m_output.write(alias.getFullName());
-		m_output.write(" *self) { return *self; }\n");
+		if (touchupType == null)
+			m_output.write(" *self) { return *self; }\n");
+		else
+			m_output.write(" *self) { return touchup(*self); }\n");
 		// Create a destructor
 		m_output.write("void dtor_alias_" + uid(alias));
 		m_output.write("(");
