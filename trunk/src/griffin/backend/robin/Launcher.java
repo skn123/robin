@@ -4,10 +4,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.logging.Level;
 
-import sourceanalysis.dox.DoxygenAnalyzer;
-import sourceanalysis.*;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.ProgramDatabase;
 
 /**
  * Runs the Robin code generator to create wrapping & registration code for
@@ -22,7 +21,7 @@ import sourceanalysis.*;
  *   <li>A C++ file which can be compiled by a C++ compiler</li>
  * </ul>
  */
-public class Launcher {
+public class Launcher extends backend.Launcher {
 
 	/**
 	 * Constructor for Launcher.
@@ -32,58 +31,42 @@ public class Launcher {
 	}
 
 	public static void main(String[] args) {
-		if (args.length < 3) {
-			System.err.println("*** ERROR: not enough arguments.");
-			System.err.println(
-				"    Usage: backend.robin.Launcher intermediate output classnames");
-			System.exit(1);
-		}
-		// Read the program database
-		DoxygenAnalyzer dox = new DoxygenAnalyzer(args[0]);
-		dox.logger.setLevel(Level.WARNING);
-		try {
-			ProgramDatabase p = dox.processIndex();
-			// Extract parameters
-			int flagcount = 0;
-			
-			// get outfile
-			String outfile = args[1];
-			
-			// all the flags for robin
-			boolean interceptors = false;
-			
-			// go through all of the command line arguments until we hit one
-			// that isn't a flag
-			for (flagcount = 0; true; ++flagcount) {
-				if (args[2 + flagcount].equals("--interceptors")) {
-					interceptors = true;
-				}
-				else {
-					break;
-				}
-			}
-			
-			// get the class names
-			String[] classnames = new String[args.length - 2 - flagcount];
-			System.arraycopy(args, args.length - classnames.length, classnames, 0, classnames.length);
-			
-			// Execute
-			execute(p, classnames, outfile, interceptors);
-		} catch (ElementNotFoundException e) {
-			System.err.println("*** ERROR: failed to read index: " + e);
-		} catch (IOException e) {
-			System.err.println("*** ERROR: output error: " + e);
-		} catch (MissingInformationException e) {
-			System.err.println("*** ERROR: some information is missing.");
-			e.printStackTrace();
-		}
+		PropertyPage properties = new PropertyPage();
+		properties.addBoolean("interceptors", false);
+		
+		new Launcher().main("backend.robin.Launcher", args, properties);
 	}
 
 	/**
-	 * Run Robin and generate code.
-	 * @param program a program database to operate on
+	 * Run Robin back-end and generate code.
+	 * 
+	 * @param program a program database to operate upon
+	 * @param properties operation instructions:
+	 *  - outfile: name of file to bear the output
+	 *  - classes: an array of class names
+	 *  - interceptors: a boolean flag indicating whether interceptors are enabled
+	 * @throws IOException if an output exception occurs
+	 * @throws MissingInformationException if the program database is 
+	 * incomplete
+	 */
+	public void execute(ProgramDatabase program, PropertyPage properties)
+		throws IOException, MissingInformationException 
+	{
+		String outfile = properties.getString("outfile");
+		String[] classnames = properties.getStringArray("classes");
+		boolean interceptors = properties.getBoolean("interceptors");
+		
+		// Execute
+		execute(program, classnames, outfile, interceptors);		
+	}
+	
+	/**
+	 * Run Robin back-end and generate code.
+	 * 
+	 * @param program a program database to operate upon
 	 * @param classnames an array of class names
 	 * @param outfile name of a file to bear the output
+	 * @param interceptors <b>true</b> to enable the interceptors feature
 	 * @throws IOException if an output exception occurs
 	 * @throws MissingInformationException if the program database is 
 	 * incomplete
