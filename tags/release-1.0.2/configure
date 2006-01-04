@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+
+import os, sys
+
+class Configure:
+
+	def _parse_args(self):
+		import optparse
+		formatter = optparse.TitledHelpFormatter(max_help_position = 30)
+		usage = "Usage"
+		p = optparse.OptionParser(usage = usage, formatter = formatter)
+		p.add_option("-p", "--prefix", dest = "prefix", default = "/usr/local",
+					 help = "Installation prefix directory")
+		p.add_option("-e", "--exec_prefix", dest = "exec_prefix",
+					 default = "same as prefix",
+					 help = "Installation prefix directory for platform-" \
+					        "dependant files")
+		p.add_option("-y", "--with-python", dest = "python",
+					 default = "python",
+					 help = "Determines which Python interpreter to use")
+		o = p.parse_args()
+		if o[0].exec_prefix == "same as prefix":
+			o[0].exec_prefix = o[0].prefix
+		return o
+
+	def _set_var(self, varname, value):
+		if '@' in (varname + value):
+			print "** Error: illegal value: %s=%s" % (varname, value)
+			sys.exit(1)
+		if os.system("sed -i -e 's@^%(varname)s =.*@%(varname)s = %(value)s@'"\
+					 " Makefile" % locals()) != 0:
+			sys.exit(1)
+
+	def _site_packages_dir(self):
+		for element in sys.path:
+			if element.endswith("/site-packages"):
+				return element
+		# Failed to find site-packages directory
+		print "** Error: couldn't locate 'site-packages' in your Python " \
+			  "installation"
+		sys.exit(1)
+
+	def configure(self):
+		options, remainder = self._parse_args()
+		print "Updating Makefile"
+		self._set_var("prefix", options.prefix)
+		self._set_var("exec_prefix", options.exec_prefix)
+		self._set_var("python", options.python)
+		if options.python == "python":
+			self._set_var("site_packages", self._site_packages_dir())
+		else:
+			import commands
+			site_packages = commands.getoutput(options.python + \
+				""" -c 'import imp; print imp.load_source("configure", """ \
+				""" "configure").Configure()._site_packages_dir()'""")
+			self._set_var("site_packages", site_packages)
+
+
+if __name__ == "__main__":
+	c = Configure()
+	c.configure()
+
+
