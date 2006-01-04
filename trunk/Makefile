@@ -1,4 +1,5 @@
 ver = 1.0
+minor = 2
 
 prefix = /usr/local
 exec_prefix = /usr/local
@@ -128,4 +129,12 @@ manifest:
 distrib: manifest
 	mkdir -p distrib/robin
 	tar cf - --files-from manifest | ( cd distrib/robin && tar xf - )
-	tar zcf robin-1.0.0.$(cpu).$(target).tar.gz -C distrib robin
+	tar zcf distrib/robin-$(ver).$(minor).$(cpu).$(target).tar.gz \
+		-C distrib robin
+
+srcdistrib:
+	-rm -rf distrib/robin
+	mkdir -p distrib
+	svn export . distrib/robin
+	rm -rf distrib/robin/premises
+	tar zcf distrib/robin-$(ver).$(minor).src.tar.gz -C distrib robin
