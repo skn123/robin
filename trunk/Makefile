@@ -81,7 +81,9 @@ uninstall:
 	-rm -fr $(jardir)
 
 extreme_python = src/robin/extreme/python
-SELF = PATH=$(PWD):$$PATH LD_LIBRARY_PATH=$(PWD) PYTHONPATH=$(PWD)
+SELF = PATH=$(PWD):$$PATH \
+       LD_LIBRARY_PATH=$(PWD) \
+       PYTHONPATH=$(PWD):$(PWD)/src/robin/modules
 . = .
 
 language-test@%:
@@ -127,6 +129,7 @@ manifest:
 .PHONY: distrib
 
 distrib: manifest
+	@rm -rf distrib/robin
 	mkdir -p distrib/robin
 	tar cf - --files-from manifest | ( cd distrib/robin && tar xf - )
 	tar zcf distrib/robin-$(ver).$(minor).$(cpu).$(target).tar.gz \

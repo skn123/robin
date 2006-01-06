@@ -4,7 +4,7 @@ import robin, os.path
 if os.path.islink(__file__): __file__ = os.readlink(__file__)
 here = os.path.dirname(__file__)
 machine = os.getenv("MACHINE")
-lib = "librobin_stl" + robin.soext
+lib = robin.sopre + "robin_stl" + robin.soext
 robin.loadLibrary(__name__, lib)
 
 reallist = list
