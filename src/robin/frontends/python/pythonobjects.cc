@@ -1096,7 +1096,7 @@ EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 	           Py_TPFLAGS_CHECKTYPES | Py_TPFLAGS_HAVE_RICHCOMPARE;
 	tp_base = &PyBaseObject_Type;
 
-	tp_new = &__new__;
+	tp_new = &EnumeratedTypeObject::__new__;
 }
 
 EnumeratedTypeObject::~EnumeratedTypeObject()
