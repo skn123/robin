@@ -153,11 +153,7 @@ public:
 	/// Needed for memory management. Cannot be private because Pattern::Cache
 	/// has to call it.
 	static inline void dispose(const Key& key) 
-		{ 
-#ifndef __CYGWIN__  /* TODO: why does this crash on Cygwin?? */
-delete[] key.args; delete[] key.insights; 
-#endif
-		}
+		{ delete[] key.args; delete[] key.insights; }
 
 	static const unsigned int IMPOSSIBLE;
 	static const unsigned int MISSED;

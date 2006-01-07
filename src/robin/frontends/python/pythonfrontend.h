@@ -122,9 +122,6 @@ public:
 
 	virtual
 	const Interceptor& getInterceptor() const;
-
-	virtual
-	ErrorHandler& getErrorHandler();
 	//@}
 
 	/**
@@ -181,9 +178,8 @@ protected:
 
 	friend class Robin::Python::Facade;
 
-	LowLevel     *m_lowLevel;
-	Interceptor  *m_interceptor;
-	ErrorHandler *m_errorHandler;
+	LowLevel    *m_lowLevel;
+	Interceptor *m_interceptor;
 
 public:
 	static const std::string DATAMEMBER_PREFIX;

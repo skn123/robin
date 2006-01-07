@@ -85,10 +85,7 @@ public class GenericCodeGenerator
 	public void setOutputFilename(String filename)
 	{
 		File outfile = new File(filename);
-		// - set the output directory accordingly
-		File outdir = outfile.getParentFile();
-		if (outdir == null) outdir = new File(".");
-		setOutputDirectory(outdir);
+		setOutputDirectory(outfile.getParentFile());
 	}
 	
 	/**

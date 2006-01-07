@@ -29,48 +29,36 @@ public class DoxygenHandyman {
 	 */
 	private class OrphanTypeRepair implements Type.Transformation
 	{
-		private Entity origin;
-		
-		public OrphanTypeRepair()
-		{
-			origin = null;
-		}
-		
-		/**
-		 * 
-		 * @param origin location in the program to commence lookup at
-		 */
-		public OrphanTypeRepair(Entity origin)
-		{
-			this.origin = origin;
-		}
-		
 		public Type.TypeNode transform(Type.TypeNode original)
 			throws InappropriateKindException
 		{
 			if (original.getKind() == Type.TypeNode.NODE_LEAF) {
 				Entity base = original.getBase();
-				// If base is orphan, look it up
-				if (base.getContainer() == null) {
-					Entity newBase = (origin == null) 
-							? lookupApprox(base.getName())
-							: lookup(origin, base.getName());
-					if (newBase != null) {
-						// Create a new type node with 'base'
-						Type.TypeNode transformed = new Type.TypeNode(base);
-						transformed.setCV(original.getCV());
-						return transformed;
-					}
+				// Look name up in full-name map
+				Object byFullName = m_entitiesByFullName.get(base.getFullName());
+				if (byFullName != null) {
+					base = (Entity)byFullName;
 				}
-				return null;
+				else if (base.getContainer() == null) {
+					// Look name up in short-name map
+					String[] splitName = base.getName().split("::");
+					Object byName = m_entitiesByName.get(splitName[0]);
+					for (int i = 1; i < splitName.length && byName != null; ++i) {
+						byName = Utils.lookup((Entity)byName, splitName[i]);
+					}
+					if (byName != null)
+						base = (Entity)byName;
+				}
+				// Create a new type node with 'base'
+				Type.TypeNode transformed = new Type.TypeNode(base);
+				transformed.setCV(original.getCV());
+				return transformed;
 			}
 			else
 				return null;
 		}
 	}
-	
-	
-	
+
 	/**
 	 * Constructor for DoxygenHandyman.
 	 */
@@ -212,32 +200,18 @@ public class DoxygenHandyman {
 	 * the collection in the two name maps. This includes filling missing
 	 * cross-references by fulfilling the references using the maps.
 	 * @param type original type expression
-	 * @param origin specifies the context in which this type expression 
-	 *   occurs (class or namespace)
 	 * @return Type repaired type expression
 	 */
-	public Type repairType(Type type, Entity origin)
+	public Type repairType(Type type)
 	{
 		try {
-			return Type.transformType(type, new OrphanTypeRepair(origin));
+			return Type.transformType(type, new OrphanTypeRepair());
 		}
 		catch (InappropriateKindException e) {
 			System.err.println("*** WARNING: inconsistent type expression "
 				 + type);
 			return type;
 		}
-	}
-	
-	/**
-	 * Attempts repair of a type expression using knowledge gathered from
-	 * the collection in the two name maps. This includes filling missing
-	 * cross-references by fulfilling the references using the maps.
-	 * @param type original type expression
-	 * @return Type repaired type expression
-	 */
-	public Type repairType(Type type) 
-	{
-		return repairType(type, null);
 	}
 	
 	/**
@@ -249,7 +223,7 @@ public class DoxygenHandyman {
 		try {
 			Type returnType = routine.getReturnType();
 			if (isSuspicious(returnType))
-				routine.setReturnType(repairType(returnType, routine));
+				routine.setReturnType(repairType(returnType));
 		}
 		catch (MissingInformationException e) {
 			// sit idle
@@ -262,7 +236,7 @@ public class DoxygenHandyman {
 			try {
 				Type parameterType = parameter.getType();
 				if (isSuspicious(parameterType))
-					parameter.setType(repairType(parameterType, routine));
+					parameter.setType(repairType(parameterType));
 			}
 			catch (MissingInformationException e) {
 				// sit idle
@@ -279,7 +253,7 @@ public class DoxygenHandyman {
 	{
 		Type aliased = alias.getAliasedType();
 		if (isSuspicious(aliased)) {
-			alias.setAliasedType(repairType(aliased, alias));
+			alias.setAliasedType(repairType(aliased));
 		}
 	}
 	
@@ -293,7 +267,7 @@ public class DoxygenHandyman {
 		try {
 			Type datatype = field.getType();
 			if (isSuspicious(datatype)) {
-				field.setType(repairType(datatype, field));
+				field.setType(repairType(datatype));
 			}
 		}
 		catch (MissingInformationException e) {
@@ -310,7 +284,7 @@ public class DoxygenHandyman {
 	{
 		Type baseType = connection.getBaseAsType();
 		if (isSuspicious(baseType)) {
-			connection.setBaseFromType(repairType(baseType, connection.getDerived()));
+			connection.setBaseFromType(repairType(baseType));
 		}
 	}
 	
@@ -337,72 +311,6 @@ public class DoxygenHandyman {
 		}
 	}
 
-	/**
-	 * Approximates name lookup using the information contained in some
-	 * internal maps.
-	 *  
-	 * @param name name to look up
-	 * @return
-	 */
-	Entity lookupApprox(String name) {
-		Entity base = null;
-		// Look name up in full-name map
-		Object byFullName = m_entitiesByFullName.get(name);
-		if (byFullName != null) {
-			base = (Entity)byFullName;
-		}
-		else {
-			// Look name up in short-name map
-			String[] splitName = name.split("::");
-			Object byName = m_entitiesByName.get(splitName[0]);
-			for (int i = 1; i < splitName.length && byName != null; ++i) {
-				byName = Utils.lookup((Entity)byName, splitName[i]);
-			}
-			if (byName != null)
-				base = (Entity)byName;
-		}
-		return base;
-	}
-
-	/**
-	 * Attempts precise name lookup using information stored in the program
-	 * database.
-	 * 
-	 * @param startingFrom a starting point for lookup; names will be looked
-	 * up in the scope associated with startingPoint and in containing scopes.
-	 * @param name name to look up
-	 * @return
-	 */
-	Entity lookup(Entity startingFrom, String name)
-	{
-		String[] splitName = name.split("::");
-		// Try to find the first name element
-		Entity look = null;
-		
-		if (splitName[0].equals("")) {
-			look = m_program.getGlobalNamespace();
-		}
-		else {
-			Entity context = startingFrom;
-			while (context != null && look == null) {
-				look = Utils.lookup(startingFrom, splitName[0]);
-				context = up(context);
-			}
-		}
-		// Resolve remaining symbols
-		for (int i = 1; i < splitName.length && look != null; ++i) {
-			look = Utils.lookup(look, splitName[i]);
-		}
-		return look;
-	}
-	
-	private static Entity up(Entity e)
-	{
-		ContainedConnection uplink = e.getContainer();
-		return (uplink == null) ? null : uplink.getContainer();
-	}
-	
-	
 	// Private members
 	private ProgramDatabase m_program;
 	private Map m_entitiesByName;

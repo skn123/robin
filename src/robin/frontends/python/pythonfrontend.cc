@@ -35,7 +35,6 @@
 // Python Low Level includes
 #include "pythonlowlevel.h"
 #include "pythoninterceptor.h"
-#include "pythonerrorhandler.h"
 
 
 namespace Robin {
@@ -220,14 +219,11 @@ PythonFrontend::PythonFrontend()
 {
 	m_lowLevel = new PythonLowLevel();
 	m_interceptor = new PythonInterceptor();
-	m_errorHandler = new PythonErrorHandler();
 }
 
 PythonFrontend::~PythonFrontend()
 {
 	delete m_lowLevel;
-	delete m_interceptor;
-	delete m_errorHandler;
 }
 
 /**
@@ -243,8 +239,6 @@ void PythonFrontend::initialize() const
 	Handle<Conversion> hlong2ushort(new TrivialConversion);
 	Handle<Conversion> hlong2ulong(new TrivialConversion);
 	Handle<Conversion> hlong2bool(new TrivialConversion);
-	Handle<Conversion> hint2longlong(new TrivialConversion);
-	Handle<Conversion> hint2ulonglong(new TrivialConversion);
 	Handle<Conversion> hpylong2longlong(new TrivialConversion);
 	Handle<Conversion> hpylong2ulonglong(new TrivialConversion);
 	Handle<Conversion> hbool2long(new TrivialConversion);
@@ -267,10 +261,6 @@ void PythonFrontend::initialize() const
 	hlong2ulong      ->setTargetType(ArgumentULong);
 	hlong2bool       ->setSourceType(ArgumentLong);
 	hlong2bool       ->setTargetType(ArgumentBoolean);
-	hint2longlong    ->setSourceType(ArgumentInt);
-	hint2longlong    ->setTargetType(ArgumentLongLong);
-	hint2ulonglong   ->setSourceType(ArgumentInt);
-	hint2ulonglong   ->setTargetType(ArgumentULongLong);
 	hpylong2longlong ->setSourceType(ArgumentPythonLong);
 	hpylong2longlong ->setTargetType(ArgumentLongLong);
 	hpylong2ulonglong->setSourceType(ArgumentPythonLong);
@@ -297,8 +287,6 @@ void PythonFrontend::initialize() const
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2short);
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2ushort);
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2ulong);
-	ConversionTableSingleton::getInstance()->registerConversion(hint2longlong);
-	ConversionTableSingleton::getInstance()->registerConversion(hint2ulonglong);
 	ConversionTableSingleton::getInstance()->registerConversion(hpylong2longlong);
 	ConversionTableSingleton::getInstance()->registerConversion(hpylong2ulonglong);
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2bool);
@@ -413,7 +401,7 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 				(new SmallPrimitivePythonAdapter<long, PyIntTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_LONG_LONG)
 			return Handle<Adapter>
-				(new AllocatedPrimitivePythonAdapter<long long,
+				(new AllocatedBigPrimitivePythonAdapter<long long,
 				                                   PyLongTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_ULONG)
 			return Handle<Adapter>
@@ -421,7 +409,7 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 			                                       PyIntTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_ULONG_LONG)
 			return Handle<Adapter>
-				(new AllocatedPrimitivePythonAdapter<unsigned long long,
+				(new AllocatedBigPrimitivePythonAdapter<unsigned long long,
 				                                   PyLongTraits>());
 		else if (basetype.spec == TYPE_INTRINSIC_SHORT)
 			return Handle<Adapter>
@@ -640,7 +628,7 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
 
 		// extract all of the arguments by taking all characters between the <>
 		std::string templatearg = 
-			classname.substr(lt + 2, gt - lt - 3) + ",";
+			classname.substr(lt + 2, gt - lt - 3);
 		// split the string by commas
 		int parenthesisCount;
 		while (templatearg.size()) {
@@ -786,14 +774,6 @@ const LowLevel& PythonFrontend::getLowLevel() const
 const Interceptor& PythonFrontend::getInterceptor() const
 {
 	return *m_interceptor;
-}
-
-/**
- * Retruns the error handler for this frontend.
- */
-ErrorHandler& PythonFrontend::getErrorHandler()
-{
-	return *m_errorHandler;
 }
 
 /**

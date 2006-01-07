@@ -10,9 +10,7 @@
  * Generic Cache
  */
 
-#if defined(WITH_STD_HASHMAP)
-#include <ext/hash_map>
-#elif defined(WITH_EXT_HASHMAP)
+#ifdef WITH_EXT_HASHMAP
 #include <ext/hash_map>
 namespace std {
 	using __gnu_cxx::hash_map;

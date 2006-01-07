@@ -23,6 +23,7 @@ public class GriffinWizard extends Wizard {
         this.addPage(new ClassesPage());
     }  
 
+    @Override
     public boolean performFinish() {
         MessageBox box = new MessageBox(this.getShell(), SWT.ICON_ERROR | SWT.OK);
         box.setText("Error!");

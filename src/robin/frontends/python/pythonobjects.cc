@@ -28,7 +28,6 @@
 #include "enhancements.h"
 #include "pythonadapters.h"
 #include "pythonfrontend.h"
-#include "pythonerrorhandler.h"
 
 namespace {
 
@@ -343,23 +342,9 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 			return_value = m_underlying->call(pass_args);
 	}
 	catch (const UserExceptionOccurredException& e) {
-		// - retrieve the current error information, if possible
-		PyObject *errinfo = (PyObject*)
-			FrontendsFramework::activeFrontend()->
-				getErrorHandler().getError();
-		FrontendsFramework::activeFrontend()->getErrorHandler().setError(NULL);
-		if (errinfo) {
-			// - restore previous error information
-			PyObject *exc_type, *exc_value, *exc_tb;
-			PyArg_ParseTuple(errinfo, "OOO", &exc_type, &exc_value, &exc_tb);
-			PyErr_Restore(exc_type, exc_value, exc_tb);
-			return NULL;
-		}
-		else {
-			// - translate exception to Python
-			PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
-			return NULL;
-		}
+		// - translate exception to Python
+		PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
+		return NULL;
 	}
 	catch (const std::exception& e) {
 		PyErr_SetString(PyExc_RuntimeError, e.what());
@@ -404,13 +389,8 @@ PyObject *FunctionObject::__getattr__(const char *name)
 		return pyowned(ret);
 	}
 	else if (strcmp(name, "__module__") == 0) {
-		if (m_in_module)
-			return PyString_FromString(PyModule_GetName(m_in_module));
-		else if (m_self)
-			// get the module from the instance object containing this function
-			return PyObject_GetAttrString(m_self, "__module__");
-		else
-			return pyowned(Py_None);
+		PyObject *ret = m_in_module ? m_in_module : Py_None;
+		return PyString_FromString(PyModule_GetName(ret));
 	}
 	else if (strcmp(name, "__name__") == 0) {
 		return PyString_FromString(m_name.c_str());
@@ -534,23 +514,9 @@ PyObject *ClassObject::__call__(PyObject *args, PyObject *kw)
 		return_value = m_underlying->createInstance(pass_args);
 	}
 	catch (const UserExceptionOccurredException& e) {
-		// - retrieve the current error information, if possible
-		PyObject *errinfo = (PyObject*)
-			FrontendsFramework::activeFrontend()->
-				getErrorHandler().getError();
-		FrontendsFramework::activeFrontend()->getErrorHandler().setError(NULL);
-		if (errinfo) {
-			// - restore previous error information
-			PyObject *exc_type, *exc_value, *exc_tb;
-			PyArg_ParseTuple(errinfo, "OOO", &exc_type, &exc_value, &exc_tb);
-			PyErr_Restore(exc_type, exc_value, exc_tb);
-			return NULL;
-		}
-		else {
-			// - translate exception to Python
-			PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
-			return NULL;
-		}
+		// - translate exception to Python
+		PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
+		return NULL;
 	}
 	catch (const std::exception& e) {
 		PyErr_SetString(PyExc_RuntimeError, e.what());
@@ -928,10 +894,6 @@ PyObject *InstanceObject::__getattr__(const char *attrname)
 		}
 		return methodsList;
 	}
-	else if (strcmp(attrname, "__module__") == 0) {
-		// get the module from the class object
-		return PyObject_GetAttrString(PyObject_Type(this), "__module__");
-	}
 	// - "__" prefix is reserved for slots
 	else if (attrname[0] == '_' && attrname[1] == '_') {
 		EnhancementsPack::SlotID slot =
@@ -1096,7 +1058,7 @@ EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 	           Py_TPFLAGS_CHECKTYPES | Py_TPFLAGS_HAVE_RICHCOMPARE;
 	tp_base = &PyBaseObject_Type;
 
-	tp_new = &EnumeratedTypeObject::__new__;
+	tp_new = &__new__;
 }
 
 EnumeratedTypeObject::~EnumeratedTypeObject()

@@ -17,6 +17,7 @@ import backend.Utils;
 /**
  * Generates flat wrappers and registration code for Robin.
  */
+@SuppressWarnings("unchecked")
 public class CodeGenerator extends backend.GenericCodeGenerator {
 
 	/**
@@ -32,7 +33,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_globalDataMembers = new LinkedList();
 		m_interceptorMethods = new HashSet();
 		m_downCasters = new LinkedList();
-		m_interceptors = new LinkedList();
 		
 		// Register touchups for special types
 		Type voidptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
@@ -59,7 +59,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"\treturn new double(val);\n" +
 						"}\n" +
 						"double touchdown(double* val)\n{\n" +
-						"\treturn *std::auto_ptr<double>(val);\n" +
+						"\treturn *val;\n" +
 						"}\n"));
 		Type longlongptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		longlongptr.getRootNode().add(new Type.TypeNode(Primitive.LONGLONG));
@@ -69,9 +69,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						longlongptr,
 						"long long *touchup(long long val)\n{\n" +
 						"\treturn new long long(val);\n" +
-						"}\n" +
-						"long long touchdown(long long* val)\n{\n" +
-						"\treturn *std::auto_ptr<long long>(val);\n" +
 						"}\n"));
 		Type ulonglongptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		ulonglongptr.getRootNode().add(new Type.TypeNode(Primitive.ULONGLONG));
@@ -81,9 +78,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						ulonglongptr,
 						"unsigned long long *touchup(unsigned long long val)\n{\n" +
 						"\treturn new unsigned long long(val);\n" +
-						"}\n" +
-						"unsigned long long touchdown(unsigned long long* val)\n{\n" +
-						"\treturn *std::auto_ptr<unsigned long long>(val);\n" +
 						"}\n"));
 	}
 	
@@ -104,40 +98,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		else
 			return ((Integer)got).intValue();  
-	}
-
-	/**
-	 * Finds the given class within the global namespace, listing it for
-	 * interceptor creation later.
-	 *
-	 * @param classname the name of the class to create an interceptor for
-	 */
-	public void investInterceptor(String classname)
-	{
-		investInterceptor(m_program.getGlobalNamespace().getScope(), classname);
-	}
-
-	/**
-	 * Finds the given class within the given scope, listing it for
-	 * interceptor creation later.
-	 *
-	 * @param scope the scope in which to search for the class
-	 * @param classname the name of the class to create an interceptor for
-	 */
-	public void investInterceptor(Scope scope, String classname)
-	{
-		// Go through all of the Aggregates, searching for the given name
-		for (Iterator aggiter = scope.aggregateIterator(); aggiter.hasNext(); ) {
-			// Find class
-			ContainedConnection connection = (ContainedConnection)aggiter.next();
-			Aggregate agg = (Aggregate)connection.getContained();
-			if (agg.getName().equals(classname)) {
-				// Add to interceptors
-				if (!agg.isTemplated() || !m_separateClassTemplates) {
-					m_interceptors.add( agg );
-				}
-			}
-		}
 	}
 
 	/**
@@ -306,9 +266,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	}
 	
 	/**
-	 * Creates definitions of interceptor classes to wrap the classes marked
-	 * for interceptor creation, so that they can be implemented or extended
-	 * in the frontend.
+	 * Creates definitions of interceptor classes to wrap the abstract classes in
+	 * the code, so that they can be implemented in the frontend.
 	 * @throws IOException
 	 * @throws MissingInformationException
 	 */
@@ -319,15 +278,15 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		Set newSubjects = new HashSet();
 		
 		// Generate interceptor class decleration
-		for (Iterator subjectIter = m_interceptors.iterator(); subjectIter.hasNext();) {
+		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
 			
 			// Check if the class is a template instantiation, and if so skip it
 			if (subject.isSpecialized()) continue;
 			
-			// Get the virtual method list of the class
-			Collection virtualMethods = Utils.virtualMethods(subject, m_instanceMap);
-			if (virtualMethods.isEmpty()) continue;
+			// Get the unimplemented method list of the class
+			Collection unimplementedMethods = Utils.unimplementedMethods(subject, m_instanceMap);
+			if (unimplementedMethods.isEmpty()) continue;
 			
 			// This counter counts how many functions come before the unimplemented ones
 			int funcCounter = 0;
@@ -393,7 +352,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			
 			// Write functions in interceptor class, and add them to the griffin class
 			int i = 0;
-			for (Iterator funcIter = virtualMethods.iterator();
+			for (Iterator funcIter = unimplementedMethods.iterator();
 				funcIter.hasNext(); ++i) {
 				Routine routine = (Routine) funcIter.next();
 				
@@ -481,7 +440,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				if (! routine.getReturnType().equals(
 						new Type(new Type.TypeNode(Primitive.VOID)))) {
 					Type returnType = routine.getReturnType();
-					Type touchupType = Filters.getTouchup(returnType);
+					Type touchupType = Filters.getTouchup(routine.getReturnType());
 					if (touchupType != null) {
 						returnType = touchupType;
 					}
@@ -506,13 +465,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 								routine.getReturnType().formatCpp() + 
 								" (*)(" + 
 								touchupType.formatCpp() + ")) ");
-						m_output.write("touchdown)(");
+						m_output.write("touchdown)(result)");
 					}
 					else {
-						m_output.write("SameClass< basic_block >::same)(");
+						m_output.write("SameClass< basic_block >::same)(result)");
 					}
-
-					m_output.write("result)");
 					
 					for (int paren = 0; paren < parenNest; ++paren)
 						m_output.write(")");
@@ -809,10 +766,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	
 	private boolean isSmallPrimitive(Entity base)
 	{
-		return (base instanceof Primitive) &&
-		       (!base.getName().equals("double")) &&
-		       (!base.getName().equals("long long")) &&
-			   (!base.getName().equals("unsigned long long"));
+		return (base instanceof Primitive && !base.getName().equals("double"));
 	}
 
 	/**
@@ -886,16 +840,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		else {
 			String declarator = wrapperName;
-			if (isPrimitive(returnType.getBaseType())) {
+			if (isPrimitive(returnType.getBaseType()))
 				returnType = dereference(returnType);
-			}
 			touchupReturnType = Filters.getTouchup(returnType);
-			if (touchupReturnType != null) {
+			if (touchupReturnType != null)
 				returnType = touchupReturnType;
-			}
-			else if (needsExtraReferencing(returnType)) {
+			else if (needsExtraReferencing(returnType))
 				declarator = "*" + declarator;
-			}
 			m_output.write(Utils.cleanFormatCpp(returnType,declarator));
 		}
 		
@@ -987,20 +938,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				Type type = flatUnalias(param.getType());
 				// Print name of argument
 				if (!first) m_output.write(", ");
-				// If this is one of the "special" primitives, touchdown
-				if (needsExtraReferencing(type) &&
-				    isPrimitive(type.getBaseType()) &&
-				    !isSmallPrimitive(type.getBaseType())) {
-					m_output.write("touchdown(arg" + paramCount + ")");
-				}
-				// If it is another type that needs dereferencing
-				else if (needsExtraReferencing(type)) {
-					m_output.write("*arg" + paramCount);
-				}
-				// If this is just a normal type
-				else {
-					m_output.write("arg" + paramCount);
-				}
+				if (needsExtraReferencing(type)) m_output.write("*");
+				m_output.write("arg" + paramCount);
 				first = false;
 			}
 		}
@@ -1056,16 +995,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write(")\n{\n\treturn new " + alias.getFullName());
 		m_output.write("(arg0);\n}\n");
 		// Create an access method to retrieve stored type
-		Type realType = alias.getAliasedType();
-		Type touchupType = Filters.getTouchup(realType);
-		m_output.write((touchupType == null ? realType : touchupType)
+		m_output.write(alias.getAliasedType()
 			.formatCpp("routine_unalias_" + uid(alias)));
 		m_output.write("(");
 		m_output.write(alias.getFullName());
-		if (touchupType == null)
-			m_output.write(" *self) { return *self; }\n");
-		else
-			m_output.write(" *self) { return touchup(*self); }\n");
+		m_output.write(" *self) { return *self; }\n");
 		// Create a destructor
 		m_output.write("void dtor_alias_" + uid(alias));
 		m_output.write("(");
@@ -1719,7 +1653,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private List m_globalDataMembers;
 	private List m_downCasters;
 
-	private List m_interceptors;
 	private Set m_interceptorMethods;
 	
 	// Code skeletons

@@ -1,4 +1,4 @@
-// $ANTLR 2.7.5 (20050128): "src/griffin/sourceanalysis/dox/TypeExpression.g" -> "TypeExpressionLexer.java"$
+// $ANTLR 2.7.5 (20050128): "src/sourceanalysis/dox/TypeExpression.g" -> "TypeExpressionLexer.java"$
 
 package sourceanalysis.dox;
 

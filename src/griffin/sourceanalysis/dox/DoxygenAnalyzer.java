@@ -742,7 +742,7 @@ public class DoxygenAnalyzer {
 							group.getScope().addMember(emember, translateVisibility(access));
 					}
 					else if (mkind.equals(Tags.DEFINE)) { /* macro in SourceFile */
-						if (hasPre) translateDefine(mbr); // - currently unused
+						Macro emember = hasPre ? (Macro)pre : translateDefine(mbr);
 					}
 					else if (mkind.equals(Tags.FRIEND)) { /* friend function in Aggregate */
 						// - make sure friend is a function
@@ -1611,10 +1611,7 @@ public class DoxygenAnalyzer {
 			try {
 				Entity referenced = followReference(locator);
 				String name = XML.collectText(xmlnode);
-				// Make sure that the name is coherent. This is needed because
-				// Doxygen tends to foolishness when redirecting typedefs
-				if (canBeTrusted(name, referenced))
-					references.put(name, referenced);
+				references.put(name, referenced);
 			}
 			catch (ElementNotFoundException e) {
 				System.err.println("*** WARNING: reference to undefined " +
@@ -1632,44 +1629,6 @@ public class DoxygenAnalyzer {
 				collectReferences(children.item(i), references);
 			}
 		}
-	}
-	
-	/**
-	 * Checks if the basename of two (possibly qualified) names is the same.
-	 * 
-	 * @param name1 first name
-	 * @param name2 second name
-	 * @return <b>true</b> if the last name element matches, e.g. 
-	 *  <code>a::cool</code> and <code>b::c::cool</code>
-	 */
-	private static boolean namesMatch(String name1, String name2)
-	{
-		return (name1.equals(name2) 
-				|| name1.endsWith(":" + name2) || name2.endsWith(":" + name1));
-	}
-	
-	/**
-	 * It is sometimes the case, that Doxygen misdirects a reference embedded 
-	 * within a type expression. This is because typedefs are followed up to 
-	 * their origin, and when the origin is a class template, this results in
-	 * loss of template argument information.
-	 * 
-	 * For example, if the code contains
-	 *   <code>typedef std::pair&lt;int,int&gt CoPair;</code>
-	 * Then Doxygen redirects <code>CoPair</code> to <code>std::pair</code>
-	 * whenever it occurs. As a result, the &lt;int,int&gt; tag cannot be 
-	 * recovered.
-	 * 
-	 * @param name the name via which an entity is referenced
-	 * @param referenced an entity which Doxygen redirects that name to
-	 * @return
-	 */
-	private static boolean canBeTrusted(String name, Entity referenced)
-	{
-		if (referenced.isTemplated())
-			return namesMatch(name, referenced.getName());
-		else
-			return true; // non-templates are always trusted
 	}
 	
 	/**

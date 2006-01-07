@@ -18,8 +18,6 @@ class Griffin:
 		self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
 
 	def setXML(self, xmldir):
-		if not os.path.isdir(xmldir):
-			print "griffin: '%s' not found" % xmldir
 		self.xmldir = xmldir
 
 	def setSources(self, sources):
