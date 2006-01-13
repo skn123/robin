@@ -96,8 +96,8 @@ public:
 	void flush()
 	{
 		for (typename cache_map::iterator ci = latest.begin(); 
-			 ci != latest.end(); ++ci)
-			HashTraits::dispose(ci->first);
+			 ci != latest.end(); )
+			HashTraits::dispose((ci++)->first);
 		latest.clear();
 	}
 
