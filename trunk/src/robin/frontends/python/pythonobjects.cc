@@ -71,6 +71,7 @@ PyTypeObject FunctionTypeObject = {
 	FunctionObject::__call__     /*tp_call*/
 };
 
+#if 0
 PyTypeObject ClassTypeObject = {
 	PyObject_HEAD_INIT(&PyType_Type)
     0,
@@ -115,6 +116,9 @@ PyTypeObject ClassTypeObject = {
 	0, 0, 
 	0
 };
+#endif
+
+PyTypeObject *ClassTypeObject = 0;
 
 PyTypeObject EnumeratedTypeTypeObject = {
 	PyObject_HEAD_INIT(&PyType_Type)
@@ -456,7 +460,7 @@ PyObject *FunctionObject::__repr__()
 ClassObject::ClassObject(Handle<Class> underlying)
 	: m_underlying(underlying), m_in_module(NULL), m_x_methods(NULL)
 {
-	PyObject_Init((PyObject*)this, &ClassTypeObject);
+	PyObject_Init((PyObject*)this, ClassTypeObject);
 
 	ob_size = sizeof(ClassObject);
 
@@ -1441,7 +1445,7 @@ int ConversionHookObject::__setsubscript__(PyObject *sub, PyObject *val)
  */
 bool ClassObject_Check(PyObject *object)
 {
-	return (PyTypeObject*)PyObject_Type(object) == &ClassTypeObject;
+	return (PyTypeObject*)PyObject_Type(object) == ClassTypeObject;
 }
 
 /**
@@ -1498,6 +1502,34 @@ void PyPascalString_deallocator(void *ppascal)
 bool PyPascalString_Check(PyObject *object)
 {
 	return (PyCObject_Check(object));
+}
+
+
+void initObjects()
+{
+	// Initialize ClassTypeObject
+	PyObject *name = PyString_FromString("Robin::Python::ClassObject");
+	PyObject *bases = PyTuple_New(1);
+	PyTuple_SET_ITEM(bases, 0, (PyObject*)&PyType_Type);
+	Py_XINCREF(&PyType_Type);
+
+	PyObject *args = PyTuple_New(3);
+	PyTuple_SET_ITEM(args, 0, name);
+	PyTuple_SET_ITEM(args, 1, bases);
+	PyTuple_SET_ITEM(args, 2, PyDict_New());
+
+	ClassTypeObject = (PyTypeObject*)
+		PyObject_Call((PyObject*)&PyType_Type, args, 0);
+
+	ClassTypeObject->tp_dealloc = ClassObject::__dealloc__;
+	ClassTypeObject->tp_getattr = ClassObject::__getattr__;
+	ClassTypeObject->tp_setattr = ClassObject::__setattr__;
+	ClassTypeObject->tp_getattro = 0;
+	ClassTypeObject->tp_setattro = 0;
+	ClassTypeObject->tp_repr = ClassObject::__repr__;
+	ClassTypeObject->tp_call = ClassObject::__call__;
+
+	Py_XDECREF(args);
 }
 
 

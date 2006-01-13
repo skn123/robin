@@ -280,8 +280,10 @@ bool PyPascalString_Check(PyObject *object);
 
 
 extern PyTypeObject FunctionTypeObject;
-extern PyTypeObject ClassTypeObject;
+extern PyTypeObject *ClassTypeObject;
 extern PyTypeObject EnumeratedTypeTypeObject;
+
+extern void initObjects();
 
 
 } // end of namespace Python

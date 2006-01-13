@@ -63,9 +63,8 @@ Handle<Class> Facade::asClass(const std::string& classname)
 Handle<Instance> Facade::asInstance(PyObject *pyobj)
 {
 	PyObject     *pytype = PyObject_Type(pyobj);
-	PyTypeObject *pymetatype = (PyTypeObject*)PyObject_Type(pytype);
 
-	if (pymetatype == &ClassTypeObject) {
+	if (ClassObject_Check(pytype)) {
 		return ((InstanceObject*)pyobj)->getUnderlying();
 	}
 	else {
@@ -106,9 +105,8 @@ PyTypeObject *Facade::type(classdescriptor classname)
 bool Facade::check(classdescriptor classname, PyObject *pyobj)
 {
 	PyObject     *pytype = PyObject_Type(pyobj);
-	PyTypeObject *pymetatype = (PyTypeObject*)PyObject_Type(pytype);
 
-	if (pymetatype == &ClassTypeObject) {
+	if (ClassObject_Check(pytype)) {
 		Handle<Class> klass = ((InstanceObject*)pyobj)
 			->getUnderlying()->getClass();
 		return (klass->name() == classname);

@@ -324,6 +324,8 @@ void initrobin()
 	Robin::FrontendsFramework::selectFrontend(
 		static_hcast<Robin::Frontend>(PythonFrontend::Module::fe));
 
+	Robin::Python::initObjects();
+
 	// Register Python module
 	PyObject *module =
 		Py_InitModule4("robin", PythonFrontend::Module::methods,
@@ -331,13 +333,13 @@ void initrobin()
 
 	// Add some stuff to the module
 	Py_XINCREF(&Robin::Python::FunctionTypeObject);
-	Py_XINCREF(&Robin::Python::ClassTypeObject);
+	Py_XINCREF(Robin::Python::ClassTypeObject);
 	Py_XINCREF(&Robin::Python::EnumeratedTypeTypeObject);
 
 	PyModule_AddObject(module, "FunctionType", 
 					   (PyObject*)&Robin::Python::FunctionTypeObject);
 	PyModule_AddObject(module, "ClassType", 
-					   (PyObject*)&Robin::Python::ClassTypeObject);
+					   (PyObject*)Robin::Python::ClassTypeObject);
 	PyModule_AddObject(module, "EnumeratedTypeType", 
 					   (PyObject*)&Robin::Python::EnumeratedTypeTypeObject);
 	PyModule_AddObject(module, "double", Robin::Python::pydouble =
