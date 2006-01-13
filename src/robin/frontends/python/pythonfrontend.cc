@@ -339,7 +339,7 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 		return ArgumentPythonDict;
 	else if (PyLong_Check(object))
 		return ArgumentPythonLong;
-	else if (PyObject_Type(obtype) == (PyObject*)&ClassTypeObject) {
+	else if (ClassObject_Check(obtype)) {
 		// - instance object
 		Handle<Class> clas = ((ClassObject*)obtype)->getUnderlying();
 		return clas->getRefArg();

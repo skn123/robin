@@ -1,6 +1,7 @@
 #include "pythonerrorhandler.h"
 
 #include <Python.h>
+#include <compile.h>
 #include <frameobject.h>
 
 #include <string>
@@ -106,7 +107,7 @@ void PythonErrorHandler::setError(const std::exception &exc,
 
 	// retreive traceback
 	PyThreadState *state = PyThreadState_Get();
-	PyTracebackObject *t = (PyTracebackObject*) state->curexc_traceback;
+	PyObject *t = state->curexc_traceback;
 	Py_XINCREF((PyObject*)t);
 	
 	// create runtime error

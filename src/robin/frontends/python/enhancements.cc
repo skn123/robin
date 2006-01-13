@@ -36,7 +36,7 @@ namespace Python {
 
 		bool isFamiliar(PyObject *self) {
 			PyObject *type = PyObject_Type(self);
-			return (PyObject_Type(type) == (PyObject*)&ClassTypeObject);
+			return ClassObject_Check(type);
 		}
 
 		/**
@@ -44,7 +44,7 @@ namespace Python {
 		 */
 		ClassObject *self_class(PyObject *self) {
 			PyObject *type = PyObject_Type(self);
-			assert(PyObject_Type(type) == (PyObject*)&ClassTypeObject);
+			assert(ClassObject_Check(type));
 			return (ClassObject *)type;
 		}
 
