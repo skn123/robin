@@ -99,6 +99,8 @@ public:
 	static PyObject *__repr__   (PyObject *self);
 	static void      __dealloc__(PyObject *self);
 
+	Handle<Instance> construct(PyObject *args, PyObject *kw);
+
 	/**
 	 * @name Access
 	 */
@@ -170,6 +172,10 @@ public:
 
 	void keepAlive(PyObject *owner);
 	//@}
+
+protected:
+	InstanceObject();
+	void init(Handle<Instance> underlying);
 
 private:
 	Handle<Instance> m_underlying;
@@ -281,6 +287,7 @@ bool PyPascalString_Check(PyObject *object);
 
 extern PyTypeObject FunctionTypeObject;
 extern PyTypeObject *ClassTypeObject;
+extern PyTypeObject *HybridTypeObject;
 extern PyTypeObject EnumeratedTypeTypeObject;
 
 extern void initObjects();

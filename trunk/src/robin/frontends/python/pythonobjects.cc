@@ -29,6 +29,7 @@
 #include "pythonadapters.h"
 #include "pythonfrontend.h"
 #include "pythonerrorhandler.h"
+#include "inheritance.h"
 
 namespace {
 
@@ -44,6 +45,9 @@ namespace {
 	}
 
 	PyObject *pyowned(PyObject *o) { Py_XINCREF(o); return o; }
+
+#define offsetof_nw(CLASS, FIELD) ((char*)&((CLASS*)1)->FIELD - (char*)1)
+
 }
 
 
@@ -493,7 +497,7 @@ ClassObject::ClassObject(Handle<Class> underlying)
 
 	tp_mro = NULL;
 	tp_new = __new__;
-	tp_weaklistoffset = offsetof(InstanceObject, m_ob_weak);
+	tp_weaklistoffset = offsetof_nw(InstanceObject, m_ob_weak);
 
 	m_inners = PyDict_New();
 }
@@ -526,6 +530,15 @@ PyObject *ClassObject::__call__(PyObject *self, PyObject *args,
  */
 PyObject *ClassObject::__call__(PyObject *args, PyObject *kw)
 {
+	Handle<Instance> constructed_value = construct(args, kw);
+	if (constructed_value)
+		return (PyObject *)new InstanceObject(this, constructed_value);
+	else
+		return NULL;
+}
+
+Handle<Instance> ClassObject::construct(PyObject *args, PyObject *kw)
+{
 	// Construct arguments
 	int nargs = PyTuple_Size(args);
 	ActualArgumentList pass_args(nargs);
@@ -533,9 +546,8 @@ PyObject *ClassObject::__call__(PyObject *args, PyObject *kw)
 		pass_args[argindex] = PyTuple_GetItem(args, argindex);
 
 	// Invoke callable item
-	Handle<Instance> return_value;
 	try {
-		return_value = m_underlying->createInstance(pass_args);
+		return m_underlying->createInstance(pass_args);
 	}
 	catch (const UserExceptionOccurredException& e) {
 		// - retrieve the current error information, if possible
@@ -548,21 +560,16 @@ PyObject *ClassObject::__call__(PyObject *args, PyObject *kw)
 			PyObject *exc_type, *exc_value, *exc_tb;
 			PyArg_ParseTuple(errinfo, "OOO", &exc_type, &exc_value, &exc_tb);
 			PyErr_Restore(exc_type, exc_value, exc_tb);
-			return NULL;
 		}
 		else {
 			// - translate exception to Python
 			PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
-			return NULL;
 		}
 	}
 	catch (const std::exception& e) {
 		PyErr_SetString(PyExc_RuntimeError, e.what());
-		return NULL;
 	}
-
-	// Successful completion
-	return (PyObject *)new InstanceObject(this, return_value);
+	return Handle<Instance>();
 }
 
 /**
@@ -859,6 +866,17 @@ InstanceObject::InstanceObject(ClassObject *classobj,
 	PyObject_Init(this, classobj);
 }
 
+InstanceObject::InstanceObject() 
+	: m_ownership_keep(0), m_ob_weak(0)
+{
+}
+
+void InstanceObject::init(Handle<Instance> underlying)
+{
+	assert(!m_underlying);
+	m_underlying = underlying;
+}
+
 InstanceObject::~InstanceObject()
 {
 	if (m_ownership_keep) {
@@ -882,6 +900,7 @@ void InstanceObject::__dealloc__(PyObject *self)
  */
 Handle<Instance> InstanceObject::getUnderlying() const
 {
+	assert(m_underlying);
 	return m_underlying;
 }
 
@@ -1445,7 +1464,8 @@ int ConversionHookObject::__setsubscript__(PyObject *sub, PyObject *val)
  */
 bool ClassObject_Check(PyObject *object)
 {
-	return (PyTypeObject*)PyObject_Type(object) == ClassTypeObject;
+	return PyType_IsSubtype((PyTypeObject*)PyObject_Type(object),
+							ClassTypeObject);
 }
 
 /**
@@ -1505,22 +1525,28 @@ bool PyPascalString_Check(PyObject *object)
 }
 
 
+PyTypeObject *makeMetaclassType(const char *name, PyTypeObject *base)
+{
+  PyObject *bases = PyTuple_New(1);
+  PyTuple_SET_ITEM(bases, 0, (PyObject*)base);
+  Py_XINCREF(&PyType_Type);
+
+  PyObject *args = PyTuple_New(3);
+  PyTuple_SET_ITEM(args, 0, PyString_FromString(name));
+  PyTuple_SET_ITEM(args, 1, bases);
+  PyTuple_SET_ITEM(args, 2, PyDict_New());
+  PyObject *type = PyObject_Call((PyObject*)&PyType_Type, args, 0);
+  Py_XDECREF(args);
+
+  return (PyTypeObject*)type;
+}
+
+
 void initObjects()
 {
 	// Initialize ClassTypeObject
-	PyObject *name = PyString_FromString("Robin::Python::ClassObject");
-	PyObject *bases = PyTuple_New(1);
-	PyTuple_SET_ITEM(bases, 0, (PyObject*)&PyType_Type);
-	Py_XINCREF(&PyType_Type);
-
-	PyObject *args = PyTuple_New(3);
-	PyTuple_SET_ITEM(args, 0, name);
-	PyTuple_SET_ITEM(args, 1, bases);
-	PyTuple_SET_ITEM(args, 2, PyDict_New());
-
-	ClassTypeObject = (PyTypeObject*)
-		PyObject_Call((PyObject*)&PyType_Type, args, 0);
-
+	ClassTypeObject = makeMetaclassType("Robin::Python::ClassObject",
+										&PyType_Type);
 	ClassTypeObject->tp_dealloc = ClassObject::__dealloc__;
 	ClassTypeObject->tp_getattr = ClassObject::__getattr__;
 	ClassTypeObject->tp_setattr = ClassObject::__setattr__;
@@ -1528,8 +1554,12 @@ void initObjects()
 	ClassTypeObject->tp_setattro = 0;
 	ClassTypeObject->tp_repr = ClassObject::__repr__;
 	ClassTypeObject->tp_call = ClassObject::__call__;
+	ClassTypeObject->tp_new = HybridObject::__new_hybrid__;
 
-	Py_XDECREF(args);
+	// Initialize HybridTypeObject
+	HybridTypeObject = makeMetaclassType("Robin::Python::HybridObject",
+										 ClassTypeObject);
+	HybridTypeObject->tp_dealloc = ClassObject::__dealloc__;
 }
 
 
