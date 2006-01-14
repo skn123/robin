@@ -105,17 +105,19 @@ protocols-test@%:
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
+TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest
+
 test: language-test@. protocols-test@.
 	( cd $(extreme_python) && \
-	        $(SELF) $(python) test_cases.py LanguageTest ProtocolsTest )
+	        $(SELF) $(python) test_cases.py $(TEST_SUITES) )
 
 justtest:
 	( cd $(extreme_python) && \
-	        $(SELF) $(python) test_cases.py LanguageTest ProtocolsTest )
+	        $(SELF) $(python) test_cases.py $(TEST_SUITES) )
 
 systest: language-test@scriptdir protocols-test@scriptdir
 	( cd $(extreme_python) && \
-	        $(python) test_cases.py LanguageTest ProtocolsTest )
+	        $(python) test_cases.py $(TEST_SUITES) )
 
 manifest:
 	$(MAKE) -n install prefix=/demo exec_prefix=/demo site_packages=/demo \

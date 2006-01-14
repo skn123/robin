@@ -293,6 +293,25 @@ class ProtocolsTest(TestCase):
 		self.assertEquals(int(prod_int_times), arg0 * arg1)
 
 
+class InheritanceTest(TestCase):
+
+	def setUp(self):
+		global stl
+		import stl
+
+	def testExtendingViaDerivation(self):
+		class MyString(stl.string):
+			def thrice(self):
+				return self.delim.join([str(self)] * 3)
+
+		token = "TOKEN"
+		ms = MyString()
+		ms.init(token)
+		ms.delim = " "
+		self.assertEquals(str(ms), token)
+		self.assertEquals(ms.thrice(), " ".join([token] * 3))
+	
+
 class MemoryManagementTest(TestCase):
 
 	def setUp(self):
