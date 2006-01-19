@@ -67,6 +67,9 @@ namespace StandardLibrary
 	private:
 		std::vector<double> m_data;
 		int m_id;
+
+		struct Unseen { };
+		std::vector<Unseen> m_priv_vector; // see ticket #49
 	};
 
 	struct DerivedFromVector : public std::vector<unsigned short>

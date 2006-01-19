@@ -540,7 +540,8 @@ public class GenericCodeGenerator
 			}
 			// Traverse methods
 			Traverse t = new Traverse();
-			t.traverse(subject.getScope(), instantiateVisitor, false);
+			t.traverse(subject.getScope(), instantiateVisitor, false,
+					Specifiers.Visibility.PUBLIC);
 		}
 		
 		// Find templates to instantiate in global functions
@@ -662,7 +663,7 @@ public class GenericCodeGenerator
 			Traverse tr = new Traverse();
 			tr.traverse(subject.getScope(), new Traverse.TypeInformationVisitor()
 			 { public void visit(Type typei) { findEnumsToAccomodate(typei); }
-			 }, false);
+			 }, false, Specifiers.Visibility.PUBLIC);
 		}
 	}
 
@@ -701,7 +702,6 @@ public class GenericCodeGenerator
 		
 		// Translate the inheritance information into a graph
 		Map bases = new HashMap();
-		Map templateInstances = new HashMap();
 		
 		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext(); ) {
 			Aggregate subject = (Aggregate)subjectIter.next();

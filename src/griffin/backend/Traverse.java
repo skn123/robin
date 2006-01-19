@@ -14,6 +14,7 @@ import sourceanalysis.Namespace;
 import sourceanalysis.Routine;
 import sourceanalysis.Parameter;
 import sourceanalysis.Scope;
+import sourceanalysis.Specifiers;
 import sourceanalysis.Type;
 
 public class Traverse {
@@ -33,18 +34,22 @@ public class Traverse {
 	 * Go through type leaves in all members of a scope.
 	 * @param starting parent scope
 	 * @param visitor an object which is invoked for every type found
-	 * @param intoTemplates whether or not to descend into template 
+	 * @param intoTemplates whether or not to descend into template
 	 * declarations contained in this scope.
+	 * @param minVisibility an access criteria which limits traversal
+	 * only to members having at least the specified visibility (see
+	 * Specifiers.Visibility) 
 	 */
 	public void traverse(Scope starting, TypeInformationVisitor visitor, 
-		boolean intoTemplates)
+		boolean intoTemplates, int minVisibility)
 	{
 		// - traverse routines of scope
 		for (Iterator ri = starting.routineIterator(); ri.hasNext(); ) {
 			ContainedConnection connection =
 				(ContainedConnection)ri.next();
 			Routine routine = (Routine)connection.getContained();
-			if (intoTemplates || !routine.isTemplated())
+			if (connection.getVisibility() >= minVisibility && 
+					(intoTemplates || !routine.isTemplated()))
 				traverse(routine, visitor);
 		}
 		// - traverse fields of scope
@@ -53,7 +58,8 @@ public class Traverse {
 				(ContainedConnection)fi.next();
 			Field field = (Field)connection.getContained();
 			try {
-				visitor.visit(field.getType());
+				if (connection.getVisibility() >= minVisibility)
+					visitor.visit(field.getType());
 			}
 			catch (MissingInformationException e) {
 				// - nahhh...
@@ -68,16 +74,20 @@ public class Traverse {
 	 * @param visitor an object which is invoked for every type found
 	 * @param intoTemplates whether or not to descend into template 
 	 * declarations contained in this scope.
+	 * @param minVisibility an access criteria which limits traversal
+	 * only to members having at least the specified visibility (see
+	 * Specifiers.Visibility) 
 	 */
 	public void traverse(Aggregate aggregate, TypeInformationVisitor visitor, 
-		boolean intoTemplates)
+		boolean intoTemplates, int minVisibility)
 	{
-		traverse(aggregate.getScope(), visitor, intoTemplates);
+		traverse(aggregate.getScope(), visitor, intoTemplates, minVisibility);
 		// Also trace types occuring in inheritance
 		for (Iterator bi = aggregate.baseIterator(); bi.hasNext(); ) {
 			InheritanceConnection connection =
 				(InheritanceConnection)bi.next();
-			visitor.visit(connection.getBaseAsType());
+			if (connection.getVisibility() >= minVisibility)
+				visitor.visit(connection.getBaseAsType());
 		}
 	}
 
