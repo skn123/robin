@@ -87,7 +87,7 @@ SELF = PATH=$(PWD):$$PATH \
 . = .
 
 language-test@%:
-	$($*)/griffin -in $(extreme_python)/language.h            \
+	$($*)/griffin -I -in $(extreme_python)/language.h            \
 	        -out $(extreme_python)/liblanguage_robin.cc              \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
