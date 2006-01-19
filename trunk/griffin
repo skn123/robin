@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Griffin launcher script."""
 
-import os.path, sys, griffin as conf
+import os.path, sys, re, griffin as conf
 
 
 class Griffin:
@@ -20,7 +20,7 @@ class Griffin:
 
 	def setXML(self, xmldir):
 		if not os.path.isdir(xmldir):
-			print "griffin: '%s' not found" % xmldir
+			raise OSError, "'%s' not found" % xmldir
 		self.xmldir = xmldir
 
 	def setSources(self, sources):
@@ -37,8 +37,7 @@ class Griffin:
 		             (" ".join(sources), stltag)
 		if self.verbose: print ".griffin-doxyfile:\n" + doxyfile
 		open(".griffin-doxyfile", "w").write(doxyfile)
-		if self.verbose: print "doxygen .griffin-doxyfile\n"
-		os.system("doxygen .griffin-doxyfile")
+		Dots(self.verbose).run("doxygen .griffin-doxyfile")
 		if self.verbose: print "unlink .griffin-doxyfile"
 		os.unlink(".griffin-doxyfile")
 
@@ -138,16 +137,18 @@ class Griffin:
 
 class Preprocessor(object):
 
+	INCLUDE_DIRECTIVE = re.compile(r'^\s*#\s*include\s*"(.*)"')
+
 	def findHeader(self, included_in, included):
 		rel = os.path.join(included_in, os.path.pardir, included)
 		return os.path.normpath(rel)
 
 	def extractIncluded(self, filename):
-		import re
-		inc = re.compile(r'^#\s*include "(.*)"')
+		if not os.path.isfile(filename): return []
+		# Look for 'include' directives
 		all_included = []
 		for line in open(filename):
-			mo = inc.search(line)
+			mo = Preprocessor.INCLUDE_DIRECTIVE.search(line)
 			if mo:
 				included = self.findHeader(filename, mo.group(1))
 				if included:
@@ -159,10 +160,36 @@ class Preprocessor(object):
 		i = 0
 		while i < len(filenames):
 			for included in self.extractIncluded(filenames[i]):
-				if included not in filenames:
+				if included not in filenames and os.path.isfile(included):
 					filenames.append(included)
 			i += 1
 		return filenames
+
+
+class CommandRunner(object):
+	def __init__(self, verbose = False):
+		self.verbose = verbose
+		
+	def run(self, command):
+		pass
+
+class ShellRunner(CommandRunner):
+	def run(self, command):
+		if self.verbose: print command
+		os.system(command)
+
+class Dots(CommandRunner):
+	"""Runs an external command without sending all the output to the tty."""
+	def run(self, command):
+		if self.verbose: print command
+		pipe = os.popen(command)
+		for line in pipe:
+			sys.stderr.write(".")
+		if pipe.close():
+			sys.stderr.write(" [FAILED]\n")
+			raise OSError, "failed to run " + command.split()[0]
+		else:
+			sys.stderr.write(" [  OK  ]\n")
 
 
 here = os.path.dirname(__file__)
@@ -172,7 +199,10 @@ here = os.path.dirname(__file__)
 if __name__ == "__main__":
 	if sys.argv[1:]:
 		g = Griffin()
-		g.process(sys.argv[1:])
+		try:
+			g.process(sys.argv[1:])
+		except OSError, msg:
+			print "griffin:", msg
 	else:
 		print
 		print "Usage: griffin -in <input> -out <output-file> <class-names>"
