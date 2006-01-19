@@ -79,7 +79,7 @@ class Griffin:
 				read_to = arg_out; read_limit = 1
 			elif arg == "-eclipse":
 				self._opt_eclipse()
-			elif arg in ["-I", "-v"]:
+			elif arg in ["-I", "-v", "--interceptors"]:
 				arg_opts[arg] = ""
 			else:
 				read_to.append(arg)
@@ -130,8 +130,10 @@ class Griffin:
 			print "No input specified. Quit."
 			raise SystemExit
 
+		arg_jopts = [x for x in arg_opts.keys() if x.startswith("--")]
+
 		# engage
-		self.run(arg_out + arg_other)
+		self.run(arg_out + arg_jopts + arg_other)
 
 
 

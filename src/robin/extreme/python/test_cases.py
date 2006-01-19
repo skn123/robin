@@ -1,3 +1,5 @@
+# -*- mode: python; tab-width: 4; py-indent-offset: 4 -*-
+
 #############################################################################
 # Robin & Python - test cases
 #############################################################################
@@ -309,7 +311,22 @@ class InheritanceTest(TestCase):
 		ms.init(token)
 		ms.delim = " "
 		self.assertEquals(str(ms), token)
+		self.assertEquals(ms.size(), len(token))
 		self.assertEquals(ms.thrice(), " ".join([token] * 3))
+
+	def testInterceptors(self):
+		import inheritance, robin
+		class MyFunctor(inheritance.IFunctor):
+			def operate(self, string, index):
+				q = str(string)*index
+				return robin.disown(stl.string(q))
+
+		f = MyFunctor()
+		elements = ["Aaron", "Mike", "Joseph"]
+		melements = inheritance.mapper(elements, f.IFunctor)
+		self.assertEquals(len(elements), len(melements))
+		for i in xrange(len(elements)):
+			self.assertEquals(elements[i] * i, melements[i])
 	
 
 class MemoryManagementTest(TestCase):
