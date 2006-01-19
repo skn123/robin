@@ -773,7 +773,8 @@ public class Utils {
 						fin_substitution);
 			}
 		};
-		new Traverse().traverse(template, typeVisitor, true);
+		new Traverse().traverse(template, typeVisitor, true, 
+				Specifiers.Visibility.PUBLIC);
 		
 		// ---------------------------------
 		// Create an entity for the instance

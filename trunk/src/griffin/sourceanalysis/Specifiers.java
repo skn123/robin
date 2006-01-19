@@ -13,10 +13,10 @@ public class Specifiers {
 	 */
 	public class Visibility
 	{
-		static public final int PUBLIC = 1;
-		static public final int PRIVATE = 4;
-		static public final int PROTECTED = 3;
-		static public final int PACKAGE = 2;
+		static public final int PUBLIC = 4;
+		static public final int PRIVATE = 1;
+		static public final int PROTECTED = 2;
+		static public final int PACKAGE = 3;
 	};
 	
 	/**
