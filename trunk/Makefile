@@ -87,27 +87,35 @@ SELF = PATH=$(PWD):$$PATH \
 . = .
 
 language-test@%:
-	$($*)/griffin -I -in $(extreme_python)/language.h            \
+	$($*)/griffin -I -in $(extreme_python)/language.h                \
 	        -out $(extreme_python)/liblanguage_robin.cc              \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
 	        Conversions Exceptions Interface Abstract NonAbstract    \
 	        Primitives UsingStrings UsingStringConversions           \
 	        UsingVectors UsingPairs
-	g++ -shared $(extreme_python)/liblanguage_robin.cc               \
+	$(CXX) -shared $(extreme_python)/liblanguage_robin.cc            \
 	        -o $(extreme_python)/liblanguage.so
 
 protocols-test@%:
-	$($*)/griffin -in $(extreme_python)/protocols.h                     \
+	$($*)/griffin -in $(extreme_python)/protocols.h                  \
 	        -out $(extreme_python)/libprotocols_robin.cc             \
 	        Times
-	g++ -shared $(extreme_python)/libprotocols_robin.cc              \
+	$(CXX) -shared $(extreme_python)/libprotocols_robin.cc           \
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
+inheritance-test@%:
+	$($*)/griffin -in $(extreme_python)/inheritance.h                \
+	        -out $(extreme_python)/libinheritance_robin.cc           \
+	        --interceptors Functor mapper
+	$(CXX) -shared $(extreme_python)/libinheritance_robin.cc         \
+		-o $(extreme_python)/libinheritance.so
+
+TESTS = language-test protocols-test inheritance-test
 TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest
 
-test: language-test@. protocols-test@.
+test: ${addsuffix @., $(TESTS)}
 	( cd $(extreme_python) && \
 	        $(SELF) $(python) test_cases.py $(TEST_SUITES) )
 
@@ -115,7 +123,7 @@ justtest:
 	( cd $(extreme_python) && \
 	        $(SELF) $(python) test_cases.py $(TEST_SUITES) )
 
-systest: language-test@scriptdir protocols-test@scriptdir
+systest: ${addsuffix @scriptdir, $(TESTS)}
 	( cd $(extreme_python) && \
 	        $(python) test_cases.py $(TEST_SUITES) )
 

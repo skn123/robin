@@ -11,14 +11,37 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import sourceanalysis.*;
-import sourceanalysis.xml.*;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.DataTemplateParameter;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.Group;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.Macro;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.SourceFile;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.TemplateEnabledEntity;
+import sourceanalysis.TemplateParameter;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.xml.XML;
+import sourceanalysis.xml.XMLFormatException;
 import antlr.RecognitionException;
 import antlr.TokenStreamException;
 
@@ -1426,7 +1449,8 @@ public class DoxygenAnalyzer {
 				DocumentComponentRegistry.EntityLocator locator =
 					makeLocatorFromNode(element);
 				try {
-					if (name.indexOf("::") == -1 && !anonymous) {
+					if (name.indexOf("::") == -1 && !anonymous &&
+							locator.getKind().equals(Tags.COMPOUND)) {
 						Entity comp = followReference(locator);
 						compounds.add(comp);
 					}
@@ -1844,6 +1868,6 @@ public class DoxygenAnalyzer {
 	private List m_fieldsForRepair;
 	private List m_inheritanceForRepair;
 	private Map m_globalFields_byname;
-	
+
 	public Logger logger;
 }

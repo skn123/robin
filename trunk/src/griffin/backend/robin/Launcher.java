@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import backend.Utils;
+
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
 
@@ -86,11 +88,14 @@ public class Launcher extends backend.Launcher {
 		}
 		else {
 			for (int i = 0; i < classnames.length; ++i) {
+				boolean intercepted = false; 
 				if (classnames[i].startsWith("@")) {
 					classnames[i] = classnames[i].substring(1);
-					codegen.investInterceptor(classnames[i]);
+					intercepted = true;
 				}
 				codegen.collect(classnames[i]);
+				if (interceptors || intercepted)
+					codegen.investInterceptor(classnames[i]);
 			}
 		}
 		

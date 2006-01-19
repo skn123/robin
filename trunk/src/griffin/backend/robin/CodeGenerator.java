@@ -126,16 +126,18 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 */
 	public void investInterceptor(Scope scope, String classname)
 	{
-		// Go through all of the Aggregates, searching for the given name
-		for (Iterator aggiter = scope.aggregateIterator(); aggiter.hasNext(); ) {
-			// Find class
-			ContainedConnection connection = (ContainedConnection)aggiter.next();
-			Aggregate agg = (Aggregate)connection.getContained();
+		// Go through all of the Subjects, searching for the given name
+		for (Iterator subjectiter = m_subjects.iterator(); subjectiter.hasNext(); ) {
+			Aggregate agg = (Aggregate)subjectiter.next();
 			if (agg.getName().equals(classname)) {
 				// Add to interceptors
-				if (!agg.isTemplated() || !m_separateClassTemplates) {
-					m_interceptors.add( agg );
+				try {
+					if ((!agg.isTemplated() || !m_separateClassTemplates)
+							&& backend.Utils.isAbstract(agg)) {
+						m_interceptors.add( agg );
+					}
 				}
+				catch (MissingInformationException e) { }
 			}
 		}
 	}
