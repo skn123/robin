@@ -14,7 +14,6 @@ import sourceanalysis.Namespace;
 import sourceanalysis.Routine;
 import sourceanalysis.Parameter;
 import sourceanalysis.Scope;
-import sourceanalysis.Specifiers;
 import sourceanalysis.Type;
 
 public class Traverse {

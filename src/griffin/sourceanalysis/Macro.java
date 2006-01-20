@@ -57,9 +57,18 @@ public class Macro extends Entity {
 	 * Access all the preprocessing parameters this macro accepts.
 	 * @return an iterator which iterates over Strings
 	 */
-	Iterator preprocesingParameterIterator()
+	public Iterator preprocesingParameterIterator()
 	{
 		return m_parameters.iterator();
+	}
+	
+	/**
+	 * Provide the text string this macro expands to.
+	 * @return expansion string
+	 */
+	public String getExpansion()
+	{
+		return m_expansion;
 	}
 	
 	/*@}*/
