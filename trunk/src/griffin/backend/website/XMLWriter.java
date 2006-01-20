@@ -37,7 +37,6 @@ import sourceanalysis.Aggregate;
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.ElementNotFoundException;
-import sourceanalysis.Enum;
 import sourceanalysis.Field;
 import sourceanalysis.Group;
 import sourceanalysis.InheritanceConnection;
@@ -1744,6 +1743,8 @@ public class XMLWriter {
 			
 			m_sources.add(sourceName);	
 		}
+		
+		public String getName() { return m_name; }
 	
 		/** The name of the module */
 		private String m_name;

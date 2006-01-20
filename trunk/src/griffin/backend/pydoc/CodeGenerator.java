@@ -31,7 +31,7 @@ public class CodeGenerator extends GenericCodeGenerator
 	}
 
 	
-	private void documentProperties(Entity entity) throws IOException
+	protected void documentProperties(Entity entity) throws IOException
 	{
 		m_output.write("general = document.Document(\"General\")\n");
 		// Go over the properties of this entity

@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
-import backend.Utils;
-
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
 

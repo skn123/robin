@@ -7,14 +7,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.logging.Level;
 
-import backend.Launcher.PropertyPage;
-
-import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
-import sourceanalysis.dox.DoxygenAnalyzer;
 import sourceanalysis.view.TemplateBank;
 import sourceanalysis.view.TemplateReader;
 
