@@ -293,6 +293,11 @@ tryAgain:
 			match("class");
 			break;
 		}
+		case 'e':
+		{
+			match("enum");
+			break;
+		}
 		default:
 			if ((LA(1)=='s') && (LA(2)=='t') && (LA(3)=='a')) {
 				match("static");
@@ -591,6 +596,23 @@ tryAgain:
 			_cnt22++;
 		} while (true);
 		}
+		{
+		switch ( LA(1)) {
+		case 'l':
+		{
+			match('l');
+			break;
+		}
+		case 'L':
+		{
+			match('L');
+			break;
+		}
+		default:
+			{
+			}
+		}
+		}
 		if ( _createToken && _token==null && _ttype!=Token.SKIP ) {
 			_token = makeToken(_ttype);
 			_token.setText(new String(text.getBuffer(), _begin, text.length()-_begin));
@@ -629,7 +651,7 @@ tryAgain:
 	
 	
 	private static final long[] mk_tokenSet_0() {
-		long[] data = { 0L, 25933390490378256L, 0L, 0L};
+		long[] data = { 0L, 25933527929331728L, 0L, 0L};
 		return data;
 	}
 	public static final BitSet _tokenSet_0 = new BitSet(mk_tokenSet_0());
@@ -639,7 +661,7 @@ tryAgain:
 	}
 	public static final BitSet _tokenSet_1 = new BitSet(mk_tokenSet_1());
 	private static final long[] mk_tokenSet_2() {
-		long[] data = { 0L, 5931324067024896L, 0L, 0L};
+		long[] data = { 0L, 14938523321765888L, 0L, 0L};
 		return data;
 	}
 	public static final BitSet _tokenSet_2 = new BitSet(mk_tokenSet_2());

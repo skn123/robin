@@ -111,7 +111,7 @@ public class Launcher extends backend.Launcher {
 		codegen.generateConstantWrappers();
 		codegen.generateEnumeratedTypeWrappers();
 		codegen.generateEntry();
-		codegen.report();
+		codegen.report(classnames);
 
 		cfile.close();
 	}

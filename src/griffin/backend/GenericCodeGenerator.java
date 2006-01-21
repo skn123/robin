@@ -6,6 +6,7 @@ package backend;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -39,9 +40,10 @@ public class GenericCodeGenerator
 		m_output = output;
 		m_subjects = new HashSet();
 		m_subjectTemplates = new HashSet();
-		m_enums = new LinkedList();
-		m_typedefs = new LinkedList();
-		m_globalFuncs = new LinkedList();
+		m_enums = new HashSet();
+		m_typedefs = new HashSet();
+		m_globalFuncs = new HashSet();
+		m_namespaces = new HashSet();
 		m_templates = templates;
 		m_separateClassTemplates = false; // if set to true, classes are put
 					// in 'subjects' while class templates are put in 
@@ -114,7 +116,7 @@ public class GenericCodeGenerator
 			// Find class
 			ContainedConnection connection = (ContainedConnection)aggiter.next();
 			Aggregate agg = (Aggregate)connection.getContained();
-			if (agg.getName().equals(componentname)) {
+			if (nameMatches(agg, componentname)) {
 				// Add to subjects
 				if (!agg.isTemplated() || !m_separateClassTemplates)
 					m_subjects.add( agg );
@@ -128,7 +130,7 @@ public class GenericCodeGenerator
 			ContainedConnection connection = (ContainedConnection)enumiter.next();
 			sourceanalysis.Enum enume = (sourceanalysis.Enum)connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
-				&& enume.getName().equals(componentname)) {
+				&& nameMatches(enume, componentname)) {
 				m_enums.add( enume );
 			}
 		}
@@ -137,7 +139,7 @@ public class GenericCodeGenerator
 			ContainedConnection connection = (ContainedConnection)aliter.next();
 			Alias alias = (Alias)connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
-				&& alias.getName().equals(componentname)) {
+				&& nameMatches(alias, componentname)) {
 				m_typedefs.add(alias);
 			}
 		}
@@ -147,7 +149,7 @@ public class GenericCodeGenerator
 				(ContainedConnection)funciter.next();
 			Routine routine = (Routine)connection.getContained();
 			if (!(connection.getContainer() instanceof Aggregate)
-				&& routine.getName().equals(componentname)) {
+				&& nameMatches(routine, componentname)) {
 				m_globalFuncs.add(routine);
 			}
 		}
@@ -155,7 +157,8 @@ public class GenericCodeGenerator
 		for (Iterator nsiter = scope.namespaceIterator(); nsiter.hasNext(); ) {
 			ContainedConnection connection = (ContainedConnection)nsiter.next();
 			Namespace namespace = (Namespace)connection.getContained();
-			if (namespace.getName().equals(componentname)) {
+			if (nameMatches(namespace, componentname)) {
+				m_namespaces.add(namespace);
 				autocollect(namespace.getScope());
 			}
 			collect(namespace.getScope(), componentname);
@@ -210,6 +213,30 @@ public class GenericCodeGenerator
 			Namespace namespace = (Namespace)connection.getContained();
 			autocollect(namespace.getScope());
 		}		
+	}
+
+	/**
+	 * Returns a container of all possible names via which
+	 * an entity can be referenced for collection purposes.
+	 * @param entity
+	 * @return a Collection of Strings
+	 */
+	protected static Collection allPossibleNames(Entity entity)
+	{
+		List names = new ArrayList(2);
+		names.add(entity.getName());
+		names.add(Utils.cleanFullName(entity));
+		return names;
+	}
+	
+	protected boolean nameMatches(Entity entity, String name)
+	{
+		Collection names = allPossibleNames(entity);
+		for (Iterator nameIter = names.iterator(); nameIter.hasNext(); ) {
+			if (nameIter.next().equals(name))
+				return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -766,9 +793,10 @@ public class GenericCodeGenerator
 	protected Writer m_output;
 	protected Set m_subjects;
 	protected Set m_subjectTemplates;
-	protected List m_enums;
-	protected List m_typedefs;
-	protected List m_globalFuncs;
+	protected Set m_enums;
+	protected Set m_typedefs;
+	protected Set m_globalFuncs;
+	protected Set m_namespaces;
 	protected TemplateBank m_templates;
 	protected boolean m_separateClassTemplates;
 

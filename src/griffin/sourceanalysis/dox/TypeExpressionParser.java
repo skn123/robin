@@ -220,7 +220,7 @@ public TypeExpressionParser(ParserSharedInputState state) {
 		
 		try {      // for error handling
 			{
-			_loop29:
+			_loop30:
 			do {
 				if ((LA(1)==LITERAL_const||LA(1)==LITERAL_volatile)) {
 					flag=cv();
@@ -229,16 +229,16 @@ public TypeExpressionParser(ParserSharedInputState state) {
 					}
 				}
 				else {
-					break _loop29;
+					break _loop30;
 				}
 				
 			} while (true);
 			}
 			{
-			boolean synPredMatched32 = false;
+			boolean synPredMatched33 = false;
 			if (((LA(1)==ID||LA(1)==QUAD))) {
-				int _m32 = mark();
-				synPredMatched32 = true;
+				int _m33 = mark();
+				synPredMatched33 = true;
 				inputState.guessing++;
 				try {
 					{
@@ -246,12 +246,12 @@ public TypeExpressionParser(ParserSharedInputState state) {
 					}
 				}
 				catch (RecognitionException pe) {
-					synPredMatched32 = false;
+					synPredMatched33 = false;
 				}
-				rewind(_m32);
+				rewind(_m33);
 				inputState.guessing--;
 			}
-			if ( synPredMatched32 ) {
+			if ( synPredMatched33 ) {
 				node=template_id();
 			}
 			else if ((LA(1)==ID||LA(1)==QUAD)) {
@@ -269,10 +269,10 @@ public TypeExpressionParser(ParserSharedInputState state) {
 			
 			}
 			{
-			boolean synPredMatched35 = false;
+			boolean synPredMatched36 = false;
 			if (((LA(1)==QUAD))) {
-				int _m35 = mark();
-				synPredMatched35 = true;
+				int _m36 = mark();
+				synPredMatched36 = true;
 				inputState.guessing++;
 				try {
 					{
@@ -280,12 +280,12 @@ public TypeExpressionParser(ParserSharedInputState state) {
 					}
 				}
 				catch (RecognitionException pe) {
-					synPredMatched35 = false;
+					synPredMatched36 = false;
 				}
-				rewind(_m35);
+				rewind(_m36);
 				inputState.guessing--;
 			}
-			if ( synPredMatched35 ) {
+			if ( synPredMatched36 ) {
 				{
 				match(QUAD);
 				namestring=nested_name();
@@ -327,7 +327,7 @@ public TypeExpressionParser(ParserSharedInputState state) {
 		try {      // for error handling
 			decl=direct_declarator(base);
 			{
-			_loop47:
+			_loop48:
 			do {
 				switch ( LA(1)) {
 				case OPEN_PAREN:
@@ -375,7 +375,7 @@ public TypeExpressionParser(ParserSharedInputState state) {
 				}
 				default:
 				{
-					break _loop47;
+					break _loop48;
 				}
 				}
 			} while (true);
@@ -498,7 +498,7 @@ public TypeExpressionParser(ParserSharedInputState state) {
 				sb.append(t0.getText());
 			}
 			{
-			_loop84:
+			_loop85:
 			do {
 				if ((LA(1)==QUAD)) {
 					match(QUAD);
@@ -509,7 +509,7 @@ public TypeExpressionParser(ParserSharedInputState state) {
 					}
 				}
 				else {
-					break _loop84;
+					break _loop85;
 				}
 				
 			} while (true);
@@ -871,10 +871,10 @@ public TypeExpressionParser(ParserSharedInputState state) {
 		Type.TypeNode mid=m_err; Pointer pointer;
 		
 		try {      // for error handling
-			boolean synPredMatched39 = false;
+			boolean synPredMatched40 = false;
 			if (((_tokenSet_6.member(LA(1))))) {
-				int _m39 = mark();
-				synPredMatched39 = true;
+				int _m40 = mark();
+				synPredMatched40 = true;
 				inputState.guessing++;
 				try {
 					{
@@ -882,12 +882,12 @@ public TypeExpressionParser(ParserSharedInputState state) {
 					}
 				}
 				catch (RecognitionException pe) {
-					synPredMatched39 = false;
+					synPredMatched40 = false;
 				}
-				rewind(_m39);
+				rewind(_m40);
 				inputState.guessing--;
 			}
-			if ( synPredMatched39 ) {
+			if ( synPredMatched40 ) {
 				pointer=ptr_operator();
 				if ( inputState.guessing==0 ) {
 					mid = ptr(base, pointer);
@@ -895,10 +895,10 @@ public TypeExpressionParser(ParserSharedInputState state) {
 				decl=direct_declarator(mid);
 			}
 			else {
-				boolean synPredMatched41 = false;
+				boolean synPredMatched42 = false;
 				if (((LA(1)==OPEN_PAREN))) {
-					int _m41 = mark();
-					synPredMatched41 = true;
+					int _m42 = mark();
+					synPredMatched42 = true;
 					inputState.guessing++;
 					try {
 						{
@@ -906,12 +906,12 @@ public TypeExpressionParser(ParserSharedInputState state) {
 						}
 					}
 					catch (RecognitionException pe) {
-						synPredMatched41 = false;
+						synPredMatched42 = false;
 					}
-					rewind(_m41);
+					rewind(_m42);
 					inputState.guessing--;
 				}
-				if ( synPredMatched41 ) {
+				if ( synPredMatched42 ) {
 					match(OPEN_PAREN);
 					mid=declarator(blank());
 					match(CLOSE_PAREN);
@@ -950,13 +950,13 @@ public TypeExpressionParser(ParserSharedInputState state) {
 			{
 				match(STAR);
 				{
-				_loop50:
+				_loop51:
 				do {
 					if ((LA(1)==LITERAL_const||LA(1)==LITERAL_volatile)) {
 						cv();
 					}
 					else {
-						break _loop50;
+						break _loop51;
 					}
 					
 				} while (true);
@@ -997,13 +997,13 @@ public TypeExpressionParser(ParserSharedInputState state) {
 				nested_name_specifier();
 				match(STAR);
 				{
-				_loop53:
+				_loop54:
 				do {
 					if ((LA(1)==LITERAL_const||LA(1)==LITERAL_volatile)) {
 						cv();
 					}
 					else {
-						break _loop53;
+						break _loop54;
 					}
 					
 				} while (true);
@@ -1085,14 +1085,14 @@ public TypeExpressionParser(ParserSharedInputState state) {
 			{
 				parameter();
 				{
-				_loop57:
+				_loop58:
 				do {
 					if ((LA(1)==COMMA)) {
 						match(COMMA);
 						parameter();
 					}
 					else {
-						break _loop57;
+						break _loop58;
 					}
 					
 				} while (true);
@@ -1125,18 +1125,18 @@ public TypeExpressionParser(ParserSharedInputState state) {
 		
 		try {      // for error handling
 			{
-			int _cnt80=0;
-			_loop80:
+			int _cnt81=0;
+			_loop81:
 			do {
 				if ((LA(1)==ID)) {
 					match(ID);
 					match(QUAD);
 				}
 				else {
-					if ( _cnt80>=1 ) { break _loop80; } else {throw new NoViableAltException(LT(1), getFilename());}
+					if ( _cnt81>=1 ) { break _loop81; } else {throw new NoViableAltException(LT(1), getFilename());}
 				}
 				
-				_cnt80++;
+				_cnt81++;
 			} while (true);
 			}
 		}
@@ -1170,10 +1170,10 @@ public TypeExpressionParser(ParserSharedInputState state) {
 		
 		
 		try {      // for error handling
-			boolean synPredMatched62 = false;
+			boolean synPredMatched63 = false;
 			if (((LA(1)==ID||LA(1)==QUAD))) {
-				int _m62 = mark();
-				synPredMatched62 = true;
+				int _m63 = mark();
+				synPredMatched63 = true;
 				inputState.guessing++;
 				try {
 					{
@@ -1198,12 +1198,12 @@ public TypeExpressionParser(ParserSharedInputState state) {
 					}
 				}
 				catch (RecognitionException pe) {
-					synPredMatched62 = false;
+					synPredMatched63 = false;
 				}
-				rewind(_m62);
+				rewind(_m63);
 				inputState.guessing--;
 			}
-			if ( synPredMatched62 ) {
+			if ( synPredMatched63 ) {
 				{
 				switch ( LA(1)) {
 				case QUAD:
@@ -1303,7 +1303,7 @@ public TypeExpressionParser(ParserSharedInputState state) {
 				if (arg!= null) args.add(arg);
 			}
 			{
-			_loop68:
+			_loop69:
 			do {
 				if ((LA(1)==COMMA)) {
 					match(COMMA);
@@ -1313,7 +1313,7 @@ public TypeExpressionParser(ParserSharedInputState state) {
 					}
 				}
 				else {
-					break _loop68;
+					break _loop69;
 				}
 				
 			} while (true);

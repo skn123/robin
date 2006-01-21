@@ -23,7 +23,8 @@ options {
     ;
     
 protected
-KEY : "virtual" | "static" | "mutable" | "MUTABLE" | "register" | "DLLTAG" | "inline" | "friend" | "typename" | "struct" | "class" ;
+KEY : "virtual" | "static" | "mutable" | "MUTABLE" | "register" | "DLLTAG"
+	 | "inline" | "friend" | "typename" | "struct" | "class" | "enum" ;
 
 OPEN_PAREN: '(' ;
 CLOSE_PAREN: ')' ;
@@ -42,7 +43,7 @@ ID:	(KEY) => KEY { $setType(antlr.Token.SKIP); }
 	 |  ('a'..'z' | 'A'..'Z' | '_') ('a'..'z' | 'A'..'Z' | '0'..'9' | '_')*
 	;
 	
-INT: ( '-' | '+' )? ( '0'..'9' ) +
+INT: ( '-' | '+' )? ( '0'..'9' )+ ( 'l' | 'L' )?
 	;
 
 QUAD: ':' ':' ;

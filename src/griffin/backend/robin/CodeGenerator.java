@@ -607,7 +607,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 			for (Iterator addi = additional.iterator(); addi.hasNext(); ) {
 				Routine routine = (Routine)addi.next();
-				if (m_globalFuncs.indexOf(routine) == -1 
+				if (!m_globalFuncs.contains(routine) 
 						&& Filters.isAvailable(routine))
 					m_globalFuncs.add(routine);
 			}
@@ -1700,19 +1700,46 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * Reports the names of the classes which were successfully wrapped and
 	 * registered.
 	 */
-	public void report() {
+	public void report(String[] classnames) {
+		Set requested = new HashSet();
+		for (int i = 0; i < classnames.length; ++i)
+			requested.add(classnames[i]);
 		// Print header
 		System.out.println("=================================");
-		System.out.println("| Registered classes:");
+		if (!m_subjects.isEmpty())
+			System.out.println("| Registered classes:");
 		// Print subjects
 		for (Iterator subjectIter = m_subjects.iterator(); 
-			subjectIter.hasNext(); ) {
+		     subjectIter.hasNext(); ) {
 			// - print name
 			Entity subject = (Entity)subjectIter.next();
 			System.out.println("|   " + subject.getFullName());
+			requested.removeAll(allPossibleNames(subject));
+		}
+		// Functions
+		unmiss(requested, m_globalFuncs);
+		unmiss(requested, m_namespaces);
+		unmiss(requested, m_enums);
+		unmiss(requested, m_typedefs);
+		// Print those classes that were not found
+		if (!requested.isEmpty())
+			System.out.println("| Missed classes:");
+		for (Iterator missedIter = requested.iterator();
+		     missedIter.hasNext(); ) {
+			System.out.println("|   " + missedIter.next());
 		}
 		// Print footer
 		System.out.println("=================================");
+		if (!requested.isEmpty())
+			System.err.println("griffin: WARNING - Some components could not be found.");
+	}
+	
+	private static void unmiss(Collection requested, Collection found)
+	{
+		for (Iterator foundIter = found.iterator(); foundIter.hasNext(); ) {
+			Entity entity = (Entity)foundIter.next();
+			requested.removeAll(allPossibleNames(entity));
+		}
 	}
 
 	// Private members
