@@ -1,13 +1,12 @@
 from __future__ import generators
 import robin, os.path
+import __builtin__
 
 if os.path.islink(__file__): __file__ = os.readlink(__file__)
 here = os.path.dirname(__file__)
 machine = os.getenv("MACHINE")
 lib = robin.sopre + "robin_stl" + robin.soext
 robin.loadLibrary(__name__, lib)
-
-reallist = list
 
 ostringstream = std.ostringstream
 ifstream = std.ifstream
@@ -199,16 +198,19 @@ def couple(stltype, prefix = None, element = None):
 	
 	if prefix == "std::vector":
 		_vector_from_list(stltype, element or _guess_container_type(prefix, stltype))
-		stltype.__to__ = reallist
+		stltype.__to__ = __builtin__.list
 	elif prefix == "std::list":
 		_list_from_list(stltype, element or _guess_container_type(prefix, stltype))
-		stltype.__to__ = reallist
+		stltype.__to__ = __builtin__.list
 	elif prefix == "std::set":
 		_set_from_list(stltype, element or _guess_container_type(prefix, stltype))
-		stltype.__to__ = reallist
+		stltype.__to__ = __builtin__.list
 	elif prefix == "std::pair":
 		_pair_with_tuple(stltype)
 		stltype.__to__ = tuple
+	elif prefix == "std::complex":
+		stltype.__from__[0j] = lambda z, c=stltype: c(z.real, z.imag)
+		stltype.__to__ = lambda z: __builtin__.complex(z.real(), z.imag())
 	elif prefix == "std::map":
 		_map_from_dict(stltype, element)
 		stltype.__to__ = _map_to_dict
@@ -226,7 +228,7 @@ class STLContainer(dict):
 			
 		def __del__(self):
 			del self.l[:]
-			self.l.extend(reallist(self.c()))
+			self.l.extend(__builtin__.list(self.c()))
 	
 	def __setitem__(self, key, value):
 		try:
@@ -258,6 +260,11 @@ robin.declareTemplate("std::pair", pair)
 # std::map
 map = STLContainer()
 robin.declareTemplate("std::map", map)
+
+# std::complex
+complex = STLContainer()
+robin.declareTemplate("std::complex", complex)
+robin.familiarize(__builtin__.complex)
 
 # generators
 def gen(container):

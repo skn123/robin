@@ -93,7 +93,7 @@ language-test@%:
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
 	        Conversions Exceptions Interface Abstract NonAbstract    \
 	        Primitives UsingStrings UsingStringConversions           \
-	        UsingVectors UsingPairs
+	        UsingVectors UsingPairs UsingComplex
 	$(CXX) -shared $(extreme_python)/liblanguage_robin.cc            \
 	        -o $(extreme_python)/liblanguage.so
 

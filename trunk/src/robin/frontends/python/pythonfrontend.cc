@@ -943,6 +943,26 @@ void PythonFrontend::addUserDefinedType(Handle<UserDefinedTranslator>
 }
 
 
+ByTypeTranslator::ByTypeTranslator(PyTypeObject *pytype)
+	: m_type(new TypeOfArgument(TYPE_CATEGORY_USERDEFINED, 
+								TYPE_USERDEFINED_OBJECT)),
+	  m_pytype(pytype)
+{
+}
+
+Handle<TypeOfArgument> ByTypeTranslator::detectType(scripting_element element)
+{
+	PyObject *pyelement = (PyObject*)element;
+	if (PyObject_Type(pyelement) == (PyObject*)m_pytype) {
+		return m_type;
+	}
+	else {
+		return Handle<TypeOfArgument>();
+	}
+}
+
+
+
 } // end of namespace Robin::Python
 
 } // end of namespace Robin

@@ -150,6 +150,19 @@ class LanguageTest(TestCase):
 		ii_na = language.dynamic_cast[language.NonAbstract](ii_a)
 		ii_na.abstraction()
 
+	def testComplex(self):
+		uc = language.StandardLibrary.UsingComplex()
+		self.assertEquals(uc.pivot(), 1+1j)
+		uc.append(5,1j)
+		uc.append(5+1j, 1+5j)
+
+	def testVectorOfComplex(self):
+		uc = language.StandardLibrary.UsingComplex()
+		qubits = [(6j+1,4+3j), (5, 2j)]
+		tensor = [(5+30j), (-12+2j), (20+15j), (-6+8j)]
+		for q in qubits: uc.append(*q)
+		self.assertEquals(uc.tensor(), tensor)
+
 
 class ThreadingTest(TestCase):
 
