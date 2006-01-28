@@ -258,6 +258,29 @@ public:
 		return pyobj;
 	}
 
+	/**
+	 * Add a custom translator.
+	 */
+	static PyObject *py_familiarize(PyObject *self, PyObject *args)
+	{
+		PyObject *pyobj;
+
+		if (!PyArg_ParseTuple(args, "O:familiarize", &pyobj)) 
+			return NULL;
+
+		if (!PyType_Check(pyobj)) {
+			PyErr_SetString(PyExc_TypeError, "expected: type");
+			return NULL;
+		}
+
+		Handle<UserDefinedTranslator> translate
+			(new ByTypeTranslator((PyTypeObject*)pyobj));
+		fe->addUserDefinedType(translate);
+		
+		Py_XINCREF(Py_None);
+		return Py_None;
+	}
+
 	static PyMethodDef methods[];
 };
 
@@ -291,6 +314,10 @@ PyMethodDef PythonFrontend::Module::methods[] = {
 	  "disown(object)\n"
 	  "Ceases ownership of a given instance object, such that when the\n"
 	  "reference is destroyed, the object itself is not deleted." },
+	{ "familiarize", &py_familiarize, METH_VARARGS,
+	  "familiarize(type)\n"
+	  "Makes the given Python type known to Robin, allowing user to define\n"
+	  "custom conversions to/from it." },
 	{ "debugOn", &py_debugOn, METH_VARARGS, 
 	  "debugOn()\nTurns on Robin's internal debug flag." },
 	{ 0 }

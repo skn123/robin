@@ -28,6 +28,7 @@ __declspec(dllexport)
 void initrobin();
 
 struct _dictobject;
+struct _typeobject;
 
 
 namespace Robin {
@@ -189,6 +190,20 @@ public:
 	static const std::string DATAMEMBER_PREFIX;
 	static const std::string SINKMEMBER_PREFIX;
 };
+
+
+class ByTypeTranslator : public UserDefinedTranslator
+{
+public:
+	ByTypeTranslator(struct _typeobject *pytype);
+
+	virtual Handle<TypeOfArgument> detectType(scripting_element element);
+
+private:
+	Handle<TypeOfArgument> m_type;
+	struct _typeobject *m_pytype;
+};
+
 
 } // end of namespace Robin::Python
 

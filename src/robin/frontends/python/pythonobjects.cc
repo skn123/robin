@@ -1445,15 +1445,22 @@ int ConversionHookObject::__setsubscript__(PyObject *sub, PyObject *val)
 	Handle<Conversion> conv(pyweigher 
 						? new PythonConversionWithWeigher(handler, pyweigher)
 						: new PythonConversion(handler));
-	conv->setSourceType(FrontendsFramework::activeFrontend()
-						    ->detectType(sub));
-	conv->setTargetType((m_kind == VOLATILE) ? m_underlying->getOutArg() 
-						                     : m_underlying->getRefArg());
-	Conversion::Weight conv_weight(0, promotion, 0, weight);
-	conv->setWeight(conv_weight);
-	ConversionTableSingleton::getInstance()
-		->registerConversion(conv);
-	return 0;
+	try {
+		conv->setSourceType(FrontendsFramework::activeFrontend()
+						       ->detectType(sub));
+		conv->setTargetType((m_kind == VOLATILE) ? m_underlying->getOutArg() 
+							                     : m_underlying->getRefArg());
+		Conversion::Weight conv_weight(0, promotion, 0, weight);
+		conv->setWeight(conv_weight);
+		ConversionTableSingleton::getInstance()
+			->registerConversion(conv);
+		return 0;
+	}
+	catch (UnsupportedInterfaceException& uie) {
+		PyErr_Format(PyExc_TypeError, "type '%s' is unfamiliar",
+					 sub->ob_type->tp_name);
+		return -1;
+	}
 }
 
 

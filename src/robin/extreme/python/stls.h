@@ -1,9 +1,13 @@
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4 -*-
+
 #ifndef ROBIN_EXTREME_PYTHON_LANGUAGE_STL_H
 #define ROBIN_EXTREME_PYTHON_LANGUAGE_STL_H
 
 #include <string>
 #include <vector>
 #include <map>
+#include <complex>
+#include <stdexcept>
 
 
 namespace StandardLibrary
@@ -93,6 +97,35 @@ namespace StandardLibrary
 	void copy(UsingStrings& a, const UsingStrings& b) { }
 
 	typedef std::pair<long,long> LPair;
+
+	class UsingComplex
+	{
+	public:
+		typedef std::complex<double> C;
+		typedef std::pair<C,C> Qubit;
+
+		void append(C alpha, C beta) 
+		{ m_states.push_back(Qubit(alpha, beta)); }
+
+		std::complex<double> pivot() const { return C(1.0, 1.0); }
+
+		std::vector<C> tensor()
+		{
+			if (m_states.size() != 2) throw std::domain_error("sz must be 2");
+
+			C p[2] = { m_states[0].first, m_states[0].second };
+			C q[2] = { m_states[1].first, m_states[1].second };
+			std::vector<C> t;
+			t.resize(4);
+			for (int i1 = 0; i1 < 2; ++ i1)
+				for (int i2 = 0; i2 < 2; ++ i2)
+					t[i1*2 + i2] = p[i1] * q[i2];
+			return t;
+		}
+
+	private:
+		std::vector<Qubit> m_states;
+	};
 
 }
 
