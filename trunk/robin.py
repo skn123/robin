@@ -7,8 +7,6 @@ ver = "1.0"
 from griffin import uname, arch, soext, sopre, platspec, pyspec
 
 target = "%(sopre)srobin_pyfe%(platspec)s-%(ver)s%(pyspec)s%(soext)s" % vars()
-target = "librobin_pyfe-1.0.dll"
-#print target
 
 imp.load_dynamic("robin", os.path.join(libdir, target))
 __builtin__.double = double

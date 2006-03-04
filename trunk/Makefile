@@ -88,7 +88,7 @@ uninstall:
 	-rm -fr $(jardir)
 
 extreme_python = src/robin/extreme/python
-SELF = PATH=$(PWD):$$PATH \
+SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
        LD_LIBRARY_PATH=$(PWD) \
        PYTHONPATH=$(PWD):$(PWD)/src/robin/modules
 . = .

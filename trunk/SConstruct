@@ -6,7 +6,7 @@
 ##################################################
 
 ver = "1.0"
-fullver = "1.0.2"
+fullver = "1.0.3"
 
 BuildDir('build', 'src')
 
@@ -89,6 +89,19 @@ def CheckTemplate(context, templatename, pre=""):
 	context.Result(result)
 	return result
 
+def CheckLibPIC(context, libname, text_code):
+	context.Message("Checking for %s (PIC)..." % libname)
+	context.AppendLIBS([libname])
+	result = context.TryBuild(context.env.SharedLibrary, text_code, ".cc")
+	context.Result(result)
+	return result
+
+libiberty_use = """
+#include "libiberty.h"
+extern "C" char *cplus_demangle(const char *mangled, int options);
+void f() { cplus_demangle("robin4", 0); }
+"""
+
 INCLUDEPY = distutils.sysconfig.get_config_var("INCLUDEPY")
 CONFINCLUDEPY = distutils.sysconfig.get_config_var("CONFINCLUDEPY")
 LIBP = distutils.sysconfig.get_config_var("LIBP")
@@ -103,7 +116,8 @@ AUXLIBS = []
 
 # - Start configuring
 pyenv = env.Copy()
-configure = Configure(pyenv, custom_tests = {'CheckTemplate': CheckTemplate})
+configure = Configure(pyenv, custom_tests = {'CheckTemplate': CheckTemplate,
+                                             'CheckLibPIC': CheckLibPIC})
 
 pyenv.Append(CPPPATH = [INCLUDEPY, CONFINCLUDEPY])
 pyenv.Append(LIBPATH = [".", LIBPYCFG])
@@ -119,7 +133,7 @@ if configure.CheckTemplate("__gnu_cxx::hash_map", "#include <ext/hash_map>\n"):
 	env.Append(CXXFLAGS = '-DWITH_EXT_HASHMAP')
 elif configure.CheckTemplate("std::hash_map", "#include <ext/hash_map>\n"):
 	env.Append(CXXFLAGS = '-DWITH_STD_HASHMAP')
-if configure.CheckCXXHeader("libiberty.h") and configure.CheckLib("iberty"):
+if configure.CheckCXXHeader("libiberty.h") and configure.CheckLibPIC("iberty"):
 	env.Append(CXXFLAGS = '-DWITH_LIBERTY')
 	AUXLIBS.append("iberty")
 if configure.CheckLib("dl"):
