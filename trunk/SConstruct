@@ -135,24 +135,26 @@ else:
 
 # Add additional flags
 #env.Append(LINKFLAGS = "-Wl,-z,defs")
+spec = conf.platspec + "-" + ver + conf.pyspec
 
 # Set up targets
 if conf.arch == "windows":
-	robin = env.StaticLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
+	robin = env.StaticLibrary("robin"+spec, Split(FOUNDATION_SRC) + \
 	                                        Split(REFLECTION_SRC) + \
 	                                        Split(REGISTRATION_SRC) + \
 	                                        Split(FRONTEND_FRAMEWORK_SRC))
 else:
-	robin = env.SharedLibrary("robin-"+ver, Split(FOUNDATION_SRC) + \
+	robin = env.SharedLibrary("robin"+spec, Split(FOUNDATION_SRC) + \
 	                                        Split(REFLECTION_SRC) + \
 	                                        Split(REGISTRATION_SRC) + \
 	                                        Split(FRONTEND_FRAMEWORK_SRC),
 	                          LIBS = AUXLIBS)
 
-pyfe = pyenv.SharedLibrary("robin_pyfe-"+ver, Split(PYTHON_FRONTEND_SRC), 
-                           LIBS=["robin-"+ver, LIBPY])
+pyfe = pyenv.SharedLibrary("robin_pyfe"+spec, Split(PYTHON_FRONTEND_SRC), 
+                           LIBS=["robin"+spec, LIBPY])
 
-stl = env.SharedLibrary("robin_stl", ["build/robin/modules/stl/stl_robin.cc"])
+stl = env.SharedLibrary("robin_stl"+spec,
+			["build/robin/modules/stl/stl_robin.cc"])
 
 Default(robin, pyfe, stl)
 

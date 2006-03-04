@@ -15,24 +15,33 @@ class Configure:
 					 default = "same as prefix",
 					 help = "Installation prefix directory for platform-" \
 					        "dependant files")
+		p.add_option("-j", "--py_prefix", dest = "py_prefix",
+					 default = "your Python's site-packages dir",
+					 help = "Installation directory for .py modules")
 		p.add_option("-y", "--with-python", dest = "python",
 					 default = "python",
 					 help = "Determines which Python interpreter to use")
+		p.add_option("-m", "--multi-platform", dest = "multi", 
+		             action = "store_true",
+		             default = False,
+		             help = "extend library names with Python version and "\
+		                    "platform information")
 		o = p.parse_args()
 		if o[0].exec_prefix == "same as prefix":
 			o[0].exec_prefix = o[0].prefix
+		if o[0].py_prefix == "your Python's site-packages dir":
+			o[0].py_prefix = None
 		return o
 
 	def _set_var(self, varname, value):
-		if '@' in (varname + value):
-			print "** Error: illegal value: %s=%s" % (varname, value)
-			sys.exit(1)
-		if os.system("sed -i -e 's@^%(varname)s =.*@%(varname)s = %(value)s@'"\
-					 " Makefile" % locals()) != 0:
-			sys.exit(1)
+		print >> self.config_mak, "%(varname)s = %(value)s" % locals()
+		print >> self.config_py, "%s = '%s'" % \
+			(varname.replace("-", "_"), value)
 
 	def _site_packages_dir(self):
-		for element in sys.path:
+		syspath = sys.path
+		syspath.reverse()
+		for element in syspath:
 			if element.endswith("/site-packages"):
 				return element
 		# Failed to find site-packages directory
@@ -42,18 +51,24 @@ class Configure:
 
 	def configure(self):
 		options, remainder = self._parse_args()
-		print "Updating Makefile"
+		print "Creating config.mak and config.py"
+		self.config_mak = open("config.mak", "w")
+		self.config_py = open("src/robin/modules/robinlib/config.py", "w")
 		self._set_var("prefix", options.prefix)
 		self._set_var("exec_prefix", options.exec_prefix)
 		self._set_var("python", options.python)
-		if options.python == "python":
-			self._set_var("site_packages", self._site_packages_dir())
-		else:
-			import commands
-			site_packages = commands.getoutput(options.python + \
-				""" -c 'import imp; print imp.load_source("configure", """ \
-				""" "configure").Configure()._site_packages_dir()'""")
-			self._set_var("site_packages", site_packages)
+		if options.py_prefix is None:
+			if options.python == "python":
+				options.py_prefix = self._site_packages_dir()
+			else:
+				import commands
+				options.py_prefix = commands.getoutput(options.python + \
+				  """ -c 'import imp; print imp.load_source("configure", """ \
+				  """ "configure").Configure()._site_packages_dir()'""")
+		self._set_var("site_packages", options.py_prefix)
+		# Multi-platform support
+		if options.multi:
+			self._set_var("multi-platform", 1)
 
 
 if __name__ == "__main__":
