@@ -53,8 +53,8 @@ class Griffin:
 
 		cmd = "java -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
               "-classpath '%s' backend.robin.Launcher" % \
-		          (conf.classpath([doxpath]), 
-			conf.classpath([stpath]), conf.classpath(classpath))
+		          (conf.config.java, conf.classpath([doxpath]), 
+		           conf.classpath([stpath]), conf.classpath(classpath))
 		return cmd
 
 	def run(self, args):

@@ -58,8 +58,7 @@ LIBPREFIX = "lib"
 
 import os
 
-env = Environment()
-env.Append(CPPPATH = ["src"])
+env = Environment(ENV = {'PATH': os.environ['PATH']})
 
 # Debug mode (for developers)
 robin_opts = Options()
@@ -68,16 +67,22 @@ robin_opts.Add(BoolOption('debug',
 robin_opts.Add(BoolOption('clsux', 
                           'Set this to 1 if cl.exe fails to initialize', 0))
 
+if ARGUMENTS.get('clsux', 0):
+	env = Environment()
 if ARGUMENTS.get('debug', 0):
 	env.Append(CXXFLAGS = "-g")
-if not ARGUMENTS.get('clsux', 0):
-	env['ENV']['PATH'] = os.environ['PATH']
+
+env.Append(CPPPATH = ["src"])
 
 # Configure library prefix and auto-import flag for Cygwin
 import os.path, griffin as conf
 if conf.isCygwin:
 	env["SHLIBPREFIX"] = "lib"
 	env.Append(LINKFLAGS = "-Wl,--enable-auto-import")
+
+# Configure C++ compiler
+if hasattr(conf.config, 'cxx'):
+	env["CXX"] = conf.config.cxx
 
 # Configure Python include and library
 import sys, distutils.sysconfig

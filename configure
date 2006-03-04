@@ -15,12 +15,18 @@ class Configure:
 					 default = "same as prefix",
 					 help = "Installation prefix directory for platform-" \
 					        "dependant files")
-		p.add_option("-j", "--py_prefix", dest = "py_prefix",
+		p.add_option("-f", "--py_prefix", dest = "py_prefix",
 					 default = "your Python's site-packages dir",
 					 help = "Installation directory for .py modules")
 		p.add_option("-y", "--with-python", dest = "python",
 					 default = "python",
 					 help = "Determines which Python interpreter to use")
+		p.add_option("-x", "--with-cxx", dest = "cxx",
+					 default = "",
+					 help = "Determines which C++ compiler to use")
+		p.add_option("-j", "--with-java", dest = "java",
+					 default = "java",
+					 help = "Determines which Java VM to use")
 		p.add_option("-m", "--multi-platform", dest = "multi", 
 		             action = "store_true",
 		             default = False,
@@ -66,6 +72,10 @@ class Configure:
 				  """ -c 'import imp; print imp.load_source("configure", """ \
 				  """ "configure").Configure()._site_packages_dir()'""")
 		self._set_var("site_packages", options.py_prefix)
+		# C++ and Java
+		if options.cxx != "":
+				self._set_var("cxx", options.cxx)
+		self._set_var("java", options.java)
 		# Multi-platform support
 		if options.multi:
 			self._set_var("multi-platform", 1)
