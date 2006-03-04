@@ -344,20 +344,21 @@ __declspec(dllexport)
 #endif
 void initrobin()
 {
+	
 	using Robin::Python::PythonFrontend;
-
+	/*
 	// Activate frontend
 	PythonFrontend::Module::fe = Handle<PythonFrontend>(new PythonFrontend);
 	Robin::FrontendsFramework::selectFrontend(
 		static_hcast<Robin::Frontend>(PythonFrontend::Module::fe));
 
 	Robin::Python::initObjects();
-
+	*/
 	// Register Python module
 	PyObject *module =
 		Py_InitModule4("robin", PythonFrontend::Module::methods,
 					   "Robin Wrapper Module", NULL, PYTHON_API_VERSION);
-
+	/*
 	// Add some stuff to the module
 	Py_XINCREF(&Robin::Python::FunctionTypeObject);
 	Py_XINCREF(Robin::Python::ClassTypeObject);
@@ -396,4 +397,5 @@ void initrobin()
 	PyModule_AddObject(module, "true",  Py_True);
 	PyModule_AddObject(module, "false", Py_False);
 #endif
+	*/
 }

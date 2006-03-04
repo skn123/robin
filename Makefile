@@ -5,6 +5,7 @@ prefix = /usr/local
 exec_prefix = /usr/local
 site_packages = /usr/local/lib/python2.4/site-packages
 python = python
+-include config.mak
 
 pydir = $(site_packages)/robin
 libdir = $(exec_prefix)/lib
@@ -15,15 +16,20 @@ soext := ${shell $(python) -c "import griffin; print griffin.soext"}
 cpu = ${shell uname -m}
 target = ${shell $(python) -c "import griffin; print griffin.arch"}
 
+ifeq ($(multi-platform),1)
+plat := ${shell $(python) -c "import griffin; print griffin.platspec"}
+py := ${shell $(python) -c "import griffin; print griffin.pyspec"}
+endif
+
 install = install -D
 cp-r = cp -r
 sed = sed
 echo = echo
 
 INSTALLABLE_FILES = \
-	$(libdir)/$(sopre)robin-$(ver)$(soext) \
-	$(libdir)/$(sopre)robin_pyfe-$(ver)$(soext) \
-	$(libdir)/$(sopre)robin_stl$(soext) \
+	$(libdir)/$(vpath)$(sopre)robin$(plat)-$(ver)$(py)$(soext) \
+	$(libdir)/$(vpath)$(sopre)robin_pyfe$(plat)-$(ver)$(py)$(soext) \
+	$(libdir)/$(vpath)$(sopre)robin_stl$(plat)-$(ver)$(py)$(soext) \
 	$(scriptdir)/griffin \
 	$(jardir)/Griffin.jar \
 	$(pydir).pth \
@@ -31,6 +37,7 @@ INSTALLABLE_FILES = \
 	$(pydir)/stl.py $(pydir)/robinhelp.py $(pydir)/document.py \
 	$(pydir)/pickle_weakref.py \
 	$(pydir)/html/__init__.py $(pydir)/html/textformat.py \
+	$(pydir)/robinlib/__init__.py $(pydir)/robinlib/platform.py \
 	$(jardir)/stl.st.xml $(jardir)/stl.tag 
 
 INSTALLABLE_DIRS = $(jardir)/dox-xml $(jardir)/premises
@@ -53,7 +60,7 @@ $(pydir)/%.py: src/robin/modules/%.py
 $(pydir).pth:
 	$(echo) robin > $@
 
-$(libdir)/%$(soext): %$(soext)
+$(libdir)/$(vpath)%$(soext): %$(soext)
 	$(install) $< $@
 
 $(scriptdir)/griffin: griffin
