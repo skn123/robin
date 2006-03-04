@@ -5,7 +5,8 @@ import __builtin__
 if os.path.islink(__file__): __file__ = os.readlink(__file__)
 here = os.path.dirname(__file__)
 machine = os.getenv("MACHINE")
-lib = robin.sopre + "robin_stl" + robin.soext
+libtemplate = "%(sopre)s%%s%(platspec)s-%(ver)s%(pyspec)s%(soext)s"
+lib = libtemplate % robin.__dict__ % "robin_stl"
 robin.loadLibrary(__name__, lib)
 
 ostringstream = std.ostringstream
