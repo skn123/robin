@@ -16,6 +16,7 @@ class Griffin:
 
 	def __init__(self):
 		self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
+		self.javacmd = "backend.robin.Launcher"
 		self.verbose = False
 
 	def setXML(self, xmldir):
@@ -51,10 +52,11 @@ class Griffin:
 		if not os.path.isdir(doxpath): doxpath = os.path.join(here, "dox-xml")
 		if not os.path.isdir(stpath): stpath = here
 
-		cmd = "java -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
-              "-classpath '%s' backend.robin.Launcher" % \
+		cmd = "%s -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
+              "-classpath '%s' %s" % \
 		          (conf.config.java, conf.classpath([doxpath]), 
-		           conf.classpath([stpath]), conf.classpath(classpath))
+		           conf.classpath([stpath]), conf.classpath(classpath),
+			   self.javacmd)
 		return cmd
 
 	def run(self, args):
@@ -79,7 +81,7 @@ class Griffin:
 				read_to = arg_out; read_limit = 1
 			elif arg == "-eclipse":
 				self._opt_eclipse()
-			elif arg in ["-I", "-v", "--interceptors"]:
+			elif arg in ["-I", "-v", "--interceptors", "-j"]:
 				arg_opts[arg] = ""
 			else:
 				read_to.append(arg)
@@ -129,6 +131,9 @@ class Griffin:
 		else:
 			print "No input specified. Quit."
 			raise SystemExit
+
+		if "-j" in arg_opts:
+			self.javacmd = "org.python.util.jython hint.py"
 
 		arg_jopts = [x for x in arg_opts.keys() if x.startswith("--")]
 
