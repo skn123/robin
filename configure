@@ -27,6 +27,11 @@ class Configure:
 		p.add_option("-j", "--with-java", dest = "java",
 					 default = "java",
 					 help = "Determines which Java VM to use")
+		p.add_option("", "--without-libiberty", dest = "liberty",
+		             action = "store_false",
+		             default = True,
+		             help = "indicates that -liberty is not available")
+
 		p.add_option("-m", "--multi-platform", dest = "multi", 
 		             action = "store_true",
 		             default = False,
@@ -41,7 +46,7 @@ class Configure:
 
 	def _set_var(self, varname, value):
 		print >> self.config_mak, "%(varname)s = %(value)s" % locals()
-		print >> self.config_py, "%s = '%s'" % \
+		print >> self.config_py, "%s = %r" % \
 			(varname.replace("-", "_"), value)
 
 	def _site_packages_dir(self):
@@ -76,6 +81,8 @@ class Configure:
 		if options.cxx != "":
 				self._set_var("cxx", options.cxx)
 		self._set_var("java", options.java)
+		# Liberty
+		self._set_var("has-liberty", options.liberty)
 		# Multi-platform support
 		if options.multi:
 			self._set_var("multi-platform", 1)
