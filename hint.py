@@ -1,5 +1,16 @@
-from sourceanalysis.dox import DoxygenAnalyzer
-from backends.robin import Launcher
+from sourceanalysis import Specifiers
+from sourceanalysis.view import Traverse
 
-d = DoxygenAnalyzer("xml")
-d.processIndex()
+
+
+class ClassInfo(Traverse.AggregateVisitor):
+	def visit(self, c):
+		if c.getName() == "PrivateStruct":
+			c.getContainer().setVisibility(Specifiers.Visibility.PRIVATE)
+		print c, c.getContainer().getVisibility()
+
+
+
+globalns = pdb.getGlobalNamespace()
+
+Traverse().traverse(globalns.getScope(), ClassInfo())

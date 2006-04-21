@@ -81,7 +81,8 @@ public class Launcher extends backend.Launcher {
 		codegen.setOutputFilename(outfile);
 		
 		// Collect targets
-		if (classnames[0].equals("*")) {
+		if (classnames.length == 0 
+				|| classnames[0].equals("*")) {
 			codegen.autocollect();
 		}
 		else {

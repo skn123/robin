@@ -1,7 +1,9 @@
 package backend;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,8 @@ import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
 import sourceanalysis.dox.DoxygenAnalyzer;
+import sourceanalysis.mixin.JythonMixIn;
+import sourceanalysis.mixin.MixIn;
 
 public abstract class Launcher {
 
@@ -75,6 +79,35 @@ public abstract class Launcher {
 		throws IOException, MissingInformationException; 
 
 	/**
+	 * Separates the command-line arguments into boolean properties,
+	 * names of classes for analysis and mix-ins to apply.
+	 * @param args command-line arguments
+	 * @param properties property page to be filled
+	 * @param classnames a collection to be filled with class names
+	 * @param mixins a collection to be filled with requested mix-ins
+	 */
+	private void parseAttributesAndMixIns(String[] args, 
+			PropertyPage properties, 
+			Collection classnames, 
+			Collection mixins)
+	{
+		for (int flagIndex = 2; flagIndex < args.length; ++flagIndex) {
+			if (args[flagIndex].equals("--jython")) {
+				mixins.add(new JythonMixIn());
+			}
+			else if (args[flagIndex].startsWith("--")) {
+				String flag = args[flagIndex].substring(2);
+				if (properties.hasProperty(flag)) {
+					properties.setBoolean(flag, true);
+				}
+			}
+			else {
+				classnames.add(args[flagIndex]);
+			}
+		}
+	}
+	
+	/**
 	 * Reads arguments from the command line according to the
 	 * specified property page, and builds the ProgramDatabase to
 	 * work on using DoxygenAnalyzer.
@@ -90,33 +123,32 @@ public abstract class Launcher {
 	protected ProgramDatabase processCmdlineParameters(String[] args,
 			PropertyPage properties)
 	{
-		// Read the program database
-		DoxygenAnalyzer dox = new DoxygenAnalyzer(args[0]);
-		dox.logger.setLevel(Level.WARNING);
 		try {
+			List mixins = new LinkedList();
+			List classnames = new LinkedList();
+
 			// get outfile
 			properties.setString("outfile", args[1]);
 			
 			// get flag values and class names
-			List classnames = new LinkedList();
-			for (int flagIndex = 2; flagIndex < args.length; ++flagIndex) {
-				if (args[flagIndex].startsWith("--")) {
-					String flag = args[flagIndex].substring(2);
-					if (properties.hasProperty(flag)) {
-						properties.setBoolean(flag, true);
-					}
-				}
-				else {
-					classnames.add(args[flagIndex]);
-				}
-			}
+			parseAttributesAndMixIns(args, properties, classnames, mixins);
 
 			// store the class names
 			properties.setStringArray("classes", 
 					(String[])classnames.toArray(new String[0]));
 			
-			// Process input files
-			return dox.processIndex();			
+			// Process input files and create the program database
+			DoxygenAnalyzer dox = new DoxygenAnalyzer(args[0]);
+			dox.logger.setLevel(Level.WARNING);
+			ProgramDatabase pdb = dox.processIndex();
+			
+			// Apply mix-ins
+			for (Iterator mixini = mixins.iterator(); mixini.hasNext(); ) {
+				((MixIn)mixini.next()).apply(pdb);
+			}
+			
+			return pdb;
+			
 		} catch (ElementNotFoundException e) {
 			System.err.println("*** ERROR: failed to read index: " + e);
 			return null;

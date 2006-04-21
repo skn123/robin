@@ -1703,7 +1703,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void report(String[] classnames) {
 		Set requested = new HashSet();
 		for (int i = 0; i < classnames.length; ++i)
-			requested.add(classnames[i]);
+			if (!classnames[i].equals("*"))
+				requested.add(classnames[i]);
 		// Print header
 		System.out.println("=================================");
 		if (!m_subjects.isEmpty())

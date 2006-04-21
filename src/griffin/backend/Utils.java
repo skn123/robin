@@ -20,6 +20,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import sourceanalysis.*;
 import sourceanalysis.Type.TypeNode;
+import sourceanalysis.view.Traverse;
 
 /**
  * A class which contains some static methods for the use in backend

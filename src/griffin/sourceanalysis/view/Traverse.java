@@ -1,7 +1,7 @@
 /*
  * Created on Oct 9, 2003
  */
-package backend;
+package sourceanalysis.view;
 
 import java.util.Iterator;
 
@@ -27,6 +27,11 @@ public class Traverse {
 	public static interface RoutineVisitor
 	{
 		public void visit(Routine routine);
+	}
+	
+	public static interface AggregateVisitor
+	{
+		public void visit(Aggregate routine);
 	}
 	
 	/**
@@ -144,5 +149,27 @@ public class Traverse {
 			traverse(ns.getScope(), visitor);
 		}
 	}
-	
+
+	/**
+	 * Go through type leaves in all members of a scope.
+	 * @param starting parent scope
+	 * @param visitor an object which is invoked for every aggregate found
+	 */
+	public void traverse(Scope starting, AggregateVisitor visitor)
+	{
+		for (Iterator ai = starting.aggregateIterator(); ai.hasNext(); ) {
+			ContainedConnection connection =
+				(ContainedConnection)ai.next();
+			Aggregate aggregate = (Aggregate)connection.getContained();
+			visitor.visit(aggregate);
+			traverse(aggregate.getScope(), visitor);
+		}
+		for (Iterator ni = starting.namespaceIterator(); ni.hasNext(); ) {
+			ContainedConnection connection =
+				(ContainedConnection)ni.next();
+			Namespace ns = (Namespace)connection.getContained();
+			traverse(ns.getScope(), visitor);
+		}
+	}
+
 }
