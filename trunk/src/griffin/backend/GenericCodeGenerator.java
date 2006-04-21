@@ -20,6 +20,7 @@ import java.util.Set;
 import sourceanalysis.*;
 import sourceanalysis.assist.SupervisedTemplates;
 import sourceanalysis.view.TemplateBank;
+import sourceanalysis.view.Traverse;
 
 /**
  * Provides a standard basic for code generation functionality. Derive and

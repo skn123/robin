@@ -81,7 +81,7 @@ class Griffin:
 				read_to = arg_out; read_limit = 1
 			elif arg == "-eclipse":
 				self._opt_eclipse()
-			elif arg in ["-I", "-v", "--interceptors", "-j"]:
+			elif arg in ["-I", "-v", "--interceptors", "--jython", "-j"]:
 				arg_opts[arg] = ""
 			else:
 				read_to.append(arg)
