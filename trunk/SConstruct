@@ -194,11 +194,21 @@ premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", "junit.jar",
 premisedir = os.path.join(".", "premises")
 
 classpath = [os.path.join(premisedir, x) for x in premises]
+if conf.is_gcj(env):
+	classpath.append("src/griffin")
+
 env.Append(JAVACFLAGS = '-classpath "%s"' % conf.java_pathsep.join(classpath))
 
 
 def jarme(source, target, env):
     os.system("jar cf %s -C build/griffin ." % target[0])
+
+def touch(filename):
+	if not os.path.exists(filename):
+		open(filename, "w").close()
+	
+touch("src/griffin/sourceanalysis/dox/TypeExpressionLexer.java")
+touch("src/griffin/sourceanalysis/dox/TypeExpressionParser.java")
 
 
 griffin = env.Java("build/griffin", "src/griffin")
