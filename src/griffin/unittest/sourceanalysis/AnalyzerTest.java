@@ -196,8 +196,7 @@ public class AnalyzerTest extends TestCase {
 		// Read output from child
 		BufferedReader doxyout = new BufferedReader(
 			new InputStreamReader(doxygen.getInputStream()));
-		String line;
-		while ((line = doxyout.readLine()) != null) ;
+		while (doxyout.readLine() != null) ;
 		// Wait for child to terminate
 		for (boolean done = false; !done; ) {
 			try {

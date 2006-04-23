@@ -5,6 +5,6 @@ package sourceanalysis.view;
  */
 public interface TemplateElement {
 
-	public String extractText(AbstractScope context, Perspective perspective);
+	String extractText(AbstractScope context, Perspective perspective);
 
 }

@@ -211,7 +211,7 @@ public class XMLWriter {
 				}
 		
 				NamedNodeMap classAttributes = classNode.getAttributes(); 
-				Node classAttr = attributes.getNamedItem("name");
+				Node classAttr = classAttributes.getNamedItem("name");
 				
 				if(classAttr == null) {
 					throw new FileFormatException
@@ -688,8 +688,6 @@ public class XMLWriter {
 		}
 		
 		// Create the document header.
-		String className = aggr.getName();
-		
 		Element classElm = doc.createElement("class");
 		doc.appendChild(classElm);
 		

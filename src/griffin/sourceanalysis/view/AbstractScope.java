@@ -7,9 +7,9 @@ import sourceanalysis.ElementNotFoundException;
  */
 public interface AbstractScope {
 
-	public sourceanalysis.Entity getMember(String key)  throws ElementNotFoundException;
-	public void declareMember(String key, sourceanalysis.Entity element, boolean asThis);
-	public AbstractScope cloneScope();
+	sourceanalysis.Entity getMember(String key)  throws ElementNotFoundException;
+	void declareMember(String key, sourceanalysis.Entity element, boolean asThis);
+	AbstractScope cloneScope();
 	
-	public java.util.Iterator declIterator();
+	java.util.Iterator declIterator();
 }

@@ -67,7 +67,7 @@ public class SupervisedTemplates {
 		 * @param documentPath an abstract pathname of the document
 		 * @throws XMLFormatException if document appears to be corrupted
 		 */
-		public void processElement(File documentPath) 
+		void processElement(File documentPath) 
 			throws XMLFormatException;
 	}
 

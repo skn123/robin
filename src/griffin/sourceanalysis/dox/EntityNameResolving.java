@@ -16,12 +16,12 @@ public interface EntityNameResolving {
 	 * @return Entity an entity with a proper name, which must never
 	 * be <b>null</b>
 	 */
-	public Entity resolve(String name);
+	Entity resolve(String name);
 
 	/**
 	 * Finds a primitive entity by name.
 	 * @param name C++ name for primitive
 	 * @return Primitive an entity with a proper name
 	 */
-	public Primitive resolvePrimitive(String name);
+	Primitive resolvePrimitive(String name);
 }

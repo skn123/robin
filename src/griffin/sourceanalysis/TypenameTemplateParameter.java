@@ -91,8 +91,12 @@ public class TypenameTemplateParameter extends TemplateParameter {
 	 */
 	public TemplateArgument getDefaultValue(
 		Iterator parameterIterator,
-		Iterator argumentIterator)
+		Iterator argumentIterator) throws InappropriateKindException
 	{
+		if (!hasDefault()) return null;
+		
+		Type deflt = getDefault();
+		
 		while (parameterIterator.hasNext() && argumentIterator.hasNext()) {
 			final TemplateParameter parameter = (TemplateParameter)parameterIterator.next();
 			final TemplateArgument argument = (TemplateArgument)argumentIterator.next();
@@ -103,20 +107,23 @@ public class TypenameTemplateParameter extends TemplateParameter {
 				{
 					if (original.getKind() == Type.TypeNode.NODE_LEAF) {
 						Entity base = original.getBase();
-						Entity container = base.getContainer().getContainer();
 						// - if contained inside the template parameter, replace 
 						//   container with argument
-						if (container.getName().equals(parameter.getName())) {
+						String name = base.getName(), prefix = parameter.getName() + "::";
+						if (name.startsWith(prefix)) {
 							Aggregate pseudo = new Aggregate();
-							pseudo.setName(argument.toCpp() + "::" + base.getName());
+							pseudo.setName(argument.toCpp() + "::"
+							               + name.substring(prefix.length()));
 							return new Type.TypeNode(pseudo);
 						}
 					}
 					return null;
 				}
 			};
+			System.out.println(deflt);
+			deflt = Type.transformType(deflt, transformer);
 		}
-		return null;
+		return new TypenameTemplateArgument(deflt);
 	}
 	
 	/**

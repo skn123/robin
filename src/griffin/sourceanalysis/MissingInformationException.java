@@ -6,6 +6,11 @@ package sourceanalysis;
 public class MissingInformationException extends Exception {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7499219543051244272L;
+
+	/**
 	 * Constructor for MissingInformationException.
 	 */
 	public MissingInformationException() {

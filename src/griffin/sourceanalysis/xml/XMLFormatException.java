@@ -9,6 +9,11 @@ package sourceanalysis.xml;
 public class XMLFormatException extends Exception {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 645529827740762692L;
+
+	/**
 	 * Constructor for XMLFormatException.
 	 */
 	public XMLFormatException() {

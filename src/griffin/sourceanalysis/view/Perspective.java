@@ -13,6 +13,6 @@ package sourceanalysis.view;
  */
 public interface Perspective {
 
-	public TemplateBank getTemplates();
+	TemplateBank getTemplates();
 
 }
