@@ -5,6 +5,12 @@ package sourceanalysis;
  */
 public class ElementNotFoundException extends Exception {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7394330399492771886L;
+	
+	
 	public ElementNotFoundException()
 	{
 		super();

@@ -238,7 +238,6 @@ public class CodeGenerator extends GenericCodeGenerator {
 		if (clas.isTemplated()) return "";
 		
 		StringBuffer sb = new StringBuffer();
-		boolean first = true;
 		
 		// Go over base classes
 		for (Iterator bi = clas.baseIterator(); bi.hasNext(); ) {
@@ -267,7 +266,6 @@ public class CodeGenerator extends GenericCodeGenerator {
 					sb.append(" >");
 				}
 				sb.append(";\n");
-				first = false;
 			}
 		}
 		return sb.toString();		

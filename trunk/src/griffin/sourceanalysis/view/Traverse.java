@@ -21,17 +21,17 @@ public class Traverse {
 
 	public static interface TypeInformationVisitor
 	{
-		public void visit(Type typei);
+		void visit(Type typei);
 	}
 	
 	public static interface RoutineVisitor
 	{
-		public void visit(Routine routine);
+		void visit(Routine routine);
 	}
 	
 	public static interface AggregateVisitor
 	{
-		public void visit(Aggregate routine);
+		void visit(Aggregate routine);
 	}
 	
 	/**

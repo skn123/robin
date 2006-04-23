@@ -7,6 +7,11 @@ package sourceanalysis;
 public class InappropriateKindException extends Exception {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4874569139286817392L;
+
+	/**
 	 * Constructor for InappropriateKindException.
 	 */
 	public InappropriateKindException() {

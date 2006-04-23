@@ -347,7 +347,7 @@ public class Dumpster {
 		// - dump contained groups
 		for (Iterator gi = scope.groupIterator(); gi.hasNext(); ) {
 			ContainedConnection connection = (ContainedConnection)gi.next();
-			dump((Group)gi, out);
+			dump((Group)connection.getContained(), out);
 		}
 	}	
 

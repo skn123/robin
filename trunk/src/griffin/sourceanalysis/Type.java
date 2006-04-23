@@ -26,7 +26,7 @@ public class Type extends DefaultTreeModel {
 	
 	public static interface BaseTypeFormatter
 	{
-		public String formatBase(Entity entity);
+		String formatBase(Entity entity);
 	}
 
 	/**
@@ -124,6 +124,8 @@ public class Type extends DefaultTreeModel {
 	 */
 	public static class TypeNode extends DefaultMutableTreeNode
 	{
+		private static final long serialVersionUID = -2800000812822467645L;
+
 		public static final int NODE_LEAF = 0;
 		public static final int NODE_POINTER = 1;
 		public static final int NODE_REFERENCE = 2;
@@ -730,13 +732,13 @@ public class Type extends DefaultTreeModel {
 	
 	public static interface Transformation
 	{
-		public TypeNode transform(TypeNode original)
+		TypeNode transform(TypeNode original)
 			throws InappropriateKindException;
 	}
 	
 	public static interface ExtendedTransformation extends Transformation
 	{
-		public TemplateArgument transform(TemplateArgument original);
+		TemplateArgument transform(TemplateArgument original);
 	}
 	
 	/**
@@ -913,7 +915,13 @@ public class Type extends DefaultTreeModel {
 	private boolean m_isEmpty;
 	
 	static BaseTypeFormatter SIMPLE_TYPE_FORMATTER
-	 = new BaseTypeFormatter() {
+		= new BaseTypeFormatter() {
 					public String formatBase(Entity e) { return e.getFullName(); }
 				};
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7933970838007178238L;
+
 }

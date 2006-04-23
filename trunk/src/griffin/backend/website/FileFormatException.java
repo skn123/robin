@@ -7,6 +7,11 @@ package backend.website;
 public class FileFormatException extends Exception {
 		
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6077272850932291780L;
+
+	/**
 	 * Constructor for FileFormatException.
 	 * @param fileName The file name.
 	 */
