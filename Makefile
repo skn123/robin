@@ -38,6 +38,7 @@ INSTALLABLE_FILES = \
 	$(pydir)/pickle_weakref.py \
 	$(pydir)/html/__init__.py $(pydir)/html/textformat.py \
 	$(pydir)/robinlib/__init__.py $(pydir)/robinlib/platform.py \
+	$(pydir)/robinlib/config.py \
 	$(jardir)/stl.st.xml $(jardir)/stl.tag 
 
 INSTALLABLE_DIRS = $(jardir)/dox-xml $(jardir)/premises

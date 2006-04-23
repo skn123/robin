@@ -41,3 +41,10 @@ else:
 		java_pathsep = os.pathsep # Python 2.2 and older
 	def classpath(elements):
 		return ":".join(elements)
+
+# Detect gcj
+def is_gcj(env):
+	"detects gcj for cases where javac is a symlink to wrapper"
+	path = env.WhereIs('javac')
+	progname = os.path.split(os.path.realpath(path))[1]
+	if progname.startswith("gcj"): return True
