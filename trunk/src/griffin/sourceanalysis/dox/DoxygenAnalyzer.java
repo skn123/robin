@@ -662,6 +662,7 @@ public class DoxygenAnalyzer {
 		}
 		else if (entityClass.equals("SourceFile")) {
 			SourceFile sf = new SourceFile();
+			m_db.enlistSourceFile(sf);
 			compound = sf;
 			/*
 			 * For source files - a phony scope is created to put members in

@@ -120,6 +120,25 @@ public class ProgramDatabase extends Entity {
 	}
 
 	/**
+	 * Searches for a source file with the given filename.
+	 * @param filename name of the source file (path not required)
+	 * @return a SourceFile object
+	 * @throws ElementNotFoundException if a source file with the given name 
+	 * does not exist in the current program database
+	 */
+	public SourceFile lookupSourceFile(String filename) 
+		throws ElementNotFoundException
+	{
+		for (Iterator sourceIter = sourceFileIterator(); sourceIter.hasNext(); ) {
+			SourceFile source = (SourceFile)sourceIter.next();
+			if (source.getName().equals(filename) 
+					|| source.getFullName().endsWith("/" + filename)) 
+				return source;
+		}
+		throw new ElementNotFoundException("file", filename);
+	}
+	
+	/**
 	 * Access the macro definitions in the program.
 	 * @return Iterator iterates over Macro objects/
 	 */
