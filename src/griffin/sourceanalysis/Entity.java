@@ -1,5 +1,6 @@
 package sourceanalysis;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
@@ -65,6 +66,7 @@ public abstract class Entity {
 		super();
 		m_name = "anonymous";
 		m_properties = new Vector();
+		m_hints = new LinkedList();
 		m_uplink = null;
 		m_group = null;
 		m_affiliates = new LinkedList();
@@ -96,10 +98,23 @@ public abstract class Entity {
 	 * they were inserted.
 	 * @param property new Entity.Property object to add
 	 * @see propertyIterator()
+	 * @see findProperty(String)
 	 */
 	public void addProperty(Property property)
 	{
 		m_properties.add(property);
+	}
+	
+	/**
+	 * Attaches hints to the entity. Hints are opaque objects implementing Hint,
+	 * and are usually used by the back-ends. See some useful hint classes in the
+	 * sourceanalysis.hints package. 
+	 * @param hint new Hint object to add
+	 * @see hintIterator()
+	 */
+	public void addHint(Hint hint)
+	{
+		m_hints.add(hint);
 	}
 	
 	/**
@@ -293,6 +308,15 @@ public abstract class Entity {
 	}
 	
 	/**
+	 * Access to all of the Entity's attached hints. 
+	 * @return a java.util.Iterator which iterates over Hint items.
+	 */
+	public Iterator hintIterator()
+	{
+		return m_hints.iterator();
+	}
+	
+	/**
 	 * A simplistic string representation of Entity base on common attributes:
 	 * contains Entity kind and name.
 	 * @return String
@@ -413,6 +437,7 @@ public abstract class Entity {
 	// Private members
 	private String m_name;
 	private Vector m_properties;
+	private Collection m_hints;
 	
 	private ContainedConnection m_uplink;
 	private Group m_group;

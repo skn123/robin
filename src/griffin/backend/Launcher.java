@@ -92,8 +92,8 @@ public abstract class Launcher {
 			Collection mixins)
 	{
 		for (int flagIndex = 2; flagIndex < args.length; ++flagIndex) {
-			if (args[flagIndex].equals("--jython")) {
-				mixins.add(new JythonMixIn());
+			if (args[flagIndex].startsWith("--hints=")) {
+				mixins.add(new JythonMixIn(args[flagIndex].substring(8)));
 			}
 			else if (args[flagIndex].startsWith("--")) {
 				String flag = args[flagIndex].substring(2);
