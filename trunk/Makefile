@@ -120,8 +120,15 @@ inheritance-test@%:
 	$(CXX) -shared $(extreme_python)/libinheritance_robin.cc         \
 		-o $(extreme_python)/libinheritance.so
 
+hints-test@%:
+	$($*)/griffin -eclipse -in $(extreme_python)/hinted.h -I \
+	        -out $(extreme_python)/libhints_robin.cc                 \
+	        --hints=$(extreme_python)/hint.py Clue
+	$(CXX) -shared $(extreme_python)/libhints_robin.cc         \
+		-o $(extreme_python)/libhints.so
+
 TESTS = language-test protocols-test inheritance-test
-TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest
+TEST_SUITES = LanguageTest ProtocolsTest HintsTest#InheritanceTest
 
 test: ${addsuffix @., $(TESTS)}
 	( cd $(extreme_python) && \

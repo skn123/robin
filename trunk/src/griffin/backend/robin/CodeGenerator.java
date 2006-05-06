@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import sourceanalysis.*;
+import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
 
 /**
@@ -285,6 +286,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				// Try to get the SourceFile entity for the declaration
 				try {
 					SourceFile header = decl.getSource();
+					// - respect IncludedViaHeader hint
+					IncludedViaHeader hint = (IncludedViaHeader)
+						header.lookForHint(IncludedViaHeader.class);
+					if (hint != null) header = hint.getIncludingHeader();
 					headers.add(header.getFullName());
 				}
 				catch (MissingInformationException e) {

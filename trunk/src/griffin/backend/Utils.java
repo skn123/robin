@@ -549,8 +549,8 @@ public class Utils {
 							&& left.getType().getBaseType()
 								.getFullName().endsWith("ostream") /*@@@*/
 							&& right.getType().isFlat()
-							&& (matches(right.getType().getBaseType(), entity)
-								|| matches(right.getType().getBaseType(), metaEntity)))
+							&& (areCongruent(right.getType().getBaseType(), entity)
+								|| areCongruent(right.getType().getBaseType(), metaEntity)))
 						{
 							return true;
 						}
@@ -595,7 +595,7 @@ public class Utils {
 					// Check types
 					if (left.getType().isFlat()
 							&& left.getType().getBaseType() == with
-							&& (matches(left.getType().getBaseType(), with) /*
+							&& (areCongruent(left.getType().getBaseType(), with) /*
 									|| matches(left.getType().getBaseType(), metaEntity)*/))
 					{
 							matches.add(fcn);
@@ -1530,7 +1530,7 @@ public class Utils {
 	 * @return <b>true</b> if entities refer to the same entity (eventually); 
 	 * <b>false</b> otherwise.
 	 */
-	private static boolean matches(Entity first, Entity second)
+	private static boolean areCongruent(Entity first, Entity second)
 	{
 		return (naiveUnalias(first) == naiveUnalias(second));
 	}
