@@ -340,6 +340,13 @@ class InheritanceTest(TestCase):
 		self.assertEquals(len(elements), len(melements))
 		for i in xrange(len(elements)):
 			self.assertEquals(elements[i] * i, melements[i])
+
+
+class HintsTest(TestCase):
+
+	def testClue(self):
+		import hints
+		c = hints.Clue()
 	
 
 class MemoryManagementTest(TestCase):

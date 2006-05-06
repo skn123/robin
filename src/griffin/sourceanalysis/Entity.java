@@ -317,6 +317,22 @@ public abstract class Entity {
 	}
 	
 	/**
+	 * Tries to find a hint belonging to the given hint class. 
+	 * @param hintClass a class implementing Hint
+	 * @return a Hint object which is an instance of hintClass if
+	 * such exists. Otherwise, <b>null</b>.
+	 */
+	public Hint lookForHint(Class hintClass)
+	{
+		for (Iterator hintIter = hintIterator(); hintIter.hasNext(); ) {
+			Hint hint = (Hint)hintIter.next();
+			if (hintClass.isInstance(hint))
+				return hint;
+		}
+		return null;
+	}
+	
+	/**
 	 * A simplistic string representation of Entity base on common attributes:
 	 * contains Entity kind and name.
 	 * @return String
