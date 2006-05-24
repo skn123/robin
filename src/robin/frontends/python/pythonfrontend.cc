@@ -14,8 +14,9 @@
  */
 #include <iostream>
 #include "pythonfrontend.h"
-
 #include <Python.h>
+
+
 #include <assert.h>
 
 // Robin includes
@@ -713,6 +714,7 @@ TemplateObject *PythonFrontend::exposeTemplate(TemplateKind kind,
 		// If this is only one item, just use it instead of the tuple
 		if (templateargs.size() == 1) {
 			pyarguments = identifyTemplateArgument(*this, templateargs[0]);
+			Py_XINCREF(pyarguments);
 		}
 		// If there are more than one argument, use a tuple
 		else {
@@ -723,6 +725,7 @@ TemplateObject *PythonFrontend::exposeTemplate(TemplateKind kind,
 				if (!pyargument) {
 					return NULL;
 				}
+				Py_XINCREF(pyargument);
 				PyTuple_SetItem(pyarguments, i, pyargument);
 			}
 		}
@@ -732,6 +735,7 @@ TemplateObject *PythonFrontend::exposeTemplate(TemplateKind kind,
 			PyObject_SetItem((PyObject*)pytemplate,
 							 pyarguments,
 							 (PyObject*)getRegisteredObject(kind, elemname));
+			Py_XDECREF(pyarguments);
 		}
 
 		return pytemplate;
