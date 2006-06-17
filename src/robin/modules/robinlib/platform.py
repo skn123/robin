@@ -14,10 +14,20 @@ soext = { 'windows': ".dll", 'cygwin': ".dll", 'hp': ".sl" }.get(arch, ".so")
 sopre = { 'windows': "" }.get(arch, "lib")
 wordsize = struct.calcsize("l") * 8
 
+# Load configuration
+class DefaultConfig:
+	prefix = '/usr/local'
+	exec_prefix = '/usr/local'
+	python = 'python'
+	site_packages = \
+	  ([""] + [x for x in sys.path if x.endswith("site-packages")])[-1]
+	java = 'java'
+	has_liberty = False
+	
 try:
 	import config
 except ImportError:
-	config = None
+	config = DefaultConfig
 
 if hasattr(config, 'multi_platform'):
 	platspec = ["_%i" % wordsize, ""][wordsize == 32]
