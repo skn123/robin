@@ -117,13 +117,8 @@ public class GenericCodeGenerator
 			// Find class
 			ContainedConnection connection = (ContainedConnection)aggiter.next();
 			Aggregate agg = (Aggregate)connection.getContained();
-			if (nameMatches(agg, componentname)) {
-				// Add to subjects
-				if (!agg.isTemplated() || !m_separateClassTemplates)
-					m_subjects.add( agg );
-				else
-					m_subjectTemplates.add( agg );
-			}
+			if (nameMatches(agg, componentname))
+				consume(agg);
 		}
 		// Find enums
 		for (Iterator enumiter = scope.enumIterator(); enumiter.hasNext(); ) {
@@ -187,8 +182,7 @@ public class GenericCodeGenerator
 			// Find class
 			ContainedConnection connection = (ContainedConnection)aggiter.next();
 			Aggregate agg = (Aggregate)connection.getContained();
-			// Add the class right away if it has a description
-			m_subjects.add(agg);
+			consume(agg);
 		}
 		// Find global functions
 		for (Iterator funciter = scope.routineIterator(); funciter.hasNext();)
@@ -196,7 +190,6 @@ public class GenericCodeGenerator
 			// Find function
 			ContainedConnection connection = (ContainedConnection)funciter.next();
 			Routine routine = (Routine)connection.getContained();
-			// Add the function if it has a description
 			m_globalFuncs.add(routine);
 		}
 		// Find typedefs
@@ -240,6 +233,19 @@ public class GenericCodeGenerator
 		return false;
 	}
 	
+	/**
+	 * Adds an aggregate to either m_subjects or m_subjectTemplates
+	 * according to relevance.
+	 * @param agg an Aggregate instance
+	 */
+	private void consume(Aggregate agg)
+	{
+		if (!agg.isTemplated() || !m_separateClassTemplates)
+			m_subjects.add( agg );
+		else
+			m_subjectTemplates.add( agg );
+	}
+
 	/**
 	 * Adds classes which are targets of typedef declarations to the
 	 * subjects list.
