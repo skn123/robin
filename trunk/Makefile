@@ -127,7 +127,13 @@ hints-test@%:
 	$(CXX) -shared $(extreme_python)/libhints_robin.cc         \
 		-o $(extreme_python)/libhints.so
 
-TESTS = language-test protocols-test inheritance-test hints-test
+autocollect-test@%:
+	$($*)/griffin -in $(extreme_python)/autocollect.h          \
+	        -out $(extreme_python)/libautocollect_robin.cc
+	$(CXX) -shared $(extreme_python)/libautocollect_robin.cc   \
+		-o $(extreme_python)/libautocollect.so
+
+TESTS = language-test protocols-test inheritance-test hints-test autocollect-test
 TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest
 
 test: ${addsuffix @., $(TESTS)}
