@@ -9,6 +9,8 @@ typedef CollectMe2<int> CollectMe2A;
 typedef CollectMe2<long> CollectMe2B;
 
 class CollectMe3 {
+
+ public:
 	class CollectMe4 { };
 
 	typedef CollectMe2<char> CollectMe2C;

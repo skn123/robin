@@ -58,7 +58,7 @@ LIBPREFIX = "lib"
 
 import os
 
-env = Environment(ENV = {'PATH': os.environ['PATH']})
+env = Environment(ENV = {'PATH': os.environ['PATH'], 'SystemRoot': r"C:\Windows"})
 
 # Debug mode (for developers)
 robin_opts = Options()

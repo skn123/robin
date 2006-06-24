@@ -5,7 +5,7 @@
 #############################################################################
 
 # Imports PyUnit.
-from unittest import *
+from unittest import TestCase, main
 from exceptions import Exception, ZeroDivisionError
 import random
 
@@ -348,6 +348,28 @@ class HintsTest(TestCase):
 		import hints
 		c = hints.Clue()
 	
+
+class AutocollectTest(TestCase):
+
+	def testThatAllTheClassesExist(self):
+		import autocollect
+		autocollect.CollectMe1()
+		autocollect.CollectMe3()
+		autocollect.CollectMe3.CollectMe4()
+	
+	def testThatAllTheTemplatesExist(self):
+		import autocollect, robin
+		autocollect.CollectMe2[int]()
+		autocollect.CollectMe2[long]()
+		autocollect.CollectMe2[robin.char]()
+		autocollect.CollectMe2[autocollect.CollectMe3.CollectMe4]()
+
+	def testThatAllTheTypedefsExist(self):
+		import autocollect
+		autocollect.CollectMe2A()
+		autocollect.CollectMe2B()
+		autocollect.CollectMe3.CollectMe2C()
+
 
 class MemoryManagementTest(TestCase):
 

@@ -158,7 +158,7 @@ public abstract class Launcher {
 	protected void main(String backendName, String[] args, 
 			PropertyPage properties) 
 	{
-		if (args.length < 3) {
+		if (args.length < 2) {
 			System.err.println("*** ERROR: not enough arguments.");
 			System.err.println(
 				"    Usage: " + backendName + " intermediate output classnames");
