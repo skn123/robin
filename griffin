@@ -17,6 +17,7 @@ class Griffin:
 	def __init__(self):
 		self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
 		self.javacmd = "backend.robin.Launcher"
+		self.javaflags = ""
 		self.verbose = False
 
 	def setXML(self, xmldir):
@@ -53,10 +54,10 @@ class Griffin:
 		if not os.path.isdir(stpath): stpath = here
 
 		cmd = "%s -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
-              "-classpath '%s' %s" % \
+		          "-classpath '%s' %s %s" % \
 		          (conf.config.java, conf.classpath([doxpath]), 
 		           conf.classpath([stpath]), conf.classpath(classpath),
-			   self.javacmd)
+		           self.javaflags, self.javacmd)
 		return cmd
 
 	def run(self, args):
@@ -81,6 +82,8 @@ class Griffin:
 				read_to = arg_out; read_limit = 1
 			elif arg == "-eclipse":
 				self._opt_eclipse()
+			elif arg == "-debug":
+				read_to = arg_opts[arg] = []; read_limit = 1
 			elif arg in ["-I", "-v"] or arg.startswith("--"):
 				arg_opts[arg] = ""
 			else:
@@ -132,10 +135,10 @@ class Griffin:
 			print "No input specified. Quit."
 			raise SystemExit
 
-		if "-j" in arg_opts:
-			self.javacmd = "org.python.util.jython hint.py"
-
 		arg_jopts = [x for x in arg_opts.keys() if x.startswith("--")]
+
+		if "-debug" in arg_opts:
+			self.javaflags = "-Xrunjdwp:transport=dt_socket,address=1234,server=y,suspend=y"
 
 		# engage
 		self.run(arg_out + arg_jopts + arg_other)
