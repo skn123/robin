@@ -8,7 +8,7 @@ public:
 	class iterator
 	{
 	public:
-		T& operator*();
+		const T& operator*();
 		iterator& operator++();
 		bool operator==(const iterator &i) const;
 		bool operator!=(const iterator &i) const;

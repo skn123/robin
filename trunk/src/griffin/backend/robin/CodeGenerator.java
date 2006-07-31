@@ -228,6 +228,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("basic_block (*__callback)(" +
 				"scripting_element twin, RegData *signature, basic_block args[]) = 0;\n\n");
 		
+		m_output.write("\nnamespace {\n\n");
+		
 		// Special touchup function named same
 		m_output.write("template <class T>\n" +
 			"struct SameClass {\n" +
@@ -497,7 +499,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 					
 					m_output.write("\t\treturn ");
 				
-					if (needsExtraReferencing(returnType)) {
+					if (Filters.needsExtraReferencing(returnType)) {
 						m_output.write("*std::auto_ptr< ");
 						m_output.write(returnType.formatCpp());
 						m_output.write(" >(((");
@@ -693,6 +695,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				Utils.hasOutputOperator(subject, m_program), true, true,
 				Utils.findGloballyScopedOperators(subject, m_program));
 		}
+		
+		m_output.write("\n}  // end of anonymous namespace\n\n");
+		
 		// Generate main entry point
 		m_output.write("extern \"C\" EXPORT RegData entry[];\n\n");
 		m_output.write("RegData entry[] = {\n");
@@ -807,36 +812,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("#");
 		}
 		writeFlatBase(type);
-	}
-
-	private boolean isPrimitive(Entity base)
-	{
-		return (base instanceof Primitive);
-	}
-	
-	private boolean isSmallPrimitive(Entity base)
-	{
-		return (base instanceof Primitive) &&
-		       (!base.getName().equals("double")) &&
-		       (!base.getName().equals("long long")) &&
-			   (!base.getName().equals("unsigned long long"));
-	}
-
-	/**
-	 * An aggregate (non-primitive) type needs at least one level of pointer
-	 * reference.
-	 * @param type argument or return type
-	 * @return boolean
-	 */
-	private boolean needsExtraReferencing(Type type)
-	{
-		int pointers = type.getPointerDegree();
-		boolean reference = type.isReference();
-		Entity base = type.getBaseType();
-		if ((!reference && pointers == 0) && 
-			!(isSmallPrimitive(base) || base instanceof sourceanalysis.Enum)) return true;
-		else
-			return false;
+		if (type.isArray())
+			m_output.write("[]");
 	}
 
 	/**
@@ -871,8 +848,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException, MissingInformationException
 	{
 		m_output.write("/*\n * "); m_output.write(routine.getFullName());
-		m_output.write("\n * returns "); 
-		m_output.write(routine.getReturnType().toString());
+		m_output.write("\n * returns " + routine.getReturnType().toString());
+		m_output.write("\n * " + Formatters.formatLocation(routine));
 		m_output.write("\n */\n");
 	
 		ContainedConnection container = routine.getContainer();
@@ -888,22 +865,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			+ (with ? "r" : "s") + nArguments;
 		if (routine.isConstructor()) {
 			// This is a constructor
-			m_output.write(thisArg.getFullName());
-			m_output.write(" *" + wrapperName);
+			m_output.write(thisArg.getFullName()
+					+ " *" + wrapperName);
 		}
 		else {
-			String declarator = wrapperName;
-			if (isPrimitive(returnType.getBaseType())) {
-				returnType = dereference(returnType);
-			}
+			if (Filters.isPrimitive(returnType.getBaseType()))
+				returnType = Formatters.dereference(returnType);
 			touchupReturnType = Filters.getTouchup(returnType);
-			if (touchupReturnType != null) {
-				returnType = touchupReturnType;
-			}
-			else if (needsExtraReferencing(returnType)) {
-				declarator = "*" + declarator;
-			}
-			m_output.write(Utils.cleanFormatCpp(returnType,declarator));
+			m_output.write(Formatters.formatDeclaration(returnType, wrapperName, '*'));
 		}
 		
 		// Construct parameters fitting for the flat purpose
@@ -921,26 +890,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				pi.hasNext() && paramCount < nArguments; paramCount++) {
 			Parameter param = (Parameter)pi.next();
 			if (!first) m_output.write(" , ");
-			// Get type of parameter, remove pointer/reference
 			Type type = flatUnalias(param.getType());
 			
-			if (type.isFlat() && type.getBaseType() != null) {
-				Entity base = type.getBaseType();
-				if (type.isConst()) m_output.write("const ");
-				writeFlatBase(type);
-				m_output.write(" ");
-				// express pointers
-				int pointers = type.getPointerDegree();
-				boolean reference = type.isReference();
-				for (int ptri = 0; ptri < pointers; ++ptri) m_output.write("*");
-				if (needsExtraReferencing(type)) m_output.write("*");
-				if (reference && !isSmallPrimitive(base)) m_output.write("&");
-				// write a fictive argument name
-				m_output.write("arg" + paramCount);
-			}
-			else {
-				m_output.write("<error>");
-			}
+			m_output.write(Formatters.formatParameter(type, "arg" + paramCount));
 			first = false;
 		}
 		m_output.write(")\n");
@@ -955,7 +907,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		else {
 			// - write 'return' where needed
-			if (needsExtraReferencing(returnType)) {
+			if (Filters.needsExtraReferencing(returnType)) {
 				m_output.write("return new ");
 				m_output.write(Utils.cleanFormatCpp(returnType,""));
 				m_output.write("("); parenNest++;
@@ -995,13 +947,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				// Print name of argument
 				if (!first) m_output.write(", ");
 				// If this is one of the "special" primitives, touchdown
-				if (needsExtraReferencing(type) &&
-				    isPrimitive(type.getBaseType()) &&
-				    !isSmallPrimitive(type.getBaseType())) {
+				if (Filters.needsExtraReferencing(type) &&
+				    Filters.isPrimitive(type.getBaseType()) &&
+				    !Filters.isSmallPrimitive(type.getBaseType())) {
 					m_output.write("touchdown(arg" + paramCount + ")");
 				}
 				// If it is another type that needs dereferencing
-				else if (needsExtraReferencing(type)) {
+				else if (Filters.needsExtraReferencing(type)) {
 					m_output.write("*arg" + paramCount);
 				}
 				// If this is just a normal type
@@ -1065,19 +1017,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Create an access method to retrieve stored type
 		Type realType = alias.getAliasedType();
 		Type touchupType = Filters.getTouchup(realType);
-		m_output.write((touchupType == null ? realType : touchupType)
-			.formatCpp("routine_unalias_" + uid(alias)));
-		m_output.write("(");
-		m_output.write(alias.getFullName());
-		if (touchupType == null)
-			m_output.write(" *self) { return *self; }\n");
-		else
-			m_output.write(" *self) { return touchup(*self); }\n");
+		m_output.write(
+				Formatters.formatDeclaration(realType, "routine_unalias_" + uid(alias), '&'));
+		m_output.write("(" + alias.getFullName() + " *self)"
+				+ " { return " 
+				+ Formatters.formatExpression(realType, "*self") 
+				+ "; }\n");
 		// Create a destructor
 		m_output.write("void dtor_alias_" + uid(alias));
-		m_output.write("(");
-		m_output.write(alias.getFullName());
-		m_output.write(" *self) { delete self; }\n");
+		m_output.write("(" + alias.getFullName()
+				+ " *self) { delete self; }\n");
 	}
 	
 	/**
@@ -1095,49 +1044,33 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		String fors = with ? "f" : "s";
 		m_output.write("/*\n * var ");
 		m_output.write(field.getFullName());
-		if (field.getDeclaration() != null)
-			m_output.write(" from " + field.getDeclaration().getSourceFilename());
+		m_output.write("\n * " + Formatters.formatLocation(field));
 		m_output.write("\n */\n");
 		// Get some information about the type
 		Type type = removeUnneededConstness(field.getType());
 		Entity base = type.getBaseType();
-		Type touchupType = type.getRootNode().getKind() == Type.TypeNode.NODE_LEAF 
-			? Filters.getTouchup(new Type(new Type.TypeNode(base))) : null;
-		type = touchupType == null ? type : touchupType;
 		// Create a get accessor
 		Entity container = field.getContainer().getContainer();
 		String accessorName = "data_get_" + uid(field) + fors;
 		String thisArg = container instanceof Aggregate ? 
 			container.getFullName() + " *self" : "";
 		// - generate accessor function header
-		String header = accessorName + "(" + thisArg + ")";
-		m_output.write(type.formatCpp(
-			needsExtraReferencing(type) 
-				? "(&" + header + ")" : header 
-			));
+		m_output.write(Formatters.formatDeclaration(type, accessorName, '&')
+				+ "(" + thisArg + ")");
 		// - generate accessor function body
-		m_output.write(" { return ");
-		if (touchupType != null) { m_output.write("touchup("); }
-		if (container instanceof Aggregate)
-			m_output.write("self->" + field.getName());
-		else
-			m_output.write(Utils.cleanFullName(field));
-		if (touchupType != null) m_output.write(")");
-		m_output.write("; }\n");
+		m_output.write(" { return "
+		 	+ Formatters.formatExpression(type, Formatters.formatMember(field))
+		 	+ "; }\n");
 		// Create a set accessor
 		if (Filters.hasSetter(field)) {
 			accessorName = "data_set_" + uid(field) + fors;
 			// - generate accessor function header
-			header = accessorName + "(" + thisArg + ", " +
-				base.getFullName() + " newval)";
-			m_output.write("void " + header);
+			m_output.write("void " + accessorName + "(" + thisArg + ", " 
+					+ base.getFullName() + " newval)");
 			// - generate accessor function body
-			m_output.write("{ ");
-			if (container instanceof Aggregate)
-				m_output.write("self->" + field.getName());
-			else
-				m_output.write(Utils.cleanFullName(field));
-			m_output.write(" = newval; }\n");
+			m_output.write("{ "
+				+ Formatters.formatMember(field) 
+				+ " = newval; }\n");
 			// - generate regdata
 			if (base instanceof Alias)
 				base = ((Alias)base).getAliasedType().getBaseType();
@@ -1182,7 +1115,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				// - write pointers
 				for (int ptr = 0; ptr < pointers; ++ptr) m_output.write("*");
 				// - express extra referencing
-				if (needsExtraReferencing(type)) m_output.write("&");
+				if (Filters.needsExtraReferencing(type)) m_output.write("&");
 			}
 			// - special care for char *
 			if (base instanceof Primitive && base.getName().equals("char")) {
@@ -1610,32 +1543,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException
 	{
 		m_output.write("\"");
-		if (type.isReference() && !isSmallPrimitive(type.getBaseType()))
+		if (type.isReference() && !Filters.isSmallPrimitive(type.getBaseType()))
 			m_output.write(refOperator);
 		else if (type.getPointerDegree() > 0)
 			m_output.write(ptrOperator);
-		else if (needsExtraReferencing(type)
+		else if (Filters.needsExtraReferencing(type)
 			&& !(type.getBaseType() instanceof Primitive))
 			m_output.write(extraOperator);
 		if (type.getRoot() != null)
 			writeDecoratedFlatBase(type);
 		m_output.write("\"");
-	}
-	
-	/**
-	 * Removes any reference notations from a type expression.
-	 * e.g. "const int&" converts to "const int". 
-	 * @param type original type expression
-	 * @return a new type expression without a reference
-	 */
-	/* package */ Type dereference(Type type)
-	{
-		Type.TypeNode root = type.getRootNode();
-		// Descend until node is not a reference
-		while (root.getKind() == Type.TypeNode.NODE_REFERENCE) {
-			root = (Type.TypeNode)root.getFirstChild();
-		}
-		return new Type(root);
 	}
 	
 	/**
