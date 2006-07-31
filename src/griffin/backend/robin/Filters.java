@@ -228,6 +228,7 @@ public class Filters {
 					&& (up.getContainer() instanceof Aggregate 
 							&& up.getStorage() == Specifiers.Storage.STATIC
 						|| up.getContainer() instanceof Namespace
+						    && isDeclared(field)
 							&& up.getStorage() != Specifiers.Storage.STATIC)
 					&& field.getType().isFlat()
 					&& !field.getType().isArray()
@@ -361,4 +362,33 @@ public class Filters {
 	}
 	// The map from function return type to the new type and the touchup code
 	private static Map m_touchups = new HashMap();
+	static boolean isPrimitive(Entity base)
+	{
+		return (base instanceof Primitive);
+	}
+
+	static boolean isSmallPrimitive(Entity base)
+	{
+		return (base instanceof Primitive) &&
+		       (!base.getName().equals("double")) &&
+		       (!base.getName().equals("long long")) &&
+			   (!base.getName().equals("unsigned long long"));
+	}
+
+	/**
+	 * An aggregate (non-primitive) type needs at least one level of pointer
+	 * reference.
+	 * @param type argument or return type
+	 * @return boolean
+	 */
+	static boolean needsExtraReferencing(Type type)
+	{
+		int pointers = type.getPointerDegree();
+		boolean reference = type.isReference();
+		Entity base = type.getBaseType();
+		if ((!reference && pointers == 0) && 
+			!(isSmallPrimitive(base) || base instanceof sourceanalysis.Enum)) return true;
+		else
+			return false;
+	}
 }
