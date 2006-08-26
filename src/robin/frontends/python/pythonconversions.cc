@@ -40,6 +40,34 @@ scripting_element IntToFloatConversion::apply(scripting_element value) const
 }
 
 
+/**
+ * This conversion is possible iff the Python Long can fit inside an 
+ * unsigned long in C.
+ *
+ * @return the normal weight of this conversion if the conversion is
+ *    possible, otherwise Weight::INFINITE.
+ */
+Conversion::Weight LongLongTruncate::weight(Insight insight) const
+{
+	if (insight.i_long == sizeof(long)) {
+		return Conversion::weight();
+	}
+	else {
+		return Conversion::Weight::INFINITE;
+	}
+}
+
+/**
+ * Truncates long long to long.
+ */
+scripting_element LongLongTruncate::apply(scripting_element value) const
+{
+	PyObject *pyvalue = (PyObject *)value;
+	long long cvalue = PyLong_AsLongLong(pyvalue);
+	return PyInt_FromLong((long)cvalue);
+}
+
+
 } // end of namespace Python
 
 } // end of namespace Robin

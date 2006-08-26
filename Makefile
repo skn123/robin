@@ -135,18 +135,20 @@ autocollect-test@%:
 
 TESTS = language-test protocols-test inheritance-test hints-test autocollect-test
 TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest
+TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
 
 test: ${addsuffix @., $(TESTS)}
-	( cd $(extreme_python) && \
-	        $(SELF) $(python) test_cases.py $(TEST_SUITES) )
+	( $(TESTING_PYTHON) test_cases.py $(TEST_SUITES) )
 
 justtest:
-	( cd $(extreme_python) && \
-	        $(SELF) $(python) test_cases.py $(TEST_SUITES) )
+	( $(TESTING_PYTHON) test_cases.py $(TEST_SUITES) )
 
 systest: ${addsuffix @scriptdir, $(TESTS)}
 	( cd $(extreme_python) && \
 	        $(python) test_cases.py $(TEST_SUITES) )
+
+interactive:
+	$(TESTING_PYTHON)
 
 manifest:
 	$(MAKE) -n install prefix=/demo exec_prefix=/demo site_packages=/demo \

@@ -93,7 +93,7 @@ const Conversion::Weight& Conversion::weight() const
  * value.
  *
  * @param insight a code providing some information about a value to be
- * converted. The value is implementation defined any its meaning may change
+ * converted. The value is implementation defined, and its meaning may change
  * from type to type.
  * @note the default implementation just returns weight().
  */

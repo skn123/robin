@@ -56,6 +56,14 @@ class LanguageTest(TestCase):
 			self.assertEquals(s, ds)
 			self.assertEquals(s, drs)
 
+	def testLongAndLongLong(self):
+		prim = language.Primitives()
+		self.assertEquals(prim.setLong(6), 2)
+		self.assertEquals(prim.setLong(1l << 40), 1)
+		self.assertEquals(prim.setLong(6l), 1)
+		self.assertEquals(prim.setLong(6l, True), 3)
+		self.assertEquals(prim.setLong(0xffffffff, True), 3)
+
 	def testPrivateDataMembers(self):
 		try:
 			data = 92

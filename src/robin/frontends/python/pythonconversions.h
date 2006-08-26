@@ -65,6 +65,32 @@ public:
 
 };
 
+class LongLongTruncate : public Conversion
+{
+public:
+	/**
+	 * @name Constructors
+	 */
+	//@{
+	LongLongTruncate() { setWeight(Conversion::Weight(0,1,0,0)); }
+	//@}
+
+	/**
+	 * @name Access
+	 */
+	//@{
+	Weight weight(Insight insight) const;
+	//@}
+
+	/**
+	 * @name Activity
+	 */
+	//@{
+	scripting_element apply(scripting_element value) const;
+	//@}
+
+};
+
 
 
 } // end of namespace Python
