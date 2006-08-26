@@ -84,7 +84,7 @@ class Griffin:
 				self._opt_eclipse()
 			elif arg == "-debug":
 				read_to = arg_opts[arg] = []; read_limit = 1
-			elif arg in ["-I", "-v"] or arg.startswith("--"):
+			elif arg in ["-I", "-v","-w"] or arg.startswith("--"):
 				arg_opts[arg] = ""
 			else:
 				read_to.append(arg)
@@ -120,25 +120,31 @@ class Griffin:
 			input_type = "none"
 
 		self.verbose = "-v" in arg_opts
+		wizard = "-w" in arg_opts or "--wizard" in arg_opts
 
 		# Set input source
 		if input_type == "sources":
 			if "-I" in arg_opts:
 				arg_in = Preprocessor().extractAllIncluded(arg_in)
 			self.setSources(arg_in)
-		elif input_type == "xml":
+		elif input_type == "xml" or wizard:
 			if len(arg_in) == 0:
 				self.setXML("xml")
 			else:
 				self.setXML(arg_in[0])
 		else:
-			print "No input specified. Quit."
+			print "griffin: No input specified. Quit."
 			raise SystemExit
 
 		arg_jopts = [x for x in arg_opts.keys() if x.startswith("--")]
 
 		if "-debug" in arg_opts:
 			self.javaflags = "-Xrunjdwp:transport=dt_socket,address=1234,server=y,suspend=y"
+
+		if wizard:
+			self.javacmd = "wizard.Main"
+			self.premises.extend(["swt.jar","jface.jar", 
+			                      "org.eclipse.core.runtime.jar"])
 
 		# engage
 		self.run(arg_out + arg_jopts + arg_other)
@@ -230,4 +236,5 @@ if __name__ == "__main__":
 		print "More option flags:"
 		print "  -I    process #included header files recursively"
 		print "  -v    be verbose"
+		print "  -w    (or --wizard) launch the wizard"
 		print
