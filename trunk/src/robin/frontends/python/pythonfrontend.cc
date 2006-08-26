@@ -255,6 +255,7 @@ void PythonFrontend::initialize() const
 	Handle<Conversion> hchar2string(new TrivialConversion);
 	Handle<Conversion> hpascal2cstring(new PascalStringToCStringConversion);
 	Handle<Conversion> hlist2element(new TrivialConversion);
+	Handle<Conversion> hlongtruncate(new LongLongTruncate);
 
 	hlong2int        ->setSourceType(ArgumentLong);
 	hlong2int        ->setTargetType(ArgumentInt);
@@ -290,7 +291,11 @@ void PythonFrontend::initialize() const
 	hpascal2cstring  ->setTargetType(ArgumentCString);
 	hlist2element    ->setSourceType(ArgumentPythonList);
 	hlist2element    ->setTargetType(ArgumentScriptingElement);
+	hlongtruncate    ->setSourceType(ArgumentPythonLong);
+	hlongtruncate    ->setTargetType(ArgumentLong);
 
+	hint2longlong->setWeight(Conversion::Weight(0,1,0,0));
+	hint2ulonglong->setWeight(Conversion::Weight(0,1,0,0));
 	hbool2long->setWeight(Conversion::Weight(0,1,0,0));
 
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2int);
@@ -312,6 +317,7 @@ void PythonFrontend::initialize() const
 		->registerConversion(hpascal2cstring);
 	ConversionTableSingleton::getInstance()
 		->registerConversion(hlist2element);
+	ConversionTableSingleton::getInstance()->registerConversion(hlongtruncate);
 }
 
 /**
@@ -387,6 +393,13 @@ Insight PythonFrontend::detectInsight(scripting_element element) const
 		PyList_SetItem(types, 1, PyObject_Type(PyTuple_GetItem(first, 1)));
 		Py_XDECREF(items);
 		insight.i_ptr = types;
+	}
+	else if (PyLong_Check(object)) {
+		long long value = PyLong_AsLongLong(object);
+		if (value < 1ll << (sizeof(long)*8))
+			insight.i_long = sizeof(long);
+		else
+			insight.i_long = sizeof(long long);
 	}
 	else {
 		insight.i_ptr = 0;

@@ -59,7 +59,7 @@ namespace StandardLibrary
 		int getVectorType() { return m_id; }
 
 		/**
-		 * @param v [output] blaht
+		 * @param v [output] result vector
 		 */
 		static void modifyVectorInPlace(std::vector<int> &v)
 		{

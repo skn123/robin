@@ -228,6 +228,10 @@ public:
 
 	void unsupported(const char val[]) { }
 
+	int setLong(long long v) { m_long = v; return 1; }
+	int setLong(long v) { m_long = v; return 2; }
+	int setLong(long v, bool flag) { m_long = v; return 3; }
+
 private:
 
 	float getRandFloat()
@@ -249,6 +253,7 @@ private:
 		return std::string(sdouble);
 	}
 	
+	long m_long;
 	float m_float;
 	double m_double;
 	std::vector<float> m_floats;
