@@ -1,6 +1,10 @@
 ver = 1.0
 minor = 2
 
+###
+# Installation
+###
+
 prefix = /usr/local
 exec_prefix = /usr/local
 site_packages = /usr/local/lib/python2.4/site-packages
@@ -88,6 +92,11 @@ uninstall:
 	-rm -fr $(pydir)
 	-rm -fr $(jardir)
 
+
+###
+# Testing
+###
+
 extreme_python = src/robin/extreme/python
 SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
        LD_LIBRARY_PATH=$(PWD) \
@@ -95,7 +104,7 @@ SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
 . = .
 
 language-test@%:
-	$($*)/griffin -I -in $(extreme_python)/language.h                \
+	$($*)/griffin $G -I -in $(extreme_python)/language.h             \
 	        -out $(extreme_python)/liblanguage_robin.cc              \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
@@ -136,6 +145,8 @@ autocollect-test@%:
 TESTS = language-test protocols-test inheritance-test hints-test autocollect-test
 TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest
 TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
+TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)
+TESTING_PYTHON_VG = cd $(extreme_python) && $(SELF) valgrind --tool=memcheck $(python)
 
 test: ${addsuffix @., $(TESTS)}
 	( $(TESTING_PYTHON) test_cases.py $(TEST_SUITES) )
@@ -147,9 +158,20 @@ systest: ${addsuffix @scriptdir, $(TESTS)}
 	( cd $(extreme_python) && \
 	        $(python) test_cases.py $(TEST_SUITES) )
 
+# - development tools
 interactive:
 	$(TESTING_PYTHON)
 
+debug:
+	( $(TESTING_PYTHON_GDB) test_cases.py $(TEST_SUITES) )
+
+memcheck:
+	( $(TESTING_PYTHON_VG) test_cases.py $(TEST_SUITES) )
+
+
+###
+# Distribution
+###
 manifest:
 	$(MAKE) -n install prefix=/demo exec_prefix=/demo site_packages=/demo \
 	  install=install cp-r=install \
