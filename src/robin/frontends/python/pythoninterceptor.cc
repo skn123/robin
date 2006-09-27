@@ -1,14 +1,15 @@
 // -*- mode: c++; tab-width: 4; c-basic-offset: 4 -*-
 
+#include <Python.h>
 #include "pythoninterceptor.h"
 
-#include <Python.h>
 #include <stdexcept>
 #include <assert.h>
 
 #include "../../debug/trace.h"
 #include "pythonlowlevel.h"
 #include "pythonerrorhandler.h"
+#include "pythonobjects.h"
 
 
 namespace Robin {
@@ -57,8 +58,8 @@ basic_block PythonInterceptor::callback(scripting_element twin,
 	// Find python method
 	char *methname = const_cast<char*>(signature.name.c_str());
 	PyObject *method = PyObject_GetAttrString(pytwin, methname);
-	if (!method) {
-		throw std::runtime_error("method '" + signature.name + 
+	if (!method || FunctionObject_Check(method)) {
+		throw std::runtime_error("pure virtual method '" + signature.name + 
 								 "' is not implemented.");
 	}
 	// Invoke python method

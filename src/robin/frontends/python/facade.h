@@ -16,7 +16,6 @@
 #ifndef ROBIN_PYTHON_FACADE_H
 #define ROBIN_PYTHON_FACADE_H
 
-#include <limits>
 #include <Python.h>
 #include <robin/reflection/instance.h>
 

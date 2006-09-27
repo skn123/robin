@@ -328,8 +328,7 @@ class InheritanceTest(TestCase):
 				return self.delim.join([str(self)] * 3)
 
 		token = "TOKEN"
-		ms = MyString()
-		ms.init(token)
+		ms = MyString(token)
 		ms.delim = " "
 		self.assertEquals(str(ms), token)
 		self.assertEquals(ms.size(), len(token))
@@ -344,7 +343,7 @@ class InheritanceTest(TestCase):
 
 		f = MyFunctor()
 		elements = ["Aaron", "Mike", "Joseph"]
-		melements = inheritance.mapper(elements, f.IFunctor)
+		melements = inheritance.mapper(elements, f)
 		self.assertEquals(len(elements), len(melements))
 		for i in xrange(len(elements)):
 			self.assertEquals(elements[i] * i, melements[i])

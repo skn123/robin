@@ -12,7 +12,7 @@ namespace Robin {
 namespace Python { 
 
 
-PyTypeObject NullTypeObject = {
+PyTypeObject NullTypeObject_ = {
 	PyObject_HEAD_INIT(&PyType_Type)
     0,
     "Robin::Python::NullObject",
@@ -59,7 +59,46 @@ HybridObject::~HybridObject()
 PyObject *HybridObject::__new__(PyTypeObject *classtype,
 						 PyObject *args, PyObject *kw) 
 {
-    return new HybridObject(classtype);
+    HybridObject *hybrid = new HybridObject(classtype);
+
+	PyObject *value;
+	PyObject *rc;
+
+	// - try to invoke derived class __init__, fall back to C++ constructor
+	if (value = PyDict_GetItemString(classtype->tp_dict, "__init__")) {
+		rc = PyObject_Call(PyMethod_New(value, hybrid, PyObject_Type(hybrid)), 
+						   args, NULL);
+		if (rc && !hybrid->isInitialized()) {
+			PyObject *noargs = PyTuple_New(0);
+			rc = ClassObject::__init__(hybrid, noargs);
+			Py_XDECREF(noargs);
+		}
+	}
+	else {
+		PyErr_Clear();
+		rc = ClassObject::__init__(hybrid, args);
+	}
+
+	// - try to invoke _init (interceptors' facility)
+	if (rc) {
+		if (value = hybrid->getBoundMethodOrDataMember("_init")) {
+			PyObject *twin = PyTuple_New(1);
+			PyTuple_SetItem(twin, 0, hybrid);
+			rc = PyObject_Call(value, twin, NULL);
+			Py_XDECREF(twin);
+		}
+		else {
+			PyErr_Clear();
+		}
+	}
+
+	// - check for errors
+	if (rc == NULL) {
+		delete hybrid;
+		return NULL;
+	}
+
+	return hybrid;
 }
 
 /**
@@ -80,49 +119,25 @@ int HybridObject::__setattr__(PyObject *self, char *nm, PyObject *value)
 	return ((HybridObject*)self)->__setattr__(nm, value);
 }
 
-PyObject *HybridObject::__init__(PyObject *self, PyObject *args)
-{
-	ClassObject *klass = (ClassObject*)(self->ob_type);
-
-	Handle<Instance> constructed_value = klass->construct(args, NULL);
-	if (constructed_value) {
-		((HybridObject*)self)->init(constructed_value);
-		Py_XINCREF(Py_None); return Py_None;
-	}
-	else
-		return NULL;
-}
-
 /**
  * Hybrid object attribute access:
  */
 PyObject *HybridObject::__getattr__(char *nm)
 {
-	static PyMethodDef methods[] = {
-		{ "init", __init__, METH_VARARGS, "initializes C instance" },
-		{ 0 }
-	};
-
 	PyObject *value;
 
-	if (value = PyDict_GetItemString(ob_type->tp_dict, nm)) {
-		return PyMethod_New(value, this, PyObject_Type(this));
+	if (value = PyDict_GetItemString(m_dict, nm)) {
+		Py_XINCREF(value);
+		return value;
 	}
 	else {
 		PyErr_Clear();
-		if (value = Py_FindMethod(methods, this, nm)) {
-			return value;
+		if (value = PyDict_GetItemString(ob_type->tp_dict, nm)) {
+			return PyMethod_New(value, this, PyObject_Type(this));
 		}
 		else {
 			PyErr_Clear();
-			if (value = PyDict_GetItemString(m_dict, nm)) {
-				Py_XINCREF(value);
-				return value;
-			}
-			else {
-				PyErr_Clear();
-				return InstanceObject::__getattr__(nm);
-			}
+			return InstanceObject::__getattr__(nm);
 		}
 	}
 }
@@ -154,6 +169,11 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 	for (int i = 0; i < nbases; ++i) {
 		PyObject *base = PyTuple_GET_ITEM(bases, i);
 		if (ClassObject_Check(base)) {
+			if (underlyingBase) {
+				PyErr_SetString(PyExc_TypeError, "Robin is unable to support "
+								"multiple inheritance at this time");
+				return NULL;
+			}
 			baseClass = (ClassObject*)base;
 			underlyingBase = baseClass->getUnderlying();
 		}
@@ -177,82 +197,6 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 	newtype->tp_dict = PyDict_Copy(dict);
 	Py_XINCREF(baseClass);
     return (PyObject*)newtype;
-}
-
-
-/**
- * Prepares the implementor type by filling appropriate fields of 
- * PyTypeObject.
- */
-void Implementor::initialize(ClassObject *base)
-{
-	(PyTypeObject&)(*this) = NullTypeObject;
-
-	ob_size = sizeof(Implementor);
-
-    tp_name = (char *)malloc(strlen(base->tp_name) + 1);
-	strcpy(tp_name, base->tp_name);
-	tp_basicsize = sizeof(Object);
-
-	tp_dictoffset = offsetof(Object, ob_dict);
-	tp_weaklistoffset = offsetof(Object, ob_weak);
-
-	// Support the new class model
-	tp_flags |= Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_CLASS | 
-		        Py_TPFLAGS_CHECKTYPES;
-	tp_base = &PyBaseObject_Type;
-
-	tp_mro = NULL;
-	tp_new = __new__;
-
-	name = slots = NULL;
-
-	tp_implements = base;
-	Py_XINCREF(tp_implements);
-}
-
-
-/**
- * Creates a new instance of the implementor object. This is not intended to
- * be invoked directly but rather through creation of a derived class from
- * the original implementor. It allocates a new object using the type's own
- * tp_alloc and sets a member to a new instance of the interceptor object for
- * that interface.
- */
-PyObject *Implementor::__new__(PyTypeObject *type,
-							   PyObject *args, PyObject *kw)
-{
-	PyTypeObject *btype;
-
-	if (type->tp_alloc == 0) {
-		PyErr_Format(PyExc_TypeError, "cannot create '%s' instances",
-					 type->tp_name);
-		return NULL;
-	}
-
-	// Find the implementor
-	// TODO verify that this comparison always works
-	for (btype = type; btype->tp_base != &PyBaseObject_Type; btype = btype->tp_base);
-	Implementor *implementor = (Implementor*)btype;
-	ClassObject *interface = implementor->tp_implements;
-
-	// Instantiate an interceptor object
-	PyObject *implementation = interface->tp_new(interface, args, kw);
-	if (implementation == NULL)
-		return NULL;
-
-	// Allocate a new object with a reference to the implementation just
-	// created
-	Object *obj = (Object*)type->tp_alloc(type, 0);
-	obj->ob_dict = PyDict_New();
-	obj->ob_weak = NULL; //?? PyList_New(0);
-
-	PyDict_SetItemString(obj->ob_dict, interface->tp_name, implementation);
-
-	// Initialize the interceptor
-	PyObject_CallMethod(implementation, "_init", "O", obj);
-
-	return (PyObject*)obj;
 }
 
 

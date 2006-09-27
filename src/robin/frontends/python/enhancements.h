@@ -16,11 +16,11 @@
 #ifndef ROBIN_PYTHON_ENHANCEMENTS_H
 #define ROBIN_PYTHON_ENHANCEMENTS_H
 
-// STL includes
-#include <string>
-
 // Python includes
 #include <Python.h>
+
+// STL includes
+#include <string>
 
 // Pattern includes
 #include <pattern/handle.h>
