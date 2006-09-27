@@ -16,8 +16,6 @@
 #ifndef ROBIN_PYTHON_OBJECTS_H
 #define ROBIN_PYTHON_OBJECTS_H
 
-#include <limits>
-
 // Python includes
 #include <Python.h>
 
@@ -91,6 +89,8 @@ public:
 	int       __setattr__(char *name, PyObject *val);
 	PyObject *__repr__();
 
+	static PyObject *__init__   (PyObject *self, PyObject *args);
+	static PyObject *__init_ex__(PyObject *,     PyObject *self_and_args);
 	static PyObject *__new__    (PyTypeObject *self, 
 								 PyObject *args, PyObject *kw);
 	static PyObject *__call__   (PyObject *self, PyObject *args, PyObject *kw);
@@ -167,6 +167,7 @@ public:
 	 * @name Access
 	 */
 	//@{
+	bool isInitialized() const;
 	Handle<Instance> getUnderlying() const;
 	PyObject *getBoundMethodOrDataMember(const char *name);
 
@@ -176,6 +177,8 @@ public:
 protected:
 	InstanceObject();
 	void init(Handle<Instance> underlying);
+
+	friend class ClassObject;
 
 private:
 	Handle<Instance> m_underlying;
@@ -273,7 +276,9 @@ private:
 	Kind m_kind;
 };
 
-// ClassObject, InstanceObject services
+// FunctionObject, ClassObject, InstanceObject, EnumeratedConstantObject
+// services
+bool FunctionObject_Check(PyObject *object);
 bool ClassObject_Check(PyObject *object);
 PyObject *ClassObject_GetDict(PyObject *object);
 bool InstanceObject_Check(PyObject *object);

@@ -13,13 +13,13 @@
  * Robin
  */
 
+#include <Python.h>
+
 #include <string>
 
 #include "pythonfrontend.h"
 #include "pythonobjects.h"
 #include "inheritance.h"
-
-#include <Python.h>
 
 #include <robin/reflection/instance.h>
 #include <robin/registration/mechanism.h>
@@ -148,8 +148,8 @@ public:
 				w = Conversion::Weight::INFINITE;
 			}
 
-			PyMem_Del(source);
-			PyMem_Del(dest);
+			unmasquerade(source);
+			unmasquerade(dest);
 		}
 
 		PyObject* wtuple =
@@ -177,31 +177,17 @@ public:
 		return agent;
 	}
 
-
 	/**
-	 * Returns an implementor object based on a C++ type.
+	 * Used to release masquerade() objects.
 	 */
-	static PyObject *py_implement(PyObject *self, PyObject *args)
+	static void unmasquerade(PyObject *agent)
 	{
-		PyObject *base;
-
-		if (!PyArg_ParseTuple(args, "O", &base)) 
-			return NULL;
-
-		PyObject *j;
-		j = (PyObject *)PyObject_GC_New(Robin::Python::Implementor, &PyType_Type);
-
-// PyObject_MALLOC(sizeof(Robin::Python::Implementor));
-		if (j == NULL)
-			return PyErr_NoMemory();
-
-		//		j = PyObject_INIT(j, &PyType_Type);
-		((Robin::Python::Implementor*)j)
-			->initialize((Robin::Python::ClassObject*)base);
-#if !defined(_WIN32) && !defined(__CYGWIN__)
-		_PyObject_GC_TRACK(j);
-#endif
-		return j;
+		if (agent->ob_type == &PyString_Type) {
+			Py_XDECREF(agent);
+		}
+		else {
+			PyMem_Del(agent);
+		}
 	}
 
 	static void py_xdecrefv(void *v) { Py_XDECREF((PyObject*)v); }
@@ -298,10 +284,6 @@ PyMethodDef PythonFrontend::Module::methods[] = {
 	  "weighConversion(type source, type destination)\n"
 	  "Calculates the weight of the conversion between the source type and the"
 	  "destination type" },
-	{ "implement", &py_implement, METH_VARARGS,
-	  "implement(interface)\n"
-	  "Creates a new type which can be inherited in Python in order to\n"
-	  "implement the given interface."},
 	{ "obscure", &py_obscure, METH_VARARGS,
 	  "obscure(object)\n"
 	  "Causes the given object to be interpreted as a 'scripting_element',\n"

@@ -12,10 +12,9 @@
  * @par PACKAGE
  * Robin
  */
-#include <iostream>
-#include "pythonfrontend.h"
-#include <Python.h>
 
+#include <Python.h>
+#include "pythonfrontend.h"
 
 #include <assert.h>
 

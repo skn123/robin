@@ -16,10 +16,10 @@
 #ifndef ROBIN_PYTHON_ADAPTERS_H
 #define ROBIN_PYTHON_ADAPTERS_H
 
+#include <Python.h>
 #include <robin/frontends/adapter.h>
 #include <robin/reflection/low_level.h>
 #include <robin/reflection/typeofargument.h>
-#include <Python.h>
 
 
 namespace Robin {

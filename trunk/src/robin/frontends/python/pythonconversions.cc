@@ -19,10 +19,9 @@
  * <ul><li>TrivialConversion</li><li>StringToPascalStringConversion</li></ul>
  */
 
-#include "pythonconversions.h"
-
 #include <Python.h>
 
+#include "pythonconversions.h"
 #include "pythonobjects.h"
 
 

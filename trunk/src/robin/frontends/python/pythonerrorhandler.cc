@@ -1,17 +1,19 @@
-#include "pythonerrorhandler.h"
-
 #include <Python.h>
 #include <compile.h>
 #include <frameobject.h>
 
-#include <string>
+#include "pythonerrorhandler.h"
 
+#include <string>
 #include <iostream>
+
 using namespace std;
+
 
 namespace Robin {
 
 namespace Python {
+
 
 namespace {
 		

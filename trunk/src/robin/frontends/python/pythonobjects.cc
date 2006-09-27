@@ -56,6 +56,25 @@ namespace Robin {
 namespace Python {
 
 
+PyTypeObject NullTypeObject = {
+	PyObject_HEAD_INIT(&PyType_Type)
+    0,
+    "Robin::Python::NullObject",
+    sizeof(PyObject),
+    0,
+    0, /*tp_dealloc*/
+    0,                           /*tp_print*/
+    0, /*tp_getattr*/
+    0,                           /*tp_setattr*/
+    0,                           /*tp_compare*/
+	0,    /*tp_repr*/
+    0,                           /*tp_as_number*/
+    0,                           /*tp_as_sequence*/
+    0,                           /*tp_as_mapping*/
+    0,                           /*tp_hash */
+	0     /*tp_call*/
+};
+
 PyTypeObject FunctionTypeObject = {
 	PyObject_HEAD_INIT(&PyType_Type)
     0,
@@ -464,12 +483,15 @@ PyObject *FunctionObject::__repr__()
 ClassObject::ClassObject(Handle<Class> underlying)
 	: m_underlying(underlying), m_in_module(NULL), m_x_methods(NULL)
 {
+	(PyTypeObject&)(*this) = NullTypeObject;
+
 	PyObject_Init((PyObject*)this, ClassTypeObject);
 
 	ob_size = sizeof(ClassObject);
 
-    tp_name = (char *)malloc(underlying->name().size() + 1);
-	strcpy(tp_name, underlying->name().c_str());
+	char *new_name = (char *)malloc(underlying->name().size() + 1);
+	strcpy(new_name, underlying->name().c_str());
+	tp_name = new_name;
 	tp_basicsize = sizeof(InstanceObject);
 	tp_dealloc = InstanceObject::__dealloc__;
 	tp_print = NULL;
@@ -506,6 +528,37 @@ ClassObject::~ClassObject()
 {
 	if (m_x_methods) x_releaseMethodTable();
 	Py_XDECREF(m_in_module);
+}
+
+/**
+ * Initializes a C instance.
+ */
+PyObject *ClassObject::__init__(PyObject *self, PyObject *args)
+{
+	ClassObject *klass = (ClassObject*)(self->ob_type);
+
+	Handle<Instance> constructed_value = klass->construct(args, NULL);
+	if (constructed_value) {
+		((InstanceObject*)self)->init(constructed_value);
+		Py_XINCREF(Py_None); return Py_None;
+	}
+	else
+		return NULL;
+}
+
+/**
+ * External initialization (i.e. with self as first argument)
+ */
+PyObject *ClassObject::__init_ex__(PyObject *, PyObject *self_and_args)
+{
+	assert(PyTuple_Check(self_and_args));
+	assert(PyTuple_Size(self_and_args) >= 1);
+	PyObject *self = PyTuple_GetItem(self_and_args, 0);
+	PyObject *args = PyTuple_GetSlice(self_and_args, 1, 
+									  PyTuple_Size(self_and_args));
+	PyObject *ret = __init__(self, args);
+	Py_XDECREF(args);
+	return ret;
 }
 
 /**
@@ -610,6 +663,15 @@ PyObject *ClassObject::__getattr__(const char *name)
 		PyObject* dict = this->getDict();
 		Py_INCREF(dict);
 		return dict;
+	}
+	else if (strcmp(name, "__init__") == 0) {
+		static PyMethodDef method = {
+			"__init__", 
+			__init_ex__, 
+			METH_VARARGS | METH_CLASS, 
+			"initializes C instance" 
+		};
+		return PyMethod_New(PyCFunction_New(&method,0), NULL, (PyObject*)this);
 	}
 	else {
 		// - look for static inners
@@ -896,6 +958,15 @@ void InstanceObject::__dealloc__(PyObject *self)
 }
 
 /**
+ * Checks whether this object has been initialized either via constructor
+ * or using the init() method.
+ */
+bool InstanceObject::isInitialized() const
+{
+	return m_underlying;
+}
+
+/**
  * Accessor - returns underlying instance object.
  */
 Handle<Instance> InstanceObject::getUnderlying() const
@@ -1091,8 +1162,9 @@ EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 
 	ob_size = sizeof(EnumeratedTypeObject);
 
-    tp_name = (char *)malloc(underlying->name().size() + 1);
-	strcpy(tp_name, underlying->name().c_str());
+	char *new_name = (char *)malloc(underlying->name().size() + 1);
+	strcpy(new_name, underlying->name().c_str());
+	tp_name = new_name;
 	tp_basicsize = sizeof(EnumeratedConstantObject);
 	tp_dealloc = EnumeratedConstantObject::__dealloc__;
 	tp_print = NULL;
@@ -1463,6 +1535,17 @@ int ConversionHookObject::__setsubscript__(PyObject *sub, PyObject *val)
 	}
 }
 
+
+/**
+ * Service routine, checks whether a Python object is a FunctionObject
+ *
+ * @param object a Python object to check
+ */
+bool FunctionObject_Check(PyObject *object)
+{
+	return PyType_IsSubtype((PyTypeObject*)PyObject_Type(object),
+							&FunctionTypeObject);
+}
 
 /**
  * Service routine, checks whether a Python object is a ClassObject
