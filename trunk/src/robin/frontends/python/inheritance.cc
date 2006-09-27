@@ -94,7 +94,7 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
 
 	// - check for errors
 	if (rc == NULL) {
-		delete hybrid;
+		Py_XDECREF(hybrid);
 		return NULL;
 	}
 
