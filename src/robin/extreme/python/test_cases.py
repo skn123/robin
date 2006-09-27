@@ -334,6 +334,18 @@ class InheritanceTest(TestCase):
 		self.assertEquals(ms.size(), len(token))
 		self.assertEquals(ms.thrice(), " ".join([token] * 3))
 
+	def testOverrideCtor(self):
+		class MyString(stl.string):
+			def __init__(self, count):
+				stl.string.__init__(self, "A" * count)
+		self.assertEquals(str(MyString(9)), "AAAAAAAAA")
+		# - check the special case where there is an error in __init__
+		try:
+			t = MyString("H")
+			self.fail('previous line should have caused an exception')
+		except TypeError:
+			pass
+
 	def testInterceptors(self):
 		import inheritance, robin
 		class MyFunctor(inheritance.IFunctor):
