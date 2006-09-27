@@ -8,7 +8,9 @@ from griffin import uname, arch, soext, sopre, platspec, pyspec
 
 target = "%(sopre)srobin_pyfe%(platspec)s-%(ver)s%(pyspec)s%(soext)s" % vars()
 
+__pyfile__ = __file__
 imp.load_dynamic("robin", os.path.join(libdir, target))
+__file__ = __pyfile__
 __builtin__.double = double
 __builtin__.char = char
 __builtin__.longlong = longlong
@@ -27,6 +29,11 @@ def here(file):
 		file = file[:-1]
 	return os.path.dirname(os.path.realpath(file)) 
 
+
+def implement(tp):
+	import warnings
+	warnings.warn("robin.implement is deprecated")
+	return tp
 
 # Cleanup
 del imp, os, libdir, target, __builtin__
