@@ -365,6 +365,33 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(" {\n");
     }
 
+    private void writeInterceptorFunctionBasicBlockArgument(Parameter param, boolean moreParams)
+        throws IOException, MissingInformationException
+    {
+        m_output.write("\t\t\t" +
+                "(" +
+                "(" +
+                "basic_block (*)" +
+                "(" + param.getType().formatCpp() + ")" +
+                ")");
+        Type touchupType = Filters.getTouchup(param.getType());
+        if (touchupType == null) { 
+            m_output.write("SameClass< " + param.getType().formatCpp() + " >" +
+                "::same");
+        }
+        else {
+            m_output.write(" (" + 
+                touchupType.formatCpp() + 
+                " (*)(" + 
+                param.getType().formatCpp() + ")) ");
+            m_output.write("touchup");
+        }
+        m_output.write(")" +
+                "(" + param.getName() + ")");
+        if (moreParams) m_output.write(",");
+        m_output.write("\n");
+    }
+
     private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
         throws IOException, MissingInformationException
     {
@@ -381,29 +408,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // Write the function's basic_block argument array
         m_output.write("\t\tbasic_block args[] = {\n");
         for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
-            Parameter param = (Parameter) argIter.next();
-            m_output.write("\t\t\t" +
-                    "(" +
-                    "(" +
-                    "basic_block (*)" +
-                    "(" + param.getType().formatCpp() + ")" +
-                    ")");
-            Type touchupType = Filters.getTouchup(param.getType());
-            if (touchupType == null) { 
-                m_output.write("SameClass< " + param.getType().formatCpp() + " >" +
-                    "::same");
-            }
-            else {
-                m_output.write(" (" + 
-                    touchupType.formatCpp() + 
-                    " (*)(" + 
-                    param.getType().formatCpp() + ")) ");
-                m_output.write("touchup");
-            }
-            m_output.write(")" +
-                    "(" + param.getName() + ")");
-            if (argIter.hasNext()) m_output.write(",");
-            m_output.write("\n");
+            writeInterceptorFunctionBasicBlockArgument(
+                    (Parameter)argIter.next(), argIter.hasNext()
+                );
         }
         m_output.write("\t\t};\n");
         
