@@ -313,6 +313,215 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("\"\n");
 		}
 	}
+
+    private Aggregate createInterceptor(Aggregate subject)
+		throws IOException, MissingInformationException
+    {
+        Collection virtualMethods = Utils.virtualMethods(subject, m_instanceMap);
+
+        // This counter counts how many functions come before the unimplemented ones
+        int funcCounter = 0;
+        // Add the interceptor class to the subjects to wrap
+        Aggregate result = new Aggregate();
+        // TODO Change the name to "I + uid(subject)" and the regdata name to I + name
+        String name = "I" + subject.getName();
+        result.setName(name);
+        // Add the inheritance from the original interface
+        result.addBase(subject, Specifiers.Visibility.PUBLIC);
+        ++funcCounter;
+        // Add the _init function
+        Routine _init = new Routine();
+        _init.setName("_init");
+        Primitive scripting_element = new Primitive();
+        scripting_element.setName("scripting_element");
+        Parameter _init_imp = new Parameter();
+        _init_imp.setName("imp");
+        _init_imp.setType(new Type(new Type.TypeNode(scripting_element)));
+        _init.addParameter(_init_imp);
+        _init.setReturnType(new Type(new Type.TypeNode(Primitive.VOID)));
+        result.getScope().addMember(
+                _init, Specifiers.Visibility.PUBLIC, 
+                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+        ++funcCounter;
+        
+        m_output.write("// Interceptor for " + subject.getFullName() + "\n");
+        m_output.write("extern RegData scope_" + result.getScope().hashCode() + "[];\n");
+        m_output.write("class " + name + " : public " + subject.getFullName() + "\n");
+        m_output.write("{\n");
+        m_output.write("public:\n");
+        m_output.write("\tvirtual ~" + name + "() {}\n\n");
+        
+        // TODO Add base constructor calls in this class
+        for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
+            ContainedConnection connection = (ContainedConnection) ctorIter.next();
+            Routine ctor = (Routine) connection.getContained();
+            if (! ctor.isConstructor()) continue;
+            
+            Routine newCtor = (Routine) ctor.clone();
+            newCtor.setName(name);
+            result.getScope().addMember(
+                    newCtor, Specifiers.Visibility.PUBLIC, 
+                    Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+            ++funcCounter;
+            
+            m_output.write("\t" + name + "(");
+            for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
+                Parameter param = (Parameter) argIter.next();
+                m_output.write(param.getType().formatCpp(param.getName()));
+                if (argIter.hasNext()) m_output.write(", ");
+            }
+            m_output.write(") : " + subject.getName() + "(");
+            for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
+                Parameter param = (Parameter) argIter.next();
+                m_output.write(param.getName());
+                if (argIter.hasNext()) m_output.write(", ");
+            }
+            m_output.write(") {}\n\n");
+        }
+        
+        m_output.write("\tvoid _init(scripting_element imp) { twin = imp; }\n\n");
+        
+        // Write functions in interceptor class, and add them to the griffin class
+        int i = 0;
+        for (Iterator funcIter = virtualMethods.iterator();
+            funcIter.hasNext(); ++i) {
+            Routine routine = (Routine) funcIter.next();
+            
+            // Add the routine to the griffin class
+            Routine newRoutine = (Routine) routine.clone();
+            m_interceptorMethods.add(newRoutine);
+            result.getScope().addMember(
+                    newRoutine, Specifiers.Visibility.PUBLIC, 
+                    Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+
+            // If the current function has some default arguments, increment
+            // the function pointer to the last function
+            int defaultArgumentCount = 
+                Utils.countParameters(routine) -
+                Utils.minimalArgumentCount(routine);
+            funcCounter += defaultArgumentCount;
+            
+            // Write the function header
+            m_output.write("\tvirtual ");
+            m_output.write(routine.getReturnType().formatCpp());
+            m_output.write(" " + routine.getName() + "(");
+            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+                Parameter param = (Parameter) argIter.next();
+                m_output.write(param.getType().formatCpp(param.getName()));
+                if (argIter.hasNext()) m_output.write(", ");
+            }
+            m_output.write(")");
+            if (newRoutine.isConst()) m_output.write(" const");
+            // Write a throw() clause if required by the interface
+            if (routine.hasThrowClause()) {
+                m_output.write(" throw(");
+                boolean first = true;
+                for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
+                    if (!first) m_output.write(", ");
+                    m_output.write(((Entity)ei.next()).getFullName());
+                }
+                m_output.write(")");
+            }
+            m_output.write(" {\n");
+            
+            // Write the function's basic_block argument array
+            m_output.write("\t\tbasic_block args[] = {\n");
+            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+                Parameter param = (Parameter) argIter.next();
+                m_output.write("\t\t\t" +
+                        "(" +
+                        "(" +
+                        "basic_block (*)" +
+                        "(" + param.getType().formatCpp() + ")" +
+                        ")");
+                Type touchupType = Filters.getTouchup(param.getType());
+                if (touchupType == null) { 
+                    m_output.write("SameClass< " + param.getType().formatCpp() + " >" +
+                        "::same");
+                }
+                else {
+                    m_output.write(" (" + 
+                        touchupType.formatCpp() + 
+                        " (*)(" + 
+                        param.getType().formatCpp() + ")) ");
+                    m_output.write("touchup");
+                }
+                m_output.write(")" +
+                        "(" + param.getName() + ")");
+                if (argIter.hasNext()) m_output.write(",");
+                m_output.write("\n");
+            }
+            m_output.write("\t\t};\n");
+            
+            // Write the call to __callback
+            m_output.write("\t\t");
+            if (! routine.getReturnType().equals(
+                    new Type(new Type.TypeNode(Primitive.VOID)))) {
+                m_output.write("basic_block result = ");
+            }
+            m_output.write("__callback(twin, ");
+            m_output.write("scope_" + 
+                    result.getScope().hashCode() + 
+                    " + " +
+                    funcCounter + 
+                    ", ");
+            m_output.write("args);\n");
+            
+            // Write the return statement
+            if (! routine.getReturnType().equals(
+                    new Type(new Type.TypeNode(Primitive.VOID)))) {
+                Type returnType = routine.getReturnType();
+                Type touchupType = Filters.getTouchup(returnType);
+                if (touchupType != null) {
+                    returnType = touchupType;
+                }
+                
+                int parenNest = 0;
+                
+                m_output.write("\t\treturn ");
+            
+                if (Filters.needsExtraReferencing(returnType)) {
+                    m_output.write("*std::auto_ptr< ");
+                    m_output.write(returnType.formatCpp());
+                    m_output.write(" >(((");
+                    m_output.write(routine.getReturnType().formatCpp() + " * (*)(basic_block)) ");
+                    ++parenNest;
+                }
+                else {
+                    m_output.write("( (" + routine.getReturnType().formatCpp() + " (*)(basic_block)) ");
+                }
+                
+                if (touchupType != null) {
+                    m_output.write("(" + 
+                            routine.getReturnType().formatCpp() + 
+                            " (*)(" + 
+                            touchupType.formatCpp() + ")) ");
+                    m_output.write("touchdown)(");
+                }
+                else {
+                    m_output.write("SameClass< basic_block >::same)(");
+                }
+
+                m_output.write("result)");
+                
+                for (int paren = 0; paren < parenNest; ++paren)
+                    m_output.write(")");
+                
+                m_output.write(";\n");
+            }
+            m_output.write("\t}\n\n");
+
+            // Increment the function pointer counter
+            funcCounter++;
+        }
+        
+        // Write private sections of class
+        m_output.write("private:\n");
+        m_output.write("\tscripting_element twin;\n");
+        m_output.write("};\n\n");
+			
+        return result;
+    }
 	
 	/**
 	 * Creates definitions of interceptor classes to wrap the classes marked
@@ -330,217 +539,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Generate interceptor class decleration
 		for (Iterator subjectIter = m_interceptors.iterator(); subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
-			
-			// Check if the class is a template instantiation, and if so skip it
-			if (subject.isSpecialized()) continue;
-			
-			// Get the virtual method list of the class
-			Collection virtualMethods = Utils.virtualMethods(subject, m_instanceMap);
-			if (virtualMethods.isEmpty()) continue;
-			
-			// This counter counts how many functions come before the unimplemented ones
-			int funcCounter = 0;
-			// Add the interceptor class to the subjects to wrap
-			Aggregate interceptor = new Aggregate();
-			// TODO Change the name to "I + uid(subject)" and the regdata name to I + name
-			String name = "I" + subject.getName();
-			interceptor.setName(name);
-			// Add the inheritance from the original interface
-			interceptor.addBase(subject, Specifiers.Visibility.PUBLIC);
-			++funcCounter;
-			// Add the _init function
-			Routine _init = new Routine();
-			_init.setName("_init");
-			Primitive scripting_element = new Primitive();
-			scripting_element.setName("scripting_element");
-			Parameter _init_imp = new Parameter();
-			_init_imp.setName("imp");
-			_init_imp.setType(new Type(new Type.TypeNode(scripting_element)));
-			_init.addParameter(_init_imp);
-			_init.setReturnType(new Type(new Type.TypeNode(Primitive.VOID)));
-			interceptor.getScope().addMember(
-					_init, Specifiers.Visibility.PUBLIC, 
-					Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
-			++funcCounter;
-			
-			m_output.write("// Interceptor for " + subject.getFullName() + "\n");
-			m_output.write("extern RegData scope_" + interceptor.getScope().hashCode() + "[];\n");
-			m_output.write("class " + name + " : public " + subject.getFullName() + "\n");
-			m_output.write("{\n");
-			m_output.write("public:\n");
-			m_output.write("\tvirtual ~" + name + "() {}\n\n");
-			
-			// TODO Add base constructor calls in this class
-			for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
-				ContainedConnection connection = (ContainedConnection) ctorIter.next();
-				Routine ctor = (Routine) connection.getContained();
-				if (! ctor.isConstructor()) continue;
-				
-				Routine newCtor = (Routine) ctor.clone();
-				newCtor.setName(name);
-				interceptor.getScope().addMember(
-						newCtor, Specifiers.Visibility.PUBLIC, 
-						Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
-				++funcCounter;
-				
-				m_output.write("\t" + name + "(");
-				for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
-					Parameter param = (Parameter) argIter.next();
-					m_output.write(param.getType().formatCpp(param.getName()));
-					if (argIter.hasNext()) m_output.write(", ");
-				}
-				m_output.write(") : " + subject.getName() + "(");
-				for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
-					Parameter param = (Parameter) argIter.next();
-					m_output.write(param.getName());
-					if (argIter.hasNext()) m_output.write(", ");
-				}
-				m_output.write(") {}\n\n");
-			}
-			
-			m_output.write("\tvoid _init(scripting_element imp) { twin = imp; }\n\n");
-			
-			// Write functions in interceptor class, and add them to the griffin class
-			int i = 0;
-			for (Iterator funcIter = virtualMethods.iterator();
-				funcIter.hasNext(); ++i) {
-				Routine routine = (Routine) funcIter.next();
-				
-				// Add the routine to the griffin class
-				Routine newRoutine = (Routine) routine.clone();
-				m_interceptorMethods.add(newRoutine);
-				interceptor.getScope().addMember(
-						newRoutine, Specifiers.Visibility.PUBLIC, 
-						Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
 
-				// If the current function has some default arguments, increment
-				// the function pointer to the last function
-				int defaultArgumentCount = 
-					Utils.countParameters(routine) -
-					Utils.minimalArgumentCount(routine);
-				funcCounter += defaultArgumentCount;
-				
-				// Write the function header
-				m_output.write("\tvirtual ");
-				m_output.write(routine.getReturnType().formatCpp());
-				m_output.write(" " + routine.getName() + "(");
-				for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
-					Parameter param = (Parameter) argIter.next();
-					m_output.write(param.getType().formatCpp(param.getName()));
-					if (argIter.hasNext()) m_output.write(", ");
-				}
-				m_output.write(")");
-				if (newRoutine.isConst()) m_output.write(" const");
-				// Write a throw() clause if required by the interface
-				if (routine.hasThrowClause()) {
-					m_output.write(" throw(");
-					boolean first = true;
-					for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
-						if (!first) m_output.write(", ");
-						m_output.write(((Entity)ei.next()).getFullName());
-					}
-					m_output.write(")");
-				}
-				m_output.write(" {\n");
-				
-				// Write the function's basic_block argument array
-				m_output.write("\t\tbasic_block args[] = {\n");
-				for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
-					Parameter param = (Parameter) argIter.next();
-					m_output.write("\t\t\t" +
-							"(" +
-							"(" +
-							"basic_block (*)" +
-							"(" + param.getType().formatCpp() + ")" +
-							")");
-					Type touchupType = Filters.getTouchup(param.getType());
-					if (touchupType == null) { 
-						m_output.write("SameClass< " + param.getType().formatCpp() + " >" +
-							"::same");
-					}
-					else {
-						m_output.write(" (" + 
-							touchupType.formatCpp() + 
-							" (*)(" + 
-							param.getType().formatCpp() + ")) ");
-						m_output.write("touchup");
-					}
-					m_output.write(")" +
-							"(" + param.getName() + ")");
-					if (argIter.hasNext()) m_output.write(",");
-					m_output.write("\n");
-				}
-				m_output.write("\t\t};\n");
-				
-				// Write the call to __callback
-				m_output.write("\t\t");
-				if (! routine.getReturnType().equals(
-						new Type(new Type.TypeNode(Primitive.VOID)))) {
-					m_output.write("basic_block result = ");
-				}
-				m_output.write("__callback(twin, ");
-				m_output.write("scope_" + 
-						interceptor.getScope().hashCode() + 
-						" + " +
-						funcCounter + 
-						", ");
-				m_output.write("args);\n");
-				
-				// Write the return statement
-				if (! routine.getReturnType().equals(
-						new Type(new Type.TypeNode(Primitive.VOID)))) {
-					Type returnType = routine.getReturnType();
-					Type touchupType = Filters.getTouchup(returnType);
-					if (touchupType != null) {
-						returnType = touchupType;
-					}
-					
-					int parenNest = 0;
-					
-					m_output.write("\t\treturn ");
-				
-					if (Filters.needsExtraReferencing(returnType)) {
-						m_output.write("*std::auto_ptr< ");
-						m_output.write(returnType.formatCpp());
-						m_output.write(" >(((");
-						m_output.write(routine.getReturnType().formatCpp() + " * (*)(basic_block)) ");
-						++parenNest;
-					}
-					else {
-						m_output.write("( (" + routine.getReturnType().formatCpp() + " (*)(basic_block)) ");
-					}
-					
-					if (touchupType != null) {
-						m_output.write("(" + 
-								routine.getReturnType().formatCpp() + 
-								" (*)(" + 
-								touchupType.formatCpp() + ")) ");
-						m_output.write("touchdown)(");
-					}
-					else {
-						m_output.write("SameClass< basic_block >::same)(");
-					}
-
-					m_output.write("result)");
-					
-					for (int paren = 0; paren < parenNest; ++paren)
-						m_output.write(")");
-					
-					m_output.write(";\n");
-				}
-				m_output.write("\t}\n\n");
-
-				// Increment the function pointer counter
-				funcCounter++;
-			}
-			
-			// Write private sections of class
-			m_output.write("private:\n");
-			m_output.write("\tscripting_element twin;\n");
-			m_output.write("};\n\n");
-			
-			// Add the class
-			newSubjects.add(interceptor);
+            // Check if the class is a template instantiation, and if so skip it
+            if (subject.isSpecialized()) continue;
+            
+            // Skip when there are no virtual methods
+            if (Utils.virtualMethods(subject, m_instanceMap).isEmpty()) continue;
+        
+            newSubjects.add( createInterceptor(subject) );
 		}
 		
 		// Add all of the new subjects to the subjects set
