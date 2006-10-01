@@ -409,32 +409,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("args);\n");
     }
 
-    private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
+    private void writeInterceptorFunctionReturnStatement(Routine routine)
         throws IOException, MissingInformationException
     {
-        // Add the routine to the griffin class
-        Routine newRoutine = (Routine) routine.clone();
-        m_interceptorMethods.add(newRoutine);
-        interceptor.getScope().addMember(
-                newRoutine, Specifiers.Visibility.PUBLIC, 
-                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
-
-        // Write the function header
-        writeInterceptorFunctionHeader(newRoutine);
-        
-        // Write the function's basic_block argument array
-        m_output.write("\t\tbasic_block args[] = {\n");
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
-            writeInterceptorFunctionBasicBlockArgument(
-                    (Parameter)argIter.next(), argIter.hasNext()
-                );
-        }
-        m_output.write("\t\t};\n");
-        
-        // Write the call to __callback
-        writeInterceptorFunctionCallbackCall(interceptor, routine, funcCounter);
-        
-        // Write the return statement
         if (! routine.getReturnType().equals(
                 new Type(new Type.TypeNode(Primitive.VOID)))) {
             Type returnType = routine.getReturnType();
@@ -476,6 +453,36 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             
             m_output.write(";\n");
         }
+    }
+
+    private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
+        throws IOException, MissingInformationException
+    {
+        // Add the routine to the griffin class
+        Routine newRoutine = (Routine) routine.clone();
+        m_interceptorMethods.add(newRoutine);
+        interceptor.getScope().addMember(
+                newRoutine, Specifiers.Visibility.PUBLIC, 
+                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+
+        // Write the function header
+        writeInterceptorFunctionHeader(newRoutine);
+        
+        // Write the function's basic_block argument array
+        m_output.write("\t\tbasic_block args[] = {\n");
+        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+            writeInterceptorFunctionBasicBlockArgument(
+                    (Parameter)argIter.next(), argIter.hasNext()
+                );
+        }
+        m_output.write("\t\t};\n");
+        
+        // Write the call to __callback
+        writeInterceptorFunctionCallbackCall(interceptor, routine, funcCounter);
+        
+        // Write the return statement
+        writeInterceptorFunctionReturnStatement(routine);
+
         m_output.write("\t}\n\n");
     }
 
