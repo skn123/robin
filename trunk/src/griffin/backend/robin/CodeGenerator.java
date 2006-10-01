@@ -481,7 +481,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
         // NOTE: funcCounter is updated outside this method, in createInterceptor, to reflect this addition
 
-        writeInterceptorFunctionHeader(newRoutine);
+        writeInterceptorFunctionHeader(newRoutine); // TODO: should this be 'routine' instead of 'newRoutine'?
         writeInterceptorFunctionBasicBlockArgumentArray(routine);
         writeInterceptorFunctionCallbackCall(interceptor, routine, funcCounter);
         writeInterceptorFunctionReturnStatement(routine);
