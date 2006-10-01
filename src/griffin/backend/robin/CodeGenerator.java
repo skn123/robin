@@ -364,6 +364,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         }
         m_output.write(" {\n");
     }
+
     private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
         throws IOException, MissingInformationException
     {
