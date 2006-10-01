@@ -339,17 +339,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(") {}\n\n");
     }
 
-    private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
+    private void writeInterceptorFunctionHeader(Routine routine, Routine newRoutine)
         throws IOException, MissingInformationException
     {
-        // Add the routine to the griffin class
-        Routine newRoutine = (Routine) routine.clone();
-        m_interceptorMethods.add(newRoutine);
-        interceptor.getScope().addMember(
-                newRoutine, Specifiers.Visibility.PUBLIC, 
-                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
-
-        // Write the function header
         m_output.write("\tvirtual ");
         m_output.write(routine.getReturnType().formatCpp());
         m_output.write(" " + routine.getName() + "(");
@@ -371,6 +363,19 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             m_output.write(")");
         }
         m_output.write(" {\n");
+    }
+    private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
+        throws IOException, MissingInformationException
+    {
+        // Add the routine to the griffin class
+        Routine newRoutine = (Routine) routine.clone();
+        m_interceptorMethods.add(newRoutine);
+        interceptor.getScope().addMember(
+                newRoutine, Specifiers.Visibility.PUBLIC, 
+                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+
+        // Write the function header
+        writeInterceptorFunctionHeader(routine, newRoutine);
         
         // Write the function's basic_block argument array
         m_output.write("\t\tbasic_block args[] = {\n");
