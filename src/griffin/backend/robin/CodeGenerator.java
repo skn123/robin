@@ -314,6 +314,31 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 	}
 
+    private void addInterceptorBaseConstructor(Routine ctor, String interceptorName, Aggregate subject, Aggregate interceptor)
+        throws IOException, MissingInformationException
+    {
+        // TODO: check out the long parameter list, maybe extract a class out of createInterceptor?
+        Routine newCtor = (Routine) ctor.clone();
+        newCtor.setName(interceptorName);
+        interceptor.getScope().addMember(
+                newCtor, Specifiers.Visibility.PUBLIC, 
+                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+        
+        m_output.write("\t" + interceptorName + "(");
+        for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
+            Parameter param = (Parameter) argIter.next();
+            m_output.write(param.getType().formatCpp(param.getName()));
+            if (argIter.hasNext()) m_output.write(", ");
+        }
+        m_output.write(") : " + subject.getName() + "(");
+        for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
+            Parameter param = (Parameter) argIter.next();
+            m_output.write(param.getName());
+            if (argIter.hasNext()) m_output.write(", ");
+        }
+        m_output.write(") {}\n\n");
+    }
+
     private Aggregate createInterceptor(Aggregate subject)
 		throws IOException, MissingInformationException
     {
@@ -355,28 +380,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
             ContainedConnection connection = (ContainedConnection) ctorIter.next();
             final Routine ctor = (Routine) connection.getContained();
+
             if (! ctor.isConstructor()) continue;
-            
-            Routine newCtor = (Routine) ctor.clone();
-            newCtor.setName(name);
-            result.getScope().addMember(
-                    newCtor, Specifiers.Visibility.PUBLIC, 
-                    Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+        
+            addInterceptorBaseConstructor(ctor, name, subject, result);
+
             ++funcCounter;
-            
-            m_output.write("\t" + name + "(");
-            for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
-                Parameter param = (Parameter) argIter.next();
-                m_output.write(param.getType().formatCpp(param.getName()));
-                if (argIter.hasNext()) m_output.write(", ");
-            }
-            m_output.write(") : " + subject.getName() + "(");
-            for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
-                Parameter param = (Parameter) argIter.next();
-                m_output.write(param.getName());
-                if (argIter.hasNext()) m_output.write(", ");
-            }
-            m_output.write(") {}\n\n");
         }
         
         m_output.write("\tvoid _init(scripting_element imp) { twin = imp; }\n\n");
