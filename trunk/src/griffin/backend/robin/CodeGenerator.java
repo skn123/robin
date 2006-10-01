@@ -339,6 +339,20 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(") {}\n\n");
     }
 
+    private Routine createInterceptorInitFunction() {
+        // TODO: maybe this should be named createInitFunction?
+        Routine result = new Routine();
+        result.setName("_init");
+        Primitive scripting_element = new Primitive();
+        scripting_element.setName("scripting_element");
+        Parameter _init_imp = new Parameter();
+        _init_imp.setName("imp");
+        _init_imp.setType(new Type(new Type.TypeNode(scripting_element)));
+        result.addParameter(_init_imp);
+        result.setReturnType(new Type(new Type.TypeNode(Primitive.VOID)));
+        return result;
+    }
+
     private Aggregate createInterceptor(Aggregate subject)
 		throws IOException, MissingInformationException
     {
@@ -354,17 +368,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         result.addBase(subject, Specifiers.Visibility.PUBLIC);
         ++funcCounter;
         // Add the _init function
-        Routine _init = new Routine();
-        _init.setName("_init");
-        Primitive scripting_element = new Primitive();
-        scripting_element.setName("scripting_element");
-        Parameter _init_imp = new Parameter();
-        _init_imp.setName("imp");
-        _init_imp.setType(new Type(new Type.TypeNode(scripting_element)));
-        _init.addParameter(_init_imp);
-        _init.setReturnType(new Type(new Type.TypeNode(Primitive.VOID)));
         result.getScope().addMember(
-                _init, Specifiers.Visibility.PUBLIC, 
+                createInterceptorInitFunction(), Specifiers.Visibility.PUBLIC, 
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
         ++funcCounter;
         
