@@ -427,47 +427,51 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void writeInterceptorFunctionReturnStatement(Routine routine)
         throws IOException, MissingInformationException
     {
-        if (! routine.getReturnType().equals(
-                new Type(new Type.TypeNode(Primitive.VOID)))) {
-            Type returnType = routine.getReturnType();
-            Type touchupType = Filters.getTouchup(returnType);
-            if (touchupType != null) {
-                returnType = touchupType;
-            }
-            
-            int parenNest = 0;
-            
-            m_output.write("\t\treturn ");
-        
-            if (Filters.needsExtraReferencing(returnType)) {
-                m_output.write("*std::auto_ptr< ");
-                m_output.write(returnType.formatCpp());
-                m_output.write(" >(((");
-                m_output.write(routine.getReturnType().formatCpp() + " * (*)(basic_block)) ");
-                ++parenNest;
-            }
-            else {
-                m_output.write("( (" + routine.getReturnType().formatCpp() + " (*)(basic_block)) ");
-            }
-            
-            if (touchupType != null) {
-                m_output.write("(" + 
-                        routine.getReturnType().formatCpp() + 
-                        " (*)(" + 
-                        touchupType.formatCpp() + ")) ");
-                m_output.write("touchdown)(");
-            }
-            else {
-                m_output.write("SameClass< basic_block >::same)(");
-            }
-
-            m_output.write("result)");
-            
-            for (int paren = 0; paren < parenNest; ++paren)
-                m_output.write(")");
-            
-            m_output.write(";\n");
+        if (routine.getReturnType().equals(
+                new Type(new Type.TypeNode(Primitive.VOID))))
+        {
+            // void, no return statement
+            return;
         }
+
+        Type returnType = routine.getReturnType();
+        Type touchupType = Filters.getTouchup(returnType);
+        if (touchupType != null) {
+            returnType = touchupType;
+        }
+        
+        int parenNest = 0;
+        
+        m_output.write("\t\treturn ");
+    
+        if (Filters.needsExtraReferencing(returnType)) {
+            m_output.write("*std::auto_ptr< ");
+            m_output.write(returnType.formatCpp());
+            m_output.write(" >(((");
+            m_output.write(routine.getReturnType().formatCpp() + " * (*)(basic_block)) ");
+            ++parenNest;
+        }
+        else {
+            m_output.write("( (" + routine.getReturnType().formatCpp() + " (*)(basic_block)) ");
+        }
+        
+        if (touchupType != null) {
+            m_output.write("(" + 
+                    routine.getReturnType().formatCpp() + 
+                    " (*)(" + 
+                    touchupType.formatCpp() + ")) ");
+            m_output.write("touchdown)(");
+        }
+        else {
+            m_output.write("SameClass< basic_block >::same)(");
+        }
+
+        m_output.write("result)");
+        
+        for (int paren = 0; paren < parenNest; ++paren)
+            m_output.write(")");
+        
+        m_output.write(";\n");
     }
 
     private void writeInterceptorFunctionAddRoutineToGriffinClass(Aggregate interceptor, Routine routine) {
