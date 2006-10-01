@@ -392,6 +392,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("\n");
     }
 
+    /**
+     * Write the call to __callback
+     */
     private void writeInterceptorFunctionCallbackCall(Aggregate interceptor, Routine routine, int funcCounter)
         throws IOException, MissingInformationException
     {
@@ -465,7 +468,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 newRoutine, Specifiers.Visibility.PUBLIC, 
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
 
-        // Write the function header
         writeInterceptorFunctionHeader(newRoutine);
         
         // Write the function's basic_block argument array
@@ -477,10 +479,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         }
         m_output.write("\t\t};\n");
         
-        // Write the call to __callback
         writeInterceptorFunctionCallbackCall(interceptor, routine, funcCounter);
-        
-        // Write the return statement
         writeInterceptorFunctionReturnStatement(routine);
 
         m_output.write("\t}\n\n");
