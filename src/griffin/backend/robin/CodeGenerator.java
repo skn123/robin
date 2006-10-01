@@ -434,11 +434,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             return;
         }
 
-        Type returnType = routine.getReturnType();
-        Type touchupType = Filters.getTouchup(returnType);
-        if (touchupType != null) {
-            returnType = touchupType;
-        }
+        final Type touchupType = Filters.getTouchup(routine.getReturnType());
+        final Type returnType = touchupType != null ? touchupType : routine.getReturnType();
         
         int parenNest = 0;
         
