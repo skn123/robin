@@ -470,17 +470,20 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         }
     }
 
+    private void writeInterceptorFunctionAddRoutineToGriffinClass(Aggregate interceptor, Routine routine) {
+        // NOTE: funcCounter is updated outside this method, in createInterceptor, to reflect this addition
+        m_interceptorMethods.add(routine);
+        interceptor.getScope().addMember(
+                routine, Specifiers.Visibility.PUBLIC, 
+                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+    }
+
     private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
         throws IOException, MissingInformationException
     {
-        // Add the routine to the griffin class
+        // TODO: could newRoutine be defined only in writeInterceptorFunctionAddRoutineToGriffinClass?
         Routine newRoutine = (Routine) routine.clone();
-        m_interceptorMethods.add(newRoutine);
-        interceptor.getScope().addMember(
-                newRoutine, Specifiers.Visibility.PUBLIC, 
-                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
-        // NOTE: funcCounter is updated outside this method, in createInterceptor, to reflect this addition
-
+        writeInterceptorFunctionAddRoutineToGriffinClass(interceptor, newRoutine);
         writeInterceptorFunctionHeader(newRoutine); // TODO: should this be 'routine' instead of 'newRoutine'?
         writeInterceptorFunctionBasicBlockArgumentArray(routine);
         writeInterceptorFunctionCallbackCall(interceptor, routine, funcCounter);
