@@ -407,7 +407,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
             // If the current function has some default arguments, increment
             // the function pointer to the last function
-            int defaultArgumentCount = 
+            final int defaultArgumentCount = 
                 Utils.countParameters(routine) -
                 Utils.minimalArgumentCount(routine);
             funcCounter += defaultArgumentCount;
