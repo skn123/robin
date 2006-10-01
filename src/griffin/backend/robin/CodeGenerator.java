@@ -353,6 +353,137 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         return result;
     }
 
+    private void writeInterceptorFunction(Routine routine, Aggregate interceptor, int funcCounter)
+        throws IOException, MissingInformationException
+    {
+        // Add the routine to the griffin class
+        Routine newRoutine = (Routine) routine.clone();
+        m_interceptorMethods.add(newRoutine);
+        interceptor.getScope().addMember(
+                newRoutine, Specifiers.Visibility.PUBLIC, 
+                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+
+        // If the current function has some default arguments, increment
+        // the function pointer to the last function
+        int defaultArgumentCount = 
+            Utils.countParameters(routine) -
+            Utils.minimalArgumentCount(routine);
+        funcCounter += defaultArgumentCount;
+        
+        // Write the function header
+        m_output.write("\tvirtual ");
+        m_output.write(routine.getReturnType().formatCpp());
+        m_output.write(" " + routine.getName() + "(");
+        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+            Parameter param = (Parameter) argIter.next();
+            m_output.write(param.getType().formatCpp(param.getName()));
+            if (argIter.hasNext()) m_output.write(", ");
+        }
+        m_output.write(")");
+        if (newRoutine.isConst()) m_output.write(" const");
+        // Write a throw() clause if required by the interface
+        if (routine.hasThrowClause()) {
+            m_output.write(" throw(");
+            boolean first = true;
+            for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
+                if (!first) m_output.write(", ");
+                m_output.write(((Entity)ei.next()).getFullName());
+            }
+            m_output.write(")");
+        }
+        m_output.write(" {\n");
+        
+        // Write the function's basic_block argument array
+        m_output.write("\t\tbasic_block args[] = {\n");
+        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+            Parameter param = (Parameter) argIter.next();
+            m_output.write("\t\t\t" +
+                    "(" +
+                    "(" +
+                    "basic_block (*)" +
+                    "(" + param.getType().formatCpp() + ")" +
+                    ")");
+            Type touchupType = Filters.getTouchup(param.getType());
+            if (touchupType == null) { 
+                m_output.write("SameClass< " + param.getType().formatCpp() + " >" +
+                    "::same");
+            }
+            else {
+                m_output.write(" (" + 
+                    touchupType.formatCpp() + 
+                    " (*)(" + 
+                    param.getType().formatCpp() + ")) ");
+                m_output.write("touchup");
+            }
+            m_output.write(")" +
+                    "(" + param.getName() + ")");
+            if (argIter.hasNext()) m_output.write(",");
+            m_output.write("\n");
+        }
+        m_output.write("\t\t};\n");
+        
+        // Write the call to __callback
+        m_output.write("\t\t");
+        if (! routine.getReturnType().equals(
+                new Type(new Type.TypeNode(Primitive.VOID)))) {
+            m_output.write("basic_block result = ");
+        }
+        m_output.write("__callback(twin, ");
+        m_output.write("scope_" + 
+                interceptor.getScope().hashCode() + 
+                " + " +
+                funcCounter + 
+                ", ");
+        m_output.write("args);\n");
+        
+        // Write the return statement
+        if (! routine.getReturnType().equals(
+                new Type(new Type.TypeNode(Primitive.VOID)))) {
+            Type returnType = routine.getReturnType();
+            Type touchupType = Filters.getTouchup(returnType);
+            if (touchupType != null) {
+                returnType = touchupType;
+            }
+            
+            int parenNest = 0;
+            
+            m_output.write("\t\treturn ");
+        
+            if (Filters.needsExtraReferencing(returnType)) {
+                m_output.write("*std::auto_ptr< ");
+                m_output.write(returnType.formatCpp());
+                m_output.write(" >(((");
+                m_output.write(routine.getReturnType().formatCpp() + " * (*)(basic_block)) ");
+                ++parenNest;
+            }
+            else {
+                m_output.write("( (" + routine.getReturnType().formatCpp() + " (*)(basic_block)) ");
+            }
+            
+            if (touchupType != null) {
+                m_output.write("(" + 
+                        routine.getReturnType().formatCpp() + 
+                        " (*)(" + 
+                        touchupType.formatCpp() + ")) ");
+                m_output.write("touchdown)(");
+            }
+            else {
+                m_output.write("SameClass< basic_block >::same)(");
+            }
+
+            m_output.write("result)");
+            
+            for (int paren = 0; paren < parenNest; ++paren)
+                m_output.write(")");
+            
+            m_output.write(";\n");
+        }
+        m_output.write("\t}\n\n");
+
+        // Increment the function pointer counter
+        funcCounter++;
+    }
+
     private Aggregate createInterceptor(Aggregate subject)
 		throws IOException, MissingInformationException
     {
@@ -397,133 +528,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         for (Iterator funcIter = Utils.virtualMethods(subject, m_instanceMap).iterator();
             funcIter.hasNext(); ++i) {
             Routine routine = (Routine) funcIter.next();
-            
-            // Add the routine to the griffin class
-            Routine newRoutine = (Routine) routine.clone();
-            m_interceptorMethods.add(newRoutine);
-            result.getScope().addMember(
-                    newRoutine, Specifiers.Visibility.PUBLIC, 
-                    Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
-
-            // If the current function has some default arguments, increment
-            // the function pointer to the last function
-            int defaultArgumentCount = 
-                Utils.countParameters(routine) -
-                Utils.minimalArgumentCount(routine);
-            funcCounter += defaultArgumentCount;
-            
-            // Write the function header
-            m_output.write("\tvirtual ");
-            m_output.write(routine.getReturnType().formatCpp());
-            m_output.write(" " + routine.getName() + "(");
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
-                Parameter param = (Parameter) argIter.next();
-                m_output.write(param.getType().formatCpp(param.getName()));
-                if (argIter.hasNext()) m_output.write(", ");
-            }
-            m_output.write(")");
-            if (newRoutine.isConst()) m_output.write(" const");
-            // Write a throw() clause if required by the interface
-            if (routine.hasThrowClause()) {
-                m_output.write(" throw(");
-                boolean first = true;
-                for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
-                    if (!first) m_output.write(", ");
-                    m_output.write(((Entity)ei.next()).getFullName());
-                }
-                m_output.write(")");
-            }
-            m_output.write(" {\n");
-            
-            // Write the function's basic_block argument array
-            m_output.write("\t\tbasic_block args[] = {\n");
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
-                Parameter param = (Parameter) argIter.next();
-                m_output.write("\t\t\t" +
-                        "(" +
-                        "(" +
-                        "basic_block (*)" +
-                        "(" + param.getType().formatCpp() + ")" +
-                        ")");
-                Type touchupType = Filters.getTouchup(param.getType());
-                if (touchupType == null) { 
-                    m_output.write("SameClass< " + param.getType().formatCpp() + " >" +
-                        "::same");
-                }
-                else {
-                    m_output.write(" (" + 
-                        touchupType.formatCpp() + 
-                        " (*)(" + 
-                        param.getType().formatCpp() + ")) ");
-                    m_output.write("touchup");
-                }
-                m_output.write(")" +
-                        "(" + param.getName() + ")");
-                if (argIter.hasNext()) m_output.write(",");
-                m_output.write("\n");
-            }
-            m_output.write("\t\t};\n");
-            
-            // Write the call to __callback
-            m_output.write("\t\t");
-            if (! routine.getReturnType().equals(
-                    new Type(new Type.TypeNode(Primitive.VOID)))) {
-                m_output.write("basic_block result = ");
-            }
-            m_output.write("__callback(twin, ");
-            m_output.write("scope_" + 
-                    result.getScope().hashCode() + 
-                    " + " +
-                    funcCounter + 
-                    ", ");
-            m_output.write("args);\n");
-            
-            // Write the return statement
-            if (! routine.getReturnType().equals(
-                    new Type(new Type.TypeNode(Primitive.VOID)))) {
-                Type returnType = routine.getReturnType();
-                Type touchupType = Filters.getTouchup(returnType);
-                if (touchupType != null) {
-                    returnType = touchupType;
-                }
-                
-                int parenNest = 0;
-                
-                m_output.write("\t\treturn ");
-            
-                if (Filters.needsExtraReferencing(returnType)) {
-                    m_output.write("*std::auto_ptr< ");
-                    m_output.write(returnType.formatCpp());
-                    m_output.write(" >(((");
-                    m_output.write(routine.getReturnType().formatCpp() + " * (*)(basic_block)) ");
-                    ++parenNest;
-                }
-                else {
-                    m_output.write("( (" + routine.getReturnType().formatCpp() + " (*)(basic_block)) ");
-                }
-                
-                if (touchupType != null) {
-                    m_output.write("(" + 
-                            routine.getReturnType().formatCpp() + 
-                            " (*)(" + 
-                            touchupType.formatCpp() + ")) ");
-                    m_output.write("touchdown)(");
-                }
-                else {
-                    m_output.write("SameClass< basic_block >::same)(");
-                }
-
-                m_output.write("result)");
-                
-                for (int paren = 0; paren < parenNest; ++paren)
-                    m_output.write(")");
-                
-                m_output.write(";\n");
-            }
-            m_output.write("\t}\n\n");
-
-            // Increment the function pointer counter
-            funcCounter++;
+            writeInterceptorFunction(routine, result, funcCounter);
         }
         
         // Write private sections of class
