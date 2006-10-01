@@ -349,8 +349,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // Add the interceptor class to the subjects to wrap
         Aggregate result = new Aggregate();
         // TODO Change the name to "I + uid(subject)" and the regdata name to I + name
-        final String name = "I" + subject.getName();
-        result.setName(name);
+        result.setName("I" + subject.getName());
         // Add the inheritance from the original interface
         result.addBase(subject, Specifiers.Visibility.PUBLIC);
         ++funcCounter;
@@ -371,10 +370,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         m_output.write("// Interceptor for " + subject.getFullName() + "\n");
         m_output.write("extern RegData scope_" + result.getScope().hashCode() + "[];\n");
-        m_output.write("class " + name + " : public " + subject.getFullName() + "\n");
+        m_output.write("class " + result.getName() + " : public " + subject.getFullName() + "\n");
         m_output.write("{\n");
         m_output.write("public:\n");
-        m_output.write("\tvirtual ~" + name + "() {}\n\n");
+        m_output.write("\tvirtual ~" + result.getName() + "() {}\n\n");
         
         // TODO Add base constructor calls in this class
         for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
@@ -383,7 +382,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
             if (! ctor.isConstructor()) continue;
         
-            addInterceptorBaseConstructor(ctor, name, subject, result);
+            addInterceptorBaseConstructor(ctor, result.getName(), subject, result);
 
             ++funcCounter;
         }
