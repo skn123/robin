@@ -356,8 +356,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private Aggregate createInterceptor(Aggregate subject)
 		throws IOException, MissingInformationException
     {
-        final Collection virtualMethods = Utils.virtualMethods(subject, m_instanceMap);
-
         // This counter counts how many functions come before the unimplemented ones
         int funcCounter = 0;
         // Add the interceptor class to the subjects to wrap
@@ -396,7 +394,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         // Write functions in interceptor class, and add them to the griffin class
         int i = 0;
-        for (Iterator funcIter = virtualMethods.iterator();
+        for (Iterator funcIter = Utils.virtualMethods(subject, m_instanceMap).iterator();
             funcIter.hasNext(); ++i) {
             Routine routine = (Routine) funcIter.next();
             
