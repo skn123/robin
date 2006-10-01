@@ -317,14 +317,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private Aggregate createInterceptor(Aggregate subject)
 		throws IOException, MissingInformationException
     {
-        Collection virtualMethods = Utils.virtualMethods(subject, m_instanceMap);
+        final Collection virtualMethods = Utils.virtualMethods(subject, m_instanceMap);
 
         // This counter counts how many functions come before the unimplemented ones
         int funcCounter = 0;
         // Add the interceptor class to the subjects to wrap
         Aggregate result = new Aggregate();
         // TODO Change the name to "I + uid(subject)" and the regdata name to I + name
-        String name = "I" + subject.getName();
+        final String name = "I" + subject.getName();
         result.setName(name);
         // Add the inheritance from the original interface
         result.addBase(subject, Specifiers.Visibility.PUBLIC);
@@ -354,7 +354,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // TODO Add base constructor calls in this class
         for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
             ContainedConnection connection = (ContainedConnection) ctorIter.next();
-            Routine ctor = (Routine) connection.getContained();
+            final Routine ctor = (Routine) connection.getContained();
             if (! ctor.isConstructor()) continue;
             
             Routine newCtor = (Routine) ctor.clone();
