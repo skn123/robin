@@ -392,6 +392,23 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("\n");
     }
 
+    private void writeInterceptorFunctionCallbackCall(Aggregate interceptor, Routine routine, int funcCounter)
+        throws IOException, MissingInformationException
+    {
+        m_output.write("\t\t");
+        if (! routine.getReturnType().equals(
+                new Type(new Type.TypeNode(Primitive.VOID)))) {
+            m_output.write("basic_block result = ");
+        }
+        m_output.write("__callback(twin, ");
+        m_output.write("scope_" + 
+                interceptor.getScope().hashCode() + 
+                " + " +
+                funcCounter + 
+                ", ");
+        m_output.write("args);\n");
+    }
+
     private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
         throws IOException, MissingInformationException
     {
@@ -415,18 +432,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("\t\t};\n");
         
         // Write the call to __callback
-        m_output.write("\t\t");
-        if (! routine.getReturnType().equals(
-                new Type(new Type.TypeNode(Primitive.VOID)))) {
-            m_output.write("basic_block result = ");
-        }
-        m_output.write("__callback(twin, ");
-        m_output.write("scope_" + 
-                interceptor.getScope().hashCode() + 
-                " + " +
-                funcCounter + 
-                ", ");
-        m_output.write("args);\n");
+        writeInterceptorFunctionCallbackCall(interceptor, routine, funcCounter);
         
         // Write the return statement
         if (! routine.getReturnType().equals(
