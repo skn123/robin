@@ -398,13 +398,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             funcIter.hasNext(); ++i) {
             Routine routine = (Routine) funcIter.next();
             
-            // Add the routine to the griffin class
-            Routine newRoutine = (Routine) routine.clone();
-            m_interceptorMethods.add(newRoutine);
-            result.getScope().addMember(
-                    newRoutine, Specifiers.Visibility.PUBLIC, 
-                    Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
-
             // If the current function has some default arguments, increment
             // the function pointer to the last function
             final int defaultArgumentCount = 
@@ -412,6 +405,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 Utils.minimalArgumentCount(routine);
             funcCounter += defaultArgumentCount;
             
+            // Add the routine to the griffin class
+            Routine newRoutine = (Routine) routine.clone();
+            m_interceptorMethods.add(newRoutine);
+            result.getScope().addMember(
+                    newRoutine, Specifiers.Visibility.PUBLIC, 
+                    Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+
             // Write the function header
             m_output.write("\tvirtual ");
             m_output.write(routine.getReturnType().formatCpp());
