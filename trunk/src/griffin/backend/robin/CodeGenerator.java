@@ -339,7 +339,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(") {}\n\n");
     }
 
-    private void writeInterceptorFunctionHeader(Routine routine, Routine newRoutine)
+    private void writeInterceptorFunctionHeader(Routine routine)
         throws IOException, MissingInformationException
     {
         m_output.write("\tvirtual ");
@@ -351,7 +351,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             if (argIter.hasNext()) m_output.write(", ");
         }
         m_output.write(")");
-        if (newRoutine.isConst()) m_output.write(" const");
+        if (routine.isConst()) m_output.write(" const");
         // Write a throw() clause if required by the interface
         if (routine.hasThrowClause()) {
             m_output.write(" throw(");
@@ -375,7 +375,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
 
         // Write the function header
-        writeInterceptorFunctionHeader(routine, newRoutine);
+        writeInterceptorFunctionHeader(newRoutine);
         
         // Write the function's basic_block argument array
         m_output.write("\t\tbasic_block args[] = {\n");
