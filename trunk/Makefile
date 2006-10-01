@@ -70,7 +70,7 @@ $(libdir)/$(vpath)%$(soext): %$(soext)
 
 $(scriptdir)/griffin: griffin
 	$(install) $< $@
-	$(sed) -i -e 's@here =.*@here = "$(jardir)"@' $@
+	$(sed) -i -e 's@here =.*@here = os.path.expanduser("$(jardir)")@' $@
 
 $(jardir)/Griffin.jar: Griffin.jar
 	$(install) $< $@
