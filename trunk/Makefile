@@ -71,6 +71,8 @@ $(libdir)/$(vpath)%$(soext): %$(soext)
 $(scriptdir)/griffin: griffin
 	$(install) $< $@
 	$(sed) -i -e 's@here =.*@here = os.path.expanduser("$(jardir)")@' $@
+	# using 'wildcard' to expand ~ if present
+	$(sed) -i -e 's@#!/usr/bin/env python@#!$(wildcard $(python))@' $@
 
 $(jardir)/Griffin.jar: Griffin.jar
 	$(install) $< $@
