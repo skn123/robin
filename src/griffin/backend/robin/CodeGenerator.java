@@ -314,17 +314,17 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 	}
 
-    private void addInterceptorBaseConstructor(Routine ctor, String interceptorName, Aggregate subject, Aggregate interceptor)
+    private void addInterceptorBaseConstructor(Routine ctor, Aggregate subject, Aggregate interceptor)
         throws IOException, MissingInformationException
     {
         // TODO: check out the long parameter list, maybe extract a class out of createInterceptor?
         Routine newCtor = (Routine) ctor.clone();
-        newCtor.setName(interceptorName);
+        newCtor.setName(interceptor.getName());
         interceptor.getScope().addMember(
                 newCtor, Specifiers.Visibility.PUBLIC, 
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
         
-        m_output.write("\t" + interceptorName + "(");
+        m_output.write("\t" + interceptor.getName() + "(");
         for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
             Parameter param = (Parameter) argIter.next();
             m_output.write(param.getType().formatCpp(param.getName()));
@@ -382,7 +382,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
             if (! ctor.isConstructor()) continue;
         
-            addInterceptorBaseConstructor(ctor, result.getName(), subject, result);
+            addInterceptorBaseConstructor(ctor, subject, result);
 
             ++funcCounter;
         }
