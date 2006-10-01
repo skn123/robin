@@ -467,6 +467,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         interceptor.getScope().addMember(
                 newRoutine, Specifiers.Visibility.PUBLIC, 
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+        // NOTE: funcCounter is updated outside this method, in createInterceptor, to reflect this addition
 
         writeInterceptorFunctionHeader(newRoutine);
         
