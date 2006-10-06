@@ -161,6 +161,9 @@ systest: ${addsuffix @scriptdir, $(TESTS)}
 	( cd $(extreme_python) && \
 	        $(python) test_cases.py $(TEST_SUITES) )
 
+jytest:
+	$(jython) tests/tests.py
+
 # - development tools
 interactive:
 	$(TESTING_PYTHON)
