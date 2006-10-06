@@ -1,6 +1,8 @@
 from __future__ import generators
 
 import unittest
+import re
+
 import sourceanalysis
 
 # stubs for abstract classes
@@ -95,6 +97,18 @@ class EntityTests(unittest.TestCase):
         assert not self.entity.isTemplated()
         self.entity.addTemplateParameter(TemplateParameterStub())
         assert self.entity.isTemplated()
+
+    def test_toString(self):
+        self.entity.setName("booga")
+        assert re.search("EntityStub.*\(booga\)", self.entity.toString())
+
+    def test_lookForHint(self):
+        assert self.entity.lookForHint(HintStub) is None
+
+        hint = HintStub()
+        self.entity.addHint(hint)
+
+        assert self.entity.lookForHint(HintStub) is hint
 
 def _verify_collection_accessors(
             items, add_item, get_iterator, extract_value = lambda x:x
