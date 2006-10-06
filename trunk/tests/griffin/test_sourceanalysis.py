@@ -74,6 +74,18 @@ def _verify_collection_accessors(
     """
     Verifies a collection interface a class exposes, for example 'addFoo', and
     'fooIterator'.
+
+    @param items: the items to enter in the collection
+    @param add_item: a callable that adds an item (usually a bound method, e.g.
+                     x.addFoo)
+    @param get_iterator: a callable that returns a java.lang.Iterator or a
+                         Python iterator, usually a bound method (e.g.
+                         x.fooIterator)
+    @param extract_value: an optional parameter, used when the collection
+                          doesn't store the actual items but some wrapper
+                          around it. The callable should receive whatever the
+                          collection _does_ store as a parameter, and return
+                          the original item.
     """
 
     # TODO - assumes same order, which is not necessarily so...
