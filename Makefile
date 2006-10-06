@@ -162,7 +162,7 @@ systest: ${addsuffix @scriptdir, $(TESTS)}
 	        $(python) test_cases.py $(TEST_SUITES) )
 
 jytest:
-	$(jython) tests/tests.py
+	$(jython) tests/tests.py $(ARGS)
 
 # - development tools
 interactive:
