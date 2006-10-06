@@ -110,6 +110,21 @@ class EntityTests(unittest.TestCase):
 
         assert self.entity.lookForHint(HintStub) is hint
 
+    def test_setTemplateParameters(self):
+        parameters = [TemplateParameterStub() for i in xrange(5)]
+        self.entity.setTemplateParameters(_create_vector(parameters))
+
+        for template_parameter in self.entity.templateParameterIterator():
+            param_container = template_parameter.getContainer()
+            assert param_container.getContainer() is self.entity
+
+def _create_vector(seq):
+    import java.util
+    result = java.util.Vector()
+    for item in seq:
+        result.add(item)
+    return result
+
 def _verify_collection_accessors(
             items, add_item, get_iterator, extract_value = lambda x:x
         ):
