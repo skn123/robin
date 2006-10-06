@@ -126,10 +126,7 @@ public abstract class Entity {
 	{
 		m_templateParameters.add(parameter);
 		// Connect this parameter to the Entity as "contained"
-		parameter.connectToContainer(
-			new ContainedConnection(this, Specifiers.DONT_CARE, 
-			Specifiers.DONT_CARE, Specifiers.DONT_CARE, parameter)
-		);
+		parameter.connectToContainer(this, parameter);
 	}
 	
 	/**
@@ -152,10 +149,7 @@ public abstract class Entity {
 			if (pvalue instanceof TemplateParameter) {
 				TemplateParameter parameter = (TemplateParameter)pvalue;
 				// - carry out connection
-				parameter.connectToContainer(
-					new ContainedConnection(this, Specifiers.DONT_CARE, 
-					Specifiers.DONT_CARE, Specifiers.DONT_CARE, parameter)
-				);
+				parameter.connectToContainer(this, parameter);
 			}
 			else
 				throw new InappropriateKindException("expected: TemplateParameter");
@@ -226,6 +220,23 @@ public abstract class Entity {
 	{
 		m_uplink = connection;
 	}
+    
+    /**
+     * convenience method when we don't care about the connection's visibility,
+     * virtuality, or storage
+     */
+    protected void connectToContainer(Entity container, Entity contained)
+    {
+        this.connectToContainer(
+            new ContainedConnection(
+                container,
+                Specifiers.DONT_CARE,
+                Specifiers.DONT_CARE,
+                Specifiers.DONT_CARE,
+                contained
+            )
+        );
+    }
 	
 	/**
 	 * Mentions that this Entity belongs to a Group. This method is called when
