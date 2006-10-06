@@ -3,6 +3,11 @@ from __future__ import generators
 import unittest
 import sourceanalysis
 
+# stubs for abstract classes
+class TemplateParameterStub(sourceanalysis.TemplateParameter): pass
+class EntityStub(sourceanalysis.Entity): pass
+class HintStub(sourceanalysis.Hint): pass
+
 class AggregateTests(unittest.TestCase):
     def setUp(self):
         self.aggregate = sourceanalysis.Aggregate()
@@ -44,10 +49,9 @@ class EntityPropertyTests(unittest.TestCase):
         assert sourceanalysis.Entity.Property().getValue() == ""
 
 class EntityTests(unittest.TestCase):
-    class EntityStub(sourceanalysis.Entity): pass
 
     def setUp(self):
-        self.entity = self.EntityStub()
+        self.entity = EntityStub()
 
     def tearDown(self):
         del self.entity
@@ -63,7 +67,6 @@ class EntityTests(unittest.TestCase):
         )
 
     def test_hints(self):
-        class HintStub(sourceanalysis.Hint): pass
         _verify_collection_accessors(
             items        = [HintStub() for i in xrange(5)],
             add_item     = self.entity.addHint,
@@ -71,12 +74,27 @@ class EntityTests(unittest.TestCase):
         )
 
     def test_template_parameters(self):
-        class TemplateParameterStub(sourceanalysis.TemplateParameter): pass
         _verify_collection_accessors(
             items        = [TemplateParameterStub() for i in xrange(5)],
             add_item     = self.entity.addTemplateParameter,
             get_iterator = self.entity.templateParameterIterator,
         )
+
+    def test_affiliates(self):
+        affiliates = [
+            sourceanalysis.FriendConnection(EntityStub(), EntityStub())
+            for i in xrange(5)
+        ]
+        _verify_collection_accessors(
+            items        = affiliates,
+            add_item     = self.entity.connectToAffiliate,
+            get_iterator = self.entity.affiliatesIterator,
+        )
+
+    def test_isTemplated(self):
+        assert not self.entity.isTemplated()
+        self.entity.addTemplateParameter(TemplateParameterStub())
+        assert self.entity.isTemplated()
 
 def _verify_collection_accessors(
             items, add_item, get_iterator, extract_value = lambda x:x
