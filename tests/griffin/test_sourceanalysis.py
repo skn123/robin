@@ -118,6 +118,19 @@ class EntityTests(unittest.TestCase):
             param_container = template_parameter.getContainer()
             assert param_container.getContainer() is self.entity
 
+    def test_getFullName(self):
+        DONT_CARE = sourceanalysis.Specifiers.DONT_CARE
+
+        container = EntityStub(name="scooby")
+        connection = sourceanalysis.ContainedConnection(
+                container, DONT_CARE, DONT_CARE, DONT_CARE, self.entity
+            )
+
+        self.entity.connectToContainer(connection)
+        self.entity.setName("doo")
+
+        assert self.entity.getFullName() == "scooby::doo"
+
 def _create_vector(seq):
     import java.util
     result = java.util.Vector()
