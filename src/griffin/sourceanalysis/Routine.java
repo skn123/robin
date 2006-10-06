@@ -101,9 +101,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	{
 		m_formalArguments.add(farg);
 		// Up-link
-		farg.connectToContainer(new ContainedConnection(this,
-			Specifiers.DONT_CARE, Specifiers.DONT_CARE, 
-			Specifiers.DONT_CARE, farg));
+		farg.connectToContainer(this, farg);
 	}
 	
 	/**
