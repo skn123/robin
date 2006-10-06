@@ -55,11 +55,27 @@ class EntityTests(unittest.TestCase):
     def test_default_name(self):
         assert self.entity.getName() == "anonymous"
 
-    def test_add_and_get_properties(self):
+    def test_properties(self):
         _verify_collection_accessors(
             items       = [sourceanalysis.Entity.Property() for i in xrange(5)],
             add_item    = self.entity.addProperty,
             get_iterator = self.entity.propertyIterator,
+        )
+
+    def test_hints(self):
+        class HintStub(sourceanalysis.Hint): pass
+        _verify_collection_accessors(
+            items        = [HintStub() for i in xrange(5)],
+            add_item     = self.entity.addHint,
+            get_iterator = self.entity.hintIterator,
+        )
+
+    def test_template_parameters(self):
+        class TemplateParameterStub(sourceanalysis.TemplateParameter): pass
+        _verify_collection_accessors(
+            items        = [TemplateParameterStub() for i in xrange(5)],
+            add_item     = self.entity.addTemplateParameter,
+            get_iterator = self.entity.templateParameterIterator,
         )
 
 def _verify_collection_accessors(
