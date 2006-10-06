@@ -9,6 +9,7 @@ prefix = /usr/local
 exec_prefix = /usr/local
 site_packages = /usr/local/lib/python2.4/site-packages
 python = python
+jython = jython
 -include config.mak
 
 pydir = $(site_packages)/robin

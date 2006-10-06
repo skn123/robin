@@ -21,6 +21,9 @@ class Configure:
 		p.add_option("-y", "--with-python", dest = "python",
 					 default = "python",
 					 help = "Determines which Python interpreter to use")
+		p.add_option("--with-jython", dest = "jython",
+					 default = "jython",
+					 help = "Determines which Jython interpreter to use")
 		p.add_option("-x", "--with-cxx", dest = "cxx",
 					 default = "",
 					 help = "Determines which C++ compiler to use")
@@ -68,6 +71,7 @@ class Configure:
 		self._set_var("prefix", options.prefix)
 		self._set_var("exec_prefix", options.exec_prefix)
 		self._set_var("python", options.python)
+		self._set_var("jython", options.jython)
 		if options.py_prefix is None:
 			if options.python == "python":
 				options.py_prefix = self._site_packages_dir()
