@@ -19,9 +19,6 @@ class AggregateTests(unittest.TestCase):
         assert visibility == connection.getVisibility()
         assert connection.getBase() is new_base
 
-    def test_basesIterator_empty(self):
-        assert not self.aggregate.baseIterator().hasNext()
-
     def test_basesIterator_several(self):
         _verify_collection_accessors(
             items        = [sourceanalysis.Aggregate() for i in xrange(5)],
@@ -58,9 +55,6 @@ class EntityTests(unittest.TestCase):
     def test_default_name(self):
         assert self.entity.getName() == "anonymous"
 
-    def test_empty_properties(self):
-        assert not self.entity.propertyIterator().hasNext()
-
     def test_add_and_get_properties(self):
         _verify_collection_accessors(
             items       = [sourceanalysis.Entity.Property() for i in xrange(5)],
@@ -87,6 +81,8 @@ def _verify_collection_accessors(
                           collection _does_ store as a parameter, and return
                           the original item.
     """
+    # verify empty at start
+    assert not get_iterator().hasNext()
 
     # TODO - assumes same order, which is not necessarily so...
     for item in items:
