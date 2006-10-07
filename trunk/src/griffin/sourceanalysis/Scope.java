@@ -53,15 +53,6 @@ public class Scope {
 	 */
 	/*@{*/
 	
-	/** Sets scope ownership. The owner is the Entity which holds the Scope
-	 * (must be Aggregate or Namespace) and is required for a proper setting
-	 * of connections.
-	 */
-	public void associate(Entity owner)
-	{
-		m_owner = owner;
-	}
-	
 	/**
 	 * Admits a routine as a global function in a namespace or a member function
 	 * of a class.
