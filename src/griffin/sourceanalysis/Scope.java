@@ -29,6 +29,8 @@ public class Scope {
 
 	/**
 	 * Constructor for Scope.
+     * @param owner the Entity which holds the Scope (must be Aggregate or
+     * Namespace), required for a proper setting of connections
 	 */
 	public Scope(Entity owner) {
 		super();
