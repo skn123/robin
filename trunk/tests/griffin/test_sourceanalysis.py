@@ -274,6 +274,16 @@ class DataTemplateParameterTests(unittest.TestCase):
     # TODO: nontrivial methods that are missing tests:
     # * getDefaultValue(Iterator, Iterator)
 
+class EnumTests(unittest.TestCase):
+    def test_constants_as_collection(self):
+        enum = sourceanalysis.Enum()
+        constants = [sourceanalysis.Enum.Constant(str(i), i) for i in xrange(5)]
+        _verify_collection_accessors(
+            items        = constants,
+            add_item     = enum.introduceConstant,
+            get_iterator = enum.constantIterator,
+        )
+
 def _create_vector(seq):
     import java.util
     result = java.util.Vector()
