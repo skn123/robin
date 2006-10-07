@@ -43,8 +43,7 @@ public class Formatters {
 	
 	static String formatMember(Field field)
 	{
-		Entity container = field.getContainerConnection().getContainer();
-		if (container instanceof Aggregate)
+		if (field.getContainer() instanceof Aggregate)
 			return "self->" + field.getName();
 		else
 			return Utils.cleanFullName(field);

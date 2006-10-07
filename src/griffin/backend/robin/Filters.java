@@ -94,7 +94,7 @@ public class Filters {
 			(Utils.allAreFlat(routine)
 			 && !Utils.hasAnyArrays(routine)
 			 && !routine.isTemplated() 
-			 && (routine.getContainerConnection().getContainer() instanceof Aggregate 
+			 && (routine.getContainer() instanceof Aggregate 
 			 	 || isDeclared(routine))
 			 && !isExplicitlyExcluded(routine));
 	}
@@ -336,9 +336,8 @@ public class Filters {
 		try {
 			Type type = field.getType();
 			type.getBaseType(); // - make sure base type is present
-			ContainedConnection uplink = field.getContainerConnection();
-			return (uplink != null 
-					&& uplink.getContainer() instanceof Aggregate)
+			return (field.hasContainer()
+					&& field.getContainer() instanceof Aggregate)
 					&& isDirectPrimitive(type)
 					&& !type.isConst();
 		}
