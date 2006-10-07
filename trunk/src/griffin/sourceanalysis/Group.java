@@ -11,14 +11,15 @@ public class Group extends Entity {
 	 */
 	private class GroupScope extends Scope
 	{
-		GroupScope() { }
-		
 		/**
 		 * Convenience constructor - creates a GroupScope and immediately
 		 * associates it with the owner Group.
 		 * @param owner owning group
 		 */
-		GroupScope(Group owner) { associate(owner); }
+		GroupScope(Group owner) {
+            super(owner);
+            associate(owner);
+        }
 		
 		/**
 		 * Binds the GroupScope with the Group that contains it.

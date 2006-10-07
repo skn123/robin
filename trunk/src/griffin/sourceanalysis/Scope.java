@@ -30,8 +30,11 @@ public class Scope {
 	/**
 	 * Constructor for Scope.
 	 */
-	public Scope() {
+	public Scope(Entity owner) {
 		super();
+        assert owner != null;
+        m_owner = owner;
+
 		// Prepare empty lists for all slots
 		m_routines = new LinkedList();
 		m_fields = new LinkedList();
