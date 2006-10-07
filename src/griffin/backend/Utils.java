@@ -262,31 +262,29 @@ public class Utils {
 	{
         if (!entity.hasContainer())
             return false;
-		else {
-			Entity container = entity.getContainer();
-			if (container.isTemplated()) {
-				for (Iterator tpi = container.templateParameterIterator();
-					tpi.hasNext(); ) {
-					// Check if this is a typename argument, and if this
-					// argument's delegate entity is 'entity'
-					TemplateParameter templateParameter =
-						(TemplateParameter)tpi.next();
-					if (templateParameter instanceof TypenameTemplateParameter) {
-						// Exploit TypenameTemplateParameter's interface
-						TypenameTemplateParameter typename =
-							(TypenameTemplateParameter)templateParameter;
-						if (entity == typename.getDelegate()) {
-							return true;
-						}
-					}
-				}
-				// Non of the above matched, meaning that 'entity' is not
-				// a part of its class' template parameters
-				return false;
-			}
-			else
-				return false;
-		}
+
+        if (!entity.getContainer().isTemplated())
+            return false;
+
+        for (Iterator tpi = entity.getContainer().templateParameterIterator();
+            tpi.hasNext(); ) {
+            // Check if this is a typename argument, and if this
+            // argument's delegate entity is 'entity'
+            TemplateParameter templateParameter =
+                (TemplateParameter)tpi.next();
+            if (templateParameter instanceof TypenameTemplateParameter) {
+                // Exploit TypenameTemplateParameter's interface
+                TypenameTemplateParameter typename =
+                    (TypenameTemplateParameter)templateParameter;
+                if (entity == typename.getDelegate()) {
+                    return true;
+                }
+            }
+        }
+
+        // Non of the above matched, meaning that 'entity' is not
+        // a part of its class' template parameters
+        return false;
 	}
 
 
