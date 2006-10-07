@@ -15,6 +15,12 @@ class ScopeStub(sourceanalysis.Scope):
     def mirrorRelationToMember(self, *args):
         return self.super__mirrorRelationToMember(*args)
 
+class IncompleteTemplateInstanceStub(sourceanalysis.IncompleteTemplateInstance):
+    def copyInnerAggregate(self, *args):
+        return self.super__copyInnerAggregate(*args)
+    def copyInnerAlias(self, *args):
+        return self.super__copyInnerAlias(*args)
+
 class AggregateTests(unittest.TestCase):
     def setUp(self):
         self.aggregate = sourceanalysis.Aggregate()
@@ -282,6 +288,49 @@ class EnumTests(unittest.TestCase):
 class FieldTests(unittest.TestCase):
     def test_getType(self):
         _verify_type(self, sourceanalysis.Field())
+
+class IncompleteTemplateInstanceTests(unittest.TestCase):
+    def setUp(self):
+        self.instance = IncompleteTemplateInstanceStub()
+
+    def tearDown(self):
+        del self.instance
+
+    def _check_number(self, item, add_item):
+        assert len(list(self.instance.getScope().aggregateIterator())) == 0
+        add_item(item, 1)
+        assert len(list(self.instance.getScope().aggregateIterator())) == 1
+
+    def _check_scope(self, item, add_item):
+        add_item(item, 1)
+
+        connection = self.instance.getScope().aggregateIterator().next()
+        assert connection.getVisibility() == 1
+        assert connection.getContained().getName() == item.getName()
+
+    def test_copyInnerAggregate_number(self):
+        self._check_number(
+                item = sourceanalysis.Aggregate(),
+                add_item = self.instance.copyInnerAggregate,
+            )
+
+    def test_copyInnerAggregate_scope(self):
+        self._check_scope(
+                item = sourceanalysis.Aggregate(),
+                add_item = self.instance.copyInnerAggregate,
+            )
+
+    def test_copyInnerAlias_number(self):
+        self._check_number(
+                item = sourceanalysis.Alias(),
+                add_item = self.instance.copyInnerAlias,
+            )
+
+    def test_copyInnerAlias_scope(self):
+        self._check_scope(
+                item = sourceanalysis.Alias(),
+                add_item = self.instance.copyInnerAlias,
+            )
 
 def _create_vector(seq):
     import java.util
