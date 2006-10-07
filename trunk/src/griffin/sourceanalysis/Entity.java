@@ -285,11 +285,10 @@ public abstract class Entity {
 	 */
 	public String getFullName()
 	{
-		ContainedConnection conc = getContainerConnection();
-		if (conc == null)
-			return getName();
-		else
-			return conc.getContainer().getFullName() + "::" + getName();
+        if (hasContainer())
+            return getContainer().getFullName() + "::" + getName();
+        else
+            return getName();
 	}
 	
 	/**
