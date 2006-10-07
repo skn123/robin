@@ -1585,18 +1585,14 @@ public class Utils {
 	 */
 	private static Entity seekOriginalTemplate(Entity entity)
 	{
+        if (!(entity instanceof TemplateEnabledEntity))
+            return null;
+
 		// Follow specialization relationships
-		if (entity instanceof TemplateEnabledEntity) {
-			TemplateEnabledEntity templateEnabled = 
-			(TemplateEnabledEntity)entity;
-			if (templateEnabled.isSpecialized())
-				return templateEnabled.getGeneralTemplateForSpecialization()
-				.getGeneral(); 
-			else
-				return null;
-		}
-		else
-			return null;
+        TemplateEnabledEntity templateEnabled = (TemplateEnabledEntity)entity;
+        if (templateEnabled.isSpecialized())
+            return templateEnabled.getGeneralTemplateForSpecialization().getGeneral(); 
+        return null;
 	}
 	
 	public static class FileTools {
