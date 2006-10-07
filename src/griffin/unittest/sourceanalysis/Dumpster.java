@@ -38,10 +38,9 @@ public class Dumpster {
 		out.write(entity.getName());
 		out.write("'");
 		// Check if entity is contained
-		ContainedConnection connection = entity.getContainerConnection();
-		if (connection != null) {
+		if (entity.hasContainer()) {
 			out.write(" of ");
-			dumpNameOf(connection.getContainer(), out);
+			dumpNameOf(entity.getContainer(), out);
 		}
 	}
 	
@@ -126,8 +125,8 @@ public class Dumpster {
 		throws IOException, MissingInformationException
 	{
 		out.write("[routine]");
-		ContainedConnection connection = routine.getContainerConnection();
-		if (connection != null) {
+		if (routine.hasContainer()) {
+            ContainedConnection connection = routine.getContainerConnection();
 			dumpVisibility(connection.getVisibility(), out);
 			dumpStorage(connection.getStorage(), out);
 			dumpVirtuality(connection.getVirtuality(), out);
@@ -184,8 +183,8 @@ public class Dumpster {
 		throws IOException, MissingInformationException
 	{
 		out.write("[field]");
-		ContainedConnection connection = field.getContainerConnection();
-		if (connection != null) {
+		if (field.hasContainer()) {
+            ContainedConnection connection = field.getContainerConnection();
 			dumpVisibility(connection.getVisibility(), out);
 			dumpStorage(connection.getStorage(), out);
 		}
