@@ -535,16 +535,16 @@ public class XMLWriter {
 		}
 		
 		// Virtuality.
-		if(routine.getContainer().getVirtuality() == 
+		if(routine.getContainerConnection().getVirtuality() == 
 			Specifiers.Virtuality.VIRTUAL) {
 			proto = "virtual " + proto;
-		} else if(routine.getContainer().getVirtuality() == 
+		} else if(routine.getContainerConnection().getVirtuality() == 
 			Specifiers.Virtuality.PURE_VIRTUAL) {
 			proto = "virtual " + proto + " = 0";
 		}
 		
 		// Static.
-		if(routine.getContainer().getStorage() == 
+		if(routine.getContainerConnection().getStorage() == 
 			Specifiers.Storage.STATIC) {
 			proto = "static " + proto;
 		} 
@@ -571,7 +571,7 @@ public class XMLWriter {
 			Utils.cleanFullName(field));
 					
 		// Static.
-		if(field.getContainer().getStorage() == 
+		if(field.getContainerConnection().getStorage() == 
 			Specifiers.Storage.STATIC) {
 			proto = "static " + proto;
 		}
@@ -734,7 +734,7 @@ public class XMLWriter {
 
 		// Aliases.
 		Element aliasesElm = doc.createElement("aliases");
-		Namespace namespace = (Namespace)aggr.getContainer().getContainer();
+		Namespace namespace = (Namespace)aggr.getContainerConnection().getContainer();
 		for(Iterator iter = namespace.getScope().aliasIterator(); iter.hasNext();) {
 			ContainedConnection cc = (ContainedConnection)iter.next();
 			Alias alias = (Alias)cc.getContained();
@@ -795,7 +795,7 @@ public class XMLWriter {
 			Routine routine = (Routine)cc.getContained();	
 			
 			// Document the routine only if it's public.
-			if(routine.getContainer().getVisibility() == 
+			if(routine.getContainerConnection().getVisibility() == 
 				Specifiers.Visibility.PUBLIC) {
 			
 				// Determine the routine's version.
@@ -834,7 +834,7 @@ public class XMLWriter {
 				Routine routine = (Routine)cc.getContained();
 			
 				if( ! containsRoutine(newAggr, routine) && 
-					routine.getContainer().getVisibility() == 
+					routine.getContainerConnection().getVisibility() == 
 					Specifiers.Visibility.PUBLIC) {
 					
 					documentRoutine(routine, "method" ,"old", doc, classElm);
@@ -855,7 +855,7 @@ public class XMLWriter {
 			Field field = (Field)cc.getContained();	
 
 			// Document the field only if it's public.
-			if(field.getContainer().getVisibility() == 
+			if(field.getContainerConnection().getVisibility() == 
 				Specifiers.Visibility.PUBLIC) {
 			     
 				// Determine the field's version.
@@ -893,7 +893,7 @@ public class XMLWriter {
 				Field field = (Field)cc.getContained();
 			
 				if( ! containsField(newAggr, field) && 
-					field.getContainer().getVisibility() == 
+					field.getContainerConnection().getVisibility() == 
 					Specifiers.Visibility.PUBLIC) {
 					
 					documentField(field, "old", doc, classElm);
@@ -960,7 +960,7 @@ public class XMLWriter {
 				documentedRoutines.add(routine);
 				
 				// Document thr routine only if its public.
-				if(routine.getContainer().getVisibility() == 
+				if(routine.getContainerConnection().getVisibility() == 
 					Specifiers.Visibility.PUBLIC) {
 				
 					// Determine the routine's version.
@@ -1154,10 +1154,10 @@ public class XMLWriter {
 					
 						// Virtuality + Base class.
 						String virtuality;
-						if(routine.getContainer().getVirtuality() == 
+						if(routine.getContainerConnection().getVirtuality() == 
 							Specifiers.Virtuality.VIRTUAL) {
 							virtuality = "virtual";
-						} else if(routine.getContainer().getVirtuality() == 
+						} else if(routine.getContainerConnection().getVirtuality() == 
 							Specifiers.Virtuality.PURE_VIRTUAL) {
 							virtuality = "pure-virtual";
 						} else {
@@ -1281,8 +1281,8 @@ public class XMLWriter {
 					Routine routine = (Routine)declared;
 					// Check if the routine is a global function.
 					// (by checking if its container is a namespace).
-					if(routine.getContainer() != null && 
-						routine.getContainer().getContainer() instanceof Namespace) {
+					if(routine.getContainerConnection() != null && 
+						routine.getContainerConnection().getContainer() instanceof Namespace) {
 						
 						// This ugly part checks that this is actually a routine 
 						// (although is was checked before) because macros (such

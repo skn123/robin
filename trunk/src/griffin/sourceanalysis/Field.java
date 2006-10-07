@@ -7,8 +7,9 @@ package sourceanalysis;
  *  <li>Data members, either static or non-static (in both cases they are
  *   contained in an Aggregate).</li>
  * </ul>
- * <p>Use getContainer() [sourceanalysis.Entity#getContainer()] to distinguish
- * between these cases and get the storage type for the Field.</p>
+ * <p>Use getContainerConnection()
+ * [sourceanalysis.Entity#getContainerConnection()] to distinguish between
+ * these cases and get the storage type for the Field.</p>
  */
 public class Field extends Entity{
 

@@ -51,7 +51,7 @@ public class DoxygenHandyman {
 			if (original.getKind() == Type.TypeNode.NODE_LEAF) {
 				Entity base = original.getBase();
 				// If base is orphan, look it up
-				if (base.getContainer() == null) {
+				if (base.getContainerConnection() == null) {
 					Entity newBase = (origin == null) 
 							? lookupApprox(base.getName())
 							: lookup(origin, base.getName());
@@ -155,7 +155,7 @@ public class DoxygenHandyman {
 		if (typeRoot.getKind() == Type.TypeNode.NODE_LEAF) {
 			// Return 'true' if base type is hanging
 			try {
-				return (typeRoot.getBase().getContainer() == null);
+				return (typeRoot.getBase().getContainerConnection() == null);
 			}
 			catch (InappropriateKindException e) {
 				return false;
@@ -398,7 +398,7 @@ public class DoxygenHandyman {
 	
 	private static Entity up(Entity e)
 	{
-		ContainedConnection uplink = e.getContainer();
+		ContainedConnection uplink = e.getContainerConnection();
 		return (uplink == null) ? null : uplink.getContainer();
 	}
 	

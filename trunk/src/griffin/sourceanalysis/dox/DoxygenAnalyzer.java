@@ -1012,7 +1012,7 @@ public class DoxygenAnalyzer {
 				// - filter out inner entities that have a name starting with "@"
 				boolean anonymous = (innerEntity.getName().charAt(0) == '@');
 				// Add aggregate or namespace as member
-				if (innerEntity.getContainer() == null && !anonymous) {
+				if (innerEntity.getContainerConnection() == null && !anonymous) {
 					if (innerEntity instanceof Aggregate) {
 						String vis = XML.attribute(innerclass, Tags.PROT, "public");
 						scope.addMember((Aggregate)innerEntity, 
@@ -1476,7 +1476,7 @@ public class DoxygenAnalyzer {
 		for (Iterator compiter = compounds.iterator(); compiter.hasNext();) {
 			Entity element = (Entity) compiter.next();
 			// - check whether element is class or namespace
-			if (element.getContainer() == null) {
+			if (element.getContainerConnection() == null) {
 				if (element instanceof Aggregate) {
 					global.addMember((Aggregate)element, Specifiers.Visibility.PUBLIC);
 				}

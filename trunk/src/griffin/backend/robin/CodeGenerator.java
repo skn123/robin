@@ -801,7 +801,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			fieldIter.hasNext(); ) {
 			// Create an entry for each public data member
 			Field field = (Field)fieldIter.next();
-			if (Filters.isAvailable(field, field.getContainer()))
+			if (Filters.isAvailable(field, field.getContainerConnection()))
 				generateRegistrationLine(field, false);
 		}
 		// - enter downcast functions
@@ -903,7 +903,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("\n * " + Formatters.formatLocation(routine));
 		m_output.write("\n */\n");
 	
-		ContainedConnection container = routine.getContainer();
+		ContainedConnection container = routine.getContainerConnection();
 		Entity thisArg = null;
 		if (container != null && with) {
 			thisArg = container.getContainer();
@@ -1030,7 +1030,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 */
 	private void generateFlatWrapper(sourceanalysis.Enum enume) throws IOException
 	{
-		ContainedConnection uplink = enume.getContainer();
+		ContainedConnection uplink = enume.getContainerConnection();
 		m_output.write("/*\n * enum "); m_output.write(enume.getFullName());
 		m_output.write("\n */\n");
 		// Write the enumerated constants
@@ -1101,7 +1101,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		Type type = removeUnneededConstness(field.getType());
 		Entity base = type.getBaseType();
 		// Create a get accessor
-		Entity container = field.getContainer().getContainer();
+		Entity container = field.getContainerConnection().getContainer();
 		String accessorName = "data_get_" + uid(field) + fors;
 		String thisArg = container instanceof Aggregate ? 
 			container.getFullName() + " *self" : "";
@@ -1421,7 +1421,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 			else {
 				// Write name
-				Entity container = routine.getContainer().getContainer();
+				Entity container = routine.getContainerConnection().getContainer();
 				m_output.write("{\"");
 				m_output.write((with && container instanceof Aggregate) 
 								? routine.getName() : Utils.cleanFullName(routine));
@@ -1452,7 +1452,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		String fors = with ? "f" : "s";
 		String identifier =
-			(field.getContainer().getContainer() instanceof Aggregate && with) ?
+			(field.getContainerConnection().getContainer() instanceof Aggregate && with) ?
 			field.getName() : Utils.cleanFullName(field);
 		// - data_get
 		m_output.write("{ \".data_" + identifier);
