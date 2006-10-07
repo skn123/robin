@@ -148,10 +148,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 */
 	public boolean isConstructor()
 	{
-		ContainedConnection contained = getContainerConnection();
-		Entity structure;
-		
-		structure = contained.getContainer();
+		Entity structure = getContainer();
 		// If "structure" is a specialized template instance,
 		// compare name of method to name of general template instead
 		if (structure instanceof TemplateEnabledEntity) {
