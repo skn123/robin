@@ -7,70 +7,70 @@ import java.util.Iterator;
  */
 public class IncompleteTemplateInstance extends Aggregate {
 
-	/**
-	 * Default Constructor.
-	 */
-	public IncompleteTemplateInstance() {
-		super();
-	}
-	
-	/**
-	 * Returns the type holding the template arguments of this template
-	 * instance.
-	 * 
-	 * @return The type holding the template arguments.
-	 */
-	public Type getType()
-	{
-		return m_type;
-	}
-	
-	/**
-	 * Sets the type holding the template arguments of this template
-	 * instance.
-	 * 
-	 * @param type The type to hold the template arguments.
-	 */
-	public void setType(Type type)
-	{
-		m_type = type;
-	}
-	
-	/**
-	 * Copies contents of original template scope into the scope of this
-	 * incomplete template instance entity.
-	 * 
-	 * @param templateScope template.getScope() where template is the template
-	 * being instantiated
-	 */
-	public void assimilate(Scope templateScope)
-	{
+    /**
+     * Default Constructor.
+     */
+    public IncompleteTemplateInstance() {
+        super();
+    }
+    
+    /**
+     * Returns the type holding the template arguments of this template
+     * instance.
+     * 
+     * @return The type holding the template arguments.
+     */
+    public Type getType()
+    {
+        return m_type;
+    }
+    
+    /**
+     * Sets the type holding the template arguments of this template
+     * instance.
+     * 
+     * @param type The type to hold the template arguments.
+     */
+    public void setType(Type type)
+    {
+        m_type = type;
+    }
+    
+    /**
+     * Copies contents of original template scope into the scope of this
+     * incomplete template instance entity.
+     * 
+     * @param templateScope template.getScope() where template is the template
+     * being instantiated
+     */
+    public void assimilate(Scope templateScope)
+    {
         copyInnerCompoundsFromTemplate(templateScope);
         copyAliasesFromTemplate(templateScope);
-	}
+    }
 
     private void copyInnerCompoundsFromTemplate(Scope templateScope) {
-		for (Iterator ai = templateScope.aggregateIterator(); ai.hasNext();) {
-			ContainedConnection connection = (ContainedConnection)ai.next();
-			Aggregate inner = (Aggregate)connection.getContained();
-			IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
-			ninner.setName(inner.getName());
-			ninner.assimilate(inner.getScope());
-			getScope().addMember(ninner, connection.getVisibility());
-		}
+        for (Iterator ai = templateScope.aggregateIterator(); ai.hasNext();) {
+            ContainedConnection connection = (ContainedConnection)ai.next();
+            Aggregate inner = (Aggregate)connection.getContained();
+            IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
+            ninner.setName(inner.getName());
+            ninner.assimilate(inner.getScope());
+            getScope().addMember(ninner, connection.getVisibility());
+        }
     }
 
     private void copyAliasesFromTemplate(Scope templateScope) {
-		for (Iterator ai = templateScope.aliasIterator(); ai.hasNext();) {
-			ContainedConnection connection = (ContainedConnection)ai.next();
-			Alias inner = (Alias)connection.getContained();
-			IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
-			ninner.setName(inner.getName());
-			getScope().addMember(ninner, connection.getVisibility());
-		}
+        for (Iterator ai = templateScope.aliasIterator(); ai.hasNext();) {
+            ContainedConnection connection = (ContainedConnection)ai.next();
+            Alias inner = (Alias)connection.getContained();
+            IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
+            ninner.setName(inner.getName());
+            getScope().addMember(ninner, connection.getVisibility());
+        }
     }
-	
-	// The type holding the template arguments for this template instanciations.
-	private Type m_type;
+    
+    // The type holding the template arguments for this template instanciations.
+    private Type m_type;
 
 }
