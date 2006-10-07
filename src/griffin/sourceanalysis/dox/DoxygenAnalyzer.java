@@ -261,6 +261,9 @@ public class DoxygenAnalyzer {
 	 */
 	private class GlobalScope extends Scope
 	{
+        GlobalScope(Entity owner) {
+            super(owner);
+        }
 		public void addMember(Routine routine, int visibility,
 			int virtuality, int storage)
 		{
@@ -668,8 +671,7 @@ public class DoxygenAnalyzer {
 			 * For source files - a phony scope is created to put members in
 			 * global namespace (a SourceFile is not really a container).
 			 */
-			scope = new GlobalScope();
-			scope.associate(compound);
+			scope = new GlobalScope(compound);
 		}
 		
 		selfSubscribe(xmlnode, compound);
@@ -864,7 +866,7 @@ public class DoxygenAnalyzer {
 		// If any list is present, read parameters
 		if (list != null) {
 			if (scope == null) {
-				(scope = new Scope()).associate(entity);
+				scope = new Scope(entity);
 			}
 			Collection params = XML.subNodes(list, Tags.PARAM);
 			for (Iterator paramiter = params.iterator(); paramiter.hasNext();) {

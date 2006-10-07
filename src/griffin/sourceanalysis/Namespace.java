@@ -10,8 +10,7 @@ public class Namespace extends Entity {
 	 */
 	public Namespace() {
 		super();
-		m_nsScope = new Scope();
-		m_nsScope.associate(this);
+		m_nsScope = new Scope(this);
 	}
 	
 	/** @name Scoping

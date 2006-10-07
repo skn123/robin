@@ -23,8 +23,7 @@ public class Aggregate extends TemplateEnabledEntity
 	 */
 	public Aggregate() {
 		super();
-		m_agScope = new Scope();
-		m_agScope.associate(this);
+		m_agScope = new Scope(this);
 		m_bases = new LinkedList();
 	}
 	
