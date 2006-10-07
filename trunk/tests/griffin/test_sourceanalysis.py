@@ -120,7 +120,7 @@ class EntityTests(unittest.TestCase):
         self.entity.setTemplateParameters(_create_vector(parameters))
 
         for template_parameter in self.entity.templateParameterIterator():
-            param_container = template_parameter.getContainer()
+            param_container = template_parameter.getContainerConnection()
             assert param_container.getContainer() is self.entity
 
     def test_getFullName(self):
@@ -150,7 +150,7 @@ class ScopeTests(unittest.TestCase):
             )
         self.scope.mirrorRelationToMember(contained, connection)
 
-        assert contained.getContainer() is connection
+        assert contained.getContainerConnection() is connection
 
     def test_mirrorRelationToMember_FriendConnection(self):
         declaring = EntityStub()
