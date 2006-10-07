@@ -249,6 +249,31 @@ class ScopeTests(unittest.TestCase):
                 self.scope.groupByName, "no-such-group"
             )
 
+class DataTemplateParameterTests(unittest.TestCase):
+    def setUp(self):
+        self.parameter = sourceanalysis.DataTemplateParameter()
+
+    def tearDown(self):
+        del self.parameter
+
+    def test_getType_missing_type(self):
+        self.assertRaises(sourceanalysis.MissingInformationException, self.parameter.getType)
+
+    def test_getType(self):
+        type = sourceanalysis.Type(None)
+        self.parameter.setType( type )
+        assert self.parameter.getType() is type
+
+    def test_getDefaultValue_no_default(self):
+        assert self.parameter.getDefaultValue() is None
+
+    def test_getDefaultValue_no_default(self):
+        self.parameter.setDefault("kazoo")
+        assert self.parameter.getDefaultValue().getValueString() == "kazoo"
+
+    # TODO: nontrivial methods that are missing tests:
+    # * getDefaultValue(Iterator, Iterator)
+
 def _create_vector(seq):
     import java.util
     result = java.util.Vector()
