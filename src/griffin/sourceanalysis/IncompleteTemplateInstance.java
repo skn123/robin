@@ -45,28 +45,30 @@ public class IncompleteTemplateInstance extends Aggregate {
 	 */
 	public void assimilate(Scope templateScope)
 	{
-		// Copy inner compounds of given template scope into this scope
+        copyInnerCompoundsFromTemplate(templateScope);
+        copyAliasesFromTemplate(templateScope);
+	}
+
+    private void copyInnerCompoundsFromTemplate(Scope templateScope) {
 		for (Iterator ai = templateScope.aggregateIterator(); ai.hasNext();) {
-			ContainedConnection connection =
-				(ContainedConnection)ai.next();
+			ContainedConnection connection = (ContainedConnection)ai.next();
 			Aggregate inner = (Aggregate)connection.getContained();
-			IncompleteTemplateInstance ninner =
-				new IncompleteTemplateInstance();
+			IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
 			ninner.setName(inner.getName());
 			ninner.assimilate(inner.getScope());
 			getScope().addMember(ninner, connection.getVisibility());
 		}
-		// Copy aliases from there as well
+    }
+
+    private void copyAliasesFromTemplate(Scope templateScope) {
 		for (Iterator ai = templateScope.aliasIterator(); ai.hasNext();) {
-			ContainedConnection connection =
-				(ContainedConnection)ai.next();
+			ContainedConnection connection = (ContainedConnection)ai.next();
 			Alias inner = (Alias)connection.getContained();
-			IncompleteTemplateInstance ninner =
-				new IncompleteTemplateInstance();
+			IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
 			ninner.setName(inner.getName());
 			getScope().addMember(ninner, connection.getVisibility());
 		}
-	}
+    }
 	
 	// The type holding the template arguments for this template instanciations.
 	private Type m_type;
