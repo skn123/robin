@@ -338,7 +338,7 @@ def _verify_type(self, instance):
 
 def _all_test_cases():
     from types import ClassType
-    for name, object in globals().items():
+    for object in globals().values():
         if type(object) == ClassType and issubclass(object, unittest.TestCase):
             yield object
 
