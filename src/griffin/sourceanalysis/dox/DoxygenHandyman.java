@@ -155,7 +155,7 @@ public class DoxygenHandyman {
 		if (typeRoot.getKind() == Type.TypeNode.NODE_LEAF) {
 			// Return 'true' if base type is hanging
 			try {
-				return (typeRoot.getBase().getContainerConnection() == null);
+				return !typeRoot.getBase().hasContainer();
 			}
 			catch (InappropriateKindException e) {
 				return false;
@@ -166,23 +166,22 @@ public class DoxygenHandyman {
         for (int child = 0; child < typeRoot.getChildCount(); ++child) {
             TreeNode childNode = typeRoot.getChildAt(child);
             
-            boolean suspect = false;
             // Try to build suspicions
             if (childNode instanceof Type.TypeNode) {
                 if (isSuspicious((Type.TypeNode)childNode))
-                    suspect = true;
+                    return true;
             }
             else if (childNode instanceof DefaultMutableTreeNode) {
                 DefaultMutableTreeNode mutable =
                     (DefaultMutableTreeNode)childNode;
                 Object object = mutable.getUserObject();
                 if (object instanceof TypenameTemplateArgument) {
-                    suspect = isSuspicious(
-                        ((TypenameTemplateArgument)object).getValue());
+                    if (isSuspicious(((TypenameTemplateArgument)object).getValue()))
+                        return true;
                 }
             }
-            if (suspect) return true;
         }
+
         // No suspicious children found
         return false;
 	}
