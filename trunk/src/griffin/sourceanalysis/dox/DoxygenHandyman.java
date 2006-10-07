@@ -396,8 +396,7 @@ public class DoxygenHandyman {
 	
 	private static Entity up(Entity e)
 	{
-		ContainedConnection uplink = e.getContainerConnection();
-		return (uplink == null) ? null : uplink.getContainer();
+        return e.hasContainer() ? e.getContainer() : null;
 	}
 	
 	
