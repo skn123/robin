@@ -64,14 +64,20 @@ public class IncompleteTemplateInstance extends Aggregate {
         }
     }
 
-    private void copyInnerAggregate(Aggregate inner, int visibility) {
+    /**
+     * protected so it can be tested
+     */
+    protected void copyInnerAggregate(Aggregate inner, int visibility) {
         IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
         ninner.setName(inner.getName());
         ninner.assimilate(inner.getScope());
         getScope().addMember(ninner, visibility);
     }
 
-    private void copyInnerAlias(Alias inner, int visibility) {
+    /**
+     * protected so it can be tested
+     */
+    protected void copyInnerAlias(Alias inner, int visibility) {
         IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
         ninner.setName(inner.getName());
         getScope().addMember(ninner, visibility);
