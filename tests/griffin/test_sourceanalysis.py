@@ -136,7 +136,7 @@ class EntityTests(unittest.TestCase):
 
 class ScopeTests(unittest.TestCase):
     def setUp(self):
-        self.scope = ScopeStub()
+        self.scope = ScopeStub(EntityStub())
 
     def tearDown(self):
         del self.scope
@@ -230,6 +230,21 @@ class ScopeTests(unittest.TestCase):
                 get_iterator  = self.scope.friendIterator,
                 extract_value = lambda connection: connection.getDeclared(),
         )
+
+    def test_groupByName(self):
+        groups = [sourceanalysis.Group(name="group-%s"%i) for i in xrange(5)]
+        for group in groups:
+            self.scope.addGroup(group)
+        assert self.scope.groupByName("group-3") is groups[3]
+
+    def test_groupByName_failure(self):
+        groups = [sourceanalysis.Group(name="group-%s"%i) for i in xrange(5)]
+        for group in groups:
+            self.scope.addGroup(group)
+        self.assertRaises(
+                sourceanalysis.ElementNotFoundException,
+                self.scope.groupByName, "no-such-group"
+            )
 
 def _create_vector(seq):
     import java.util
