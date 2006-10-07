@@ -110,10 +110,9 @@ public class Utils {
 	 */
 	public static boolean isAccessible(Entity entity)
 	{
-		ContainedConnection uplink = entity.getContainerConnection();
 		return (entity instanceof Primitive) 
-			|| (uplink == null) 
-			|| (uplink.getVisibility() == Specifiers.Visibility.PUBLIC);
+			|| (!entity.hasContainer())
+			|| (entity.getContainerConnection().getVisibility() == Specifiers.Visibility.PUBLIC);
 	}
 	
 	/**
@@ -261,12 +260,10 @@ public class Utils {
 	 */
 	public static boolean isATemplateParameter(Entity entity)
 	{
-		ContainedConnection connection = entity.getContainerConnection();
-		
-		if (connection == null)
-			return false;
+        if (!entity.hasContainer())
+            return false;
 		else {
-			Entity container = connection.getContainer();
+			Entity container = entity.getContainer();
 			if (container.isTemplated()) {
 				for (Iterator tpi = container.templateParameterIterator();
 					tpi.hasNext(); ) {
@@ -302,14 +299,13 @@ public class Utils {
 	 */
 	private static String cleanFullNameBase(Entity entity)
 	{
-		ContainedConnection uplink = entity.getContainerConnection();
 		String cleanName = null;
 		
-		if (uplink == null || Utils.isATemplateParameter(entity)) {
+		if ( (!entity.hasContainer()) || Utils.isATemplateParameter(entity)) {
 			cleanName = entity.getName();
 		}
 		else {
-			Entity container = uplink.getContainer();
+			Entity container = entity.getContainer();
 			String containerName = cleanFullNameBase(container);
 			// Prepend container's name to entity's only if it's not empty,
 			// thus avoiding orphan colons.
@@ -462,7 +458,7 @@ public class Utils {
 			proto = "inline " + proto;
 		}
 		
-		if (routine.getContainerConnection() != null) {
+		if (routine.hasContainer()) {
 			// Virtuality.
 			if(routine.getContainerConnection().getVirtuality() == 
 				Specifiers.Virtuality.VIRTUAL) {
@@ -804,13 +800,13 @@ public class Utils {
 			templateInstance.addProperty(property);
 		}
 		// - insert entity to the same namespace where the template lives
-		if (templateInstance.getContainerConnection() == null) {
-			ContainedConnection uplink = template.getContainerConnection();
-			if (uplink != null) {
-				Entity container = uplink.getContainer();
+		if (templateInstance.hasContainer()) {
+			if (template.hasContainer()) {
+				Entity container = template.getContainer();
 				if (container instanceof Namespace) {
 					((Namespace)container).getScope().addMember(
-							templateInstance, uplink.getVisibility());
+							templateInstance,
+                            template.getContainerConnection().getVisibility());
 				}
 			}
 		}
