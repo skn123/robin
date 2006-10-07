@@ -798,7 +798,7 @@ public class Utils {
 			templateInstance.addProperty(property);
 		}
 		// - insert entity to the same namespace where the template lives
-		if (templateInstance.hasContainer()) {
+		if (!templateInstance.hasContainer()) {
 			if (template.hasContainer()) {
 				Entity container = template.getContainer();
 				if (container instanceof Namespace) {
