@@ -373,6 +373,15 @@ public abstract class Entity {
 	{
 		return m_uplink;
 	}
+
+    public Entity getContainer() {
+        assert hasContainer();
+        return getContainerConnection().getContainer();
+    }
+
+    public boolean hasContainer() {
+        return getContainerConnection() != null;
+    }
 	
 	/**
 	 * Retrieves the Group in which this entity is grouped. Returns 
