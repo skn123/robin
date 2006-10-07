@@ -734,7 +734,7 @@ public class XMLWriter {
 
 		// Aliases.
 		Element aliasesElm = doc.createElement("aliases");
-		Namespace namespace = (Namespace)aggr.getContainerConnection().getContainer();
+		Namespace namespace = (Namespace)aggr.getContainer();
 		for(Iterator iter = namespace.getScope().aliasIterator(); iter.hasNext();) {
 			ContainedConnection cc = (ContainedConnection)iter.next();
 			Alias alias = (Alias)cc.getContained();
@@ -1281,8 +1281,8 @@ public class XMLWriter {
 					Routine routine = (Routine)declared;
 					// Check if the routine is a global function.
 					// (by checking if its container is a namespace).
-					if(routine.getContainerConnection() != null && 
-						routine.getContainerConnection().getContainer() instanceof Namespace) {
+					if(routine.hasContainer() && 
+						routine.getContainer() instanceof Namespace) {
 						
 						// This ugly part checks that this is actually a routine 
 						// (although is was checked before) because macros (such
