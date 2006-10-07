@@ -14,24 +14,13 @@ public class Group extends Entity {
 		/**
 		 * Convenience constructor - creates a GroupScope and immediately
 		 * associates it with the owner Group.
-		 * @param owner owning group
+         * @param owner owning group, needed in order for the scope to know
+         * which group to relate the members with
 		 */
 		GroupScope(Group owner) {
             super(owner);
-            associate(owner);
+            m_owner = owner;
         }
-		
-		/**
-		 * Binds the GroupScope with the Group that contains it.
-		 * This is needed in order for the scope to know which group to
-		 * relate the members with.
-		 * @param owner owning group
-		 */
-		public void associate(Group owner)
-		{
-			super.associate(owner);
-			m_owner = owner;
-		}
 		
 		/**
 		 * Calls contained.connectToGroup() instead of
