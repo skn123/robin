@@ -45,7 +45,6 @@ public class IncompleteTemplateInstance extends Aggregate {
 	 */
 	public void assimilate(Scope templateScope)
 	{
-		Scope scope = getScope();
 		// Copy inner compounds of given template scope into this scope
 		for (Iterator ai = templateScope.aggregateIterator(); ai.hasNext();) {
 			ContainedConnection connection =
@@ -55,7 +54,7 @@ public class IncompleteTemplateInstance extends Aggregate {
 				new IncompleteTemplateInstance();
 			ninner.setName(inner.getName());
 			ninner.assimilate(inner.getScope());
-			scope.addMember(ninner, connection.getVisibility());
+			getScope().addMember(ninner, connection.getVisibility());
 		}
 		// Copy aliases from there as well
 		for (Iterator ai = templateScope.aliasIterator(); ai.hasNext();) {
@@ -65,7 +64,7 @@ public class IncompleteTemplateInstance extends Aggregate {
 			IncompleteTemplateInstance ninner =
 				new IncompleteTemplateInstance();
 			ninner.setName(inner.getName());
-			scope.addMember(ninner, connection.getVisibility());
+			getScope().addMember(ninner, connection.getVisibility());
 		}
 	}
 	
