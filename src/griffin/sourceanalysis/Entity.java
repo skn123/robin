@@ -285,7 +285,7 @@ public abstract class Entity {
 	 */
 	public String getFullName()
 	{
-		ContainedConnection conc = getContainer();
+		ContainedConnection conc = getContainerConnection();
 		if (conc == null)
 			return getName();
 		else
@@ -369,7 +369,7 @@ public abstract class Entity {
 	 * ContainedConnection.getContainer and other methods.
 	 * @return ContainedConnection
 	 */
-	public ContainedConnection getContainer()
+	public ContainedConnection getContainerConnection()
 	{
 		return m_uplink;
 	}

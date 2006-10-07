@@ -90,8 +90,8 @@ public class CodeGenerator extends GenericCodeGenerator {
 		
 		// Acquire virtuality information 
 		int virt;
-		if (routine.getContainer() != null) {
-			virt = routine.getContainer().getVirtuality();
+		if (routine.getContainerConnection() != null) {
+			virt = routine.getContainerConnection().getVirtuality();
 		}
 		else {
 			virt = Specifiers.Virtuality.NON_VIRTUAL;
@@ -104,7 +104,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		
 		// Rebuild function name declaration with return type
 		if (routine.isConstructor()) {
-			Aggregate clas = (Aggregate)routine.getContainer().getContainer();
+			Aggregate clas = (Aggregate)routine.getContainerConnection().getContainer();
 			sb.append(cleanFullName(clas));
 		}
 		else {

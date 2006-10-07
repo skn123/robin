@@ -110,7 +110,7 @@ public class Utils {
 	 */
 	public static boolean isAccessible(Entity entity)
 	{
-		ContainedConnection uplink = entity.getContainer();
+		ContainedConnection uplink = entity.getContainerConnection();
 		return (entity instanceof Primitive) 
 			|| (uplink == null) 
 			|| (uplink.getVisibility() == Specifiers.Visibility.PUBLIC);
@@ -261,7 +261,7 @@ public class Utils {
 	 */
 	public static boolean isATemplateParameter(Entity entity)
 	{
-		ContainedConnection connection = entity.getContainer();
+		ContainedConnection connection = entity.getContainerConnection();
 		
 		if (connection == null)
 			return false;
@@ -302,7 +302,7 @@ public class Utils {
 	 */
 	private static String cleanFullNameBase(Entity entity)
 	{
-		ContainedConnection uplink = entity.getContainer();
+		ContainedConnection uplink = entity.getContainerConnection();
 		String cleanName = null;
 		
 		if (uplink == null || Utils.isATemplateParameter(entity)) {
@@ -462,17 +462,17 @@ public class Utils {
 			proto = "inline " + proto;
 		}
 		
-		if (routine.getContainer() != null) {
+		if (routine.getContainerConnection() != null) {
 			// Virtuality.
-			if(routine.getContainer().getVirtuality() == 
+			if(routine.getContainerConnection().getVirtuality() == 
 				Specifiers.Virtuality.VIRTUAL) {
 				proto = "virtual " + proto;
-			} else if(routine.getContainer().getVirtuality() == 
+			} else if(routine.getContainerConnection().getVirtuality() == 
 				Specifiers.Virtuality.PURE_VIRTUAL) {
 				proto = "virtual " + proto + " = 0";
 			}
 			// Static.
-			if(routine.getContainer().getStorage() == 
+			if(routine.getContainerConnection().getStorage() == 
 				Specifiers.Storage.STATIC) {
 				proto = "static " + proto;
 			} 
@@ -804,8 +804,8 @@ public class Utils {
 			templateInstance.addProperty(property);
 		}
 		// - insert entity to the same namespace where the template lives
-		if (templateInstance.getContainer() == null) {
-			ContainedConnection uplink = template.getContainer();
+		if (templateInstance.getContainerConnection() == null) {
+			ContainedConnection uplink = template.getContainerConnection();
 			if (uplink != null) {
 				Entity container = uplink.getContainer();
 				if (container instanceof Namespace) {

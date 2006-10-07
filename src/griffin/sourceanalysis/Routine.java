@@ -9,13 +9,13 @@ import java.util.Vector;
  * Represents a function or a method.
  * <ul>
  * <li>A Routine is a function if it is contained in a Namespace 
- *   (use <b>getContainer</b>()).</li>
+ *   (use <b>getContainerConnection</b>()).</li>
  * <li>A Routine is a method if it is contained in an Aggregate.</li>
  * <li>A method is a static (class-wide) method or an instance method
  *  depending on the <i>storage</i> attribute of the ContainedConnection
  *  connecting it to its container.</li>
  * </ul>
- * @see sourceanalysis.Entity#getContainer()
+ * @see sourceanalysis.Entity#getContainerConnection()
  */
 public class Routine extends TemplateEnabledEntity implements Cloneable {
 
@@ -148,7 +148,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 */
 	public boolean isConstructor()
 	{
-		ContainedConnection contained = getContainer();
+		ContainedConnection contained = getContainerConnection();
 		Entity structure;
 		
 		structure = contained.getContainer();
