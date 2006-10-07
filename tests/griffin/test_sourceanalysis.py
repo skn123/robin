@@ -159,6 +159,78 @@ class ScopeTests(unittest.TestCase):
         self.scope.mirrorRelationToMember(declared, connection)
         assert connection in declared.affiliatesIterator()
 
+    def test_routines_as_collection(self):
+        routines = [sourceanalysis.Routine() for i in xrange(5)]
+        _verify_collection_accessors(
+                items         = routines,
+                add_item      = lambda routine: self.scope.addMember(routine, 1, 1, 1),
+                get_iterator  = self.scope.routineIterator,
+                extract_value = lambda connection: connection.getContained(),
+        )
+
+    def test_fields_as_collection(self):
+        fields = [sourceanalysis.Field() for i in xrange(5)]
+        _verify_collection_accessors(
+            items         = fields,
+            add_item      = lambda field: self.scope.addMember(field, 1, 1),
+            get_iterator  = self.scope.fieldIterator,
+            extract_value = lambda connection: connection.getContained(),
+        )
+
+    def test_aggregates_as_collection(self):
+        aggregates = [sourceanalysis.Aggregate() for i in xrange(5)]
+        _verify_collection_accessors(
+            items         = aggregates,
+            add_item      = lambda aggregate: self.scope.addMember(aggregate,1),
+            get_iterator  = self.scope.aggregateIterator,
+            extract_value = lambda connection: connection.getContained(),
+        )
+
+    def test_namespaces_as_collection(self):
+        namespaces = [sourceanalysis.Namespace() for i in xrange(5)]
+        _verify_collection_accessors(
+            items         = namespaces,
+            add_item      = lambda namespace: self.scope.addMember(namespace),
+            get_iterator  = self.scope.namespaceIterator,
+            extract_value = lambda connection: connection.getContained(),
+        )
+
+    def test_enums_as_collection(self):
+        enums = [sourceanalysis.Enum() for i in xrange(5)]
+        _verify_collection_accessors(
+            items         = enums,
+            add_item      = lambda enum: self.scope.addMember(enum,1),
+            get_iterator  = self.scope.enumIterator,
+            extract_value = lambda connection: connection.getContained(),
+        )
+
+    def test_aliases_as_collection(self):
+        aliases = [sourceanalysis.Alias() for i in xrange(5)]
+        _verify_collection_accessors(
+            items         = aliases,
+            add_item      = lambda alias: self.scope.addMember(alias,1),
+            get_iterator  = self.scope.aliasIterator,
+            extract_value = lambda connection: connection.getContained(),
+        )
+
+    def test_groups_as_collection(self):
+        groups = [sourceanalysis.Group() for i in xrange(5)]
+        _verify_collection_accessors(
+            items         = groups,
+            add_item      = self.scope.addGroup,
+            get_iterator  = self.scope.groupIterator,
+            extract_value = lambda connection: connection.getContained(),
+        )
+
+    def test_friends_as_collection(self):
+        friends = [EntityStub() for i in xrange(5)]
+        _verify_collection_accessors(
+                items         = friends,
+                add_item      = self.scope.addFriend,
+                get_iterator  = self.scope.friendIterator,
+                extract_value = lambda connection: connection.getDeclared(),
+        )
+
 def _create_vector(seq):
     import java.util
     result = java.util.Vector()
