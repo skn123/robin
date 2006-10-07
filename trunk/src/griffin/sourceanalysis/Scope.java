@@ -304,6 +304,7 @@ public class Scope {
 	 */
 	public Group groupByName(String groupName) throws ElementNotFoundException
 	{
+        assert m_owner != null; // was burned by this before
 		for (Iterator groupiter = groupIterator(); groupiter.hasNext(); ) {
 			ContainedConnection conn = (ContainedConnection)groupiter.next();
 			Group group = (Group)conn.getContained();
