@@ -161,31 +161,30 @@ public class DoxygenHandyman {
 				return false;
 			}
 		}
-		else {
-			// Check for suspect among children
-			for (int child = 0; child < typeRoot.getChildCount(); ++child) {
-				TreeNode childNode = typeRoot.getChildAt(child);
-				
-				boolean suspect = false;
-				// Try to build suspicions
-				if (childNode instanceof Type.TypeNode) {
-					if (isSuspicious((Type.TypeNode)childNode))
-						suspect = true;
-				}
-				else if (childNode instanceof DefaultMutableTreeNode) {
-					DefaultMutableTreeNode mutable =
-						(DefaultMutableTreeNode)childNode;
-					Object object = mutable.getUserObject();
-					if (object instanceof TypenameTemplateArgument) {
-						suspect = isSuspicious(
-							((TypenameTemplateArgument)object).getValue());
-					}
-				}
-				if (suspect) return true;
-			}
-			// No suspicious children found
-			return false;
-		}
+
+        // Check for suspect among children
+        for (int child = 0; child < typeRoot.getChildCount(); ++child) {
+            TreeNode childNode = typeRoot.getChildAt(child);
+            
+            boolean suspect = false;
+            // Try to build suspicions
+            if (childNode instanceof Type.TypeNode) {
+                if (isSuspicious((Type.TypeNode)childNode))
+                    suspect = true;
+            }
+            else if (childNode instanceof DefaultMutableTreeNode) {
+                DefaultMutableTreeNode mutable =
+                    (DefaultMutableTreeNode)childNode;
+                Object object = mutable.getUserObject();
+                if (object instanceof TypenameTemplateArgument) {
+                    suspect = isSuspicious(
+                        ((TypenameTemplateArgument)object).getValue());
+                }
+            }
+            if (suspect) return true;
+        }
+        // No suspicious children found
+        return false;
 	}
 	
 	/**
