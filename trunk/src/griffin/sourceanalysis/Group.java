@@ -19,7 +19,7 @@ public class Group extends Entity {
 		 */
 		GroupScope(Group owner) {
             super(owner);
-            m_owner = owner;
+            m_groupScopeOwner = owner;
         }
 		
 		/**
@@ -34,11 +34,11 @@ public class Group extends Entity {
 		protected void mirrorRelationToMember(Entity contained,
 			ContainedConnection connection) {
 			// Connect to group
-			contained.connectToGroup(m_owner);
+			contained.connectToGroup(m_groupScopeOwner);
 		}
 
 		// Private members
-		Group m_owner;
+		Group m_groupScopeOwner;
 	}
 
 	/**
