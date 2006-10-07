@@ -131,6 +131,10 @@ class EntityTests(unittest.TestCase):
 
         assert self.entity.getFullName() == "scooby::doo"
 
+    # TODO: nontrivial methods that are missing tests:
+    #  * setDeclarationAt, 2 overloaded variants
+    #  * setDefinitionAt, 2 overloaded variants
+
 def _create_vector(seq):
     import java.util
     result = java.util.Vector()
