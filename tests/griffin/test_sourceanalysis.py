@@ -10,6 +10,11 @@ class TemplateParameterStub(sourceanalysis.TemplateParameter): pass
 class EntityStub(sourceanalysis.Entity): pass
 class HintStub(sourceanalysis.Hint): pass
 
+# stubs for exposing protected methods
+class ScopeStub(sourceanalysis.Scope):
+    def mirrorRelationToMember(self, *args):
+        return self.super__mirrorRelationToMember(*args)
+
 class AggregateTests(unittest.TestCase):
     def setUp(self):
         self.aggregate = sourceanalysis.Aggregate()
@@ -134,6 +139,24 @@ class EntityTests(unittest.TestCase):
     # TODO: nontrivial methods that are missing tests:
     #  * setDeclarationAt, 2 overloaded variants
     #  * setDefinitionAt, 2 overloaded variants
+
+class ScopeTests(unittest.TestCase):
+    def setUp(self):
+        self.scope = ScopeStub()
+
+    def tearDown(self):
+        del self.scope
+
+    def test_mirrorRelationToMember_ContainedConnection(self):
+        DONT_CARE = sourceanalysis.Specifiers.DONT_CARE
+        container = EntityStub()
+        contained = EntityStub()
+        connection = sourceanalysis.ContainedConnection(
+                container, DONT_CARE, DONT_CARE, DONT_CARE, contained
+            )
+        self.scope.mirrorRelationToMember(contained, connection)
+
+        assert contained.getContainer() is connection
 
 def _create_vector(seq):
     import java.util
