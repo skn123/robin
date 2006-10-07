@@ -152,6 +152,13 @@ class ScopeTests(unittest.TestCase):
 
         assert contained.getContainer() is connection
 
+    def test_mirrorRelationToMember_FriendConnection(self):
+        declaring = EntityStub()
+        declared = EntityStub()
+        connection = sourceanalysis.FriendConnection(declaring, declared)
+        self.scope.mirrorRelationToMember(declared, connection)
+        assert connection in declared.affiliatesIterator()
+
 def _create_vector(seq):
     import java.util
     result = java.util.Vector()
