@@ -46,7 +46,7 @@ public class IncompleteTemplateInstance extends Aggregate {
     public void assimilate(Scope templateScope)
     {
         copyInnerCompoundsFromTemplate(templateScope);
-        copyAliasesFromTemplate(templateScope);
+        copyInnerAliasesFromTemplate(templateScope);
     }
 
     private void copyInnerCompoundsFromTemplate(Scope templateScope) {
@@ -57,7 +57,7 @@ public class IncompleteTemplateInstance extends Aggregate {
         }
     }
 
-    private void copyAliasesFromTemplate(Scope templateScope) {
+    private void copyInnerAliasesFromTemplate(Scope templateScope) {
         for (Iterator ai = templateScope.aliasIterator(); ai.hasNext();) {
             ContainedConnection connection = (ContainedConnection)ai.next();
             copyInnerAlias( (Alias)connection.getContained(), connection.getVisibility() );
