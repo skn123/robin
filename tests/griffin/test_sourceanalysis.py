@@ -279,6 +279,10 @@ class EnumTests(unittest.TestCase):
             get_iterator = enum.constantIterator,
         )
 
+class FieldTests(unittest.TestCase):
+    def test_getType(self):
+        _verify_type(self, sourceanalysis.Field())
+
 def _create_vector(seq):
     import java.util
     result = java.util.Vector()
