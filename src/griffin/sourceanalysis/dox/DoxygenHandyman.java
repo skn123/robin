@@ -48,24 +48,24 @@ public class DoxygenHandyman {
 		public Type.TypeNode transform(Type.TypeNode original)
 			throws InappropriateKindException
 		{
-			if (original.getKind() == Type.TypeNode.NODE_LEAF) {
-				Entity base = original.getBase();
-				// If base is orphan, look it up
-				if (base.getContainerConnection() == null) {
-					Entity newBase = (origin == null) 
-							? lookupApprox(base.getName())
-							: lookup(origin, base.getName());
-					if (newBase != null) {
-						// Create a new type node with 'base'
-						Type.TypeNode transformed = new Type.TypeNode(base);
-						transformed.setCV(original.getCV());
-						return transformed;
-					}
-				}
-				return null;
-			}
-			else
-				return null;
+			if (original.getKind() != Type.TypeNode.NODE_LEAF)
+                return null;
+
+            if (original.getBase().hasContainer())
+                return null;
+
+            // If base is orphan, look it up
+            Entity newBase = (origin == null) 
+                    ? lookupApprox(original.getBase().getName())
+                    : lookup(origin, original.getBase().getName());
+
+            if (newBase == null)
+                return null;
+
+            // Create a new type node with 'base'
+            Type.TypeNode transformed = new Type.TypeNode(original.getBase());
+            transformed.setCV(original.getCV());
+            return transformed;
 		}
 	}
 	
