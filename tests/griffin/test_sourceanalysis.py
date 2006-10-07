@@ -256,13 +256,8 @@ class DataTemplateParameterTests(unittest.TestCase):
     def tearDown(self):
         del self.parameter
 
-    def test_getType_missing_type(self):
-        self.assertRaises(sourceanalysis.MissingInformationException, self.parameter.getType)
-
     def test_getType(self):
-        type = sourceanalysis.Type(None)
-        self.parameter.setType( type )
-        assert self.parameter.getType() is type
+        _verify_type(self, self.parameter)
 
     def test_getDefaultValue_no_default(self):
         assert self.parameter.getDefaultValue() is None
@@ -323,6 +318,19 @@ def _verify_collection_accessors(
     for expected_item, actual_item in zip(items, actual_items):
         value = extract_value(actual_item)
         assert expected_item is value
+
+def _verify_type(self, instance):
+    """
+    There is duplication in the code regarding setting and getting types.
+    This function helps prevent this duplication here too.
+    """
+    # Check error case
+    self.assertRaises(sourceanalysis.MissingInformationException, instance.getType)
+
+    # Check success case
+    type = sourceanalysis.Type(None)
+    instance.setType( type )
+    assert instance.getType() is type
 
 def _all_test_cases():
     from types import ClassType
