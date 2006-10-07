@@ -123,7 +123,11 @@ class EntityTests(unittest.TestCase):
             param_container = template_parameter.getContainerConnection()
             assert param_container.getContainer() is self.entity
 
-    def test_getFullName(self):
+    def test_getFullName_toplevel(self):
+        self.entity.setName("Shibby")
+        assert self.entity.getFullName() == "Shibby"
+
+    def test_getFullName_contained(self):
         container = EntityStub(name="scooby")
         self.entity.connectToContainer(container, self.entity)
         self.entity.setName("doo")
