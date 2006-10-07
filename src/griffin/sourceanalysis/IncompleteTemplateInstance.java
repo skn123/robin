@@ -52,22 +52,29 @@ public class IncompleteTemplateInstance extends Aggregate {
     private void copyInnerCompoundsFromTemplate(Scope templateScope) {
         for (Iterator ai = templateScope.aggregateIterator(); ai.hasNext();) {
             ContainedConnection connection = (ContainedConnection)ai.next();
-            Aggregate inner = (Aggregate)connection.getContained();
-            IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
-            ninner.setName(inner.getName());
-            ninner.assimilate(inner.getScope());
-            getScope().addMember(ninner, connection.getVisibility());
+
+            copyInnerAggregate( (Aggregate)connection.getContained(), connection.getVisibility() );
         }
     }
 
     private void copyAliasesFromTemplate(Scope templateScope) {
         for (Iterator ai = templateScope.aliasIterator(); ai.hasNext();) {
             ContainedConnection connection = (ContainedConnection)ai.next();
-            Alias inner = (Alias)connection.getContained();
-            IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
-            ninner.setName(inner.getName());
-            getScope().addMember(ninner, connection.getVisibility());
+            copyInnerAlias( (Alias)connection.getContained(), connection.getVisibility() );
         }
+    }
+
+    private void copyInnerAggregate(Aggregate inner, int visibility) {
+        IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
+        ninner.setName(inner.getName());
+        ninner.assimilate(inner.getScope());
+        getScope().addMember(ninner, visibility);
+    }
+
+    private void copyInnerAlias(Alias inner, int visibility) {
+        IncompleteTemplateInstance ninner = new IncompleteTemplateInstance();
+        ninner.setName(inner.getName());
+        getScope().addMember(ninner, visibility);
     }
     
     // The type holding the template arguments for this template instanciations.
