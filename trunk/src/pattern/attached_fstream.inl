@@ -89,7 +89,7 @@ typename basic_attached_filebuf<charT, traits>::
 int_type basic_attached_filebuf<charT, traits>::underflow() {
 
     if (!m_ended && (m_mode & ios_base::in) && refill_buffer()) {
-		return (unsigned char)*gptr();
+		return (unsigned char)*this->gptr();
 	}
 	else {
 		m_ended = true;
@@ -136,7 +136,8 @@ template < class charT, class traits >
 bool basic_attached_filebuf<charT, traits>::refill_buffer() {
 
 	if (m_buffer == NULL) allocate_new_buffer();
-	if (gptr() < egptr()) return true; /* there is still some data there */
+	if (this->gptr() < this->egptr())
+		return true; /* there is still some data there */
 
 	// Read a string from the file object
 	char read_buffer[DEFAULT_BUFFER_SIZE];
