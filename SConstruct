@@ -32,6 +32,7 @@ build/robin/reflection/method.cc
 build/robin/reflection/namespace.cc
 build/robin/reflection/overloadedset.cc
 build/robin/reflection/typeofargument.cc
+build/robin/reflection/address.cc
 """
 
 REGISTRATION_SRC = """build/robin/registration/mechanism.cc
@@ -40,6 +41,11 @@ build/robin/registration/regdata.cc
 
 FRONTEND_FRAMEWORK_SRC = """build/robin/frontends/framework.cc
 """
+
+SIMPLE_FRONTEND_SRC = """build/robin/frontends/simple/elements.cc
+build/robin/frontends/simple/instanceelement.cc
+build/robin/frontends/simple/simpleadapters.cc
+build/robin/frontends/simple/simplefrontend.cc"""
 
 PYTHON_FRONTEND_SRC = """build/robin/frontends/python/enhancements.cc
 build/robin/frontends/python/facade.cc
@@ -177,6 +183,72 @@ stl = env.SharedLibrary("robin_stl"+spec,
 			["build/robin/modules/stl/stl_robin.cc"])
 
 Default(robin, pyfe, stl)
+
+
+##################################################
+#
+# Tests in C++
+#
+##################################################
+
+ENTERPRISE_SRC = """build/robin/extreme/enterprise.cc
+build/robin/extreme/test_registration_arena.cc"""
+
+TEST_REFLECTION_SRC = """build/robin/extreme/test_reflection_main.cc
+build/robin/extreme/test_reflection_arena.cc
+build/robin/extreme/test_reflection_lowmed.cc
+build/robin/extreme/test_reflection_oop.cc
+build/robin/extreme/test_reflection_conversions.cc"""
+
+TEST_REGISTRATION_SRC = """build/robin/extreme/test_registration_main.cc
+build/robin/extreme/test_registration_scenario.cc"""
+
+INTERACTIVE_SRC = """build/robin/extreme/interactive/launcher.cc"""
+
+LIBINTERACTIVE_SRC = """build/robin/extreme/interactive/syntax.cc
+build/robin/extreme/interactive/simple.cc
+build/robin/extreme/interactive/inclusion.cc"""
+
+testenv = env.Copy()
+testenv.Append(LIBPATH=["."])
+
+sfe = testenv.SharedLibrary("robin_sfe"+spec, Split(SIMPLE_FRONTEND_SRC),
+			    LIBS=["robin"+spec])
+fwtesting = env.SharedLibrary("fwtesting", "build/robin/extreme/fwtesting.cc")
+
+enterprise = testenv.SharedLibrary("enterprise", Split(ENTERPRISE_SRC))
+
+test_reflection = testenv.Program("test_reflection",
+				  Split(TEST_REFLECTION_SRC),
+				  LIBS=["robin"+spec,
+					"robin_sfe"+spec, "fwtesting",
+					"enterprise"])
+
+test_registration = testenv.Program("test_registration",
+				    Split(TEST_REGISTRATION_SRC),
+				    LIBS=["robin"+spec,
+					  "robin_sfe"+spec, "fwtesting",
+					  "enterprise", "interactive"])
+
+simplecc = "build/robin/extreme/interactive/simple.cc"
+simpleyy = "build/robin/extreme/interactive/simple.yy"
+simple_flex = testenv.Command(simplecc, simpleyy,
+			      "flex -o%s %s" % (simplecc, simpleyy))
+
+libinteractive = testenv.StaticLibrary("interactive",
+				       Split(LIBINTERACTIVE_SRC),
+				       LIBS=["robin"+spec, "robin_sfc"+spec])
+
+interactive = testenv.Program("interactive",
+			      Split(INTERACTIVE_SRC),
+			      LIBS=["robin"+spec, "robin_sfe"+spec,
+				    "interactive"])
+
+Depends(sfe, robin)
+Depends(test_reflection, [robin, sfe, fwtesting])
+Depends(test_registration, [robin, sfe, fwtesting, libinteractive])
+Depends(libinteractive, [robin, sfe])
+Depends(interactive, [robin, sfe, libinteractive])
 
 
 ##################################################
