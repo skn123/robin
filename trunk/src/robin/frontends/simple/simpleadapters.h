@@ -115,10 +115,9 @@ public:
  * @class SimpleInstanceAdapter
  * @nosubgrouping
  *
- * Used to transfer and receive <classref>Instance</classref>
- * objects. The adapter stores the class of which type objects are
- * being transferred; one instance of this adapter exists for each
- * transferrable class.
+ * Used to transfer and receive Instance objects. The adapter stores 
+ * the class of which type objects are being transferred; one instance 
+ * of this adapter exists for each transferrable class.
  */
 class SimpleInstanceAdapter : public Adapter
 {
@@ -133,11 +132,32 @@ private:
 };
 
 /**
+ * @class SimpleAddressAdapter
+ * @nosubgrouping
+ *
+ * Used to transfer and receive Address objects. This way pointers to
+ * primitive types and pointers to pointers can be translated. The 
+ * adapter stores the type of datum being addressed; one instance of
+ * this adapter exists for each handled pointer type.
+ */
+class SimpleAddressAdapter : public Adapter
+{
+public:
+	SimpleAddressAdapter(Handle<TypeOfArgument> pointedType);
+
+	virtual void put(ArgumentsBuffer& argsbuf, scripting_element value);
+    virtual scripting_element get(basic_block data);
+
+private:
+	Handle<TypeOfArgument> m_domain;
+};
+
+/**
  * @class SimpleEnumeratedAdapter
  * @nosubgrouping
  *
  * Used to transfer and receive enumerated data types
- * in the form of <classref>SimpleEnumeratedConstantElement</classref>s
+ * in the form of SimpleEnumeratedConstantElement-s
  * which are a part of the Simple Interpreter's standard extension.
  * Enumerated values are always transferred as ints; when they are
  * received, the approperiate type tag is attached making them

@@ -107,6 +107,43 @@ scripting_element SimpleInstanceAdapter::get(basic_block data)
 
 
 
+/**
+ * Builds an instance adapter, which handles instances
+ * of the class 'domain'.
+ */
+SimpleAddressAdapter::SimpleAddressAdapter(Handle<TypeOfArgument> domain)
+  : m_domain(domain)
+{
+}
+
+/**
+ * Interprets the 'element' as a SimpleAddressElement
+ * of the type specified in this adapter's construction, and
+ * puts the pointer on the arguments buffer.
+ */
+void SimpleAddressAdapter::put(ArgumentsBuffer& argsbuf, 
+								scripting_element value)
+{
+	Simple::Element *element = (Simple::Element *)value;	
+	SimpleAddressElement *addr_element = 
+		dynamic_cast<SimpleAddressElement *>(element);
+	argsbuf.push(addr_element->value->asPointer());
+}
+
+/**
+ * Interprets the returned value as a pointer to a datum
+ * of the domain type, and builds a SimpleAddressElement
+ */
+scripting_element SimpleAddressAdapter::get(basic_block data)
+{
+	void *ptr = (void *)data;
+	Handle<Address> address(new Address(m_domain, ptr));;
+	SimpleAddressElement *addr_element = new SimpleAddressElement(address);
+	return (scripting_element)((Simple::Element *)addr_element);
+}
+
+
+
 
 /**
  * Builds an enumerated adapter, which handles values

@@ -112,6 +112,7 @@ public:
 
 protected:
 	LowLevel* m_lowLevel;
+	ErrorHandler *m_errorHandler;
 };
 
 } // end of namespace Robin
