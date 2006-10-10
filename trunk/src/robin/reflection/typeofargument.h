@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- mode: C++; tab-width: 4; c-basic-offset: 4 -*-
 
 /**
  * @file
@@ -25,6 +25,7 @@
 
 // Pattern includes
 #include <pattern/handle.h>
+#include <pattern/handle_map.h>
 
 // Package includes
 #include "argumentsbuffer.h"
@@ -127,8 +128,11 @@ public:
 
     //@{
     Type basetype() const;
-
+	bool isPointer() const;
+	Handle<TypeOfArgument> pointer() const;
+	const TypeOfArgument& pointed() const;
     //@}
+
     /**
      * @name Translation
      *
@@ -145,6 +149,9 @@ public:
 
     scripting_element get(basic_block rval);
     void put(ArgumentsBuffer& argsbuf, scripting_element value);
+	//@}
+
+	static Pattern::HandleMap<TypeOfArgument> handleMap;
 
 private:
     Type m_basetype;
@@ -153,6 +160,10 @@ private:
     std::vector<int> m_array_dimensions;
 
     Handle<Adapter> m_adapter;
+
+	// - pointer
+	mutable Handle<TypeOfArgument> m_cache_pointer;
+	const TypeOfArgument *m_pointed;
 };
 
 
