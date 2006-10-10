@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- mode: C++; tab-width: 4; c-basic-offset: 4 -*-
 
 /**
  * @file
@@ -19,6 +19,8 @@
 namespace Robin {
 
 
+
+
 Type::~Type() 
 {
     // This destructor is here only to keep instantiation of Handle<Adapter>
@@ -35,6 +37,7 @@ Type::~Type()
  * It assigns no redirection, reference or array indicators.
  */
 TypeOfArgument::TypeOfArgument(TypeCategory category, TypeSpec spec)
+	: m_redirection_degree(0), m_reference_flag(false)
 {
     m_basetype.category = category;
     m_basetype.spec = spec;
@@ -46,6 +49,7 @@ TypeOfArgument::TypeOfArgument(TypeCategory category, TypeSpec spec)
  * to spec.
  */
 TypeOfArgument::TypeOfArgument(Handle<Class> classtype)
+	: m_redirection_degree(0), m_reference_flag(true)
 {
     m_basetype.category = TYPE_CATEGORY_USERDEFINED;
     m_basetype.spec = TYPE_USERDEFINED_OBJECT;
@@ -58,6 +62,7 @@ TypeOfArgument::TypeOfArgument(Handle<Class> classtype)
  * to spec.
  */
 TypeOfArgument::TypeOfArgument(Handle<EnumeratedType> enumtype)
+	: m_redirection_degree(0), m_reference_flag(false)
 {
     m_basetype.category = TYPE_CATEGORY_USERDEFINED;
     m_basetype.spec = TYPE_USERDEFINED_ENUM;
@@ -86,7 +91,42 @@ Type TypeOfArgument::basetype() const
     return m_basetype;
 }
 
+/**
+ * Checks whether this type is a pointer type.
+ *
+ * @return true if this is a pointer type
+ */
+bool TypeOfArgument::isPointer() const
+{
+	return (m_redirection_degree > 0);
+}
 
+
+/**
+ * Returns a handle to a TypeOfArgument which represents a pointer to the
+ * specified type. Two consecutive calls to pointer() will always return the
+ * same object.
+ */
+Handle<TypeOfArgument> TypeOfArgument::pointer() const
+{
+	if (!m_cache_pointer) {
+		m_cache_pointer = Handle<TypeOfArgument>(new TypeOfArgument(*this));
+		m_cache_pointer->m_redirection_degree++;
+		m_cache_pointer->m_adapter = Handle<Adapter>();
+		m_cache_pointer->m_pointed = this;
+	}
+	return m_cache_pointer;
+}
+
+
+/**
+ * Only valid for pointer types; returns the type for which this
+ * type is a pointer. For example, 'int*'->pointed() will return 'int'.
+ */
+const TypeOfArgument& TypeOfArgument::pointed() const
+{
+	return *m_pointed;
+}
 
 
 /**
@@ -126,6 +166,10 @@ void TypeOfArgument::put(ArgumentsBuffer& argsbuf, scripting_element value)
     else
 		throw UnsupportedInterfaceException();
 }
+
+
+Pattern::HandleMap<TypeOfArgument> TypeOfArgument::handleMap;
+
 
 
 } // end of namespace Robin
