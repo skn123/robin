@@ -16,7 +16,10 @@
 #include <robin/reflection/intrinsic_type_arguments.h>
 #include <robin/reflection/overloadedset.h>
 #include <robin/reflection/instance.h>
+#include <robin/reflection/address.h>
+#include <robin/frontends/framework.h>
 #include <robin/frontends/simple/elements.h>
+#include <robin/frontends/simple/instanceelement.h>
 
 #include <robin/debug/trace.h>
 
@@ -361,3 +364,107 @@ public:
 	}
 
 } __t04;
+
+
+/**
+ * @par TEST
+ * TestAddressBasic
+ *
+ * Tests the Address class.
+ */
+class TestAddressBasic : public ReflectionTest
+{
+private:
+	Handle<Robin::Address> int_address;
+	int int_var;
+	int int_val;
+	Handle<Robin::Address> float_address;
+	float float_var;
+	float float_val;
+
+public:
+	TestAddressBasic() : ReflectionTest("Basic Addressing")
+	{
+	}
+
+	void prepare() { 
+		Robin::Address *address;
+
+		address = new Robin::Address(Robin::ArgumentInt, &int_var);
+		int_address = Handle<Robin::Address>(address);
+		address = new Robin::Address(Robin::ArgumentFloat, &float_var);
+		float_address = Handle<Robin::Address>(address);
+
+		int_var = 71908;
+		notification("INT-VAR", int_var);
+		float_var = 719.08;
+		notification("FLOAT-VAR", float_var);
+	}
+
+	void go() { 
+		int_val = Gint | int_address->dereference();
+		float_val = Gfloat | float_address->dereference();
+		notification("INT-VAL", int_val);
+		notification("FLOAT-VAL", float_val);
+	}
+
+	void alternate() { }
+
+	bool verify() { return int_var == int_val && float_var == float_val; }
+
+} __t05;
+
+
+
+long assignme(long *l, long r)
+{
+	*l = r;
+	return reinterpret_cast<long>(l);
+}
+
+
+class TestPointerArgument : public ReflectionTest
+{
+private:
+	Robin::CFunction func1;
+	long long_var;
+	long long_val;
+	long returned1;
+
+public:
+	TestPointerArgument() : ReflectionTest("Pointer Argument"),
+			func1((Robin::symbol)&assignme)
+	{
+	}
+
+	void prepare() { 
+		Robin::FrontendsFramework::fillAdapter(Robin::ArgumentLong->pointer());
+
+		func1.specifyReturnType(Robin::ArgumentLong);
+		func1.addFormalArgument(Robin::ArgumentLong->pointer());
+		func1.addFormalArgument(Robin::ArgumentLong);
+
+		long_val = 90210;
+		long_var = 0;
+		notification("LONG-VAL", long_val);
+	}
+
+	void go() { 
+		Robin::Address *address;
+		address = new Robin::Address(Robin::ArgumentLong, &long_var);
+		Handle<Robin::Address> haddress(address);
+		
+		Robin::ActualArgumentList args1;
+		args1.push_back(new Robin::SimpleAddressElement(haddress));
+		args1.push_back(Simple::build(long_val));
+		returned1 = Glong | func1.call(args1);
+		notification("LONG-VAR", long_var);
+		notification("RETURNED", returned1);
+	}
+
+	void alternate() { }
+
+	bool verify() { return long_var == long_val &&
+						returned1 == reinterpret_cast<long>(&long_var); }
+
+} __t06;

@@ -79,6 +79,7 @@ public:
 protected:
 	SpontaneousElementExtractor<Simple::Integer, int> Gint;
 	SpontaneousElementExtractor<Simple::Long, long> Glong;
+	SpontaneousElementExtractor<Simple::Float, float> Gfloat;
 	SpontaneousElementExtractor<Simple::String, std::string> Gstring;
 	SpontaneousElementExtractor<Robin::SimpleInstanceObjectElement, 
                                 Handle<Robin::Instance> >

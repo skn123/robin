@@ -120,9 +120,10 @@ void introduceConversion(Handle<Robin::TypeOfArgument> from,
  */
 void fillAdapter(Handle<Robin::TypeOfArgument> toa)
 {
-	if (toa)
-		toa->assignAdapter(
-	      Robin::FrontendsFramework::activeFrontend()->giveAdapterFor(*toa));
+	assert(toa);
+	Robin::TypeOfArgument::handleMap.registerHandle(toa);
+	toa->assignAdapter(
+	    Robin::FrontendsFramework::activeFrontend()->giveAdapterFor(*toa));
 }
 
 /**

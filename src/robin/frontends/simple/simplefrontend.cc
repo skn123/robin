@@ -18,12 +18,22 @@
 #include <robin/reflection/intrinsic_type_arguments.h>
 #include <robin/reflection/class.h>
 #include <robin/reflection/conversiontable.h>
+#include <robin/reflection/error_handler.h>
 #include "instanceelement.h"
 
 
 namespace Robin {
 
 
+class NullErrorHandler : public ErrorHandler
+{
+public:
+	virtual ~NullErrorHandler() { }
+	virtual void setError(scripting_element error) { }
+	virtual void setError(const std::exception &exc,
+						  const Backtrace &trace) { }
+	virtual scripting_element getError() { return 0; }
+};
 
 
 
@@ -33,6 +43,7 @@ namespace Robin {
 SimpleFrontend::SimpleFrontend()
 {
 	m_lowLevel = new LowLevel();
+	m_errorHandler = new NullErrorHandler();
 }
 
 /**
@@ -98,6 +109,7 @@ Handle<TypeOfArgument> SimpleFrontend::detectType(scripting_element element)
 {
 	Simple::Element *se = reinterpret_cast<Simple::Element *>(element);
 	SimpleInstanceObjectElement *sioe;
+	SimpleAddressElement *sae;
 	SimpleEnumeratedConstantElement *sece;
 
 	if (dynamic_cast<Simple::Integer*>(se))      return ArgumentInt;
@@ -109,6 +121,8 @@ Handle<TypeOfArgument> SimpleFrontend::detectType(scripting_element element)
 		                                         return ArgumentPascalString;
 	else if (sioe = dynamic_cast<SimpleInstanceObjectElement*>(se))
 		return sioe->value->getClass()->getRefArg();
+	else if (sae = dynamic_cast<SimpleAddressElement*>(se))
+		return sae->value->getPointerType();
 	else if (sece = dynamic_cast<SimpleEnumeratedConstantElement*>(se))
 		return sece->value.getType()->getArg();
 	else
@@ -146,7 +160,15 @@ Handle<Adapter> SimpleFrontend::giveAdapterFor(const TypeOfArgument& type)
 	Type basetype = type.basetype();
 	if (basetype.category == TYPE_CATEGORY_INTRINSIC)
 	{
-		if (basetype.spec == TYPE_INTRINSIC_INT)
+		if (type.isPointer()) {
+			Handle<TypeOfArgument> pointedType = 
+				TypeOfArgument::handleMap.acquire(type.pointed());
+			if (pointedType)
+				return Handle<Adapter>(new SimpleAddressAdapter(pointedType));
+			else
+				throw UnsupportedInterfaceException();
+		}
+		else if (basetype.spec == TYPE_INTRINSIC_INT)
 			return Handle<Adapter>(new SimpleAdapter<int, Simple::Integer>);
 		else if (basetype.spec == TYPE_INTRINSIC_LONG)
 			return Handle<Adapter>(new SimpleAdapter<long, Simple::Long>);
@@ -235,7 +257,7 @@ const Interceptor& SimpleFrontend::getInterceptor() const
  */
 ErrorHandler& SimpleFrontend::getErrorHandler()
 {
-	assert(false);
+	return *m_errorHandler;
 }
 
 /**

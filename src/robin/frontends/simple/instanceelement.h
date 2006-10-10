@@ -25,6 +25,7 @@
 #define ROBIN_SIMPLE_FRONTEND_INSTANCE_ELEMENT_H
 
 #include "elements.h"
+#include <robin/reflection/address.h>
 #include <robin/reflection/instance.h>
 #include <robin/reflection/enumeratedtype.h>
 #include <robin/reflection/pascalstring.h>
@@ -35,8 +36,7 @@ namespace Robin {
  * @class SimpleInstanceObjectElement
  * @nosubgrouping
  *
- * Extends <classref>Simple::Element</classref> and,
- * using a contained <classref>Instance</classref> field member,
+ * Extends Simple::Element and, using a contained Robin::Instance field member,
  * encapsulates a C++ instance object. This object serves as an extension
  * to the Simple Interpreter's object space.
  */
@@ -49,6 +49,21 @@ public:
 	virtual void dbgout() const;
 
 	Handle<Instance> value;
+};
+
+/**
+ * Extends Simple::Element and, using a contained Robin::Address field member,
+ * encapsulates a C++ address (pointer). This object serves as an extension to 
+ * the Simple Interpreter's object space.
+ */
+class SimpleAddressElement : public Simple::Element
+{
+public:
+	SimpleAddressElement(Handle<Address> address);
+
+	virtual void dbgout() const;
+
+	Handle<Address> value;
 };
 
 /**

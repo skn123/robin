@@ -48,7 +48,22 @@ void SimpleInstanceObjectElement::dbgout() const
 	}
 }
 
+/**
+ * Creates an element which is initialized with an
+ * address.
+ */
+SimpleAddressElement::SimpleAddressElement(Handle<Address> address)
+	: value(address)
+{
+}
 
+/**
+ * stub
+ */
+void SimpleAddressElement::dbgout() const
+{
+	std::cerr << "<address>";
+}
 
 
 /**

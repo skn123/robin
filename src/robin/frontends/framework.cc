@@ -76,6 +76,7 @@ void FrontendsFramework::fillAdapter(Handle<TypeOfArgument> toa)
 {
 	if (toa) {
 		try {
+			TypeOfArgument::handleMap.registerHandle(toa);
 			toa->assignAdapter(active_frontend->giveAdapterFor(*toa));
 		}
 		catch (UnsupportedInterfaceException& ) {
