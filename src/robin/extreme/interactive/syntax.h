@@ -44,6 +44,8 @@ public:
 
 	void reuse();
 	void reuse(int cell);
+	void reuse_address(int cell);
+	void reuse_by_address(int cell);
 	void var(int cell);
 
 	void enter();
@@ -62,7 +64,11 @@ protected:
 
 	void blank();
 	void variable(const char *name);
+	void address(const char *name);
+	void dereference(const char *name);
 	void assign(const char *name);
+
+	int var_lookup(const char *name);
 
 	void IncludeIn(const char *filename, int times);
 	bool IncludeOut();

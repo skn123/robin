@@ -35,8 +35,7 @@ int main(int argc, char *argv[])
 	catch (Robin::DynamicLibraryOpenException& e) {
 		std::cerr << "// @FATAL: while importing enterprise: "
 				  << e.what() << std::endl;
-		std::cerr << "// @ERRNO: " << e.errno_at << " - " 
-				  << strerror(e.errno_at) << std::endl;
+		std::cerr << "// @DLERROR: " << e.dlerror_at << std::endl;
 		exit(1);
 	}
 	catch (std::exception& e) {

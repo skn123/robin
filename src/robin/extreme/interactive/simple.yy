@@ -6,6 +6,9 @@
 %{
 #include "syntax.h"
 #include "inclusion.h"
+using std::cin;
+using std::cout;
+using std::cerr;
 %}
 
 VARIABLE [A-F]
@@ -19,6 +22,8 @@ import		{ import(); }
 [0-9]+\'[a-z/]+	{ IncludeIn(strchr(yytext,'\'')+1, atoi(yytext)); }
 
 [A-F]		{ variable(yytext); }
+&[A-F]		{ address(yytext+1); }
+\*[A-F]		{ dereference(yytext+1); }
 [A-F][:]	{ assign(yytext); }
 
 _			{ blank(); }

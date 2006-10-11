@@ -96,18 +96,19 @@ public:
 		interpret("(findHotel \"Royal\") availableBeds.");
 		avail_beds.Royal = Gint | result();
 
-		interpret("(findHotel \"Boomerang\") availableRooms.");
+		interpret("B: 0. C: 0. (findHotel \"Boomerang\") available &B &C.");
+		interpret("B.");
 		avail_rooms.Boomerang = Gint | result();
-		interpret("(findHotel \"Boomerang\") availableBeds.");
+		interpret("C.");
 		avail_beds.Boomerang = Gint | result();
 	}
 
 	bool verify() {
 		// We know which results to expect, so just -
 		byHotel expected_rooms = { 3, 3, 2 },
-			expected_beds = { 5, 14, 6 };          // . .  some may accuse me
-		return (avail_rooms == expected_rooms &&   //  ^   of hard-coding...
-				avail_beds == expected_beds);      //  -   I hope you won't.
+			expected_beds = { 5, 14, 6 };          // ^ ^  some may accuse me
+		return (avail_rooms == expected_rooms &&   //  _   of hard-coding...
+				avail_beds == expected_beds);      //      I hope you won't.
 	}
 
 

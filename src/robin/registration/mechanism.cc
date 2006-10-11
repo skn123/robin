@@ -308,31 +308,50 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 		  { "#scripting_element", ArgumentScriptingElement }, // @@@
 		  { 0 } };
 
-	// Is an intrinsic type?
-	for (entry *ei = intrinsics; ei->keyword != 0; ++ei)
-		if (strcmp(ei->keyword, type) == 0) return ei->toa;
-	
-	// Enumerated type?
-	if (type[0] == '#')
-		return touchEnum(type + 1, container)->getArg();
+	Handle<TypeOfArgument> rtype;
+	enum { ARG, PTRARG, REFARG, OUTARG } modif = ARG;
+	int redir_count = 0;
 
-	// Class reference or pointer?
-	enum { PTRARG, REFARG, OUTARG } modif;
-	if (type[0] == '*') modif = PTRARG;
-	else if (type[0] == '&') modif = REFARG;
-	else if (type[0] == '>') modif = OUTARG;
-	else throw LookupFailureException(type);
+	while (!rtype) {
+		// Is an intrinsic type?
+		for (entry *ei = intrinsics; ei->keyword != 0; ++ei)
+			if (strcmp(ei->keyword, type) == 0) rtype = ei->toa;
 	
-	type++;  /* skip ref/ptr symbol */
-	Handle<Class> klass = touchClass(type, m_ns_common);
+		// Enumerated type?
+		if (!rtype && type[0] == '#')
+			rtype = touchEnum(type + 1, container)->getArg();
 
-	switch (modif) {
-	case PTRARG: return klass->getPtrArg(); 
-	case REFARG: return klass->getRefArg();
-	case OUTARG: return klass->getOutArg();
-	default:
-		assert(false);
-	};
+		if (!rtype) {
+			// Reference or pointer?
+			if (type[0] == '*') { modif = PTRARG; redir_count++; }
+			else if (type[0] == '&') modif = REFARG;
+			else if (type[0] == '>') modif = OUTARG;
+			else break;
+	
+			type++;  /* skip ref/ptr symbol */
+		}
+	}
+
+	if (!rtype) {
+		// Class reference or pointer
+		Handle<Class> klass = touchClass(type, m_ns_common);
+
+		switch (modif) {
+		case ARG:    throw LookupFailureException(type);
+		case PTRARG: rtype = klass->getPtrArg(); --redir_count;    break;
+		case REFARG: rtype = klass->getRefArg();                   break;
+		case OUTARG: rtype = klass->getOutArg();                   break;
+		default:
+			assert(false);
+		};
+	}
+
+	while (redir_count-- > 0) {
+		rtype = rtype->pointer();
+		FrontendsFramework::fillAdapter(rtype);
+	}
+
+	return rtype;
 }
 
 /**

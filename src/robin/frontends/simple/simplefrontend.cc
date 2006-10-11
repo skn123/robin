@@ -158,17 +158,18 @@ Handle<Adapter> SimpleFrontend::giveAdapterFor(const TypeOfArgument& type)
   const
 {
 	Type basetype = type.basetype();
-	if (basetype.category == TYPE_CATEGORY_INTRINSIC)
+
+	if (type.isPointer()) {
+		Handle<TypeOfArgument> pointedType = 
+			TypeOfArgument::handleMap.acquire(type.pointed());
+		if (pointedType)
+			return Handle<Adapter>(new SimpleAddressAdapter(pointedType));
+		else
+			throw UnsupportedInterfaceException();
+	}
+	else if (basetype.category == TYPE_CATEGORY_INTRINSIC)
 	{
-		if (type.isPointer()) {
-			Handle<TypeOfArgument> pointedType = 
-				TypeOfArgument::handleMap.acquire(type.pointed());
-			if (pointedType)
-				return Handle<Adapter>(new SimpleAddressAdapter(pointedType));
-			else
-				throw UnsupportedInterfaceException();
-		}
-		else if (basetype.spec == TYPE_INTRINSIC_INT)
+		if (basetype.spec == TYPE_INTRINSIC_INT)
 			return Handle<Adapter>(new SimpleAdapter<int, Simple::Integer>);
 		else if (basetype.spec == TYPE_INTRINSIC_LONG)
 			return Handle<Adapter>(new SimpleAdapter<long, Simple::Long>);

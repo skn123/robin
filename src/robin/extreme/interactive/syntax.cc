@@ -24,6 +24,7 @@
 #include <robin/reflection/class.h>
 #include <robin/reflection/instance.h>
 #include <robin/reflection/library.h>
+#include <robin/reflection/intrinsic_type_arguments.h>
 
 #include <robin/frontends/simple/elements.h>
 #include <robin/frontends/simple/instanceelement.h>
@@ -111,14 +112,33 @@ void InteractiveSyntaxAnalyzer::blank()
  */
 void InteractiveSyntaxAnalyzer::variable(const char *name)
 {
-	reuse(name[0] - 'A');
+	reuse(var_lookup(name));
+}
+
+/**
+ */
+void InteractiveSyntaxAnalyzer::address(const char *name)
+{
+	reuse_address(var_lookup(name));
+}
+
+/**
+ */
+void InteractiveSyntaxAnalyzer::dereference(const char *name)
+{
+	reuse_by_address(var_lookup(name));
 }
 
 /**
  */
 void InteractiveSyntaxAnalyzer::assign(const char *name)
 {
-	var(name[0] - 'A');
+	var(var_lookup(name));
+}
+
+int InteractiveSyntaxAnalyzer::var_lookup(const char *name)
+{
+	return name[0] - 'A';
 }
 
 
@@ -268,11 +288,57 @@ void InteractiveSyntaxAnalyzer::reuse()
 }
 
 /**
+ * Uses the value of a variable as an argument to a function call.
  */
 void InteractiveSyntaxAnalyzer::reuse(int cell)
 {
 	imp->argument(imp->cells[cell]);
 }
+
+/**
+ * Uses the address of a variable as an argument to a function call.
+ */
+void InteractiveSyntaxAnalyzer::reuse_address(int cell)
+{
+	Simple::Element *lvalue = imp->cells[cell];
+	Simple::Integer *lvalue_int;
+	Simple::String *lvalue_string;
+	Robin::Address *address = NULL;
+
+	if (lvalue_int = dynamic_cast<Simple::Integer*>(lvalue))
+		address = new Robin::Address(Robin::ArgumentInt, &(lvalue_int->value));
+	else if (lvalue_string = dynamic_cast<Simple::String*>(lvalue))
+		address = new Robin::Address(Robin::ArgumentCString,
+									 new const char *(lvalue_string->value.c_str()));
+
+	if (address != NULL) {
+		Handle<Robin::Address> haddress(address);
+		imp->argument(new Robin::SimpleAddressElement(haddress));
+	}
+	else {
+		std::cerr << "// @WARNING: can't take address of "
+				  << char('A' + cell) << "." << std::endl;
+	}
+}
+
+/**
+ * Uses a datum pointed to by an address as an argument to a function
+ * call.
+ */
+void InteractiveSyntaxAnalyzer::reuse_by_address(int cell)
+{
+	Robin::SimpleAddressElement *element =
+		dynamic_cast<Robin::SimpleAddressElement *>(imp->cells[cell]);
+
+	if (element) {
+		imp->argument((Simple::Element*)(element->value->dereference()));
+	}
+	else {
+		std::cerr << "// @WARNING: can't dereference "
+				  << char('A' + cell) << ", not an address." << std::endl;
+	}
+}
+
 
 /**
  */

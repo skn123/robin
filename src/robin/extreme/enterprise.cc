@@ -141,6 +141,12 @@ int Hotel_availBeds(Hotel *self)
 	return vacant_bed_count;
 }
 
+void Hotel_avail(Hotel *self, int *rooms, int *beds)
+{
+	*rooms = Hotel_availRooms(self);
+	*beds = Hotel_availBeds(self);
+}
+
 Room *Room_new(RoomType level)
 {
 	return Room_newe(level, 0);
