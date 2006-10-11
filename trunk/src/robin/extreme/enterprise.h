@@ -74,6 +74,7 @@ void Hotel_buildPool(Hotel *self);
 void Hotel_checkin(Hotel *self, RoomType level, int guests);
 int Hotel_availRooms(Hotel *self);
 int Hotel_availBeds(Hotel *self);
+void Hotel_avail(Hotel *self, int *rooms, int *beds);
 Room *Room_new(RoomType level);
 Room *Room_newe(RoomType level, int capacity);
 Room *Room_newex(RoomType level, int capacity, bool pool);

@@ -24,6 +24,11 @@ int my_do()
 	return 42;
 }
 
+void my_other_do(const char **c)
+{
+	*c = "Howdie!";
+}
+
 /**
  * @par TEMPORARY
  * just for the testing
@@ -34,8 +39,15 @@ Handle<Robin::Namespace> sample_ns()
 		hdo(new Robin::CFunction((Robin::symbol)&my_do));
 	hdo->specifyReturnType(Robin::ArgumentInt);
 
+	Handle<Robin::CFunction>
+		hotdo(new Robin::CFunction((Robin::symbol)&my_other_do));
+	hotdo->addFormalArgument(Robin::ArgumentCString->pointer());
+
 	Handle<Robin::Namespace> ns(new Robin::Namespace);
 	ns->declare("do", static_hcast<Robin::Callable>(hdo));
+	ns->declare("other_do", static_hcast<Robin::Callable>(hotdo));
+
+	Robin::FrontendsFramework::fillAdapter(Robin::ArgumentCString->pointer());
 
 	return ns;
 }
@@ -57,7 +69,7 @@ int main(int argc, char *argv[])
 	InteractiveSyntaxAnalyzer interpreter;
 
 	// Prepare a sample namespace
-	// InteractiveSyntaxAnalyzer::getActive().have(registerEnterprise());
+	interpreter.have(sample_ns());
 
 	// Read the input file(s)
 	while (argc > 1) {

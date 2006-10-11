@@ -416,12 +416,6 @@ public:
 
 
 
-long assignme(long *l, long r)
-{
-	*l = r;
-	return reinterpret_cast<long>(l);
-}
-
 
 class TestPointerArgument : public ReflectionTest
 {
@@ -431,40 +425,92 @@ private:
 	long long_val;
 	long returned1;
 
+	Robin::CFunction func2;
+	char **string_array;
+
+	static const char *TEXT0;
+	static const char *TEXT1;
+	static const char *TEXT2;
+
+	static long assignme(long *l, long r)
+	{
+		*l = r;
+		return reinterpret_cast<long>(l);
+	}
+
+	static void listme(char ***string_array)
+	{
+		*string_array = new char *[3];
+		(*string_array)[0] = strdup(TEXT0);
+		(*string_array)[1] = strdup(TEXT1);
+		(*string_array)[2] = strdup(TEXT2);
+	}
+
 public:
 	TestPointerArgument() : ReflectionTest("Pointer Argument"),
-			func1((Robin::symbol)&assignme)
-	{
-	}
+							func1((Robin::symbol)&assignme),
+							func2((Robin::symbol)&listme)
+	{ }
 
 	void prepare() { 
 		Robin::FrontendsFramework::fillAdapter(Robin::ArgumentLong->pointer());
+		Robin::FrontendsFramework::fillAdapter(Robin::ArgumentCString
+											   ->pointer());
+		Robin::FrontendsFramework::fillAdapter(Robin::ArgumentCString
+											   ->pointer()->pointer());
 
+		// - declare func1
 		func1.specifyReturnType(Robin::ArgumentLong);
 		func1.addFormalArgument(Robin::ArgumentLong->pointer());
 		func1.addFormalArgument(Robin::ArgumentLong);
 
+		// - declare func2
+		func2.addFormalArgument(Robin::ArgumentCString->pointer()->pointer());
+
 		long_val = 90210;
 		long_var = 0;
 		notification("LONG-VAL", long_val);
+		string_array = NULL;
 	}
 
 	void go() { 
 		Robin::Address *address;
 		address = new Robin::Address(Robin::ArgumentLong, &long_var);
-		Handle<Robin::Address> haddress(address);
-		
+		Handle<Robin::Address> haddress1(address);
+		address = new Robin::Address(Robin::ArgumentCString->pointer(), 
+									 &string_array);
+		Handle<Robin::Address> haddress2(address);
+
+		// - call func1
 		Robin::ActualArgumentList args1;
-		args1.push_back(new Robin::SimpleAddressElement(haddress));
+		args1.push_back(new Robin::SimpleAddressElement(haddress1));
 		args1.push_back(Simple::build(long_val));
 		returned1 = Glong | func1.call(args1);
 		notification("LONG-VAR", long_var);
 		notification("RETURNED", returned1);
+
+		// - call func2
+		Robin::ActualArgumentList args2;
+		args2.push_back(new Robin::SimpleAddressElement(haddress2));
+		func2.call(args2);
+
+		notification("STRING-ARRAY[0]", string_array[0]);
+		notification("STRING-ARRAY[1]", string_array[1]);
+		notification("STRING-ARRAY[2]", string_array[2]);
 	}
 
 	void alternate() { }
 
 	bool verify() { return long_var == long_val &&
-						returned1 == reinterpret_cast<long>(&long_var); }
+						returned1 == reinterpret_cast<long>(&long_var) &&
+						strcmp(string_array[0], TEXT0) == 0 &&
+						strcmp(string_array[1], TEXT1) == 0 &&
+						strcmp(string_array[2], TEXT2) == 0; }
 
 } __t06;
+
+
+
+const char *TestPointerArgument::TEXT0 = "Prostetnic";
+const char *TestPointerArgument::TEXT1 = "Vogon";
+const char *TestPointerArgument::TEXT2 = "Jeltz";
