@@ -28,6 +28,9 @@
 #include <robin/reflection/library.h>
 #include <robin/debug/trace.h>
 
+#include <robin/reflection/address.h>
+#include <robin/reflection/intrinsic_type_arguments.h>
+
 
 namespace Robin {
 
@@ -267,6 +270,54 @@ public:
 		return Py_None;
 	}
 
+	/**
+	 * TEMPORARY create a pointer.
+	 */
+	static PyObject *py_pointer(PyObject *self, PyObject *args)
+	{
+		PyObject *pyobj;
+		Handle<Robin::TypeOfArgument> rtype;
+
+		if (!PyArg_ParseTuple(args, "O:pointer", &pyobj)) 
+			return NULL;
+
+		try {
+			if (PyType_Check(pyobj)) {
+				rtype = fe->detectType((PyTypeObject*)pyobj);
+
+				int *ptr = new int(0);
+				Handle<Robin::Address> haddress(new Robin::Address(rtype, 
+																   ptr));
+				return new Robin::Python::AddressObject(haddress);
+			}
+			else if (Robin::Python::AddressObject_Check(pyobj)) {
+				return new Robin::Python::AddressObject(((Robin::Python::AddressObject*)pyobj)->getUnderlying()->reference());
+			}
+			else {
+				PyErr_SetString(PyExc_TypeError, "expected type or address");
+				return NULL;
+			}
+		}
+		catch (std::exception& e) {
+			PyErr_SetString(PyExc_RuntimeError, (char*)e.what());
+			return NULL;
+		}
+	}
+
+	/**
+	 * TEMPORARY dereference a pointer.
+	 */
+	static PyObject *py_dereference(PyObject *self, PyObject *args)
+	{
+		PyObject *pyobj;
+		long subscript = 0;
+
+		if (!PyArg_ParseTuple(args, "O|i:dereference", &pyobj, &subscript)) 
+			return NULL;
+
+		return (PyObject*)((Robin::Python::AddressObject*)pyobj)->getUnderlying()->dereference(subscript);
+	}
+
 	static PyMethodDef methods[];
 };
 
@@ -302,6 +353,8 @@ PyMethodDef PythonFrontend::Module::methods[] = {
 	  "custom conversions to/from it." },
 	{ "debugOn", &py_debugOn, METH_VARARGS, 
 	  "debugOn()\nTurns on Robin's internal debug flag." },
+	{ "pointer", &py_pointer, METH_VARARGS, "" },
+	{ "dereference", &py_dereference, METH_VARARGS, "" },
 	{ 0 }
 };
 

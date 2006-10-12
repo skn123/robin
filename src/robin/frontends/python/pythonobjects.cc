@@ -19,6 +19,7 @@
 #include <robin/reflection/cfunction.h>
 #include <robin/reflection/class.h>
 #include <robin/reflection/instance.h>
+#include <robin/reflection/address.h>
 #include <robin/reflection/enumeratedtype.h>
 #include <robin/reflection/conversiontable.h>
 #include <robin/reflection/intrinsic_type_arguments.h>
@@ -142,6 +143,51 @@ PyTypeObject ClassTypeObject = {
 #endif
 
 PyTypeObject *ClassTypeObject = 0;
+
+PyTypeObject AddressTypeObject = {
+	PyObject_HEAD_INIT(&PyType_Type)
+    0,
+    "Robin::Python::AddressObject",
+    sizeof(AddressObject),
+    0,
+    AddressObject::__dealloc__,           /*tp_dealloc*/
+    0,                                    /*tp_print*/
+    0,                                    /*tp_getattr*/
+    0,                                    /*tp_setattr*/
+    0,                                    /*tp_compare*/
+    AddressObject::__repr__,              /*tp_repr*/
+    0,                                    /*tp_as_number*/
+    0,                                    /*tp_as_sequence*/
+    0,                                    /*tp_as_mapping*/
+    PyType_Type.tp_hash,                  /*tp_hash */
+	0,                                    /*tp_call*/
+	0,                                    /*tp_str*/
+	0,                                    /*tp_getattro*/
+	0,                                    /*tp_setattro*/
+	0,                                    /*tp_as_buffer*/
+	Py_TPFLAGS_BASETYPE | 
+	Py_TPFLAGS_HAVE_CLASS,                /*tp_flags*/
+	"",                                   /*tp_doc*/
+	0,                                    /*tp_traverse*/
+	0,                                    /*tp_clear*/
+	0,                                    /*tp_richcompare*/
+	0, /* tp_weakoffset */
+	0, /* tp_iter */
+	0, /* tp_iternext */
+	0, /* tp_methods */
+	0, /* tp_members */
+	0, /* tp_getset */
+	&PyBaseObject_Type, /* tp_base */
+	0, /* tp_dict */
+	0, /* tp_descr_get */
+	0, /* tp_descr_set */
+	0, /* tp_dictoffset */
+	0, /* tp_init */ 
+	0, /* tp_alloc */
+	0, /* tp_new */
+	0, 0, 
+	0
+};
 
 PyTypeObject EnumeratedTypeTypeObject = {
 	PyObject_HEAD_INIT(&PyType_Type)
@@ -1153,7 +1199,43 @@ PyObject *InstanceObject::__repr__()
 }
 
 /**
- * ClassObject constructor.
+ * AddressObject constructor.
+ *
+ * @param underlying a typed C pointer represented by an Address object.
+ */
+AddressObject::AddressObject(Handle<Address> underlying)
+	: m_underlying(underlying)
+{
+	PyObject_Init(this, &AddressTypeObject);
+}
+
+AddressObject::~AddressObject() 
+{
+}
+
+PyObject *AddressObject::__repr__(PyObject *self)
+{
+	return ((AddressObject*)self)->__repr__();
+}
+
+PyObject *AddressObject::__repr__() const
+{
+	return PyString_FromString("<address>");
+}
+
+void AddressObject::__dealloc__(PyObject *self)
+{
+	delete ((AddressObject*)self);
+}
+
+Handle<Address> AddressObject::getUnderlying() const
+{
+	return m_underlying;
+}
+
+
+/**
+ * EnumeratedTypeObject constructor.
  */
 EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 	: m_underlying(underlying)
@@ -1577,6 +1659,16 @@ PyObject *ClassObject_GetDict(PyObject *object)
 bool InstanceObject_Check(PyObject *object)
 {
 	return ClassObject_Check(PyObject_Type(object));
+}
+
+/**
+ * Service routine, checks whether a Python object is an AddressObject.
+ *
+ * @param object a Python object to check
+ */
+bool AddressObject_Check(PyObject *object)
+{
+	return (PyObject_Type(object) == (PyObject*)&AddressTypeObject);
 }
 
 /**

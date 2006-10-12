@@ -171,6 +171,13 @@ class LanguageTest(TestCase):
 		for q in qubits: uc.append(*q)
 		self.assertEquals(uc.tensor(), tensor)
 
+	def testPointerPrimitives(self):
+		import robin
+		a = robin.pointer(language.Pointers.InnerStruct)
+		language.Pointers.pointerToPointer(a)
+		sst = robin.dereference(a)
+		self.assertEquals(sst.member, 97)
+
 
 class ThreadingTest(TestCase):
 

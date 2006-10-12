@@ -78,8 +78,9 @@ public:
 	//@{
 	virtual 
 	Handle<TypeOfArgument> detectType(scripting_element element) const;
-
 	virtual Insight detectInsight(scripting_element element) const;
+
+	Handle<TypeOfArgument> detectType(struct _typeobject *pytype) const;
 	//@}
 
 	/**

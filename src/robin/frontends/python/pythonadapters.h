@@ -80,6 +80,12 @@ public:
 	static PyObject *from(double val){ return PyFloat_FromDouble(val); }
 };	
 
+class PyCObjectTraits {
+public:
+	static void *as(PyObject *pyobj) { return PyCObject_AsVoidPtr(pyobj); }
+	static PyObject *from(void *val) { return PyCObject_FromVoidPtr(val, 0); }
+};
+
 //@}
 
 
@@ -209,6 +215,24 @@ public:
 private:
 	ClassObject *m_class;
 	bool m_owned;
+};
+
+
+/**
+ * Converts between a C++ pointer and a Robin::Python::AddressObject.
+ * @nosubgrouping
+ */
+class AddressAdapter : public Adapter
+{
+public:
+	AddressAdapter(Handle<TypeOfArgument> domain);
+	virtual ~AddressAdapter() { }
+
+	virtual void put(ArgumentsBuffer& argsbuf, scripting_element value);
+	virtual scripting_element get(basic_block data);
+
+private:
+	Handle<TypeOfArgument> m_domain;
 };
 
 

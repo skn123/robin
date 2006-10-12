@@ -112,7 +112,7 @@ language-test@%:
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
 	        Conversions Exceptions Interface Abstract NonAbstract    \
-	        Primitives UsingStrings UsingStringConversions           \
+	        Primitives Pointers UsingStrings UsingStringConversions  \
 	        UsingVectors UsingPairs UsingComplex
 	$(CXX) -shared $(extreme_python)/liblanguage_robin.cc            \
 	        -o $(extreme_python)/liblanguage.so

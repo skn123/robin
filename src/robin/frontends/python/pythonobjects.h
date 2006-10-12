@@ -31,6 +31,7 @@ namespace Robin {
 
 class Class;
 class Instance;
+class Address;
 class EnumeratedConstant;
 
 namespace Python {
@@ -188,6 +189,33 @@ public:
 	PyObject        *m_ob_weak;
 };
 
+
+/**
+ * A Python object representing a C pointer.
+ */
+class AddressObject : public PyObject
+{
+public:
+	AddressObject(Handle<Address> underlying);
+	~AddressObject();
+
+	PyObject *__repr__() const;
+
+	static PyObject *__repr__(PyObject *self);
+	static void      __dealloc__(PyObject *self);
+
+	/**
+	 * @name Access
+	 */
+	//@{
+	Handle<Address> getUnderlying() const;
+	//@}
+
+private:
+	Handle<Address> m_underlying;
+};
+
+
 /**
  */
 class EnumeratedTypeObject : public PyTypeObject
@@ -282,6 +310,7 @@ bool FunctionObject_Check(PyObject *object);
 bool ClassObject_Check(PyObject *object);
 PyObject *ClassObject_GetDict(PyObject *object);
 bool InstanceObject_Check(PyObject *object);
+bool AddressObject_Check(PyObject *object);
 bool EnumeratedConstantObject_Check(PyObject *object);
 
 // Pascal string services
@@ -293,6 +322,7 @@ bool PyPascalString_Check(PyObject *object);
 extern PyTypeObject FunctionTypeObject;
 extern PyTypeObject *ClassTypeObject;
 extern PyTypeObject *HybridTypeObject;
+extern PyTypeObject AddressTypeObject;
 extern PyTypeObject EnumeratedTypeTypeObject;
 
 extern void initObjects();
