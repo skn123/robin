@@ -27,6 +27,11 @@ RegData proto_findHotel[] = {
   { 0 }
 };
 
+RegData proto_listex[] = {
+  { "out", "***char", 0 },
+  { 0 }
+};
+
 RegData proto_Hotel__new1[] = {
   { "name", "&string", 0 },
   { "location", "&Location", 0 },
@@ -129,6 +134,7 @@ RegData entry[] = {
   { "Room", "class", interface_Room },
   { "buy", "void", proto_buy, F global_buy },
   { "list", "void", 0, F global_list },
+  { "listex", "void", proto_listex, F global_listex },
   { "findHotel", "&Hotel", proto_findHotel, F global_findHotel },
   { "flush", "void", 0, F global_flush },
   { 0, 0, 0 }

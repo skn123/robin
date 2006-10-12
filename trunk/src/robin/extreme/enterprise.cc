@@ -212,6 +212,18 @@ void global_list()
 	}
 }
 
+void global_listex(char ***out)
+{
+	*out = new char *[corporation.size()];
+
+	int index = 0;
+
+	for (std::vector<Hotel>::iterator hotel_it = corporation.begin();
+		 hotel_it != corporation.end(); ++hotel_it) {
+		(*out)[index++] = strdup(hotel_it->m_name.c_str());
+	}
+}
+
 class NoSuchHotelException : public std::exception 
 {
 public:
