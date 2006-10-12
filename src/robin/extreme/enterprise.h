@@ -85,6 +85,7 @@ void Location_print(Location *self);
 
 void global_buy(Hotel& hotel);
 void global_list();
+void global_listex(char ***out);
 Hotel& global_findHotel(std::string name);
 void global_flush();
 

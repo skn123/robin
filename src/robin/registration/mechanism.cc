@@ -324,7 +324,7 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 		if (!rtype) {
 			// Reference or pointer?
 			if (type[0] == '*') { modif = PTRARG; redir_count++; }
-			else if (type[0] == '&') modif = REFARG;
+			else if (type[0] == '&') { modif = REFARG; redir_count++; }
 			else if (type[0] == '>') modif = OUTARG;
 			else break;
 	
@@ -336,11 +336,13 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 		// Class reference or pointer
 		Handle<Class> klass = touchClass(type, m_ns_common);
 
+		if (redir_count > 1 && modif == PTRARG) modif = REFARG;
+
 		switch (modif) {
 		case ARG:    throw LookupFailureException(type);
-		case PTRARG: rtype = klass->getPtrArg(); --redir_count;    break;
-		case REFARG: rtype = klass->getRefArg();                   break;
-		case OUTARG: rtype = klass->getOutArg();                   break;
+		case PTRARG: rtype = klass->getPtrArg(); --redir_count;      break;
+		case REFARG: rtype = klass->getRefArg(); --redir_count;      break;
+		case OUTARG: rtype = klass->getOutArg();                     break;
 		default:
 			assert(false);
 		};
