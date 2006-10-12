@@ -21,6 +21,7 @@
 // Robin includes
 #include <robin/reflection/class.h>
 #include <robin/reflection/instance.h>
+#include <robin/reflection/address.h>
 #include <robin/reflection/enumeratedtype.h>
 #include <robin/reflection/pascalstring.h>
 
@@ -98,6 +99,28 @@ scripting_element InstanceAdapter::get(basic_block data)
 		return (scripting_element)Py_None;
 	}
 }
+
+
+/**
+ * AddressAdapter constructor.
+ *
+ * @param domain the type of the pointed datum (i.e. int).
+ */
+AddressAdapter::AddressAdapter(Handle<TypeOfArgument> domain)
+	: m_domain(domain)
+{ 
+}
+
+void AddressAdapter::put(ArgumentsBuffer& argsbuf, scripting_element value)
+{
+	AddressObject *obj = (AddressObject*)value;
+	argsbuf.push(obj->getUnderlying()->asPointer());
+}
+
+scripting_element AddressAdapter::get(basic_block data)
+{
+}
+
 
 /**
  * EnumeratedAdapter constructor.

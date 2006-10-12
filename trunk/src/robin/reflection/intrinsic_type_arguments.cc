@@ -58,8 +58,8 @@ Handle<TypeOfArgument> ArgumentDouble
 Handle<TypeOfArgument> ArgumentBoolean
                                    (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
 						            TYPE_INTRINSIC_BOOL));
-Handle<TypeOfArgument> ArgumentVoid(new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_BOOL));
+Handle<TypeOfArgument> ArgumentVoid(new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
+						            TYPE_EXTENDED_VOID));
 
 Handle<TypeOfArgument> ArgumentCString
                                    (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,

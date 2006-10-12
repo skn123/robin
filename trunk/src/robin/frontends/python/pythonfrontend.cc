@@ -23,6 +23,7 @@
 #include <robin/reflection/namespace.h>
 #include <robin/reflection/library.h>
 #include <robin/reflection/class.h>
+#include <robin/reflection/address.h>
 #include <robin/reflection/enumeratedtype.h>
 #include <robin/reflection/conversiontable.h>
 #include <robin/reflection/fundamental_conversions.h>
@@ -364,6 +365,10 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 			 || PyCObject_Check(object)) {
 		return ArgumentScriptingElement;
 	}
+	else if (obtype == (PyObject*)&AddressTypeObject) {
+		Handle<Address> address = ((AddressObject*)object)->getUnderlying();
+		return address->getPointerType();
+	}
 	else
 		throw UnsupportedInterfaceException();
 }
@@ -408,12 +413,43 @@ Insight PythonFrontend::detectInsight(scripting_element element) const
 }
 
 /**
+ * Statically detect a type represented by a Python PyTypeObject.
+ */
+Handle<TypeOfArgument> PythonFrontend::detectType(struct _typeobject *pytype)
+	const
+{
+	if (pytype == &PyInt_Type)
+		return ArgumentInt;
+	else if (pytype == &PyString_Type)
+		return ArgumentCString;
+	else if (ClassObject_Check((PyObject*)pytype)) {
+		return ((ClassObject*)pytype)->getUnderlying()->getRefArg();
+	}
+	else
+		throw UnsupportedInterfaceException();
+}
+
+
+/**
  * Creates a Python adapter for a specific type.
  */
 Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 	const
 {
 	Type basetype = type.basetype();
+
+	if (type.isPointer()) {
+		Handle<TypeOfArgument> pointedType = 
+			TypeOfArgument::handleMap.acquire(type.pointed());
+		if (pointedType)
+			return Handle<Adapter>(new AddressAdapter(pointedType));
+		else if (basetype.category == TYPE_CATEGORY_EXTENDED
+				 && basetype.spec == TYPE_EXTENDED_VOID)
+			return Handle<Adapter>
+				(new SmallPrimitivePythonAdapter<void*, PyCObjectTraits>);
+		else
+			throw UnsupportedInterfaceException();
+	}
 	if (basetype.category == TYPE_CATEGORY_INTRINSIC) {
 		if (basetype.spec == TYPE_INTRINSIC_INT)
 			return Handle<Adapter>

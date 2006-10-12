@@ -1,4 +1,4 @@
-// -*- c++ -*-
+// -*- mode: c++; c-basic-offset: 4; tab-width: 4 -*-
 
 #ifndef ROBIN_TEST_PYTHON_LANGUAGE_FEATURES_H
 #define ROBIN_TEST_PYTHON_LANGUAGE_FEATURES_H
@@ -257,6 +257,23 @@ private:
 	float m_float;
 	double m_double;
 	std::vector<float> m_floats;
+};
+
+// ----------------------------------------------------------------------
+
+class Pointers
+{
+public:
+	struct InnerStruct
+	{
+		int member;
+	};
+
+	static void pointerToPointer(InnerStruct **ppstruct)
+	{
+		*ppstruct = new InnerStruct;
+		(*ppstruct)->member = 97;
+	}
 };
 
 // ----------------------------------------------------------------------
