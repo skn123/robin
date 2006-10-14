@@ -160,7 +160,15 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 			}
 		}
 		else if (pdata->type[0] == '=') {               /* type = alias */
-			container.alias(pdata->type + 1, pdata->name);
+			std::string actual = pdata->type + 1, aliased = pdata->name;
+			// - a special case is a "typedef struct A A;" declaration
+			if (actual == aliased) {
+				Handle<Class> self_struct = touchClass(actual, m_ns_common);
+				container.declare(actual, self_struct);
+			}
+			else {
+				container.alias(pdata->type + 1, pdata->name);
+			}
 		}
 		else /* assume it's a function */ {             /* type = function */
 			symbol sym = (symbol)pdata->sym;
@@ -349,9 +357,11 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 	}
 
 	while (redir_count-- > 0) {
-		rtype = rtype->pointer();
 		FrontendsFramework::fillAdapter(rtype);
+		rtype = rtype->pointer();
 	}
+
+	FrontendsFramework::fillAdapter(rtype);
 
 	return rtype;
 }
@@ -414,17 +424,17 @@ void RegistrationMechanism::admitUpCastConversion(Handle<Class> derived,
  * one is declared in the container namespace, or creates an empty
  * new class if none is.
  */
-Handle<Class> RegistrationMechanism::touchClass(const char *type,
+Handle<Class> RegistrationMechanism::touchClass(const std::string& name,
 												Namespace& container)
 {
 	Handle<Class> klass;
 
 	try {
-		klass = container.lookupClass(type);
+		klass = container.lookupClass(name);
 	}
 	catch (LookupFailureException& e) {
 		// Create a new class with that name
-		klass = Handle<Class>(new Class(type));
+		klass = Handle<Class>(new Class(name));
 		klass->activate(klass);
 		FrontendsFramework::fillAdapters(klass);
 		container.declare(e.look, klass);
@@ -442,17 +452,18 @@ Handle<Class> RegistrationMechanism::touchClass(const char *type,
  * specified, if one is declared in the container namespace, or creates
  * an empty new <classref>EnumeratedType</classref> if none is.
  */
-Handle<EnumeratedType> RegistrationMechanism::touchEnum(const char *type,
+Handle<EnumeratedType> RegistrationMechanism::touchEnum(const std::string&
+														name,
 														Namespace& container)
 {
 	Handle<EnumeratedType> kenum;
 
 	try {
-		kenum = container.lookupEnum(type);
+		kenum = container.lookupEnum(name);
 	}
 	catch (LookupFailureException& e) {
 		// Create a new class with that name
-		kenum = Handle<EnumeratedType>(new EnumeratedType(type));
+		kenum = Handle<EnumeratedType>(new EnumeratedType(name));
 		kenum->activate(kenum);
 		FrontendsFramework::fillAdapter(kenum->getArg());
 		container.declare(e.look, kenum);

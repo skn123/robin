@@ -90,11 +90,7 @@ void Namespace::declare(std::string name, Handle<Namespace> element)
  */
 void Namespace::alias(std::string actual, std::string aliased)
 {
-	// A special case is a "typedef struct A A;" declaration
-	if (actual == aliased)
-		declare(actual, Handle<Class>(new Class(actual)));
-	else
-		imp->m_aliases[aliased] = actual;
+	imp->m_aliases[aliased] = actual;
 }
 
 /**
