@@ -824,8 +824,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		// Un-typedef
 		Entity base = type.getBaseType();
-		while (base instanceof Alias && !needsEncapsulation((Alias)base)) {
+		Entity prev = null;
+		while (base instanceof Alias && base != prev && !needsEncapsulation((Alias)base)) {
 			type = ((Alias)base).getAliasedType();
+			prev = base; // - avoid singular loops "typedef struct A A;"
 			base = type.getBaseType();
 		}
 		// express basename

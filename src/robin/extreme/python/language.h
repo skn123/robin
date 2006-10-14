@@ -75,6 +75,8 @@ private:
 	PrivateStruct pvs;
 };
 
+typedef struct Structs Structs;
+
 class Aliases
 {
 };
