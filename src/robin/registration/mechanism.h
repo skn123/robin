@@ -87,8 +87,10 @@ protected:
 									Handle<Class> klass, bool promotion);
 	void admitUpCastConversion(Handle<Class> derived, Handle<Class> base,
 							   void *transformsym);
-	Handle<Class> touchClass(const char *name, Namespace &container);
-	Handle<EnumeratedType> touchEnum(const char *name, Namespace &container);
+	Handle<Class>          touchClass(const std::string& name,
+									  Namespace &container);
+	Handle<EnumeratedType> touchEnum (const std::string& name,
+									  Namespace &container);
 	Handle<TypeOfArgument> interpretType(const char *type, Namespace&);
 
 	Robin::Namespace m_ns_common;

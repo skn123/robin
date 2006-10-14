@@ -1597,7 +1597,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (type.isReference() && !Filters.isSmallPrimitive(type.getBaseType()))
 			m_output.write(refOperator);
 		else if (type.getPointerDegree() > 0)
-			m_output.write(ptrOperator);
+			m_output.write(type.getBaseType() instanceof Primitive 
+					? '*' : ptrOperator);
 		else if (Filters.needsExtraReferencing(type)
 			&& !(type.getBaseType() instanceof Primitive))
 			m_output.write(extraOperator);
