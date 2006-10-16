@@ -39,6 +39,7 @@ public:
 private:
 	int x_factor;
 };
+bool operator^(const Times& first, const Times& second);
 
 
 inline Times operator%(const Times& t1, int value) { return t1; }
