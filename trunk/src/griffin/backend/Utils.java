@@ -486,6 +486,8 @@ public class Utils {
 	{
 		Scope scope = entity.getScope();
 		boolean anyConstructor = false;
+	
+		if (entity.getDeclaration() == null) return false;
 		
 		for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
 			ContainedConnection connection = (ContainedConnection)ri.next();
@@ -1211,7 +1213,7 @@ public class Utils {
 	 * @param entity entity to search in
 	 * @param componentname name of component to look for
 	 * @return and Entity by the given name. If no such entity is found, 
-	 * <b>null</b> is returmed.
+	 * <b>null</b> is returned.
 	 */
 	public static Entity lookup(Entity entity, String componentname)
 	{
@@ -1219,7 +1221,9 @@ public class Utils {
 			return lookup(((Aggregate)entity).getScope(), componentname);
 		}
 		else if (entity instanceof Alias) {
-			return lookup(naiveUnalias(entity), componentname);
+			Entity unalias = naiveUnalias(entity);
+			if (unalias == entity) return null;
+			return lookup(unalias, componentname);
 		}
 		else {
 			return null;

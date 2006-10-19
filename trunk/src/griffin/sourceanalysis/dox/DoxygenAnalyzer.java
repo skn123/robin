@@ -627,10 +627,11 @@ public class DoxygenAnalyzer {
 		logger.log(Level.INFO, "translating typedef " + typedef.getName());
 		// Get the real type
 		Node typenode = XML.subNode(xmlnode, Tags.TYPE);
+		Node arrnode = XML.subNode(xmlnode, Tags.ARGSSTRING);
 		if (typenode == null)
 			throw new XMLFormatException("typedef " + typedef.getName() +
 				" has no actual type.", xmlnode);
-		typedef.setAliasedType(parseType(typenode));
+		typedef.setAliasedType(parseType(typenode, arrnode));
 		
 		m_aliasesForRepair.add(typedef);
 		
