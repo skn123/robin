@@ -119,6 +119,11 @@ void AddressAdapter::put(ArgumentsBuffer& argsbuf, scripting_element value)
 
 scripting_element AddressAdapter::get(basic_block data)
 {
+	Handle<Address> address(new Address(m_domain, 
+										reinterpret_cast<void*>(data)));
+	PyObject *obj = new AddressObject(address);
+									  
+	return (scripting_element)obj;
 }
 
 
