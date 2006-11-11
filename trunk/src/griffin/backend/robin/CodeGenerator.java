@@ -115,18 +115,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 */
 	public void investInterceptor(String classname)
 	{
-		investInterceptor(m_program.getGlobalNamespace().getScope(), classname);
-	}
-
-	/**
-	 * Finds the given class within the given scope, listing it for
-	 * interceptor creation later.
-	 *
-	 * @param scope the scope in which to search for the class
-	 * @param classname the name of the class to create an interceptor for
-	 */
-	public void investInterceptor(Scope scope, String classname)
-	{
 		// Go through all of the Subjects, searching for the given name
 		for (Iterator subjectiter = m_subjects.iterator(); subjectiter.hasNext(); ) {
 			Aggregate agg = (Aggregate)subjectiter.next();
