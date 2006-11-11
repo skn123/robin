@@ -138,6 +138,20 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 	}
 
+    /**
+     * Goes over all the classes, listing it for interceptor creation later.
+     */
+    public void autoInvestInterceptor() {
+		// Go through all of the Subjects, searching for the given name
+		for (Iterator subjectiter = m_subjects.iterator(); subjectiter.hasNext(); ) {
+			Aggregate agg = (Aggregate)subjectiter.next();
+            try { if (!backend.Utils.isAbstract(agg)) continue; } catch (MissingInformationException e) {}
+            if (agg.isTemplated() && m_separateClassTemplates) continue;
+
+            m_interceptors.add( agg );
+		}
+    }
+
 	/**
 	 * Collects all the constants of the program.
 	 */
