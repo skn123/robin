@@ -93,10 +93,14 @@ public class Launcher extends backend.Launcher {
 					intercepted = true;
 				}
 				codegen.collect(classnames[i]);
-				if (interceptors || intercepted)
+                if (intercepted) {
 					codegen.investInterceptor(classnames[i]);
+                }
 			}
 		}
+        if (interceptors) {
+            codegen.autoInvestInterceptor();
+        }
 		
 		codegen.investImplicitInstantiations();
 		codegen.grabTypedefedClasses();
