@@ -107,8 +107,8 @@ SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
 . = .
 
 language-test@%:
-	$($*)/griffin $G -I -in $(extreme_python)/language.h             \
-	        -out $(extreme_python)/liblanguage_robin.cc              \
+	$($*)/griffin $G -I --in $(extreme_python)/language.h            \
+	        --out $(extreme_python)/liblanguage_robin.cc             \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
 	        Conversions Exceptions Interface Abstract NonAbstract    \
@@ -118,30 +118,30 @@ language-test@%:
 	        -o $(extreme_python)/liblanguage.so
 
 protocols-test@%:
-	$($*)/griffin -in $(extreme_python)/protocols.h                  \
-	        -out $(extreme_python)/libprotocols_robin.cc             \
+	$($*)/griffin --in $(extreme_python)/protocols.h                 \
+	        --out $(extreme_python)/libprotocols_robin.cc            \
 	        Times
 	$(CXX) -shared $(extreme_python)/libprotocols_robin.cc           \
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
 inheritance-test@%:
-	$($*)/griffin -in $(extreme_python)/inheritance.h                \
-	        -out $(extreme_python)/libinheritance_robin.cc           \
+	$($*)/griffin --in $(extreme_python)/inheritance.h               \
+	        --out $(extreme_python)/libinheritance_robin.cc          \
 	        --interceptors Functor mapper
 	$(CXX) -shared $(extreme_python)/libinheritance_robin.cc         \
 		-o $(extreme_python)/libinheritance.so
 
 hints-test@%:
-	$($*)/griffin -in $(extreme_python)/hinted.h -I \
-	        -out $(extreme_python)/libhints_robin.cc                 \
+	$($*)/griffin --in $(extreme_python)/hinted.h -I                 \
+	        --out $(extreme_python)/libhints_robin.cc                \
 	        --hints=$(extreme_python)/hint.py Clue
 	$(CXX) -shared $(extreme_python)/libhints_robin.cc         \
 		-o $(extreme_python)/libhints.so
 
 autocollect-test@%:
-	$($*)/griffin -in $(extreme_python)/autocollect.h          \
-	        -out $(extreme_python)/libautocollect_robin.cc
+	$($*)/griffin --in $(extreme_python)/autocollect.h               \
+	        --out $(extreme_python)/libautocollect_robin.cc
 	$(CXX) -shared $(extreme_python)/libautocollect_robin.cc   \
 		-o $(extreme_python)/libautocollect.so
 
