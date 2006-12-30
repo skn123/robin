@@ -89,6 +89,12 @@ class Griffin:
 			"-I", action='store_true', default=False,
 			help="process #included header files recursively")
 		parser.add_argument(
+			"--interceptors", action='store_true', default=False,
+			help="also generate interceptor classes for wrapped interfaces")
+		parser.add_argument(
+			"--hints", type=str, metavar="jython-hints",
+			help="specify a Jython file containing code generation hints")
+		parser.add_argument(
 			"-v", action='store_true', default=False,
 			help="be verbose")
 		parser.add_argument(
@@ -102,7 +108,7 @@ class Griffin:
 		if not args: args = ["-h"]
 
 		values = parser.parse_args(args)
-		OPTS = ["I", "v", "debug"]
+		OPTS = ["I", "v", "debug", "interceptors", "hints"]
 
 		arg_in = values.__dict__['in']
 		arg_out = values.out
@@ -116,6 +122,15 @@ class Griffin:
 		if values.eclipse:
 			self._opt_eclipse()
 		return arg_in, [arg_out], arg_opts, arg_classes
+
+	def jarg(self, name, value):
+		"""
+		Encodes an argument for the Java application.
+		"""
+		if isinstance(value, str):
+			return "--%s=%s" % (name, value)
+		else:
+			return "--%s" % name
 
 	def process(self, args):
 		"""Runs Griffin front-end and back-end using the given arguments."""
@@ -135,12 +150,12 @@ class Griffin:
 		else:
 			input_type = "none"
 
-		self.verbose = "-v" in arg_opts
-		wizard = "-w" in arg_opts or "--wizard" in arg_opts
+		self.verbose = "v" in arg_opts
+		wizard = "w" in arg_opts or "wizard" in arg_opts
 
 		# Set input source
 		if input_type == "sources":
-			if "-I" in arg_opts:
+			if "I" in arg_opts:
 				arg_in = Preprocessor().extractAllIncluded(arg_in)
 			self.setSources(arg_in)
 		elif input_type == "xml" or wizard:
@@ -152,9 +167,11 @@ class Griffin:
 			print "griffin: No input specified. Quit."
 			raise SystemExit
 
-		arg_jopts = [x for x in arg_opts.keys() if x.startswith("--")]
+		JOPTS = ["interceptors", "hints"]
+		arg_jopts = [self.jarg(x,y) for (x,y) in arg_opts.items()
+					 if x in JOPTS]
 
-		if "-debug" in arg_opts:
+		if "debug" in arg_opts:
 			self.javaflags = "-Xrunjdwp:transport=dt_socket,address=1234,server=y,suspend=y"
 
 		if wizard:
