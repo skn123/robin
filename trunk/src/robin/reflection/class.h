@@ -88,7 +88,7 @@ public:
     //@{
     void addConstructor(Handle<CFunction> ctorimp);
     void addInstanceMethod(std::string methodname, 
-			   Handle<CFunction> methodimp);
+			   Handle<CFunction> methodimp, bool allow_edge=true);
 	void setDestructor(Handle<CFunction> dtorimp);
     void inherit(Handle<Class> baseclass);
 

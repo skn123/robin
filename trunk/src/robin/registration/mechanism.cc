@@ -190,7 +190,10 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 				admitArguments(pdata->prototype, cfun, container);
 				// add function to namespace or class
 				if (klass) {
-					klass->addInstanceMethod(pdata->name, cfun);
+					if (pdata->name[0] == '!')
+						klass->addInstanceMethod(pdata->name+1, cfun, false);
+					else
+						klass->addInstanceMethod(pdata->name, cfun);
 				}
 				else {
 					OverloadedSet *ols;

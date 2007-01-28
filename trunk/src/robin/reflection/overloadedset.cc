@@ -443,6 +443,7 @@ void applyEdgeConversions(Handle<TypeOfArgument> type,
  * <methodref>addAlternative()</methodref>.
  */
 OverloadedSet::OverloadedSet()
+	: m_allow_edge(true)
 {
 }
 
@@ -476,6 +477,14 @@ void OverloadedSet::addAlternatives(const OverloadedSet& more)
 			  std::back_inserter<altvec>(m_alternatives));
 }
 
+/**
+ * Determines whether edge conversions will be applied to the return 
+ * value of the function before passing it on to the interpreter.
+ */
+void OverloadedSet::setAllowEdgeConversions(bool allow)
+{
+	m_allow_edge = allow;
+}
 
 
 /**
@@ -618,7 +627,8 @@ scripting_element OverloadedSet::call(const ActualArgumentList& args) const
 	if (match) {
 		// Ahh! At last - call is possible!
 		scripting_element result = match->call(converted_args);
-		applyEdgeConversions(match->returnType(), result);
+		if (m_allow_edge)
+			applyEdgeConversions(match->returnType(), result);
 		gc.cleanUp();
 		return result;
 	}
