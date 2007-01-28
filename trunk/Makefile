@@ -7,12 +7,12 @@ minor = 2
 
 prefix = /usr/local
 exec_prefix = /usr/local
-site_packages = /usr/local/lib/python2.4/site-packages
+site-packages = /usr/local/lib/python2.4/site-packages
 python = python
 jython = jython
 -include config.mak
 
-pydir = $(site_packages)/robin
+pydir = $(site-packages)/robin
 libdir = $(exec_prefix)/lib
 scriptdir = $(prefix)/bin
 jardir = $(libdir)/griffin
@@ -44,6 +44,7 @@ INSTALLABLE_FILES = \
 	$(pydir)/html/__init__.py $(pydir)/html/textformat.py \
 	$(pydir)/robinlib/__init__.py $(pydir)/robinlib/platform.py \
 	$(pydir)/robinlib/config.py \
+	$(pydir)/robinlib/argparse.py \
 	$(jardir)/stl.st.xml $(jardir)/stl.tag 
 
 INSTALLABLE_DIRS = $(jardir)/dox-xml $(jardir)/premises
@@ -72,8 +73,7 @@ $(libdir)/$(vpath)%$(soext): %$(soext)
 $(scriptdir)/griffin: griffin
 	$(install) $< $@
 	$(sed) -i -e 's@here =.*@here = os.path.expanduser("$(jardir)")@' $@
-	# using 'wildcard' to expand ~ if present
-	$(sed) -i -e 's@#!/usr/bin/env python@#!$(wildcard $(python))@' $@
+	$(sed) -i -e 's@#!/usr/bin/env python@#!$(python-exe)@' $@
 
 $(jardir)/Griffin.jar: Griffin.jar
 	$(install) $< $@
@@ -179,7 +179,7 @@ memcheck:
 # Distribution
 ###
 manifest:
-	$(MAKE) -n install prefix=/demo exec_prefix=/demo site_packages=/demo \
+	$(MAKE) -n install prefix=/demo exec_prefix=/demo site-packages=/demo \
 	  install=install cp-r=install \
 	   | grep '^install' | awk '{ print $$2; }' \
 	   | xargs --replace find {} -type f -o -name .svn -prune -false \
