@@ -4,11 +4,11 @@ import os, sys
 
 class Configure:
 
-	def _parse_args(self):
+	def _parse_args(self):		
 		import optparse
-		formatter = optparse.TitledHelpFormatter(max_help_position = 30)
-		usage = "Usage"
-		p = optparse.OptionParser(usage = usage, formatter = formatter)
+		formatter = optparse.TitledHelpFormatter(max_help_position=30)
+		usage = "configure [options]"
+		p = optparse.OptionParser(usage=usage, formatter=formatter)
 		p.add_option("-p", "--prefix", dest = "prefix", default = "/usr/local",
 					 help = "Installation prefix directory")
 		p.add_option("-e", "--exec_prefix", dest = "exec_prefix",
@@ -65,22 +65,33 @@ class Configure:
 
 	def configure(self):
 		options, remainder = self._parse_args()
-		print "Creating config.mak and config.py"
+		print "configure: Creating config.mak and config.py"
 		self.config_mak = open("config.mak", "w")
 		self.config_py = open("src/robin/modules/robinlib/config.py", "w")
 		self._set_var("prefix", options.prefix)
 		self._set_var("exec_prefix", options.exec_prefix)
 		self._set_var("python", options.python)
 		self._set_var("jython", options.jython)
+		if options.python.startswith("/"):
+			options.python_exe = options.python
+		elif options.python.startswith("~"):
+			options.python_exe = os.path.expanduser(options.python)
+		else:
+			options.python_exe = "/usr/bin/env " + options.python
+		self._set_var("python-exe", options.python_exe)
 		if options.py_prefix is None:
 			if options.python == "python":
 				options.py_prefix = self._site_packages_dir()
 			else:
 				import commands
-				options.py_prefix = commands.getoutput(options.python + \
+				cmdline = options.python + \
 				  """ -c 'import imp; print imp.load_source("configure", """ \
-				  """ "configure").Configure()._site_packages_dir()'""")
-		self._set_var("site_packages", options.py_prefix)
+				  """ "configure").Configure()._site_packages_dir()'"""
+				rc, options.py_prefix = commands.getstatusoutput(cmdline)
+				if rc != 0:
+					print "configure: warning: failed to execute Python "\
+						  "interpreter, command line was: ", cmdline
+		self._set_var("site-packages", options.py_prefix)
 		# C++ and Java
 		if options.cxx != "":
 				self._set_var("cxx", options.cxx)
