@@ -291,7 +291,8 @@ void Class::addConstructor(Handle<CFunction> ctorimp)
  * them into one <classref>OverloadedSet</classref> object.
  */
 void Class::addInstanceMethod(std::string methodname, 
-							  Handle<CFunction> methodimp)
+							  Handle<CFunction> methodimp,
+							  bool allow_edge)
 {
 	Handle<StandardMethod> existing = lookupInstanceMethod(methodname);
 
@@ -302,6 +303,7 @@ void Class::addInstanceMethod(std::string methodname,
 	else {
 		// Add new name to method list
 		Handle<StandardMethod> newset(new StandardMethod);
+		newset->setAllowEdgeConversions(allow_edge);
 		newset->addAlternative(methodimp);
 		m_instanceMethods[methodname] = newset;
 	}

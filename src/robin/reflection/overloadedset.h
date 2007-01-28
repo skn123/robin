@@ -58,7 +58,7 @@ public:
 	//@{
 	void addAlternative(Handle<CFunction> alt);
 	void addAlternatives(const OverloadedSet& more);
-
+	void setAllowEdgeConversions(bool allow);
 	//@}
 
 	/**
@@ -94,6 +94,7 @@ public:
 private:
 	typedef std::vector<Handle<CFunction> > altvec;
 	altvec m_alternatives;
+	bool m_allow_edge;
 
 	class Cache;
 	class CacheSingleton;
