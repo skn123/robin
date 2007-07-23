@@ -20,6 +20,7 @@
 #include "instance.h"
 #include "typeofargument.h"
 #include "memorymanager.h"
+#include "../frontends/framework.h"
 
 
 namespace Robin {
@@ -121,7 +122,10 @@ scripting_element UpCastConversion::apply(scripting_element value) const
 	// Call this function to produce converted element
 	ActualArgumentList args;
 	args.push_back(value);
-	return func.call(args);
+	scripting_element upcasted = func.call(args);
+    // Bond the upcasted to value to avoid double free
+    FrontendsFramework::activeFrontend()->bond(value, upcasted);
+    return upcasted;
 }
 
 } // end of namespace Robin

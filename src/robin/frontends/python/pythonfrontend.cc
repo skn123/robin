@@ -26,6 +26,7 @@
 #include <robin/reflection/address.h>
 #include <robin/reflection/enumeratedtype.h>
 #include <robin/reflection/conversiontable.h>
+#include <robin/reflection/instance.h>
 #include <robin/reflection/fundamental_conversions.h>
 
 // Python Frontend includes
@@ -822,6 +823,20 @@ void PythonFrontend::release(scripting_element element)
 {
 	PyObject *object = reinterpret_cast<PyObject*>(element);
 	Py_XDECREF(object);
+}
+
+void PythonFrontend::bond(scripting_element master, scripting_element slave)
+{
+    if (!InstanceObject_Check((PyObject*)master) || !InstanceObject_Check((PyObject*)slave)) {
+        return;
+    }
+
+    InstanceObject *islave  = reinterpret_cast<InstanceObject*>(slave);
+    InstanceObject *imaster = reinterpret_cast<InstanceObject*>(master);
+
+    // XXX: Should imaster's bondage be assigned to null
+    // not doing it could potentially lead to double-frees
+    islave->getUnderlying()->bond(imaster->getUnderlying());
 }
 
 /**

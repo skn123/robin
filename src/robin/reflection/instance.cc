@@ -49,7 +49,8 @@ Instance::Instance(Handle<Class> classtype, void *cppinstance,
  */
 Instance::~Instance()
 {
-	if (m_autodestruct) destroy();
+    // if we are autodestructing, and we do not have a bonded instance - destroy
+	if (m_autodestruct && !m_bond) destroy();
 }
 
 /**
@@ -144,6 +145,9 @@ scripting_element Instance::scriptify(Borrower)
 void Instance::own()
 {
 	m_autodestruct = true;
+    if (m_bond) {
+        m_bond->own();
+    }
 }
 
 /**
@@ -153,6 +157,10 @@ void Instance::own()
 void Instance::disown()
 {
 	m_autodestruct = false;
+
+    if (m_bond) {
+        m_bond->disown();
+    }
 }
 
 /**
@@ -162,6 +170,11 @@ void Instance::disown()
 void Instance::destroy()
 {
 	m_class->destroyInstance(*this);
+}
+
+void Instance::bond(Handle<Instance> james)
+{
+    m_bond = james;
 }
 
 /**

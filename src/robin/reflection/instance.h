@@ -90,13 +90,15 @@ public:
     void own();
     void disown();
     void destroy();
+    void bond(Handle<Instance> james);
     //@}
 
 private:
-    void *m_cppinstance;   // the instance in C++
-    Handle<Class> m_class; // the class of which this is an instance
-    bool m_autodestruct;   // should the instance destroy the C++ instance
-                           // when deleted
+    void *m_cppinstance;      // the instance in C++
+    Handle<Class> m_class;    // the class of which this is an instance
+    bool m_autodestruct;      // should the instance destroy the C++ instance
+                              // when deleted
+    Handle<Instance> m_bond;  // the bonding instance that is alive
 };
 
 
