@@ -601,6 +601,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             
             // Skip when there are no virtual methods
             if (Utils.virtualMethods(subject, m_instanceMap).isEmpty()) continue;
+
+            // Skip when there are only private constructors
+            if (!Filters.isClassExtendible(subject)) continue;
         
             newSubjects.add( createInterceptor(subject) );
 		}

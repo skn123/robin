@@ -475,6 +475,29 @@ public class Utils {
 		return proto;
 	}
 
+    /**
+     * Searches if the class has any non private constructor.
+     * @param entity
+     */
+    public static boolean hasOnlyPrivateConstructors(Aggregate entity)
+    {
+        Scope scope = entity.getScope();
+        boolean hasNoPrivateConstructors = false;
+
+        for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
+            ContainedConnection connection = (ContainedConnection)ri.next();
+            Routine routine = (Routine)connection.getContained();
+            if (routine.isConstructor()) {
+                if (connection.getVisibility() != Specifiers.Visibility.PRIVATE) {
+                    return false;
+                }
+                hasNoPrivateConstructors = true;
+            }
+        }
+        return hasNoPrivateConstructors;
+    }
+	
+
     // TODO: Should change name to something like "hasNoUserConstructors"
 	/**
 	 * Searches the scope to see if there is a public default constructor.
