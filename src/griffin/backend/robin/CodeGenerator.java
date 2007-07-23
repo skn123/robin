@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Random;
 
 import sourceanalysis.*;
 import sourceanalysis.hints.IncludedViaHeader;
@@ -34,7 +35,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_interceptorMethods = new HashSet();
 		m_downCasters = new LinkedList();
 		m_interceptors = new LinkedList();
-		
+
+	    m_randomNamespace = generateNamespaceName();
+
 		// Register touchups for special types
 		Type voidptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		voidptr.getRootNode().add(new Type.TypeNode(Primitive.VOID));
@@ -225,7 +228,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("basic_block (*__callback)(" +
 				"scripting_element twin, RegData *signature, basic_block args[]) = 0;\n\n");
 		
-		m_output.write("\nnamespace {\n\n");
+		m_output.write("\nnamespace " + m_randomNamespace + " {\n\n");
 		
 		// Special touchup function named same
 		m_output.write("template <class T>\n" +
@@ -761,7 +764,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				Utils.findGloballyScopedOperators(subject, m_program));
 		}
 		
-		m_output.write("\n}  // end of anonymous namespace\n\n");
+        // close the random namespace and generate a using directive
+		m_output.write("\n}  // end of " + m_randomNamespace + " namespace\n\n");
+        m_output.write("using namespace " + m_randomNamespace + ";\n\n");
 		
 		// Generate main entry point
 		m_output.write("extern \"C\" EXPORT RegData entry[];\n\n");
@@ -1731,6 +1736,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 	}
 
+    private String generateNamespaceName() {
+        final int rnd = (new Random()).nextInt();
+
+        return ("Robin_" + Integer.toString(rnd,16)).replace("-","_");
+    }
+
 	// Private members
 	private Map m_uidMap;
 	private int m_uidNext;
@@ -1739,6 +1750,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
 	private List m_interceptors;
 	private Set m_interceptorMethods;
+
+    // random namespace name
+    private String m_randomNamespace;
 	
 	// Code skeletons
 	private static final String END_OF_LIST = "\t{ 0 }\n};\n\n";
