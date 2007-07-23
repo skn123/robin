@@ -534,11 +534,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             ContainedConnection connection = (ContainedConnection) ctorIter.next();
             final Routine ctor = (Routine) connection.getContained();
 
-            if (! ctor.isConstructor()) continue;
+            if (ctor.isConstructor() &&
+                (connection.getVisibility() != Specifiers.Visibility.PRIVATE)) {
         
-            addInterceptorBaseConstructor(ctor, subject, result);
+                addInterceptorBaseConstructor(ctor, subject, result);
 
-            ++funcCounter;
+                ++funcCounter;
+            }
         }
 
         // It checks if the class has no constructors user-implemented at all
