@@ -475,6 +475,7 @@ public class Utils {
 		return proto;
 	}
 
+    // TODO: Should change name to something like "hasNoUserConstructors"
 	/**
 	 * Searches the scope to see if there is a public default constructor.
 	 * @param entity
