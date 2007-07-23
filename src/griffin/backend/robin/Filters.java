@@ -73,6 +73,15 @@ public class Filters {
 	{
 		return hasFlag(entity, "cloneable");
 	}
+
+    /**
+     * Checks if the class can be extended in any way.
+     * @param entity
+     */
+    static boolean isClassExtendible(Aggregate entity)
+    {
+        return !Utils.hasOnlyPrivateConstructors(entity);
+    }
 	
 	/**
 	 * Determines whether a routine should or should not be wrapped.
