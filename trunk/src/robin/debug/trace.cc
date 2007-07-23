@@ -17,6 +17,7 @@
 #include "trace.h"
 
 
+namespace Robin {
 namespace dbg {
 
 TraceSink trace;
@@ -86,3 +87,4 @@ Guard::~Guard()
 }
 
 } // end of namespace dbg
+} // end of namespace Robin

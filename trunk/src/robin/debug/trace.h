@@ -19,6 +19,7 @@
 
 #include <iostream>
 
+namespace Robin {
 
 /**
  * @brief Utilities for debug printouts and traces.
@@ -98,6 +99,8 @@ extern TraceSink trace;
 extern TraceSink::EndLine endl;
 
 } // end of namespace dbg
+
+} // end of namespace Robin
 
 #endif
 
