@@ -281,6 +281,7 @@ def touch(filename):
 	
 touch("src/griffin/sourceanalysis/dox/TypeExpressionLexer.java")
 touch("src/griffin/sourceanalysis/dox/TypeExpressionParser.java")
+touch("src/griffin/sourceanalysis/dox/TypeExpressionLexerTokenTypes.java")
 
 
 griffin = env.Java("build/griffin", "src/griffin")
