@@ -16,8 +16,8 @@ string = std.string
 string.__to__ = str
 
 truetype = { double: float, long: int, ulong: int, uint: int, \
-             char: str, uchar: str, schar: str,
-             longlong: long, ulonglong: long}
+			 char: str, uchar: str, schar: str,
+			 longlong: long, ulonglong: long}
 
 def _sum_tuples(tuplelst):
 	sumlst = [0 for i in tuplelst[0]]
@@ -72,7 +72,8 @@ def _make_map_functor(maptype, volatile = False):
 
 def _make_container_weigher(el):
 	def weigh_any_container(insight, el = el):
-		if insight is el:
+		tinsight = type(insight)
+		if tinsight is el:
 			w = (0, 1, 0, 0)
 		else:
 			w = robin.weighConversion(

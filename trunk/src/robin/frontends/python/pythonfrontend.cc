@@ -388,7 +388,9 @@ Insight PythonFrontend::detectInsight(scripting_element element) const
 
 	if (PyList_Check(object) && PyList_Size(object) > 0) {
 		PyObject *first = PyList_GetItem(object, 0);
-		insight.i_ptr = PyObject_Type(first);
+		//insight.i_ptr = PyObject_Type(first);
+        Py_XINCREF(first);
+		insight.i_ptr = first;
 	}
 	else if (PyDict_Check(object) && PyDict_Size(object) > 0) {
 		PyObject *items = PyDict_Items(object);

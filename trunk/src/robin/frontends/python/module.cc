@@ -52,7 +52,7 @@ public:
 				RegistrationMechanismSingleton::getInstance();
 			Handle<Library> library = 
 				(libname == 0) ? mech->import(libfile) 
-				               : mech->import(libfile, libname);
+							   : mech->import(libfile, libname);
 			// Expose library
 			fe->exposeLibrary(*library);
 			// done
@@ -110,18 +110,19 @@ public:
 		return Py_None;
 	}
 
+#include <iostream>
 
 	static PyObject * py_weighConversion(PyObject *self, PyObject *args)
 	{
 		PyObject *sourcetype, *source;
 		PyObject *desttype  , *dest;
+		PyObject *sourcevalue = NULL;
 
 		if (!PyArg_ParseTuple(args, "OO", &sourcetype, &desttype))
 			return NULL;
 
-		if (!PyType_Check(sourcetype) || 
-			!(PyType_Check(desttype) /*|| PyCObject_Check(desttype)*/)) {
-			PyErr_SetString(PyExc_TypeError, "expected 2 types");
+		if (!PyType_Check(desttype)) {
+			PyErr_SetString(PyExc_TypeError, "expected 2nd argument to be a type");
 			return NULL;
 		}
 
@@ -132,8 +133,21 @@ public:
 			w = Conversion::Weight::INFINITE;
 		}
 		else {
-			source = masquerade((PyTypeObject*)sourcetype);
-			dest   = masquerade((PyTypeObject*)desttype);
+
+			// this could be a value
+			if(!PyType_Check(sourcetype)) {
+				sourcevalue = sourcetype;
+			}
+
+			dest	= masquerade((PyTypeObject*)desttype);
+
+			// if we have a source value, detect the type from it
+			// instead of the real 'source'
+			if(sourcevalue != NULL) {
+				source = sourcevalue;
+			} else {
+				source = masquerade((PyTypeObject*)sourcetype);
+			}
 
 			try {
 				Handle<TypeOfArgument> 
