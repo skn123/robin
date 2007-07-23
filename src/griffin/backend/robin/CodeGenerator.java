@@ -540,6 +540,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
             ++funcCounter;
         }
+
+        // It checks if the class has no constructors user-implemented at all
+        // (it has only compiler-made default constructor)
+        if (Utils.hasDefaultConstructor(subject)) {
+            final Routine ctor = new Routine();
+            addInterceptorBaseConstructor(ctor, subject, result);
+        }
         
         m_output.write("\tvoid _init(scripting_element imp) { twin = imp; }\n\n");
         
