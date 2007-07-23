@@ -112,6 +112,9 @@ public:
 
 	virtual
 	void release(scripting_element element);
+
+    virtual
+    void bond(scripting_element master, scripting_element slave);
 	//@}
 	
 	/**

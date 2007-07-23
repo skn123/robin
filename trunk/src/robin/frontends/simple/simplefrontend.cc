@@ -238,6 +238,15 @@ void SimpleFrontend::release(scripting_element element)
 }
 
 /**
+ * Does nothing. The SimpleFrontend implements no garbage collection -
+ * allocated objects will thus never be freed, hence no memory ownership is
+ * required.
+ */
+void SimpleFrontend::bond(scripting_element master, scripting_element slave)
+{
+}
+
+/**
  * Returns the low level interface for the low level function calls.
  */
 const LowLevel& SimpleFrontend::getLowLevel() const
