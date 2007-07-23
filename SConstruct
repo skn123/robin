@@ -145,7 +145,7 @@ if configure.CheckTemplate("__gnu_cxx::hash_map", "#include <ext/hash_map>\n"):
 elif configure.CheckTemplate("std::hash_map", "#include <ext/hash_map>\n"):
 	env.Append(CXXFLAGS = '-DWITH_STD_HASHMAP')
 if conf.config.has_liberty and \
-   configure.CheckCXXHeader("libiberty.h") and configure.CheckLibPIC("iberty"):
+   configure.CheckCXXHeader("libiberty.h") and configure.CheckLibPIC("iberty", libiberty_use):
 	env.Append(CXXFLAGS = '-DWITH_LIBERTY')
 	AUXLIBS.append("iberty")
 if configure.CheckLib("dl"):
