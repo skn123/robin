@@ -1739,6 +1739,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private String generateNamespaceName() {
         final int rnd = (new Random()).nextInt();
 
+        // We're randomizing a namespace name instead of anonymous namespace,
+        // because of a weird bug, where g++ ignores the anonymous namespace in
+        // our case.
         return ("Robin_" + Integer.toString(rnd,16)).replace("-","_");
     }
 
