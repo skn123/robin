@@ -484,6 +484,9 @@ public class Utils {
 	public static boolean hasDefaultConstructor(Aggregate entity)
 		throws MissingInformationException
 	{
+        // TODO: Should check for case when a class has no constructor at all.
+        // This is the case where there's no constructors at all, and one of the
+        // members has no default constructor.
 		Scope scope = entity.getScope();
 		boolean anyConstructor = false;
 	
