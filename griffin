@@ -6,239 +6,239 @@ import os.path, sys, re, griffin as conf
 
 class Griffin:
 
-	premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", \
-	            "junit.jar", "xmlParserAPIs.jar"]
-	premisedir = "premises"
+    premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", \
+                "junit.jar", "xmlParserAPIs.jar"]
+    premisedir = "premises"
 
-	DEFAULT_OUTFILE = "./4robin.cc"
-	GRIFFIN_JAR = "Griffin.jar"
+    DEFAULT_OUTFILE = "./4robin.cc"
+    GRIFFIN_JAR = "Griffin.jar"
 
 
-	def __init__(self):
-		self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
-		self.javacmd = "backend.robin.Launcher"
-		self.javaflags = ""
-		self.verbose = False
+    def __init__(self):
+        self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
+        self.javacmd = "backend.robin.Launcher"
+        self.javaflags = ""
+        self.verbose = False
 
-	def setXML(self, xmldir):
-		if not os.path.isdir(xmldir):
-			raise OSError, "'%s' not found" % xmldir
-		self.xmldir = xmldir
+    def setXML(self, xmldir):
+        if not os.path.isdir(xmldir):
+            raise OSError, "'%s' not found" % xmldir
+        self.xmldir = xmldir
 
-	def setSources(self, sources):
-		self.doxygen(sources)
-		self.xmldir = "./xml"
+    def setSources(self, sources):
+        self.doxygen(sources)
+        self.xmldir = "./xml"
 
-	def doxygen(self, sources):
-		import os.path
-		stltag = os.path.join(here, "build/stl.tag")
-		if not os.path.isfile(stltag): stltag = os.path.join(here, "stl.tag")
-		doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
-		           "TAGFILES = %s\n" \
-		           "GENERATE_HTML=No\nGENERATE_LATEX=No\n" % \
-		             (" ".join(sources), stltag)
-		if self.verbose: print ".griffin-doxyfile:\n" + doxyfile
-		open(".griffin-doxyfile", "w").write(doxyfile)
-		Dots(self.verbose).run("doxygen .griffin-doxyfile")
-		if self.verbose: print "unlink .griffin-doxyfile"
-		os.unlink(".griffin-doxyfile")
+    def doxygen(self, sources):
+        import os.path
+        stltag = os.path.join(here, "build/stl.tag")
+        if not os.path.isfile(stltag): stltag = os.path.join(here, "stl.tag")
+        doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
+                   "TAGFILES = %s\n" \
+                   "GENERATE_HTML=No\nGENERATE_LATEX=No\n" % \
+                     (" ".join(sources), stltag)
+        if self.verbose: print ".griffin-doxyfile:\n" + doxyfile
+        open(".griffin-doxyfile", "w").write(doxyfile)
+        Dots(self.verbose).run("doxygen .griffin-doxyfile")
+        if self.verbose: print "unlink .griffin-doxyfile"
+        os.unlink(".griffin-doxyfile")
 
-	def _command(self):
-		from os.path import join
-		classpath = [join(here, self.premisedir, x) for x in self.premises]
-		classpath += [self.griffin_bin]
+    def _command(self):
+        from os.path import join
+        classpath = [join(here, self.premisedir, x) for x in self.premises]
+        classpath += [self.griffin_bin]
 
-		doxpath = join(here, "build/dox-xml")
-		stpath = join(here, "src/griffin/modules/stl")
-		if not os.path.isdir(doxpath): doxpath = os.path.join(here, "dox-xml")
-		if not os.path.isdir(stpath): stpath = here
+        doxpath = join(here, "build/dox-xml")
+        stpath = join(here, "src/griffin/modules/stl")
+        if not os.path.isdir(doxpath): doxpath = os.path.join(here, "dox-xml")
+        if not os.path.isdir(stpath): stpath = here
 
-		cmd = "%s -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
-		          "-classpath '%s' %s %s" % \
-		          (conf.config.java, conf.classpath([doxpath]), 
-		           conf.classpath([stpath]), conf.classpath(classpath),
-		           self.javaflags, self.javacmd)
-		return cmd
+        cmd = "%s -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
+                  "-classpath '%s' %s %s" % \
+                  (conf.config.java, conf.classpath([doxpath]), 
+                   conf.classpath([stpath]), conf.classpath(classpath),
+                   self.javaflags, self.javacmd)
+        return cmd
 
-	def run(self, args):
-		cmdline = " ".join([self._command(), self.xmldir] + args)
-		if self.verbose: print >> sys.stderr, cmdline
-		os.system(cmdline)
+    def run(self, args):
+        cmdline = " ".join([self._command(), self.xmldir] + args)
+        if self.verbose: print >> sys.stderr, cmdline
+        os.system(cmdline)
 
-	def _opt_eclipse(self):
-		self.griffin_bin = os.path.join(here, "build/eclipse-bin")
+    def _opt_eclipse(self):
+        self.griffin_bin = os.path.join(here, "build/eclipse-bin")
 
-	def _argv(self, args):
-		"""Parse command-line arguments."""
-		from robinlib import argparse
+    def _argv(self, args):
+        """Parse command-line arguments."""
+        from robinlib import argparse
 
-		parser = argparse.ArgumentParser("griffin",
-			description="Griffin - wrapper code generator for Robin.")
-		parser.add_argument(
-			"--in", metavar="filename", type=str, nargs="+", default=[],
-			help="either list of input source filenames, or XML directory "
-			"previously generated by doxygen")
-		parser.add_argument(
-			"--out", metavar="filename", type=str,
-			default=self.DEFAULT_OUTFILE,
-			help="generated output file (default: %s)" % self.DEFAULT_OUTFILE)
-		parser.add_argument(
-			"classes", metavar="identifier", type=str, nargs="*",
-			help="classes and functions to be wrapped")
-		parser.add_argument(
-			"-I", action='store_true', default=False,
-			help="process #included header files recursively")
-		parser.add_argument(
-			"--interceptors", action='store_true', default=False,
-			help="also generate interceptor classes for wrapped interfaces")
-		parser.add_argument(
-			"--hints", type=str, metavar="jython-hints",
-			help="specify a Jython file containing code generation hints")
-		parser.add_argument(
-			"-v", action='store_true', default=False,
-			help="be verbose")
-		parser.add_argument(
-			"--eclipse", action='store_true', default=False,
-			help="(development) use Griffin as compiled by Eclipse "
-			"instead of Griffin.jar")
-		parser.add_argument(
-			"--debug", metavar="port", type=int,
-			help="(development) launch JVM in debug mode")
+        parser = argparse.ArgumentParser("griffin",
+            description="Griffin - wrapper code generator for Robin.")
+        parser.add_argument(
+            "--in", metavar="filename", type=str, nargs="+", default=[],
+            help="either list of input source filenames, or XML directory "
+            "previously generated by doxygen")
+        parser.add_argument(
+            "--out", metavar="filename", type=str,
+            default=self.DEFAULT_OUTFILE,
+            help="generated output file (default: %s)" % self.DEFAULT_OUTFILE)
+        parser.add_argument(
+            "classes", metavar="identifier", type=str, nargs="*",
+            help="classes and functions to be wrapped")
+        parser.add_argument(
+            "-I", action='store_true', default=False,
+            help="process #included header files recursively")
+        parser.add_argument(
+            "--interceptors", action='store_true', default=False,
+            help="also generate interceptor classes for wrapped interfaces")
+        parser.add_argument(
+            "--hints", type=str, metavar="jython-hints",
+            help="specify a Jython file containing code generation hints")
+        parser.add_argument(
+            "-v", action='store_true', default=False,
+            help="be verbose")
+        parser.add_argument(
+            "--eclipse", action='store_true', default=False,
+            help="(development) use Griffin as compiled by Eclipse "
+            "instead of Griffin.jar")
+        parser.add_argument(
+            "--debug", metavar="port", type=int,
+            help="(development) launch JVM in debug mode")
 
-		if not args: args = ["-h"]
+        if not args: args = ["-h"]
 
-		values = parser.parse_args(args)
-		OPTS = ["I", "v", "debug", "interceptors", "hints"]
+        values = parser.parse_args(args)
+        OPTS = ["I", "v", "debug", "interceptors", "hints"]
 
-		arg_in = values.__dict__['in']
-		arg_out = values.out
-		arg_classes = values.classes
-		arg_opts = dict([(x,y) for (x,y) in values.__dict__.items()
-						 if y and x in OPTS])
+        arg_in = values.__dict__['in']
+        arg_out = values.out
+        arg_classes = values.classes
+        arg_opts = dict([(x,y) for (x,y) in values.__dict__.items()
+                         if y and x in OPTS])
 
-		if arg_classes and not arg_in:
-			arg_in = arg_classes[0:1]
-			arg_classes = arg_classes[1:]
-		if values.eclipse:
-			self._opt_eclipse()
-		return arg_in, [arg_out], arg_opts, arg_classes
+        if arg_classes and not arg_in:
+            arg_in = arg_classes[0:1]
+            arg_classes = arg_classes[1:]
+        if values.eclipse:
+            self._opt_eclipse()
+        return arg_in, [arg_out], arg_opts, arg_classes
 
-	def jarg(self, name, value):
-		"""
-		Encodes an argument for the Java application.
-		"""
-		if isinstance(value, str):
-			return "--%s=%s" % (name, value)
-		else:
-			return "--%s" % name
+    def jarg(self, name, value):
+        """
+        Encodes an argument for the Java application.
+        """
+        if isinstance(value, str):
+            return "--%s=%s" % (name, value)
+        else:
+            return "--%s" % name
 
-	def process(self, args):
-		"""Runs Griffin front-end and back-end using the given arguments."""
-		arg_in, arg_out, arg_opts, arg_other = self._argv(args)
+    def process(self, args):
+        """Runs Griffin front-end and back-end using the given arguments."""
+        arg_in, arg_out, arg_opts, arg_other = self._argv(args)
 
-		if len(arg_in) > 0:
-			if arg_in[0] in ["xml", "sources"]:
-				input_type = arg_in[0]
-				arg_in = arg_in[1:]
-			else:
-				# - try to intelligently guess input type
-				import os.path
-				if os.path.isfile(arg_in[0]):
-					input_type = "sources"
-				else:
-					input_type = "xml"
-		else:
-			input_type = "none"
+        if len(arg_in) > 0:
+            if arg_in[0] in ["xml", "sources"]:
+                input_type = arg_in[0]
+                arg_in = arg_in[1:]
+            else:
+                # - try to intelligently guess input type
+                import os.path
+                if os.path.isfile(arg_in[0]):
+                    input_type = "sources"
+                else:
+                    input_type = "xml"
+        else:
+            input_type = "none"
 
-		self.verbose = "v" in arg_opts
-		wizard = "w" in arg_opts or "wizard" in arg_opts
+        self.verbose = "v" in arg_opts
+        wizard = "w" in arg_opts or "wizard" in arg_opts
 
-		# Set input source
-		if input_type == "sources":
-			if "I" in arg_opts:
-				arg_in = Preprocessor().extractAllIncluded(arg_in)
-			self.setSources(arg_in)
-		elif input_type == "xml" or wizard:
-			if len(arg_in) == 0:
-				self.setXML("xml")
-			else:
-				self.setXML(arg_in[0])
-		else:
-			print "griffin: No input specified. Quit."
-			raise SystemExit
+        # Set input source
+        if input_type == "sources":
+            if "I" in arg_opts:
+                arg_in = Preprocessor().extractAllIncluded(arg_in)
+            self.setSources(arg_in)
+        elif input_type == "xml" or wizard:
+            if len(arg_in) == 0:
+                self.setXML("xml")
+            else:
+                self.setXML(arg_in[0])
+        else:
+            print "griffin: No input specified. Quit."
+            raise SystemExit
 
-		JOPTS = ["interceptors", "hints"]
-		arg_jopts = [self.jarg(x,y) for (x,y) in arg_opts.items()
-					 if x in JOPTS]
+        JOPTS = ["interceptors", "hints"]
+        arg_jopts = [self.jarg(x,y) for (x,y) in arg_opts.items()
+                     if x in JOPTS]
 
-		if "debug" in arg_opts:
-			self.javaflags = "-Xrunjdwp:transport=dt_socket,address=1234,server=y,suspend=y"
+        if "debug" in arg_opts:
+            self.javaflags = "-Xrunjdwp:transport=dt_socket,address=1234,server=y,suspend=y"
 
-		if wizard:
-			self.javacmd = "wizard.Main"
-			self.premises.extend(["swt.jar","jface.jar", 
-			                      "org.eclipse.core.runtime.jar"])
+        if wizard:
+            self.javacmd = "wizard.Main"
+            self.premises.extend(["swt.jar","jface.jar", 
+                                  "org.eclipse.core.runtime.jar"])
 
-		# engage
-		self.run(arg_out + arg_jopts + arg_other)
+        # engage
+        self.run(arg_out + arg_jopts + arg_other)
 
 
 
 class Preprocessor(object):
 
-	INCLUDE_DIRECTIVE = re.compile(r'^\s*#\s*include\s*"(.*)"')
+    INCLUDE_DIRECTIVE = re.compile(r'^\s*#\s*include\s*"(.*)"')
 
-	def findHeader(self, included_in, included):
-		rel = os.path.join(included_in, os.path.pardir, included)
-		return os.path.normpath(rel)
+    def findHeader(self, included_in, included):
+        rel = os.path.join(included_in, os.path.pardir, included)
+        return os.path.normpath(rel)
 
-	def extractIncluded(self, filename):
-		if not os.path.isfile(filename): return []
-		# Look for 'include' directives
-		all_included = []
-		for line in open(filename):
-			mo = Preprocessor.INCLUDE_DIRECTIVE.search(line)
-			if mo:
-				included = self.findHeader(filename, mo.group(1))
-				if included:
-					all_included.append(included)
-		return all_included
+    def extractIncluded(self, filename):
+        if not os.path.isfile(filename): return []
+        # Look for 'include' directives
+        all_included = []
+        for line in open(filename):
+            mo = Preprocessor.INCLUDE_DIRECTIVE.search(line)
+            if mo:
+                included = self.findHeader(filename, mo.group(1))
+                if included:
+                    all_included.append(included)
+        return all_included
 
-	def extractAllIncluded(self, filenames):
-		filenames = map(os.path.normpath, filenames)
-		i = 0
-		while i < len(filenames):
-			for included in self.extractIncluded(filenames[i]):
-				if included not in filenames and os.path.isfile(included):
-					filenames.append(included)
-			i += 1
-		return filenames
+    def extractAllIncluded(self, filenames):
+        filenames = map(os.path.normpath, filenames)
+        i = 0
+        while i < len(filenames):
+            for included in self.extractIncluded(filenames[i]):
+                if included not in filenames and os.path.isfile(included):
+                    filenames.append(included)
+            i += 1
+        return filenames
 
 
 class CommandRunner(object):
-	def __init__(self, verbose = False):
-		self.verbose = verbose
-		
-	def run(self, command):
-		pass
+    def __init__(self, verbose = False):
+        self.verbose = verbose
+        
+    def run(self, command):
+        pass
 
 class ShellRunner(CommandRunner):
-	def run(self, command):
-		if self.verbose: print command
-		os.system(command)
+    def run(self, command):
+        if self.verbose: print command
+        os.system(command)
 
 class Dots(CommandRunner):
-	"""Runs an external command without sending all the output to the tty."""
-	def run(self, command):
-		if self.verbose: print command
-		pipe = os.popen(command)
-		for line in pipe:
-			sys.stderr.write(".")
-		if pipe.close():
-			sys.stderr.write(" [FAILED]\n")
-			raise OSError, "failed to run " + command.split()[0]
-		else:
-			sys.stderr.write(" [  OK  ]\n")
+    """Runs an external command without sending all the output to the tty."""
+    def run(self, command):
+        if self.verbose: print command
+        pipe = os.popen(command)
+        for line in pipe:
+            sys.stderr.write(".")
+        if pipe.close():
+            sys.stderr.write(" [FAILED]\n")
+            raise OSError, "failed to run " + command.split()[0]
+        else:
+            sys.stderr.write(" [  OK  ]\n")
 
 
 here = os.path.dirname(__file__)
@@ -246,8 +246,8 @@ here = os.path.dirname(__file__)
 
 
 if __name__ == "__main__":
-	g = Griffin()
-	try:
-		g.process(sys.argv[1:])
-	except OSError, msg:
-		print "griffin:", msg
+    g = Griffin()
+    try:
+        g.process(sys.argv[1:])
+    except OSError, msg:
+        print "griffin:", msg
