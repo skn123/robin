@@ -16,165 +16,368 @@ import sourceanalysis.dox.DoxygenAnalyzer;
 import sourceanalysis.mixin.JythonMixIn;
 import sourceanalysis.mixin.MixIn;
 
-public abstract class Launcher {
+import backend.configuration.BackendConfiguration;
+import backend.configuration.BackendData;
+import backend.configuration.PropertyData;
+import backend.exceptions.BackendException;
+import backend.exceptions.InvalidCommandLineException;
+import backend.exceptions.configuration.BackendNotFoundException;
+import backend.exceptions.configuration.ConfigurationParseException;
 
-	public static class PropertyPage {
-		
-		public PropertyPage() {
-			m_properties = new HashMap();
-		}
-		
-		public void addBoolean(String name, boolean defaultValue) {
-			m_properties.put(name, new Boolean(defaultValue));
-		}
-		
-		public void setBoolean(String name, boolean newValue) {
-			m_properties.put(name, new Boolean(newValue));
-		}
-		
-		public boolean getBoolean(String name) {
-			return ((Boolean)m_properties.get(name)).booleanValue();
-		}
-		
-		public void addString(String name, String defaultVal) {
-			m_properties.put(name, defaultVal);
-		}
-		
-		public void setString(String name, String value) {
-			m_properties.put(name, value);
-		}
-		
-		public String getString(String name) {
-			return (String)(m_properties.get(name));
-		}
-		
-		public void setStringArray(String name, String[] value) {
-			m_properties.put(name, value);
-		}
-		
-		public String[] getStringArray(String name) {
-			return (String[])(m_properties.get(name));
-		}
-		
-		public boolean hasProperty(String name) {
-			return m_properties.containsKey(name);
-		}
-		
-		private Map m_properties;
-	}
-	
-	/**
-	 * Main back-end entry point.
-	 * 
-	 * @param program a program database to operate upon
-	 * @param properties a set of attributes describing the actions
-	 *  to be taken, with at least the following members:
-	 *  - outfile: name of a file to direct the output into
-	 *  - classes: an array of class names
-	 * @throws IOException if an output exception occurs
-	 * @throws MissingInformationException if the program database is 
-	 * incomplete
-	 */
-	public abstract void execute(ProgramDatabase program, PropertyPage properties)
-		throws IOException, MissingInformationException; 
+/**
+ * Main Griffin launcher.
+ * Launches the specified backend, after verifying that the passed arguments
+ * answer the backend requirements
+ * @author Alex Shapira
+ *
+ */
+public class Launcher {
+   
+   /**
+    * Main entry point
+    * @param args
+    */
+   public static void main(String args[]) {
+       try {
+           (new Launcher(new BackendConfiguration())).launch(args);
+       } catch (Exception e) {
+           System.err.println("*** ERROR: " + e.getMessage());
+           e.printStackTrace();
+       }
+   }
+   
+   /**
+    * Creates a Launcher()
+    * @param bc Backend configuration data
+    * @throws ConfigurationParseException 
+    */
+   public Launcher(BackendConfiguration bc) throws ConfigurationParseException {
+       configurationData = bc;
+   }
+   
+   /**
+    * Executes the launcher with the provided arguments
+    * @param args arguments
+    * @throws BackendException Exception occured during execution of a backend
+    */
+   protected void launch(String[] args) throws BackendException {
+       if(args.length == 0) {
+           printBasicLaunchHelp();
+           System.exit(2);
+       }
+       
+       
+       String backendName = args[0];
+       
+       // First argument can be a utility flag (list all backends, etc)
+       if(backendName.startsWith("--")) {
+           handleUtilityFlag(backendName, args);
+       } else {
+           try {
+               try {
+                   BackendData backendData = configurationData.getBackend(backendName);
+                   
+                   PropertyPage backendProperties = parseCommandLine(backendData, args);
+                   
+                   invokeBackend(backendData, backendProperties);
+               }  catch (InvalidCommandLineException e) {
+                   System.err.println("Not enough arguments for backend " + backendName);
+                   printUsageHelp(backendName);
+                   
+               } 
+           } catch (BackendNotFoundException e) {
+               System.err.println("Backend " + backendName + " does not exist.\n" +
+                          "Use --" + Launcher.LIST_ALL_FLAG + " to show all available backends");
+               System.exit(1);
+           }
+       }
+           
+   }
 
-	/**
-	 * Separates the command-line arguments into boolean properties,
-	 * names of classes for analysis and mix-ins to apply.
-	 * @param args command-line arguments
-	 * @param properties property page to be filled
-	 * @param classnames a collection to be filled with class names
-	 * @param mixins a collection to be filled with requested mix-ins
-	 */
-	private void parseAttributesAndMixIns(String[] args, 
-			PropertyPage properties, 
-			Collection classnames, 
-			Collection mixins)
-	{
-		for (int flagIndex = 2; flagIndex < args.length; ++flagIndex) {
-			if (args[flagIndex].startsWith("--hints=")) {
-				mixins.add(new JythonMixIn(args[flagIndex].substring(8)));
-			}
-			else if (args[flagIndex].startsWith("--")) {
-				String flag = args[flagIndex].substring(2);
-				if (properties.hasProperty(flag)) {
-					properties.setBoolean(flag, true);
-				}
-			}
-			else {
-				classnames.add(args[flagIndex]);
-			}
-		}
-	}
-	
-	/**
-	 * Reads arguments from the command line according to the
-	 * specified property page, and builds the ProgramDatabase to
-	 * work on using DoxygenAnalyzer.
-	 * 
-	 * @param args command line arguments in the following format:
-	 *   1st argument - location of intermediate input files
-	 *   2nd argument - output file name
-	 *   3rd to last  - class names and optional (back-end specific)
-	 *                  flags
-	 * @param properties
-	 * @return a fully analyzed ProgramDatabase
-	 */
-	protected ProgramDatabase processCmdlineParameters(String[] args,
-			PropertyPage properties)
-	{
-		try {
-			List mixins = new LinkedList();
-			List classnames = new LinkedList();
 
-			// get outfile
-			properties.setString("outfile", args[1]);
-			
-			// get flag values and class names
-			parseAttributesAndMixIns(args, properties, classnames, mixins);
+   
+   /**
+    * Parse command line arguments
+    * @param backendData backend data that defines the command line format
+    * @param args arguments
+    * @return generated property page
+    * @throws NotEnoughArgumentsException
+    * @throws InvalidCommandLineException 
+    */
+   protected PropertyPage parseCommandLine(BackendData backendData, String[] args) throws InvalidCommandLineException {
+       
+       Map<String, List<String>> propertiesMap = new HashMap<String, List<String>>();
+       
+       // parse the command line arguments array into a map
+       // mapping each property to its arguments
+       
+       String currentProperty = null;
+       // args[0] = backend name, skip
+       for(int i=1; i<args.length; i++) {
+           // new property
+           if(args[i].startsWith("--")) {
+               currentProperty = args[i].substring(2);
+               propertiesMap.put(currentProperty, new LinkedList<String>());
+           } else if(currentProperty == null) {
+               // if we reached this point and currentProperty is null, we have an erroneous command line
+               throw new InvalidCommandLineException("Please use '--property0 arg0 arg1 --property1 arg0 ...' format");
+           } else {
+               propertiesMap.get(currentProperty).add(args[i]);
+           }
+       }
+       
+       // validate the map
+       
 
-			// store the class names
-			properties.setStringArray("classes", 
-					(String[])classnames.toArray(new String[0]));
-			
-			// Process input files and create the program database
-			DoxygenAnalyzer dox = new DoxygenAnalyzer(args[0]);
-			dox.logger.setLevel(Level.WARNING);
-			ProgramDatabase pdb = dox.processIndex();
-			
-			// Apply mix-ins
-			for (Iterator mixini = mixins.iterator(); mixini.hasNext(); ) {
-				((MixIn)mixini.next()).apply(pdb);
-			}
-			
-			return pdb;
-			
-		} catch (ElementNotFoundException e) {
-			System.err.println("*** ERROR: failed to read index: " + e);
-			return null;
-		}
-	}
-	
-	protected void main(String backendName, String[] args, 
-			PropertyPage properties) 
-	{
-		if (args.length < 2) {
-			System.err.println("*** ERROR: not enough arguments.");
-			System.err.println(
-				"    Usage: " + backendName + " intermediate output classnames");
-			System.exit(1);
-		}
-		
-		try {
-			ProgramDatabase p = processCmdlineParameters(args, properties);
-	
-			execute(p, properties);
-		} catch (IOException e) {
-			System.err.println("*** ERROR: output error: " + e);
-		} catch (MissingInformationException e) {
-			System.err.println("*** ERROR: some information is missing.");
-			e.printStackTrace();
-		}
-	}
+       
+       // - check that all properties exist in the backend
+       for(String propName : propertiesMap.keySet()) {
+           try {
+               backendData.getPropertyData(propName);
+           } catch(IllegalArgumentException e) {
+               throw new InvalidCommandLineException("Invalid property name for backend " + 
+                                                      backendData.getBackendName() + 
+                                                      " - " +
+                                                      propName);
+           }
+       }
+       
+       // - check that all required properties are there
+       Collection<PropertyData> backendProperties = backendData.getPropertiesData();
+       for(PropertyData pd : backendProperties) {
+           // verify existence
+           if(pd.isRequired() && propertiesMap.containsKey(pd.getPropertyName()) == false) {
+               throw new InvalidCommandLineException("Backend " + backendData.getBackendName() +
+                                                     " requires property \"" + pd.getPropertyName() + "\"");
+           }
+           
+           // verify number of arguments
+           if(propertiesMap.containsKey(pd.getPropertyName())) {
+               if(propertiesMap.get(pd.getPropertyName()).size() != pd.getNumArguments() &&
+                       pd.getNumArguments() != PropertyData.ANY_NUMBER_OF_ARGUMENTS) 
+               {
+                   throw new InvalidCommandLineException("Property " + pd.getPropertyName() + 
+                                                         " must have " + pd.getNumArguments() + " arguments");
+               }
+           }
+           
+       }
+       
+       // everything verified, fill the property page and invoke the module
+       PropertyPage propPage = new PropertyPage();
+       for(PropertyData pd : backendProperties) {
+           String propertyName = pd.getPropertyName();
+           
+           
+           // required property or non-required, but exists
+           if(propertiesMap.containsKey(propertyName)) {
+               List<String> propertyValue = null;
+               propertyValue = propertiesMap.get(propertyName);
+               if(pd.getNumArguments() == 0) {
+                   // flag
+                   propPage.addProperty(propertyName, "true");
+               } else if(pd.getNumArguments() == 1) {
+                   propPage.addProperty(propertyName, propertyValue.get(0));
+               } else {
+                   propPage.addProperty(propertyName, propertyValue.toArray(new String[0]));
+               }
+               
+           } else {
+               // add with default value
+               String[] propertyValue = pd.getDefaultValue();
+               if(pd.getNumArguments() == 0) {
+                   // flag
+                   propPage.addProperty(propertyName, propertyValue[0]);
+               } else if(pd.getNumArguments() == 1) {
+                   propPage.addProperty(propertyName, propertyValue[0]);
+               } else {
+                   propPage.addProperty(propertyName, propertyValue);
+               }
+           }
+           
+           // for properties with single argument or no arguments, just add them and the argument
+           // otherwise, add an array of arguments
+           
+           
+       }
+       
+       return propPage;
+   }
+   
+   /**
+    * Invokes a backend
+    * @param backendData backend data
+    * @param backendProperties properties passed to the backend
+    * @throws BackendException any exception in backend occurs
+    */
+   private void invokeBackend(BackendData backendData, PropertyPage backendProperties) throws BackendException  {
+       // process the database
+       // Process input files and create the program database
+       try {
+           DoxygenAnalyzer dox = new DoxygenAnalyzer(
+                   backendProperties.getString(BackendData.DEFAULT_INPUT_PROPERTY.getPropertyName()));
+           
+           // collect mixins
+           Collection<JythonMixIn> mixins = new LinkedList<JythonMixIn>();
+           
+           String[] mixinPaths = 
+               backendProperties.getStringArray(BackendData.DEFAULT_MIXINS_PROPERTY.getPropertyName());
+           
+           for(String mixin : mixinPaths) {
+               mixins.add(new JythonMixIn(mixin));
+           }
+           
+           
+           dox.logger.setLevel(Level.WARNING);
+           ProgramDatabase pdb = dox.processIndex();
+           
+           
+           
+           // Apply mix-ins
+           for (Iterator mixini = mixins.iterator(); mixini.hasNext(); ) {
+               ((MixIn)mixini.next()).apply(pdb);
+           }
+           
+           // create an instance of the backend
+       
+
+           Backend backend = backendData.getBackendInterface().newInstance();
+           backend.execute(pdb, backendProperties);
+           return;
+       
+       } catch (InstantiationException e) {
+           throw new BackendException("Could not instantiate backend " + backendData.getBackendName() + " class", e);
+       } catch (IllegalAccessException e) {
+           throw new BackendException("Could not instantiate backend " + backendData.getBackendName() + " class", e);
+       } catch (IOException e) {
+           throw new BackendException("I/O error in backend " + backendData.getBackendName(), e);
+       } catch (MissingInformationException e) {
+           throw new BackendException("Some information was missing for " + backendData.getBackendName(), e);
+       } catch (ElementNotFoundException e) {
+           throw new BackendException("Failed to read index ", e);
+       }
+       
+   }
+
+   /**
+    * Handles a utility flag passed to Griffin
+    * @param flag utility flag (help, etc)
+    */
+   private void handleUtilityFlag(String flag, String args[]) {
+       // we support 2 flags -
+       // --help prints general usage information
+       // --help <backendname> prints usage information for a specific backend
+       // --listbackends prints launch help for all backends
+       
+       if(flag.equals("--" + Launcher.HELP_FLAG)) {
+           if(args.length > 1) {
+               // --help backend
+               try {
+                   printUsageHelp(args[1]);
+               } catch (BackendNotFoundException e) {
+                   System.err.println("Backend " + args[1] + " not found!");
+               }
+           } else {
+               // --help
+               printBasicLaunchHelp();
+           }
+       } else if(flag.equals("--" + Launcher.LIST_ALL_FLAG)) {
+           printBackendsUsageHelp();
+       }
+       
+   }
+
+   
+   /**
+    * Prints basic usage help
+    *
+    */
+   private void printBasicLaunchHelp() {
+       System.out.println("Usage:");
+       
+       System.out.println("griffin --" + Launcher.HELP_FLAG);
+       System.out.println("\tshow this help");
+       
+       System.out.println("griffin --" + Launcher.HELP_FLAG + " <backendname>");
+       System.out.println("\tprint help for backend <backendname>");
+       
+       System.out.println("griffin --" + Launcher.LIST_ALL_FLAG);
+       System.out.println("\tshow usage help for all backends");
+       
+       System.out.println("griffin <backendname> --prop1 arg0 arg1 --prop2 arg0 arg1 ...");
+       System.out.println("\tLaunch backend <backendname> with those arguments. See help for specific backend.");
+       
+   }
+   
+   /**
+    * Prints usage help for all backends
+    *
+    */
+   private void printBackendsUsageHelp() {
+       for(BackendData b : configurationData.getBackends()) {
+           try {
+               printUsageHelp(b.getBackendName());
+           } catch (BackendNotFoundException e) {
+               // can't happen
+           }
+       }
+       
+   }
+   
+   /**
+    * Prints usage help for a specific backend
+    * @param backendName backend name
+    * @throws BackendNotFoundException backend not found
+    */
+   private void printUsageHelp(String backendName) throws BackendNotFoundException {
+           BackendData bData = configurationData.getBackend(backendName);
+           
+           System.out.println("----------------------------------------------------------");
+           System.out.println("Help for backend \"" + bData.getBackendName() + "\"");
+           System.out.println("\n");
+           System.out.println("Backend description: " + bData.getDescription());
+           System.out.println("Properties:\n");
+           
+           for(PropertyData pd : bData.getPropertiesData()) {
+               System.out.println("\"" + pd.getPropertyName() + "\"");
+               
+               System.out.println("\tProperty description:");
+               System.out.println("\t\t" + pd.getPropertyDescription());
+               
+               System.out.println("\tNumber of arguments:");
+               if(pd.getNumArguments() == PropertyData.ANY_NUMBER_OF_ARGUMENTS) {
+                   System.out.println("\t\tany");
+               } else {
+                   System.out.println("\t\t" + pd.getNumArguments());
+               }
+               
+               System.out.println("\tRequired:");
+               System.out.println("\t\t" + pd.isRequired());
+               
+               if(pd.isRequired() == false) {
+                   System.out.println("\tDefault value:");
+                   String[] defValue = pd.getDefaultValue();
+                   
+                   System.out.print("\t\t");
+                   for(int i=0; i<defValue.length; i++) {
+                       System.out.print("\"" + defValue[i] + "\" ");
+                   }
+                   System.out.println();
+               }
+               System.out.println();
+       
+           }
+   
+   }
+
+
+   /**
+    * Backend configuration data
+    */
+   protected BackendConfiguration configurationData;
+   
+   
+   private static final String HELP_FLAG = "help";
+   private static final String LIST_ALL_FLAG = "backends";
+
 }
-

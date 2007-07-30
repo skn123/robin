@@ -5,6 +5,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import backend.Backend;
+import backend.PropertyPage;
+import backend.annotations.BackendDescription;
+import backend.annotations.PropertyDescription;
+import backend.configuration.PropertyData;
+
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
 
@@ -21,21 +27,9 @@ import sourceanalysis.ProgramDatabase;
  *   <li>A C++ file which can be compiled by a C++ compiler</li>
  * </ul>
  */
-public class Launcher extends backend.Launcher {
+@BackendDescription(backendName = "robin", backendDescription = "Robin (CPP-PY wrapper) backend")
+public class Launcher implements Backend  {
 
-	/**
-	 * Constructor for Launcher.
-	 */
-	public Launcher() {
-		super();
-	}
-
-	public static void main(String[] args) {
-		PropertyPage properties = new PropertyPage();
-		properties.addBoolean("interceptors", false);
-		
-		new Launcher().main("backend.robin.Launcher", args, properties);
-	}
 
 	/**
 	 * Run Robin back-end and generate code.
@@ -52,9 +46,9 @@ public class Launcher extends backend.Launcher {
 	public void execute(ProgramDatabase program, PropertyPage properties)
 		throws IOException, MissingInformationException 
 	{
-		String outfile = properties.getString("outfile");
-		String[] classnames = properties.getStringArray("classes");
-		boolean interceptors = properties.getBoolean("interceptors");
+       outfile = properties.getString("outfile");
+       classnames = properties.getStringArray("classes");
+       interceptors = properties.getBoolean("interceptors");
 		
 		// Execute
 		execute(program, classnames, outfile, interceptors);		
@@ -75,6 +69,7 @@ public class Launcher extends backend.Launcher {
 		String[] classnames, String outfile, boolean interceptors)
 		throws IOException, MissingInformationException 
 	{
+       
 		OutputStream cfile = new FileOutputStream(outfile);
 		CodeGenerator codegen =
 			new CodeGenerator(program, new OutputStreamWriter(cfile));
@@ -120,5 +115,29 @@ public class Launcher extends backend.Launcher {
 
 		cfile.close();
 	}
+   
+   // properties
+   
+   @PropertyDescription(propertyName = "interceptors",
+                        propertyDescription = "Enable creation of interceptors for abstract classes",
+                        numberOfArguments = 0,
+                        required = false,
+                        defaultValue = "false")
+   private boolean interceptors;
+   
+   @PropertyDescription(propertyName = "classes",
+                        propertyDescription = "List of classnames to generate wrappers for", 
+                        numberOfArguments = PropertyData.ANY_NUMBER_OF_ARGUMENTS,
+                        required = false,
+                        defaultValue = {})
+   private String[] classnames;
+   
+   @PropertyDescription(propertyName = "outfile",
+                        propertyDescription = "Output file name",
+                        numberOfArguments = 1,
+                        required = false,
+                        defaultValue = "./4robin.cc")
+   private String outfile;
 
+   
 }

@@ -8,60 +8,36 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import backend.Backend;
+import backend.PropertyPage;
+import backend.annotations.BackendDescription;
+import backend.annotations.PropertyDescription;
+import backend.configuration.PropertyData;
+
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
 import sourceanalysis.view.TemplateBank;
 import sourceanalysis.view.TemplateReader;
 
-public class Launcher extends backend.Launcher {
+@BackendDescription(backendName = "pydoc", backendDescription = "Generate PyDoc documentation for the classes")
+public class Launcher implements Backend {
 
-	/**
-	 * 
-	 */
-	public Launcher() {
-		super();
-	}
 
-	public static void main(String[] args)
-	{
-		PropertyPage properties = new PropertyPage();
-		properties.addString("templatefile", null);
-		
-		new Launcher().main("backend.pydoc.Launcher", args, properties);
-	}
 	
 	/**
 	 * Runs the Python documentation back-end and generates output.
+    * 
 	 */
 	public void execute(ProgramDatabase program, PropertyPage properties)
 		throws IOException, MissingInformationException 
 	{
-		String outfile = properties.getString("outfile");
-		String[] classnames = properties.getStringArray("classes");
-		String templatefile = properties.getString("templatefile");
+       outfile = properties.getString("outfile");
+       classnames = properties.getStringArray("classes");
+       templatefile = properties.getString("templatefile");
+       autocollect = properties.getBoolean("auto");
 		
-		if (templatefile == null) {
-			System.err.println("*** ERROR: template filename not provided"
-					+ " (specify --templatefile=)");
-			System.exit(1);
-		}
 		
-		execute(program, templatefile, outfile, classnames);
-	}
-	
-	/**
-	 * Runs the Python documentation back-end and generates output.
-	 * 
-	 * @param program
-	 * @param templatefile
-	 * @param outfile
-	 * @param classnames
-	 * @throws IOException
-	 * @throws MissingInformationException
-	 */
-	private void execute(ProgramDatabase program, String templatefile, String outfile, String[] classnames)
-		throws IOException, MissingInformationException
-	{
+       
 		// Read templates
 		TemplateBank templates = null;
 		try {
@@ -79,11 +55,12 @@ public class Launcher extends backend.Launcher {
 			new CodeGenerator(program, new OutputStreamWriter(cfile), 
 			                  templates);
 			
+       if(autocollect) {
+           codegen.autocollect();
+       }
 		// Collect targets
 		for (int i = 0; i < classnames.length; ++i) {
-			String classname = classnames[i];
-			if (classname.equals("Auto")) codegen.autocollect();
-			else codegen.collect(classname);
+           codegen.collect(classnames[i]);
 		}
 
 		// Generate output
@@ -91,4 +68,34 @@ public class Launcher extends backend.Launcher {
 
 		cfile.close();
 	}
+
+   @PropertyDescription(propertyName = "outfile",
+            propertyDescription = "Output directory name",
+            numberOfArguments = 1,
+            required = false,
+            defaultValue = "./robin_pydoc/")
+   private String outfile;
+   
+   @PropertyDescription(propertyName = "classes",
+            propertyDescription = "list of class names to collect documentation from",
+            numberOfArguments = PropertyData.ANY_NUMBER_OF_ARGUMENTS,
+            required = false,
+            defaultValue = "")
+   private String[] classnames;
+   
+   @PropertyDescription(propertyName = "templatefile",
+            propertyDescription = "Template file name",
+            numberOfArguments = 1,
+            required = true,
+            defaultValue = "")
+   private String templatefile;
+   
+   @PropertyDescription(propertyName = "auto",
+            propertyDescription = "Enable auto collection",
+            numberOfArguments = 0,
+            required = false,
+            defaultValue = "false")
+   private boolean autocollect;
+   
+   
 }

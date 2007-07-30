@@ -4,54 +4,64 @@
 package backend.man;
 
 
+import java.io.IOException;
+
+import backend.Backend;
+import backend.PropertyPage;
+import backend.annotations.BackendDescription;
+import backend.annotations.PropertyDescription;
+import backend.configuration.PropertyData;
 import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.MissingInformationException;
 import sourceanalysis.ProgramDatabase;
 import sourceanalysis.dox.DoxygenAnalyzer;
 
-public class Launcher {
+@BackendDescription(backendName = "man", backendDescription = "Generate manpage documentation for the classes")
+public class Launcher implements Backend{
 
-	/**
-	 * 
-	 */
-	public Launcher() {
-		super();
-	}
-
-	public static void main(String[] args)
-	{
-		if (args.length < 3) {
-			System.err.println("*** ERROR: not enough arguments.");
-			System.err.println("    Usage: backend.pydoc.Launcher "
-				+ "intermediate output classnames");
-			System.exit(1);
+   public void execute(ProgramDatabase program, PropertyPage properties) throws IOException, MissingInformationException {
+		
+       outputFile = properties.getString("outfile");
+		
+       autocollected = properties.getBoolean("auto");
+		
+       collected = properties.getStringArray("collected");
+       
+       
+       CodeGenerator codegen =
+           new CodeGenerator(program, outputFile);
+       
+       
+       if(autocollected) {
+           codegen.autocollect();
 		}
-		
-		
-		// Read the program database
-		DoxygenAnalyzer dox = new DoxygenAnalyzer(args[0]);
-		try {
-			ProgramDatabase p = dox.processIndex();
-		
-			
-			CodeGenerator codegen =
-				new CodeGenerator(p, args[1]);
-				
-			// Collect targets
-			for (int i = 2; i < args.length; ++i) {
-				String arg = args[i];
-				if (arg.equals("Auto")) codegen.autocollect();
-				else codegen.collect(arg);
-			}
-
-			codegen.generateClassesDocumentation();
-
-			
+       // Collect targets
+       for (int i = 0; i < collected.length; ++i) {
+          codegen.collect(collected[i]);
 		}
-		catch (ElementNotFoundException e) {
-			System.err.println("*** ERROR: failed to read index: " + e);
-			e.printStackTrace();
-		}
-		
+
+       codegen.generateClassesDocumentation();
 		
 	}
+   
+   @PropertyDescription(propertyName = "outfile",
+                        propertyDescription = "Output directory name",
+                        numberOfArguments = 1,
+                        required = false,
+                        defaultValue = "./robin_man/")
+   private String outputFile;
+   
+   @PropertyDescription(propertyName = "auto",
+            propertyDescription = "Enable auto collection",
+            numberOfArguments = 0,
+            required = false,
+            defaultValue = "false")
+   private boolean autocollected;
+   
+   @PropertyDescription(propertyName = "collected",
+            propertyDescription = "list of class names to collect documentation from",
+            numberOfArguments = PropertyData.ANY_NUMBER_OF_ARGUMENTS,
+            required = false,
+            defaultValue = "")
+   private String[] collected;
 }

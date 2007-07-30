@@ -16,7 +16,7 @@ class Griffin:
 
     def __init__(self):
         self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
-        self.javacmd = "backend.robin.Launcher"
+        self.javacmd = "backend.Launcher robin"
         self.javaflags = ""
         self.verbose = False
 
@@ -61,7 +61,7 @@ class Griffin:
         return cmd
 
     def run(self, args):
-        cmdline = " ".join([self._command(), self.xmldir] + args)
+        cmdline = " ".join([self._command(), "--input", self.xmldir] + args)
         if self.verbose: print >> sys.stderr, cmdline
         os.system(cmdline)
 
@@ -135,6 +135,8 @@ class Griffin:
     def process(self, args):
         """Runs Griffin front-end and back-end using the given arguments."""
         arg_in, arg_out, arg_opts, arg_other = self._argv(args)
+        arg_out = ["--outfile"] + arg_out
+        arg_other = ["--classes"] + arg_other
 
         if len(arg_in) > 0:
             if arg_in[0] in ["xml", "sources"]:
