@@ -158,6 +158,9 @@ else:
 	else:
 		print "Missing library for -l%s or -l%s !" % (LIBPY1, LIBPY2)
 		Exit(1)
+if not hasattr(env, "Java"):
+	print "No Java compiler (javac) found!"
+	Exit(1)
 
 # Add additional flags
 #env.Append(LINKFLAGS = "-Wl,-z,defs")

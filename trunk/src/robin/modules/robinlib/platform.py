@@ -56,5 +56,6 @@ else:
 def is_gcj(env):
 	"detects gcj for cases where javac is a symlink to wrapper"
 	path = env.WhereIs('javac')
+	if path is None: return False
 	progname = os.path.split(os.path.realpath(path))[1]
 	if progname.startswith("gcj"): return True
