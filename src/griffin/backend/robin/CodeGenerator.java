@@ -697,7 +697,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		for (Iterator aliasIter = m_typedefs.iterator(); aliasIter.hasNext();)
 		{
 			Alias alias = (Alias)aliasIter.next();
-			if (needsEncapsulation(alias)) {
+			if (Filters.needsEncapsulation(alias)) {
 				generateFlatWrapper(alias);
 				generateRegistrationPrototype(alias);
 			}
@@ -791,7 +791,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if (aliased.isFlat()) {
 				m_output.write("\t{\"");
 				m_output.write(Utils.cleanFullName(subject));
-				if (needsEncapsulation(subject)) {
+				if (Filters.needsEncapsulation(subject,true)) {
 					m_output.write("\", \"class\", alias_" + uid(subject));
 					m_output.write("},\n");
 				}
@@ -845,14 +845,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 */
 	private void writeFlatBase(Type type) throws IOException
 	{
-		// Un-typedef
-		Entity base = type.getBaseType();
-		Entity prev = null;
-		while (base instanceof Alias && base != prev && !needsEncapsulation((Alias)base)) {
-			type = ((Alias)base).getAliasedType();
-			prev = base; // - avoid singular loops "typedef struct A A;"
-			base = type.getBaseType();
-		}
+		Entity base = Filters.getOriginalType(type).getBaseType();
+		type = Filters.getOriginalType(type);
 		// express basename
 		m_output.write(Utils.cleanFullName(base));
 		// express template
@@ -892,22 +886,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("[]");
 	}
 
-	/**
-	 * Determines whether a simple typedef requires encapsulation - such
-	 * typedefs are "hidden" using a proxy wrapper class, which has a
-	 * constructor from the aliased type.
-	 * @param alias
-	 * @return <b>true</b> if encapsulation is required - <b>false</b> if
-	 * not.
-	 */
-	private boolean needsEncapsulation(Alias alias)
-	{
-		if (alias.getAliasedType().isFlat() && 
-			alias.getAliasedType().getBaseType() instanceof Primitive)
-			return true;
-		else
-			return false;
-	}
+	
 	
 	/**
 	 * Generates call code for a method or function. 
@@ -1089,7 +1068,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write(")\n{\n\treturn new " + alias.getFullName());
 		m_output.write("(arg0);\n}\n");
 		// Create an access method to retrieve stored type
-		Type realType = alias.getAliasedType();
+		Type realType = Filters.getOriginalType(alias.getAliasedType());
 		Type touchupType = Filters.getTouchup(realType);
 		m_output.write(
 				Formatters.formatDeclaration(realType, "routine_unalias_" + uid(alias), '&'));
@@ -1121,7 +1100,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("\n * " + Formatters.formatLocation(field));
 		m_output.write("\n */\n");
 		// Get some information about the type
-		Type type = removeUnneededConstness(field.getType());
+		Type type = removeUnneededConstness(Filters.getOriginalType(field.getType()));
 		Entity base = type.getBaseType();
 		// Create a get accessor
 		Entity container = field.getContainer();
@@ -1137,14 +1116,25 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		 	+ "; }\n");
 		// Create a set accessor
 		if (Filters.hasSetter(field)) {
+			Type touchedUpType = Filters.getTouchup(type);
 			accessorName = "data_set_" + uid(field) + fors;
 			// - generate accessor function header
 			m_output.write("void " + accessorName + "(" + thisArg + ", " 
-					+ base.getFullName() + " newval)");
+					+ Formatters.formatDeclaration(type, "newval", '*') + ")");
 			// - generate accessor function body
 			m_output.write("{ "
 				+ Formatters.formatMember(field) 
-				+ " = newval; }\n");
+				+ " =  ");
+			
+			// we used a touchup, and now we need to touchdown
+			// ugly hack - should be done in formatter
+			if(touchedUpType != null && touchedUpType != type) {
+				m_output.write("touchdown(newval)");
+			} else {
+				m_output.write(Formatters.formatArgument(type, "newval"));
+			}
+	
+			m_output.write("; }\n");
 			// - generate regdata
 			if (base instanceof Alias)
 				base = ((Alias)base).getAliasedType().getBaseType();
@@ -1623,7 +1613,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(type.getBaseType() instanceof Primitive 
 					? '*' : ptrOperator);
 		else if (Filters.needsExtraReferencing(type)
-			&& !(type.getBaseType() instanceof Primitive))
+			&& !(Filters.getOriginalType(type).getBaseType() instanceof Primitive))
 			m_output.write(extraOperator);
 		if (type.getRoot() != null)
 			writeDecoratedFlatBase(type);
@@ -1641,7 +1631,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		Entity base = type.getBaseType();
 		if (!type.isReference() &&type.getPointerDegree() == 0 
-				&& base instanceof Alias && !needsEncapsulation((Alias)base))
+				&& base instanceof Alias && !Filters.needsEncapsulation((Alias)base))
 			return ((Alias)base).getAliasedType();
 		else
 			return type;

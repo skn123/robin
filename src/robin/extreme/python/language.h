@@ -279,6 +279,44 @@ public:
 };
 
 // ----------------------------------------------------------------------
+class Typedefs
+{
+public:
+	typedef unsigned int uint32_t;
+	typedef double my_double;
+	typedef my_double my_triple;
+	typedef my_triple my_quadruple;
+	typedef my_quadruple my_quintuple;
+
+	void setUint(uint32_t i) { _uint = i; }
+	void setMyDouble(my_double d) { _my_double = d; }
+	void setMyQuintuple(my_quintuple q) { _my_quintuple = q; }
+
+	void setMyQuintuplePtr(my_quintuple *qp) { foo = qp; }
+
+	uint32_t getUint() { return _uint; }
+	my_double getMyDouble() { return _my_double; }
+	my_quintuple getMyQuintuple() { return _my_quintuple; }
+	my_quintuple *getMyQuintuplePtr() { return foo; }
+
+
+private:
+	uint32_t _uint;
+	my_double _my_double;
+	my_quintuple _my_quintuple;
+
+	my_quintuple *foo;
+};
+	
+// ----------------------------------------------------------------------
+
+class PublicDouble {
+	public:
+		double foo;
+		float floatfoo;
+};
+
+// ----------------------------------------------------------------------
 
 // - preprocessor challenge
 

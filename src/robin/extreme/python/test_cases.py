@@ -185,6 +185,23 @@ class LanguageTest(TestCase):
 		pprint.pprint(p, stream=s)
 		self.assertEquals(s.getvalue(), "%r\n" % p)
 
+	def testTypedefs(self):
+		c = language.Typedefs();
+		c.setUint(10);
+		c.setMyDouble(4.5);
+		c.setMyQuintuple(4.5);
+
+		self.assertEquals(c.getUint(), 10);
+		self.assertEquals("%.3f" % c.getMyDouble(), "%.3f" % 4.5)
+		self.assertEquals("%.3f" % c.getMyQuintuple(), "%.3f" % 4.5)
+	
+	def testPublicDoubleAssignment(self):
+		c = language.PublicDouble();
+		c.foo = 10.5
+		c.floatfoo = 10.5
+		self.assertEquals("%.3f" % c.foo, "%.3f" % 10.5)
+		self.assertEquals("%.3f" % c.floatfoo, "%.3f" % 10.5)
+
 
 class ThreadingTest(TestCase):
 
