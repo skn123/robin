@@ -66,9 +66,9 @@ public class Formatters {
 	static String formatDeclaration(Type type, String name, char extraRefScheme)
 	{
 		// Handle redundant referencing
-		if (type.isReference()
+		if (Filters.getOriginalType(type).isReference()
 				&& Filters.isPrimitive(type.getBaseType())) {
-			type = dereference(type);
+			type = dereference(Filters.getOriginalType(type));
 		}
 		// Handle touch-up
 		Type touchupType = Filters.getTouchup(type);
