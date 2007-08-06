@@ -103,7 +103,8 @@ public class Filters {
 			(Utils.allAreFlat(routine)
 			 && !Utils.hasAnyArrays(routine)
 			 && !routine.isTemplated() 
-			 && (routine.getContainer() instanceof Aggregate 
+			 && ((routine.hasContainer() 
+					 && routine.getContainer() instanceof Aggregate) 
 			 	 || isDeclared(routine))
 			 && !isExplicitlyExcluded(routine));
 	}
