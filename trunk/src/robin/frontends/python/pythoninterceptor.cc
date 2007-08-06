@@ -28,11 +28,13 @@ PythonInterceptor::~PythonInterceptor()
  * @param twin a Python object containing the implementation of the callback
  * @param signature specification for the method being invoke
  * @param args arguments as received by function wrapper in C++
- * @returns basic_block The result of the function call.
+ * @parma returnValue The result of the function call
+ * @return true if the implemented function is found and called, false if it was not
  */
-basic_block PythonInterceptor::callback(scripting_element twin,
-								 const Signature& signature,
-								 basic_block args[]) const
+bool PythonInterceptor::callback(scripting_element twin,
+                                 const Signature& signature,
+                                 basic_block args[],
+                                 basic_block &returnValue) const
 {
 	AntiThreadStateGuardian guard;
 
@@ -59,8 +61,7 @@ basic_block PythonInterceptor::callback(scripting_element twin,
 	char *methname = const_cast<char*>(signature.name.c_str());
 	PyObject *method = PyObject_GetAttrString(pytwin, methname);
 	if (!method || FunctionObject_Check(method)) {
-		throw std::runtime_error("pure virtual method '" + signature.name + 
-								 "' is not implemented.");
+		return false;
 	}
 	// Invoke python method
 	PyObject *result = PyObject_CallObject(method, pyargs);
@@ -75,9 +76,8 @@ basic_block PythonInterceptor::callback(scripting_element twin,
 		PyObject_Print(result, stderr, 0); fprintf(stderr, "'\n");
 	}
 
-	basic_block returnValue = 0;
-	
 	// Translate returned value
+	returnValue = 0;
 	if (signature.returnType) {
 		// - detect the result type
 		Handle<TypeOfArgument> detectedType =
@@ -99,7 +99,8 @@ basic_block PythonInterceptor::callback(scripting_element twin,
 	// Cleanup
 	Py_XDECREF(result);
 
-	return returnValue;
+	// return true to indicate that the implemented function was successfully executed
+	return true;
 }
 
 

@@ -23,9 +23,10 @@ class PythonInterceptor : public Interceptor
 public:
 	virtual ~PythonInterceptor();
 
-	virtual basic_block callback(scripting_element twin, 
-								 const Signature& signature,
-								 basic_block args[]) const;
+	virtual bool callback(scripting_element twin, 
+	                      const Signature& signature,
+	                      basic_block args[],
+	                      basic_block &result) const;
 
 private:
 	void reportCallbackError() const;

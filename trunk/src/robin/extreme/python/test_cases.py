@@ -267,9 +267,6 @@ class TemplateTest(TestCase):
 		carrier = templates.Carrier()
 		self.assertEquals( carrier.kints, [666] )
 
-	def testInheritance(self):
-		pass
-
 	def testDerivedFromVector(self):
 		length = 12
 		b5 = templates.Barrier5Vec()
@@ -390,6 +387,38 @@ class InheritanceTest(TestCase):
 		self.assertEquals(len(elements), len(melements))
 		for i in xrange(len(elements)):
 			self.assertEquals(elements[i] * i, melements[i])
+
+        self.assertEquals(reduce(inheritance.mul, [f,f], 9), 9.0)
+
+    def testInterceptorsNonPure1(self):
+        import inheritance, robin
+        class Functor(inheritance.IFunctor):
+            pass
+        class MyFunctor(inheritance.IFunctor):
+            def __init__(self, fac):
+                self.fac = fac
+            def factor(self):
+                return self.fac
+
+        fs = [MyFunctor(0.25), Functor(), MyFunctor(0.5)]
+        self.assertEquals(reduce(inheritance.mul, fs, 2), 0.25)
+
+    def testInterceptorsNonPure2(self):
+        import inheritance, robin
+        class FunctorImpl(inheritance.IFunctorImpl):
+            pass
+        class MyFunctorImpl(inheritance.IFunctorImpl):
+            def operate(self, s, n):
+                return robin.disown(stl.string(str(s) + str(n)))
+
+        fi = FunctorImpl()
+        mfi = MyFunctorImpl()
+        elements = ["Elaine", "John", "Theodore"]
+        melements1 = inheritance.mapper(elements, fi)
+        melements2 = inheritance.mapper(elements, mfi)
+        self.assertEquals(melements1, elements)
+        self.assertEquals(melements2, 
+            map(lambda x,y:x+str(y), elements, range(len(elements))))
 
 
 class HintsTest(TestCase):
