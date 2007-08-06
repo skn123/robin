@@ -80,7 +80,7 @@ import antlr.TokenStreamException;
  * encounter an Entity representing it in type-expressions (see Type), but
  * going through namespaces and scopes you will see no recognition of it.
  * This is the desired behavior, since the user wants to refer to his/her own
- * classes and not propriatary and third-party classes.
+ * classes and not proprietary and third-party classes.
  * </p>
  */
 public class DoxygenAnalyzer {
@@ -322,7 +322,7 @@ public class DoxygenAnalyzer {
 		m_fieldsForRepair = new LinkedList();
 		m_inheritanceForRepair = new LinkedList();
 		m_globalFields_byname = new HashMap();
-		logger = Logger.global;
+		logger = Logger.getLogger("sourceanalysis.dox");
 	}
 	
 	/**
