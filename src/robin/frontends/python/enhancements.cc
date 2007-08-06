@@ -165,6 +165,7 @@ namespace Python {
 			{ "operator double", EnhancementsPack::TO_FLOAT },
 			{ "length",    EnhancementsPack::LENGTH },
 			{ "size",      EnhancementsPack::LENGTH },
+            { "hash",      EnhancementsPack::HASH},
 			{ 0 }
 		};
 	}
