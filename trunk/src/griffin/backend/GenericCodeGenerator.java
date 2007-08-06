@@ -217,9 +217,14 @@ public class GenericCodeGenerator
 	 */
 	protected static Collection allPossibleNames(Entity entity)
 	{
-		List names = new ArrayList(2);
+		List names = new ArrayList();
+		// add the trivial names
 		names.add(entity.getName());
 		names.add(Utils.cleanFullName(entity));
+		// if this is a template instantiation - add the template name as well
+		if ((entity instanceof TemplateEnabledEntity) && ((TemplateEnabledEntity)entity).isSpecialized()) {
+			names.add(((TemplateEnabledEntity)entity).getGeneralTemplateForSpecialization().getGeneral().getName());
+		}
 		return names;
 	}
 	
