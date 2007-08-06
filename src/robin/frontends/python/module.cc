@@ -110,13 +110,13 @@ public:
 		return Py_None;
 	}
 
-#include <iostream>
 
 	static PyObject * py_weighConversion(PyObject *self, PyObject *args)
 	{
 		PyObject *sourcetype, *source;
 		PyObject *desttype  , *dest;
 		PyObject *sourcevalue = NULL;
+		bool source_ismasq=false;
 
 		if (!PyArg_ParseTuple(args, "OO", &sourcetype, &desttype))
 			return NULL;
@@ -145,8 +145,10 @@ public:
 			// instead of the real 'source'
 			if(sourcevalue != NULL) {
 				source = sourcevalue;
+				source_ismasq = false;
 			} else {
 				source = masquerade((PyTypeObject*)sourcetype);
+				source_ismasq = true;
 			}
 
 			try {
@@ -165,7 +167,7 @@ public:
 				w = Conversion::Weight::INFINITE;
 			}
 
-			unmasquerade(source);
+			if (source_ismasq) unmasquerade(source);
 			unmasquerade(dest);
 		}
 
