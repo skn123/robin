@@ -59,6 +59,7 @@ public:
 		REPR,
 		HASH,
 		CALL,
+		ITER,
 		/* Sequence slots */
 		LENGTH,
 		GETITEM,
