@@ -223,11 +223,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("typedef void* basic_block;\n");
 		m_output.write("typedef void* scripting_element;\n\n");
 		
-		m_output.write("extern basic_block (*__callback)(" +
-				"scripting_element twin, RegData *signature, basic_block args[]);\n");
-		m_output.write("basic_block (*__callback)(" +
-				"scripting_element twin, RegData *signature, basic_block args[]) = 0;\n\n");
-		
+        final String callbackvar = 
+                "bool (*__callback)(scripting_element twin, " + 
+                "RegData *signature, basic_block args[], " +
+                "basic_block *result, bool isPure)";
+		m_output.write("extern " + callbackvar + ";\n");
+		m_output.write(callbackvar + " = 0;\n\n");
+	
 		m_output.write("\nnamespace " + m_randomNamespace + " {\n\n");
 		
 		// Special touchup function named same
@@ -407,13 +409,20 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     /**
      * Write the call to __callback
      */
-    private void writeInterceptorFunctionCallbackCall(Aggregate interceptor, Routine routine, int funcCounter)
+    private void writeInterceptorFunctionCallbackCall(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter)
         throws IOException, MissingInformationException
     {
+        ContainedConnection uplink = routine.getContainerConnection();
+        boolean isPure = 
+            (uplink.getVirtuality() == Specifiers.Virtuality.PURE_VIRTUAL);
+
+        // write result definition
+        m_output.write("\t\tbasic_block result = 0;\n");
+
+        // write callback call surrounded by and if clause
         m_output.write("\t\t");
-        if (! routine.getReturnType().equals(
-                new Type(new Type.TypeNode(Primitive.VOID)))) {
-            m_output.write("basic_block result = ");
+        if (!isPure) {
+            m_output.write("if (!");
         }
         m_output.write("__callback(twin, ");
         m_output.write("scope_" + 
@@ -421,7 +430,27 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 " + " +
                 funcCounter + 
                 ", ");
-        m_output.write("args);\n");
+        m_output.write("args, ");
+        m_output.write("&result, ");
+        m_output.write("" + isPure + ")");
+        if (!isPure) {
+            m_output.write(")\n");
+            // write the base class call in case of failure to fine frontend implementation
+            m_output.write("\t\t\t");
+            if (! routine.getReturnType().equals(
+                    new Type(new Type.TypeNode(Primitive.VOID)))) {
+                m_output.write("return ");
+            }
+            m_output.write(subject.getName() + "::" + routine.getName() + "(");
+            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+                m_output.write(((Parameter)argIter.next()).getName() + 
+                    (argIter.hasNext() ? ", " : ""));
+            }
+            m_output.write(");\n");
+        }
+        else {
+            m_output.write(";\n");
+        }
     }
 
     private void writeInterceptorFunctionReturnStatement(Routine routine)
@@ -479,7 +508,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
     }
 
-    private void writeInterceptorFunction(Aggregate interceptor, Routine routine, int funcCounter)
+    private void writeInterceptorFunction(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter)
         throws IOException, MissingInformationException
     {
         // TODO: could newRoutine be defined only in writeInterceptorFunctionAddRoutineToGriffinClass?
@@ -487,7 +516,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         writeInterceptorFunctionAddRoutineToGriffinClass(interceptor, newRoutine);
         writeInterceptorFunctionHeader(newRoutine); // TODO: should this be 'routine' instead of 'newRoutine'?
         writeInterceptorFunctionBasicBlockArgumentArray(routine);
-        writeInterceptorFunctionCallbackCall(interceptor, routine, funcCounter);
+        writeInterceptorFunctionCallbackCall(subject, interceptor, routine, funcCounter);
         writeInterceptorFunctionReturnStatement(routine);
 
         m_output.write("\t}\n\n");
@@ -532,7 +561,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("public:\n");
         m_output.write("\tvirtual ~" + result.getName() + "() {}\n\n");
         
-        // TODO Add base constructor calls in this class
+        // Create base constructor calls
+        boolean anyCtors = false;
         for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
             ContainedConnection connection = (ContainedConnection) ctorIter.next();
             final Routine ctor = (Routine) connection.getContained();
@@ -541,14 +571,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 (connection.getVisibility() != Specifiers.Visibility.PRIVATE)) {
         
                 addInterceptorBaseConstructor(ctor, subject, result);
-
+                anyCtors = true;
                 ++funcCounter;
             }
         }
 
-        // It checks if the class has no constructors user-implemented at all
-        // (it has only compiler-made default constructor)
-        if (Utils.hasDefaultConstructor(subject)) {
+        // - it checks if the class has no constructors user-implemented at all
+        //   (i.e. has only compiler-made default constructor)
+        if (Utils.hasDefaultConstructor(subject) && !anyCtors) {
             final Routine ctor = new Routine();
             // ctor return type is 'nothing'
             ctor.setReturnType(new Type(null));
@@ -572,7 +602,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 Utils.minimalArgumentCount(routine);
             funcCounter += defaultArgumentCount;
             
-            writeInterceptorFunction(result, routine, funcCounter);
+            writeInterceptorFunction(subject, result, routine, funcCounter);
 
             // Increment the function pointer counter
             funcCounter++;

@@ -1398,6 +1398,21 @@ public class Utils {
 	{
 		List virtual = new LinkedList();
 		
+		// Add virtual methods declared in this class
+		for (Iterator subjectMethodIter = subject.getScope().routineIterator();
+		     subjectMethodIter.hasNext(); ) {
+
+			ContainedConnection rconnection =
+				(ContainedConnection)subjectMethodIter.next();
+			Routine myMethod = (Routine)rconnection.getContained();
+
+			if (rconnection.getVirtuality() 
+			    != Specifiers.Virtuality.NON_VIRTUAL &&
+				!myMethod.isDestructor()) {
+			    virtual.add(myMethod); 
+			}
+		}
+		
 		// Get virtual methods from base classes
 		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
 		{
@@ -1413,37 +1428,28 @@ public class Utils {
 			if (base == null) continue;
 			// - recursively fetch the virtual methods in the base class
 			Collection baseVirtual = virtualMethods(base, instanceMap);
-			for (Iterator virtIter = baseVirtual.iterator(); virtIter.hasNext(); )
-				virtual.add(virtIter.next());
-		}
+			for (Iterator baseVirtIter = baseVirtual.iterator(); 
+                 baseVirtIter.hasNext(); ) {
+                Routine baseMethod = (Routine)baseVirtIter.next();
 
-		// Add virtual methods declared in this class
-		for (Iterator subjectMethodIter = subject.getScope().routineIterator();
-		     subjectMethodIter.hasNext(); ) {
-
-			ContainedConnection rconnection =
-				(ContainedConnection)subjectMethodIter.next();
-			Routine myMethod = (Routine)rconnection.getContained();
-
-			if (rconnection.getVirtuality() 
-			    != Specifiers.Virtuality.NON_VIRTUAL &&
-				!myMethod.isDestructor()) {
+                // - ensure that a compatible method has not previously 
+                //  occurred
 				boolean found = false;
 				
 				for (Iterator virtIter = virtual.iterator(); virtIter.hasNext(); ) {
 					Routine virtMethod = (Routine)virtIter.next();
-					if (hasCompatibleSignatures(virtMethod, myMethod)) {
+					if (virtMethod.isCompatible(baseMethod)) {
 						found = true;
 						break;
 					}
 				}
 				
 				if (!found) {
-					virtual.add(myMethod); 
-				}
-			}
+				    virtual.add(baseMethod);
+                }
+            }
 		}
-		
+
 		return virtual;
 	}
 	
@@ -1625,6 +1631,42 @@ public class Utils {
             return templateEnabled.getGeneralTemplateForSpecialization().getGeneral(); 
         return null;
 	}
+
+    /**
+     * Looks for the lowest parent declaration which is equivalent to the
+     * given routine, i.e. that the given routine is an overriding 
+     * implementation thereof.
+     * @param routine a routine in a derived class. Must be contained in
+     *   an Aggregate entity.
+     * @return a compatible routine in a parent class
+     * @throws ElementNotFoundException if such a declaration cannot be
+     *   located
+     * @throws MissingInformationException if information about base classes
+     *   is insufficient to determine presence of such a declaration
+     */
+    public static Routine seekBaseDeclaration(Routine routine) 
+        throws ElementNotFoundException, MissingInformationException
+    {
+        Entity container = routine.getContainer();
+        if (!(container instanceof Aggregate))
+            throw new ElementNotFoundException("routine", routine.getName());
+
+        Aggregate derived = (Aggregate)container;
+
+        for (Iterator baseIter = derived.baseIterator(); baseIter.hasNext(); ) {
+            Aggregate base = ((InheritanceConnection)baseIter.next()).getBase();
+            for (Iterator routineIter = base.getScope().routineIterator();
+                 routineIter.hasNext(); ) {
+                ContainedConnection conn = 
+                    (ContainedConnection)routineIter.next();
+                Routine candidate = (Routine)conn.getContained();
+                System.err.println("candidate " + candidate.getFullName());
+                if (routine.isCompatible(candidate))
+                    return candidate;
+            }
+        }
+        throw new ElementNotFoundException("routine", routine.getName());
+    }
 	
 	public static class FileTools {
 		/**

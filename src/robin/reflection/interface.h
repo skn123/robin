@@ -34,9 +34,11 @@ public:
 	/**
 	 * Invokes a scripting-environment function with the given signature and
 	 * arguments.
+	 *
+	 * Returns true if the call succeeded, false if no appropriate function was found.
 	 */
-	virtual basic_block callback(scripting_element twin, const Signature& signature,
-						  basic_block args[]) const = 0;
+	virtual bool callback(scripting_element twin, const Signature& signature,
+						  basic_block args[], basic_block& result) const = 0;
 
 };
 
@@ -46,13 +48,17 @@ struct RegData;
 class Interface
 {
 public:
-	typedef basic_block (*callback_t)(scripting_element twin,
+	typedef bool (*callback_t)(scripting_element twin,
 							   RegData *signature,
-							   basic_block args[]);
+							   basic_block args[],
+							   basic_block *result,
+                               bool pureVirtual);
 
-	static basic_block global_callback(scripting_element twin,
+	static bool global_callback(scripting_element twin,
 								RegData *signature,
-								basic_block args[]);
+								basic_block args[],
+								basic_block *result,
+                                bool pureVirtual);
 };
 
 

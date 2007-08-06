@@ -252,6 +252,23 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	{
 		return m_throws.iterator();
 	}
+
+    public boolean isCompatible(Routine other)
+        throws MissingInformationException
+    {
+        if (!getName().equals(other.getName())) return false;
+        if (isConst() != other.isConst()) return false;
+
+        Iterator my, his;
+        for (my = parameterIterator(), his = other.parameterIterator();
+                my.hasNext() && his.hasNext(); ) {
+            if (!((Parameter)my.next()).getType()
+                   .equals( ((Parameter)his.next()).getType())) {
+                return false;
+            }
+        }
+        return (!my.hasNext() && !his.hasNext());
+    }
 	
 	/**
 	 * @see java.lang.Object#clone()
