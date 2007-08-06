@@ -719,6 +719,9 @@ PyObject *ClassObject::__getattr__(const char *name)
 		};
 		return PyMethod_New(PyCFunction_New(&method,0), NULL, (PyObject*)this);
 	}
+	else if (strcmp(name, "__bases__") == 0) {
+		return Py_BuildValue("(O)", &PyType_Type);
+	}
 	else {
 		// - look for static inners
 		PyObject *inner = PyDict_GetItemString(m_inners, (char*)name);
@@ -726,16 +729,8 @@ PyObject *ClassObject::__getattr__(const char *name)
 			return pyowned(inner);
 		}
 		else {
-			/*// - look for static inners of the pattern .data_XXX (variables)
-			std::string sname = PythonFrontend::DATAMEMBER_PREFIX + name;
-			inner = PyDict_GetItemString(m_inners, (char*)sname.c_str());
-			if (inner) {
-				return PyObject_CallObject(inner, NULL);
-			}
-			else {*/
-				PyErr_SetString(PyExc_AttributeError, name);
-				return NULL;
-			//}
+			PyErr_SetString(PyExc_AttributeError, name);
+			return NULL;
 		}
 	}
 }
