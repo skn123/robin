@@ -550,7 +550,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // (it has only compiler-made default constructor)
         if (Utils.hasDefaultConstructor(subject)) {
             final Routine ctor = new Routine();
+            // ctor return type is 'nothing'
+            ctor.setReturnType(new Type(null));
+            ++funcCounter;
             addInterceptorBaseConstructor(ctor, subject, result);
+            
         }
         
         m_output.write("\tvoid _init(scripting_element imp) { twin = imp; }\n\n");
