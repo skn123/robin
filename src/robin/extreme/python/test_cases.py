@@ -178,6 +178,13 @@ class LanguageTest(TestCase):
 		sst = robin.dereference(a)
 		self.assertEquals(sst.member, 97)
 
+	def testClassTypeConsistency(self):
+		import pprint, StringIO
+		p = language.Pointers()
+		s = StringIO.StringIO()
+		pprint.pprint(p, stream=s)
+		self.assertEquals(s.getvalue(), "%r\n" % p)
+
 
 class ThreadingTest(TestCase):
 
