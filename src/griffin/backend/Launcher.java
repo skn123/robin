@@ -117,7 +117,22 @@ public class Launcher {
            // new property
            if(args[i].startsWith("--")) {
                currentProperty = args[i].substring(2);
-               propertiesMap.put(currentProperty, new LinkedList<String>());
+              
+               // this is to handle a simple form of --arg=val argument passing
+               int eqIndex = currentProperty.indexOf("="); 
+               if(eqIndex != -1) {
+                   // assume val is the only value
+                   String realProperty = currentProperty.substring(0,eqIndex);
+                   String propertyValue = currentProperty.substring(eqIndex+1);
+                   propertiesMap.put(realProperty, new LinkedList<String>());
+                   propertiesMap.get(realProperty).add(propertyValue);
+                   // reset to disallow any more arguments
+                   currentProperty = null;
+               } else {
+                   // assume that this is just the property name and arguments
+                   // come later
+	  	             propertiesMap.put(currentProperty, new LinkedList<String>());
+               }
            } else if(currentProperty == null) {
                // if we reached this point and currentProperty is null, we have an erroneous command line
                throw new InvalidCommandLineException("Please use '--property0 arg0 arg1 --property1 arg0 ...' format");
