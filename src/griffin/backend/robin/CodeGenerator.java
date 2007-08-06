@@ -136,7 +136,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Go through all of the Subjects, searching for the given name
 		for (Iterator subjectiter = m_subjects.iterator(); subjectiter.hasNext(); ) {
 			Aggregate agg = (Aggregate)subjectiter.next();
-            try { if (!backend.Utils.isAbstract(agg)) continue; } catch (MissingInformationException e) {}
+            try { if (!backend.Utils.isPolymorphic(agg)) continue; } catch (MissingInformationException e) {}
             if (agg.isTemplated() && m_separateClassTemplates) continue;
 
             m_interceptors.add( agg );
