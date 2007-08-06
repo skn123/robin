@@ -23,7 +23,6 @@
 #include <robin/reflection/instance.h>
 #include "pythonobjects.h"
 
-
 namespace Robin {
 
 namespace Python {
@@ -272,6 +271,26 @@ public:
 							   PyObject *kw) {
 		PyObject *res = self_trigger(EnhancementsPack::CALL, self, args);
 		return res;
+	}
+};
+
+/**
+ * Deploys the ITER protocol in Python.
+ */
+class IterProtocol : public Protocol
+{
+	virtual void deploy(ClassObject *type, SlotID slot, Handler handler) {
+		type->tp_flags |= Py_TPFLAGS_HAVE_ITER;
+		type->tp_iter = &__iter__;
+		type->getEnhancements().setSlot(EnhancementsPack::ITER, handler);
+	}
+
+	static PyObject * __iter__(PyObject *self) {
+		PyObject *args = PyTuple_New(0);
+		PyObject *iter = self_trigger(EnhancementsPack::ITER, self, args);
+		Py_DECREF(args);
+		
+		return iter;
 	}
 };
 
@@ -1055,6 +1074,7 @@ EnhancementsPack::SlotID EnhancementsPack::slotByName(const std::string&
 	else if (slotname == "__hash__")         return HASH;
 	else if (slotname == "__call__")         return CALL;
 	else if (slotname == "__len__")          return LENGTH;
+	else if (slotname == "__iter__")         return ITER;
 	else if (slotname == "__getitem__")      return GETITEM;
 	else if (slotname == "__setitem__")      return SETITEM;
 	else if (slotname == "__delitem__")      return DELITEM;
@@ -1181,6 +1201,7 @@ Protocol& Protocol::deployerBySlot(EnhancementsPack::SlotID slot)
 	static ReprProtocol         repr;
 	static HashProtocol         hash;
 	static CallProtocol         call;
+    static IterProtocol         iter;
 	static LengthProtocol       len;
 	static GetItemProtocol      getitem;
 	static SetItemProtocol      setitem;
@@ -1217,7 +1238,7 @@ Protocol& Protocol::deployerBySlot(EnhancementsPack::SlotID slot)
 
 	// - binary operation protocols are listed twice for the R_xxx version
 	static Protocol *slots[EnhancementsPack::NSLOTS] =
-		{ &print, &str, &repr, &hash, &call,
+		{ &print, &str, &repr, &hash, &call, &iter, 
 		  &len, &getitem, &setitem, &delitem, &getslice, &setslice, &delslice,
 		  &add, &add, &sub, &sub, &mul, &mul, &div, &div, &mod, &mod, 
 		  &pow, &pow,
