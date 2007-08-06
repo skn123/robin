@@ -394,9 +394,54 @@ public class Filters {
 	{
 		int pointers = type.getPointerDegree();
 		boolean reference = type.isReference();
-		Entity base = type.getBaseType();
+		Entity base = Filters.getOriginalType(type).getBaseType();
+		
 		if ((!reference && pointers == 0) && 
 			!(isSmallPrimitive(base) || base instanceof sourceanalysis.Enum)) return true;
+		else
+			return false;
+	}
+	
+	/**
+	 * Given a type, returns the type it was 
+	 * originally derived from
+	 * 
+	 * @param type type to be stripped from typedefs
+	 * @return Base of the typedef
+	 */
+	public static Type getOriginalType(Type type) {
+		// Un-typedef
+		Entity base = type.getBaseType();
+		Entity prev = null;
+		while (base instanceof Alias && base != prev && !Filters.needsEncapsulation((Alias)base, true)) {
+			type = ((Alias)base).getAliasedType();
+			prev = base; // - avoid singular loops "typedef struct A A;"
+			base = type.getBaseType();
+		}
+		return type;
+	}
+	
+	public static boolean needsEncapsulation(Alias alias)
+	{
+		return needsEncapsulation(alias, false);
+	}
+	
+	/**
+	 * Determines whether a simple typedef requires encapsulation - such
+	 * typedefs are "hidden" using a proxy wrapper class, which has a
+	 * constructor from the aliased type.
+	 * @param alias
+	 * @param ignoreSize true if the size of the primitive should be ignored (if it's a typedef)
+	 * @return <b>true</b> if encapsulation is required - <b>false</b> if
+	 * not.
+	 */
+	public static boolean needsEncapsulation(Alias alias, boolean ignoreSize)
+	{
+		if (alias.getAliasedType().isFlat() && 
+			alias.getAliasedType().getBaseType() instanceof Primitive && 
+				(!ignoreSize && !Filters.isSmallPrimitive(alias.getAliasedType().getBaseType()) ||
+				 alias.getAliasedType().getPointerDegree() != 0))
+			return true;
 		else
 			return false;
 	}
