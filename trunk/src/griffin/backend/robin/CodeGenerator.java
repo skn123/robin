@@ -1195,7 +1195,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("\", ");
 			// Write type
 			// - get attributes
-			Type type = parameter.getType();
+			Type type = Filters.getOriginalType(parameter.getType());
 			Entity base = type.getBaseType();
 			int pointers = type.getPointerDegree();
 			boolean reference = type.isReference();

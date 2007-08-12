@@ -15,7 +15,7 @@ public class Formatters {
 		}
 		// Handle redundant referencing
 		if (type.isReference()
-				&& Filters.isSmallPrimitive(type.getBaseType())) {
+				&& Filters.isSmallPrimitive(Filters.getOriginalType(type).getBaseType())) {
 			type = dereference(type);
 		}
 		return type.formatCpp(name);
