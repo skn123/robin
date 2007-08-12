@@ -71,6 +71,9 @@ public:
 	void declare(std::string name, Handle<Namespace> element);
 
 	void alias(std::string actual, std::string aliased);
+    // made public, because frontends need its services
+    // to properly resolve typedefs
+	void unalias(std::string& name) const;
 	//@}
 
 	/**
@@ -100,7 +103,6 @@ private:
 	struct Imp;
 	Imp *imp;
 
-	void unalias(std::string& name) const;
 };
 
 /**

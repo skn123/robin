@@ -160,8 +160,76 @@ namespace {
 		Py_XDECREF(pysplit);
 	}
 
+    PyObject *getPrimitiveType(Handle<Namespace> &namespc,
+                               const std::string &type_name)
+    {
+        std::string type = type_name;
+		
+		// remove the unnecessary modifiers (just const for now)
+		if (type.substr(0,6) == "const ") {
+			type.erase(type.begin(),
+			                  type.begin() + 6);
+		}
 
-	PyObject *identifyTemplateArgument(PythonFrontend& fe,
+        namespc->unalias(type);
+
+		// identify the argument
+		if      (type == "int")      return (PyObject*)&PyInt_Type;
+		else if (type == "float")    return (PyObject*)&PyFloat_Type;
+		else if (type == "long")     return (PyObject*)&PyLong_Type;
+		else if (type == "long long")       return pylong_long;
+		else if (type == "char")            return pychar;
+		else if (type == "double")          return pydouble;
+		else if (type == "unsigned int")    return pyunsigned_int;
+		else if (type == "unsigned long")   return pyunsigned_long;
+		else if (type == "unsigned long long")
+			                                       return pyunsigned_long_long;
+		else if (type == "unsigned char")   return pyunsigned_char;
+		else if (type == "signed char")     return pysigned_char;
+		else if (type == "char *")    return (PyObject*)&PyString_Type;
+        else
+                // not a primitive type
+                throw LookupFailureException();
+    }
+
+    PyObject *getBuiltinType(Handle<Namespace> &namespc,
+                               const std::string &type_name)
+    {
+        std::string type = type_name;
+		
+		// remove the unnecessary modifiers (just const for now)
+		if (type.substr(0,6) == "const ") {
+			type.erase(type.begin(),
+			                  type.begin() + 6);
+		}
+
+        namespc->unalias(type);
+
+		// identify the argument
+		if      (type == "int")      return (PyObject*)&PyInt_Type;
+		else if (type == "float")    return (PyObject*)&PyFloat_Type; 
+		else if (type == "long")     return (PyObject*)&PyLong_Type; 
+		else if (type == "long long")       return (PyObject*)&PyLong_Type;
+		else if (type == "char")            return (PyObject*)&PyString_Type;
+		else if (type == "double")          return (PyObject*)&PyFloat_Type;
+		else if (type == "unsigned int")    return (PyObject*)&PyInt_Type;
+		else if (type == "unsigned long")   return (PyObject*)&PyLong_Type;
+		else if (type == "unsigned long long")
+			                                       return (PyObject*)&PyLong_Type;
+		else if (type == "unsigned char")   return (PyObject*)&PyString_Type;
+		else if (type == "signed char")     return (PyObject*)&PyString_Type;
+		else if (type == "char *")    return (PyObject*)&PyString_Type;
+        else
+                throw LookupFailureException();
+
+
+    }
+
+
+
+
+	PyObject *identifyTemplateArgument(Handle<Namespace> namespc, 
+                                       PythonFrontend& fe,
 									   const std::string& templateargname)
 	{
 		std::string templatearg = templateargname;
@@ -172,22 +240,12 @@ namespace {
 			                  templatearg.begin() + 6);
 		}
 
-		// identify the argument
-		if      (templatearg == "int")      return (PyObject*)&PyInt_Type;
-		else if (templatearg == "float")    return (PyObject*)&PyFloat_Type;
-		else if (templatearg == "long")     return (PyObject*)&PyLong_Type;
-		else if (templatearg == "long long")       return pylong_long;
-		else if (templatearg == "char")            return pychar;
-		else if (templatearg == "double")          return pydouble;
-		else if (templatearg == "unsigned int")    return pyunsigned_int;
-		else if (templatearg == "unsigned long")   return pyunsigned_long;
-		else if (templatearg == "unsigned long long")
-			                                       return pyunsigned_long_long;
-		else if (templatearg == "unsigned char")   return pyunsigned_char;
-		else if (templatearg == "signed char")     return pysigned_char;
-		else if (templatearg == "char *")    return (PyObject*)&PyString_Type;
-		else
+        try {
+            // see if it's a primitive type
+            return getPrimitiveType(namespc, templatearg);
+        } catch(LookupFailureException &) {
 			return (PyObject*)fe.getClassObject(templatearg);
+        }
 	}
 
 	/**
@@ -620,7 +678,8 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !alias_iter->done(); alias_iter->next()) {
 		try {
 			std::string name = alias_iter->value();
-			Handle<Class> aliased = globals->lookupClass(name);
+			
+            Handle<Class> aliased = globals->lookupClass(name);
 			ClassObject *pyaliased = m_classes[&*aliased];
 			insertIntoNamespace(newcomer.name(), module, name,
 								pyowned((PyObject*)pyaliased));
@@ -628,6 +687,20 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 			m_classesByName[name] = pyaliased;
 		}
 		catch (LookupFailureException& ) {
+            // this could be a primitive type
+            try {
+                    std::string name = alias_iter->value();
+                    // FIXME: XXX:
+                    // if desired to use a python built-in type (type<'int'>, etc)
+                    // this call should be replaced by getBuiltinType
+                    PyObject *prim_type = getPrimitiveType(globals, name);
+                    insertIntoNamespace(newcomer.name(), module, name,
+                                    pyowned(prim_type));
+                    continue;
+            } catch(LookupFailureException &) {
+                    // not a primitive, fallthrough to failure scenario
+            } 
+
 			// ignore this alias
 		}
 	}
@@ -636,7 +709,7 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !tname_iter->done(); tname_iter->next()) {
 		// Create or access a template object if necessary
 		std::string classname = tname_iter->value(), templatename;
-		TemplateObject *pytemplate = exposeTemplate(T_CLASS, classname,
+		TemplateObject *pytemplate = exposeTemplate(globals, T_CLASS, classname,
 													templatename);
 		if (pytemplate)
 			insertIntoNamespace(newcomer.name(), module, templatename, 
@@ -646,7 +719,7 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !tfname_iter->done(); tfname_iter->next()) {
 		// Create or access a template object if necessary
 		std::string funcname = tfname_iter->value(), templatename;
-		TemplateObject *pytemplate = exposeTemplate(T_FUNCTION, funcname,
+		TemplateObject *pytemplate = exposeTemplate(globals, T_FUNCTION, funcname,
 													templatename);
 		if (pytemplate)
 			insertIntoNamespace(newcomer.name(), module, templatename, 
@@ -739,7 +812,8 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
  * template instance at all; in that case nothing will be done and the return
  * value will be <b>NULL</b>.
  */
-TemplateObject *PythonFrontend::exposeTemplate(TemplateKind kind,
+TemplateObject *PythonFrontend::exposeTemplate(Handle<Namespace> &namespc, 
+                                               TemplateKind kind,
 											   const std::string& elemname,
 											   std::string& templatename)
 {
@@ -764,7 +838,7 @@ TemplateObject *PythonFrontend::exposeTemplate(TemplateKind kind,
 		PyObject *pyarguments = NULL;
 		// If this is only one item, just use it instead of the tuple
 		if (templateargs.size() == 1) {
-			pyarguments = identifyTemplateArgument(*this, templateargs[0]);
+			pyarguments = identifyTemplateArgument(namespc, *this, templateargs[0]);
 			Py_XINCREF(pyarguments);
 		}
 		// If there are more than one argument, use a tuple
@@ -772,7 +846,7 @@ TemplateObject *PythonFrontend::exposeTemplate(TemplateKind kind,
 			pyarguments = PyTuple_New(templateargs.size());
 			for (size_t i = 0; i < templateargs.size(); ++i) {
 				PyObject *pyargument = 
-					identifyTemplateArgument(*this, templateargs[i]);
+					identifyTemplateArgument(namespc, *this, templateargs[i]);
 				if (!pyargument) {
 					return NULL;
 				}

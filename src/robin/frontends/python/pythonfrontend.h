@@ -33,6 +33,7 @@ struct _typeobject;
 
 namespace Robin {
 
+class Namespace;
 class Class;
 class EnumeratedType;
 
@@ -155,7 +156,7 @@ protected:
 	bool getTemplateName(const std::string& classname, 
 	                     std::string& templatename,
 	                     std::vector<std::string>& templateargs);
-	TemplateObject *exposeTemplate(TemplateKind kind,
+	TemplateObject *exposeTemplate(Handle<Namespace>& namespc, TemplateKind kind,
 								   const std::string& classname,
 								   std::string& templatename);
 	void *getRegisteredObject(TemplateKind kind, const std::string& name);
