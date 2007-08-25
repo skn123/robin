@@ -34,9 +34,10 @@ BoundMethod::~BoundMethod()
  * Forwards the call to the approperiate instance
  * method.
  */
-scripting_element BoundMethod::call(const ActualArgumentList& args) const
+scripting_element BoundMethod::call(const ActualArgumentList& args,
+                                    const KeywordArgumentMap &kwargs) const
 {
-    return m_method->callUpon(*m_instance, args);
+    return m_method->callUpon(*m_instance, args, kwargs);
 }
 
 } // end of namespace Robin

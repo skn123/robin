@@ -525,7 +525,48 @@ class DocumentationTest(TestCase):
 		# Search for John Smith
 		johnsmithfile = robinhelp._find_datafile("smith.john")
 		self.failUnless(johnsmithfile.read().startswith("MAGIC-PREFACE\n"))
-	
+
+
+class KwargsTest(TestCase):
+    
+    def setUp(self):
+        import kwargs
+        self.k = kwargs.KwClass()
+    def testSimpleKwargs(self):
+        self.k.setMembers(a=1,b=2)
+        self.failUnless(self.k.m_a == 1)
+        self.failUnless(self.k.m_b == 2)
+
+    def testTransposedKwargs(self):
+        self.k.setMembers(b=2,a=1)
+        self.failUnless(self.k.m_a == 1)
+        self.failUnless(self.k.m_b == 2)
+
+    def testKwargsWithTransposedRealArgs(self):
+        self.k.setMembers2(a=1,b=2)
+        self.failUnless(self.k.m_a == 1)
+        self.failUnless(self.k.m_b == 2)
+
+    def testKwargsWithArgs(self):
+        self.k.setMembersWithExtraArgs(10,b=2,a=1)
+        self.failUnless(self.k.m_a == 1)
+        self.failUnless(self.k.m_b == 2)
+        self.failUnless(self.k.m_dummy == 10)
+
+    def testKwargsWithArgs2(self):
+        self.k.setMembersWithExtraArgs(10,1,b=2)
+        self.failUnless(self.k.m_a == 1)
+        self.failUnless(self.k.m_b == 2)
+        self.failUnless(self.k.m_dummy == 10)
+
+    def testBadKwargsNonLast(self):
+        try:
+            self.k.setMembers(1,a=1)
+            self.fail()
+        except:
+            pass
+
+        	
 
 # If the tests are run in debug mode, don't include xParam tests which are for release
 import os

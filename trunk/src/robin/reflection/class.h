@@ -104,7 +104,7 @@ public:
     //@{
     Handle<Instance> createInstance() const;
     Handle<Instance> createInstance(const Instance& other) const;
-    Handle<Instance> createInstance(const ActualArgumentList& ctor_args)
+    Handle<Instance> createInstance(const ActualArgumentList& ctor_args, const KeywordArgumentMap& kwargs)
 		const;
 
 	void destroyInstance(Instance& instance) const;

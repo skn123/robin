@@ -20,6 +20,8 @@
 #define ROBIN_CALLABLE_H
 
 #include <vector>
+#include <map>
+#include <string>
 #include <exception>
 
 
@@ -36,6 +38,7 @@ class Instance;
 typedef void *scripting_element;
 typedef std::vector<scripting_element> ActualArgumentList;
 typedef scripting_element ActualArgumentArray[];
+typedef std::map<std::string, scripting_element> KeywordArgumentMap;
 
 #define NONE ((void*)0)
 
@@ -52,7 +55,7 @@ public:
      * Invokes the Callable object given a list
      * of arguments. Override to implement a callable action.
      */
-    virtual scripting_element call(const ActualArgumentList& args) 
+    virtual scripting_element call(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) 
       const = 0;
 
 	virtual ~Callable() { }
@@ -74,11 +77,13 @@ public:
      * Override to implement a callable action.
      */
     virtual scripting_element callUpon(Instance& self, 
-				       const ActualArgumentList& args) 
+				       const ActualArgumentList& args,
+                       const KeywordArgumentMap &kwargs) 
       const = 0;
 
 	virtual ~CallableWithInstance() { }
 };
+
 
 /**
  * @class InvalidArgumentsException
@@ -90,7 +95,12 @@ public:
 class InvalidArgumentsException : public std::exception
 {
 public:
-    const char *what() const throw() { return "invalid arguments."; }
+    InvalidArgumentsException() : m_reason("invalid arguments."){ }
+    InvalidArgumentsException(const std::string &reason) : m_reason(reason) { }
+    ~InvalidArgumentsException() throw() { }
+    const char *what() const throw() { return m_reason.c_str(); }
+private:
+    std::string m_reason;
 };
 
 } // end of namespace Robin

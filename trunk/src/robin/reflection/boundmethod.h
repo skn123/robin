@@ -60,7 +60,8 @@ public:
 	 * @name Call
 	 */
 	//@{
-	virtual scripting_element call(const ActualArgumentList& args)
+	virtual scripting_element call(const ActualArgumentList& args,
+                                const KeywordArgumentMap &kwargs)
 		const;
 	//@}
 

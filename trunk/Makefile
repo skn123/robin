@@ -145,8 +145,17 @@ autocollect-test@%:
 	$(CXX) -shared $(extreme_python)/libautocollect_robin.cc   \
 		-o $(extreme_python)/libautocollect.so
 
-TESTS = language-test protocols-test inheritance-test hints-test autocollect-test
-TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest
+
+kwargs-test@%:
+	$($*)/griffin --in $(extreme_python)/kwargs.h 	                 \
+	        --out $(extreme_python)/libkwargs_robin.cc            	 \
+	        KwClass
+	$(CXX) -shared $(extreme_python)/libkwargs_robin.cc              \
+	        -o $(extreme_python)/libkwargs.so
+
+
+TESTS = language-test protocols-test inheritance-test hints-test autocollect-test kwargs-test
+TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest KwargsTest
 TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
 TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)
 TESTING_PYTHON_VG = cd $(extreme_python) && $(SELF) valgrind --tool=memcheck $(python)

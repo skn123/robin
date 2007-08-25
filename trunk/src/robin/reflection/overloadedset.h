@@ -28,7 +28,14 @@
 #include "cfunction.h"
 
 
+
 namespace Robin {
+
+
+
+
+
+
 
 /**
  * @class OverloadedSet
@@ -68,7 +75,7 @@ public:
 	 * interface.
 	 */
 	//@{
-	virtual scripting_element call(const ActualArgumentList& args) const;
+	virtual scripting_element call(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const;
 
 	//@}
 
@@ -90,9 +97,20 @@ public:
 	//@{
 	static void forceRecompute();
 	//@}
+    
+
 
 private:
-	typedef std::vector<Handle<CFunction> > altvec;
+
+    typedef std::vector<Handle<CFunction> > altvec;
+
+
+/*    scripting_element callWithoutKWargs(const ActualArgumentList& args) const;
+    scripting_element callWithKWargs(const ActualArgumentList& args, const KeywordArgumentMap& kwargs) const;*/
+    scripting_element call_impl(const ActualArgumentList& args, const KeywordArgumentMap& kwargs) const;
+
+
+
 	altvec m_alternatives;
 	bool m_allow_edge;
 
