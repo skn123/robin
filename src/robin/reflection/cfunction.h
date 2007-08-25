@@ -20,6 +20,8 @@
 // STL includes
 #include <vector>
 #include <string>
+#include <set>
+#include <map>
 
 // Pattern includes
 #include <pattern/handle.h>
@@ -46,7 +48,7 @@ typedef	std::vector<Handle<TypeOfArgument> > FormalArgumentList;
  * translated by querying the registered <classref>TypeOfArgument</classref>s
  * and forwarded to an approperiate low-level call.
  */
-class CFunction : public Callable
+class CFunction
 {
 public:
     /**
@@ -79,8 +81,19 @@ public:
 	//@{
 	const FormalArgumentList& signature() const;
 	Handle<TypeOfArgument> returnType() const;
+    const std::vector<std::string> &argNames() const;
 
     //@}
+
+    /**
+     * @name Translation of keyword arguments
+     */
+    
+    //@{
+    Handle<ActualArgumentList> mergeWithKeywordArguments(const ActualArgumentList &args, const KeywordArgumentMap &kwargs);
+
+    //@}
+    
     /**
      * @name Calling Conventions
      */
@@ -97,11 +110,14 @@ public:
 
 private:
     typedef FormalArgumentList arglist;
+    typedef std::map<std::string, unsigned int> ArgumentPositionMap;
 
     symbol                   m_functionSymbol;
     Handle<TypeOfArgument>   m_returnType;
     arglist                  m_formalArguments;
     std::vector<std::string> m_formalArgumentNames;
+
+    ArgumentPositionMap m_formalArgumentNamePositionMap;
 };
 
 

@@ -78,12 +78,13 @@ scripting_element ConversionViaConstruction::apply(scripting_element value)
 {
 	// Build argument list = [ value ]
 	ActualArgumentList single_arg;
+    KeywordArgumentMap nokwargs;
 	single_arg.push_back(value);
 
 	// Call constructor
 	assert(targetType()->basetype().spec == TYPE_USERDEFINED_OBJECT);
 	Handle<Instance> converted =
-		targetType()->basetype().objclass->createInstance(single_arg);
+		targetType()->basetype().objclass->createInstance(single_arg, nokwargs);
 
 	// Create a scripting wrapper
 	return converted->scriptify(Instance::OWNER);

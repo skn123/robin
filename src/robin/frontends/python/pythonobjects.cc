@@ -406,14 +406,28 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 	for (int argindex = 0; argindex < nargs; ++argindex)
 		pass_args[argindex] = PyTuple_GetItem(args, argindex);
 
+
+    // XXX: initialize from kw
+    KeywordArgumentMap kwargs;
+
+    if(kw != NULL && kw != Py_None) {
+        assert(PyDict_Check(kw));
+        PyObject *key, *value;
+        ssize_t pos = 0;
+        while(PyDict_Next(kw, &pos, &key, &value)) {
+            std::string kwmap_key(PyString_AsString(key));
+            kwargs[kwmap_key] = value;
+        }
+    }
+
 	// Invoke callable item
 	scripting_element return_value;
 	try {
 		if (m_self)
 			return_value = m_underlying_thiscall
-				->callUpon(*m_self->getUnderlying(), pass_args);
+				->callUpon(*m_self->getUnderlying(), pass_args, kwargs);
 		else
-			return_value = m_underlying->call(pass_args);
+			return_value = m_underlying->call(pass_args, kwargs);
 	}
 	catch (const UserExceptionOccurredException& e) {
 		// - retrieve the current error information, if possible
@@ -644,9 +658,13 @@ Handle<Instance> ClassObject::construct(PyObject *args, PyObject *kw)
 	for (int argindex = 0; argindex < nargs; ++argindex)
 		pass_args[argindex] = PyTuple_GetItem(args, argindex);
 
+
+    // XXX: Initialize from kw
+    KeywordArgumentMap kwargs;
+
 	// Invoke callable item
 	try {
-		return m_underlying->createInstance(pass_args);
+		return m_underlying->createInstance(pass_args, kwargs);
 	}
 	catch (const UserExceptionOccurredException& e) {
 		// - retrieve the current error information, if possible
@@ -1118,7 +1136,9 @@ int InstanceObject::__setattr__(char *name, PyObject *val)
 			// - data member setter
 			ActualArgumentList args;
 			args.push_back(val);
-			meth->callUpon(*m_underlying, args);
+
+            KeywordArgumentMap nokwargs;
+			meth->callUpon(*m_underlying, args, nokwargs);
 			return 0;
 		}
 		catch (const std::exception &e) {
@@ -1147,8 +1167,9 @@ PyObject *InstanceObject::getBoundMethodOrDataMember(const char *name)
 		if (name[0] != '.' && internal_name[0] == '.') {
 			// - data member
 			ActualArgumentList noargs;
+            KeywordArgumentMap nokwargs;
 			PyObject *member = 
-				(PyObject*)meth->callUpon(*m_underlying, noargs);
+				(PyObject*)meth->callUpon(*m_underlying, noargs, nokwargs);
 			keepMeAlive(this, member);
 			return member;
 		}

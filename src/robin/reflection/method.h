@@ -49,7 +49,8 @@ public:
 
 	//@{
 	virtual scripting_element callUpon(Instance& self,
-									   const ActualArgumentList& args) const;
+									   const ActualArgumentList& args, 
+                                       const KeywordArgumentMap &kwargs) const;
 	//@}
 };
 

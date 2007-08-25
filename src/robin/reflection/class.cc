@@ -395,7 +395,7 @@ Handle<Instance> Class::createInstance(const Instance& other) const
  * object is in charge of making that decision, so everything that
  * is possible for method invocations is also applicable here.<br />
  */
-Handle<Instance> Class::createInstance(const ActualArgumentList& ctor_args)
+Handle<Instance> Class::createInstance(const ActualArgumentList& ctor_args, const KeywordArgumentMap& kwargs)
     const
 {
 	assert(m_handle_to_self);
@@ -404,7 +404,7 @@ Handle<Instance> Class::createInstance(const ActualArgumentList& ctor_args)
 	// The creator returns a new instance which is wrapped in a
 	// 'CreatedInstance' structure.
 	try {
-		CreatedInstance *product = (CreatedInstance*)m_creators->call(ctor_args);
+		CreatedInstance *product = (CreatedInstance*)m_creators->call(ctor_args, kwargs);
 		void *new_instance = product->object;
 		Handle<Instance> hnew(new Instance(m_handle_to_self, new_instance, 
 										   true));

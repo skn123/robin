@@ -13,6 +13,9 @@
  * C-Function Implementation
  */
 
+#include <algorithm>
+#include <cassert>
+
 #include "cfunction.h"
 
 #include "backtrace.h"
@@ -64,6 +67,11 @@ void CFunction::addFormalArgument(std::string name,
 {
     m_formalArguments.push_back(type);
     m_formalArgumentNames.push_back(name);
+    // assume that there are no arguments
+    // with same name.
+    // XXX: perhaps add a check, wouldn't be
+    // difficult, and could be a sanity
+    m_formalArgumentNamePositionMap[name] = m_formalArguments.size()-1;
 }
 
 /**
@@ -91,6 +99,98 @@ const FormalArgumentList& CFunction::signature() const
 Handle<TypeOfArgument> CFunction::returnType() const
 {
 	return m_returnType;
+}
+
+/**
+ * Returns the argument names
+ */
+const std::vector<std::string> &CFunction::argNames() const
+{
+        return m_formalArgumentNames;
+}
+
+/**
+ * Merges the keyword argument parameters with the actual parameters, taking
+ * care to verify sanity of passing
+ *
+ * If kwargs contains an argument that was already supplied in positional args,
+ * or an argument that does not exist,
+ * an <classref>InvalidArgumentsException</classref> exception will be thrown
+ *
+ */
+Handle<ActualArgumentList> CFunction::mergeWithKeywordArguments(const ActualArgumentList &args, 
+                                                        const KeywordArgumentMap &kwargs) 
+{
+    KeywordArgumentMap appearedArgumentsSet;
+
+    std::vector<unsigned int> appearedArgumentsPositions;
+
+
+
+    // first, go over the nonkw-arguments
+    
+    for(ActualArgumentList::const_iterator aiter = args.begin();                                         aiter != args.end();
+                                           ++aiter)
+    {
+            int index = aiter - args.begin();
+            if(index >= m_formalArguments.size()) {
+                    throw InvalidArgumentsException("Too many arguments");
+            }
+            appearedArgumentsSet[m_formalArgumentNames[index]] = *aiter;
+            assert(index == m_formalArgumentNamePositionMap.find(m_formalArgumentNames[index])->second);
+            appearedArgumentsPositions.push_back(index);
+    }
+
+
+    // then go over the kwargs, verify that they exist, haven't appeared before
+    // and don't shadow a positional argument
+    for(KeywordArgumentMap::const_iterator kwiter = kwargs.begin();
+                                           kwiter != kwargs.end();
+                                           ++kwiter)
+    {
+            std::string argument_name = kwiter->first;
+
+            ArgumentPositionMap::iterator arg_find = m_formalArgumentNamePositionMap.find(argument_name);
+            
+            if(arg_find == m_formalArgumentNamePositionMap.end()) {
+                    throw InvalidArgumentsException("Tried to call a function with non-existed kwarg '" + argument_name + "'");
+            }
+
+            if(appearedArgumentsSet.find(argument_name) != appearedArgumentsSet.end()) {
+                    throw InvalidArgumentsException("Value for '" + argument_name + "' appears more than once");
+            }
+
+            appearedArgumentsSet[argument_name] = kwiter->second;
+            appearedArgumentsPositions.push_back(arg_find->second);
+    }
+
+    // now verify continuity of the range
+    std::sort(appearedArgumentsPositions.begin(), appearedArgumentsPositions.end());
+
+    int lastFound = -1;
+
+    for(std::vector<unsigned int>::iterator positer = appearedArgumentsPositions.begin();
+                                   positer != appearedArgumentsPositions.end();
+                                   ++positer)
+    {
+        if(*positer != lastFound+1) {
+                throw InvalidArgumentsException("Missing value for argument: " + m_formalArgumentNames[lastFound+1]);
+        }
+        lastFound = *positer;
+    }
+   
+    // now construct the new tuple
+    Handle<ActualArgumentList> merged_args(new ActualArgumentList(appearedArgumentsPositions.size()));
+
+    for(std::vector<unsigned int>::iterator positer = appearedArgumentsPositions.begin();
+                                   positer != appearedArgumentsPositions.end();
+                                   ++positer)
+    {
+            (*merged_args)[*positer] = appearedArgumentsSet.find(m_formalArgumentNames[*positer])->second;
+    }
+
+    return merged_args;
+
 }
 
 /**

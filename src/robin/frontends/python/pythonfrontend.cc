@@ -637,7 +637,8 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 			// Create a variable in the module by calling the function
 			std::string varname = name.substr(DATAMEMBER_PREFIX.size());
 			ActualArgumentList noargs;
-			PyObject *pyvar = (PyObject*)routine->call(noargs);
+            KeywordArgumentMap nokwargs;
+			PyObject *pyvar = (PyObject*)routine->call(noargs, nokwargs);
 			insertIntoNamespace(newcomer.name(), module, varname, pyvar);
 		}
 		else {
