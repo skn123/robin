@@ -72,7 +72,7 @@ public:
 	/**
 	 * Fetch an entry from the cache.
 	 */
-	inline Result recall(const Key& key) const
+	inline const Result& recall(const Key& key) const
 	{
 		typename cache_map::const_iterator slot = latest.find(key);
 
