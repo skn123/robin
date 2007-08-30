@@ -119,7 +119,7 @@ const std::vector<std::string> &CFunction::argNames() const
  *
  */
 Handle<ActualArgumentList> CFunction::mergeWithKeywordArguments(const ActualArgumentList &args, 
-                                                        const KeywordArgumentMap &kwargs) 
+                                                        const KeywordArgumentMap &kwargs) const
 {
     KeywordArgumentMap appearedArgumentsSet;
 
@@ -150,7 +150,7 @@ Handle<ActualArgumentList> CFunction::mergeWithKeywordArguments(const ActualArgu
     {
             std::string argument_name = kwiter->first;
 
-            ArgumentPositionMap::iterator arg_find = m_formalArgumentNamePositionMap.find(argument_name);
+            ArgumentPositionMap::const_iterator arg_find = m_formalArgumentNamePositionMap.find(argument_name);
             
             if(arg_find == m_formalArgumentNamePositionMap.end()) {
                     throw InvalidArgumentsException("Tried to call a function with non-existed kwarg '" + argument_name + "'");

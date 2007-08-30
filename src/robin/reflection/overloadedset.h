@@ -105,6 +105,7 @@ private:
     typedef std::vector<Handle<CFunction> > altvec;
 
 
+    bool isKwargsValid(const CFunction& cfunc, const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const;
 /*    scripting_element callWithoutKWargs(const ActualArgumentList& args) const;
     scripting_element callWithKWargs(const ActualArgumentList& args, const KeywordArgumentMap& kwargs) const;*/
     scripting_element call_impl(const ActualArgumentList& args, const KeywordArgumentMap& kwargs) const;

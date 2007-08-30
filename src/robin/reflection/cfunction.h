@@ -90,7 +90,7 @@ public:
      */
     
     //@{
-    Handle<ActualArgumentList> mergeWithKeywordArguments(const ActualArgumentList &args, const KeywordArgumentMap &kwargs);
+    Handle<ActualArgumentList> mergeWithKeywordArguments(const ActualArgumentList &args, const KeywordArgumentMap &kwargs) const;
 
     //@}
     

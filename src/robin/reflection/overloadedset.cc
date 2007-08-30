@@ -630,35 +630,18 @@ scripting_element OverloadedSet::call(const ActualArgumentList& args, const Keyw
     return ret;
 }
 
-scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, 
-										   const KeywordArgumentMap &kwargs) 
-	const 
-{
-    //const altvec& possible_alternatives = m_alternatives;
-    
-    altvec possible_alternatives;
-
-    if(kwargs.size() != 0) {
-        for (altvec::const_iterator altiter = m_alternatives.begin();
-             altiter != m_alternatives.end(); ++altiter) {
-
-            try {
-                Handle<ActualArgumentList> merged_args = 
-                    (*altiter)->mergeWithKeywordArguments(args, kwargs);
-            } catch(InvalidArgumentsException &e) {
-                continue;
-            }
-
-            possible_alternatives.push_back(*altiter);
-        }
-        dbg::trace << "For call with kwargs, considering " 
-                   << possible_alternatives.size() << " alternatives"
-                   << dbg::endl;
-    } else {
-        possible_alternatives = m_alternatives;
+bool OverloadedSet::isKwargsValid(const CFunction& cfunc, const ActualArgumentList& args,
+                                  const KeywordArgumentMap &kwargs) const {
+    // TODO: maybe get this function into CFunctions...
+try {
+        cfunc.mergeWithKeywordArguments(args, kwargs);
+        return true;
+    } catch(InvalidArgumentsException &e) {
+        return false;
     }
-    
+}
 
+scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const { 
     const int nargs = args.size() + kwargs.size();
     #   define msize nargs
     
@@ -719,12 +702,15 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args,
         WeightList                            lightweight(nargs, I);
         ConversionRoutes  needed(msize);   // required conversions
     
-        for (altvec::const_iterator alt_iter = possible_alternatives.begin();
-             alt_iter != possible_alternatives.end(); ++alt_iter) {
+        for (altvec::const_iterator alt_iter = m_alternatives.begin();
+             alt_iter != m_alternatives.end(); ++alt_iter) {
+            if ((kwargs.size() != 0) && !isKwargsValid(**alt_iter, args, kwargs)) {
+                continue;
+            }
+
             /* Check this one out */
             dbg::trace << "// Trying alternative #"
-					   << (alt_iter - possible_alternatives.begin())
-					   << dbg::endl;
+                          << (alt_iter - m_alternatives.begin()) << dbg::endl;
             if ((*alt_iter)->signature().size() == nargs) {
 
 
@@ -747,7 +733,7 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args,
                                                 actual_insights)) {
                     case OL_BETTER: 
                         lightest = *alt_iter;
-                        cached_alt = alt_iter - possible_alternatives.begin();
+                        cached_alt = alt_iter - m_alternatives.begin();
                         for (size_t argi = 0; argi < nargs; ++argi)
                             lightroutes[argi] = needed[argi];
                         rememberWeights(needed, actual_insights, lightweight);
