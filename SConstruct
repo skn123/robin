@@ -78,6 +78,8 @@ if ARGUMENTS.get('clsux', 0):
 if ARGUMENTS.get('debug', 0):
 	env.Append(CXXFLAGS = "-g")
 	env.Append(JAVACFLAGS = "-g")
+else:
+	env.Append(CXXFLAGS = "-O2")
 
 env.Append(CPPPATH = ["src"])
 
