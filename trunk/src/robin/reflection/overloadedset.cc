@@ -77,6 +77,11 @@ public:
 		const Insight* insights;
 	};
 
+    struct Value {
+        size_t                                  alt_index;
+        std::vector<Handle<ConversionRoute> >   lightroutes;
+    };
+
 	class KeyHashFunctor
 	{
 	public:
@@ -125,7 +130,7 @@ public:
 		}
 	};
 
-	typedef Pattern::Cache<Key, size_t, OverloadedSet::Cache> Internal;
+	typedef Pattern::Cache<Key, Value, OverloadedSet::Cache> Internal;
 	Internal actual_cache;
 
 	/**
@@ -134,21 +139,24 @@ public:
 	inline void remember(const OverloadedSet *me,
 						 const size_t nargs, const Handle<TypeOfArgument> args[],
 						 const Insight insights[],
-						 size_t chosenAlternative)
+						 size_t chosenAlternative,
+                         const std::vector<Handle<ConversionRoute> >& convs)
 	{
 		Handle<TypeOfArgument> *args_clone = cloneArgsArray(nargs, args);
 		Insight *insights_clone = cloneInsightsArray(nargs, insights);
 
 		const Key key = { me, nargs, args_clone, insights_clone };
-		actual_cache.remember(key, chosenAlternative);
+        const Value value = { chosenAlternative, convs };
+		actual_cache.remember(key, value);
 	}
 
 	/**
 	 * Fetch an entry in the cache.
 	 */
-	inline size_t recall(const OverloadedSet *me, 
-						 size_t nargs, const Handle<TypeOfArgument> args[],
-						 const Insight insights[])
+	inline const Value& recall(const OverloadedSet *me, 
+                               size_t nargs,
+                               const Handle<TypeOfArgument> args[],
+                               const Insight insights[])
 	{
 		const Key key = { me, nargs, args, insights };
 		return actual_cache.recall(key);
@@ -167,7 +175,7 @@ public:
 	}
 
 	static const unsigned int IMPOSSIBLE;
-	static const unsigned int MISSED;
+	static const Value MISSED;
 
 private:
 	/**
@@ -193,7 +201,7 @@ private:
 };
 
 const unsigned int OverloadedSet::Cache::IMPOSSIBLE = (unsigned int)-1;
-const unsigned int OverloadedSet::Cache::MISSED = (unsigned int)-9;
+const OverloadedSet::Cache::Value OverloadedSet::Cache::MISSED = { (unsigned int)-9 };
 
 
 class OverloadedSet::CacheSingleton 
@@ -622,28 +630,34 @@ scripting_element OverloadedSet::call(const ActualArgumentList& args, const Keyw
     return ret;
 }
 
-scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const { 
+scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, 
+										   const KeywordArgumentMap &kwargs) 
+	const 
+{
+    //const altvec& possible_alternatives = m_alternatives;
     
     altvec possible_alternatives;
 
     if(kwargs.size() != 0) {
-            for (altvec::const_iterator altiter = m_alternatives.begin();
-                     altiter != m_alternatives.end(); ++altiter) {
+        for (altvec::const_iterator altiter = m_alternatives.begin();
+             altiter != m_alternatives.end(); ++altiter) {
 
-                try {
-                    Handle<ActualArgumentList> merged_args = (*altiter)->mergeWithKeywordArguments(args, kwargs);
-                } catch(InvalidArgumentsException &e) {
-                        continue;
-                }
-
-                possible_alternatives.push_back(*altiter);
+            try {
+                Handle<ActualArgumentList> merged_args = 
+                    (*altiter)->mergeWithKeywordArguments(args, kwargs);
+            } catch(InvalidArgumentsException &e) {
+                continue;
             }
-            dbg::trace << "For call with kwargs, considering " << possible_alternatives.size() << " alternatives" << dbg::endl;
+
+            possible_alternatives.push_back(*altiter);
+        }
+        dbg::trace << "For call with kwargs, considering " 
+                   << possible_alternatives.size() << " alternatives"
+                   << dbg::endl;
     } else {
-            possible_alternatives = m_alternatives;
+        possible_alternatives = m_alternatives;
     }
-
-
+    
 
     const int nargs = args.size() + kwargs.size();
     #   define msize nargs
@@ -654,7 +668,6 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
     Handle<CFunction> match;                 // matched alternative
     Cache            *cache;
     size_t            cached_alt;            // index fetched/stored in cache
-    ConversionRoutes  needed(msize);   // required conversions
     ActualArgumentList converted_args(msize); // arguments for final call
     
     GarbageCollection gc;                    // temporary objects to clean up
@@ -674,24 +687,6 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
 
     Handle<ArgumentIndices> kwargOrder = arrangeKWArguments(kwargs);
     Handle<ActualArgumentList> canonic_args = orderArguments(args, kwargs, kwargOrder); 
-/*
-    // XXX: FOR DEBUG
-    std::vector<std::string> arg_names(nargs);
-    for(int i=0; i<args.size(); i++) {
-            char argname[10];
-            sprintf(argname, "arg%d", i);
-            arg_names[i] = std::string(argname);
-    }
-    for(ArgumentIndices::iterator i=kwargOrder->begin(); i != kwargOrder->end(); ++i) {
-        arg_names[i->second + args.size()] = i->first;
-    }
-
-    dbg::trace << "Canonic argument order is: ";
-    for(int i=0; i<arg_names.size(); i++) {
-            dbg::trace << arg_names[i] << " ";
-    }
-    dbg::trace << dbg::endl;
-*/
 
     ActualArgumentList::const_iterator argi;
     for (argi = canonic_args->begin(); argi != canonic_args->end();
@@ -704,18 +699,16 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
     // Locate applicable alternative from m_alternatives.
     //   Look in the cache first, and if this call is not there, perform
     //   a complete overload resolution.
-    if (kwargs.size() == 0 && (cached_alt = cache->recall(this, nargs, 
-                                    &actual_types[0], 
-                                    &actual_insights[0])) != Cache::MISSED) {
+    const Cache::Value& cached_entry = 
+        cache->recall(this, nargs, &actual_types[0], 
+                      &actual_insights[0]);
+    if (kwargs.size() == 0 && &cached_entry != &Cache::MISSED) {
         // Found cached alternative, use it (optimization)
         dbg::trace << "Got value from cache, running alternative #" 
                       << cached_alt << dbg::endl;
-        match = m_alternatives[cached_alt];
-        ConversionTableSingleton::getInstance()->
-            bestSequenceRoute(actual_types, actual_insights,
-                              match->signature(), needed);
-        
-        convertSequence(*canonic_args, needed, converted_args, gc);
+        match = m_alternatives[cached_entry.alt_index];
+        convertSequence(*canonic_args, cached_entry.lightroutes,
+                        converted_args, gc);
     }
     else {
         // Now find the best sequence-route from actual_types to any of
@@ -724,20 +717,24 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
         Handle<CFunction>                     lightest;
         ConversionRoutes                      lightroutes(msize);
         WeightList                            lightweight(nargs, I);
+        ConversionRoutes  needed(msize);   // required conversions
     
         for (altvec::const_iterator alt_iter = possible_alternatives.begin();
              alt_iter != possible_alternatives.end(); ++alt_iter) {
             /* Check this one out */
             dbg::trace << "// Trying alternative #"
-                          << (alt_iter - possible_alternatives.begin()) << dbg::endl;
+					   << (alt_iter - possible_alternatives.begin())
+					   << dbg::endl;
             if ((*alt_iter)->signature().size() == nargs) {
 
 
                 try {
                     dbg::trace << "// @CHECKING: alternative at "
-                                  << &(**alt_iter) << dbg::endl;
+							   << &(**alt_iter) << dbg::endl;
    
-                    Handle<FormalArgumentList> canonic_signature =  reorderArguments((*alt_iter)->signature(), (*alt_iter)->argNames(), kwargOrder); 
+                    Handle<FormalArgumentList> canonic_signature =
+						reorderArguments((*alt_iter)->signature(), 
+										 (*alt_iter)->argNames(), kwargOrder);
                     ConversionTableSingleton::getInstance()->
                         bestSequenceRoute(actual_types, actual_insights,
                                           *canonic_signature,
@@ -786,7 +783,7 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
         else {
             if(kwargs.size() == 0) {
                cache->remember(this, nargs, &actual_types[0], &actual_insights[0],
-                               cached_alt);
+                               cached_alt, lightroutes);
             }
             match = lightest;
             convertSequence(*canonic_args, lightroutes, converted_args, gc);
@@ -795,32 +792,25 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
     
     
     if (match) {
-        // reverse the order of canonic arguments to match function call order
+        scripting_element result;
+        if (kwargs.size() == 0) {
+            result = match->call(converted_args);
+        }
+        else {
+            // reverse the order of canonic arguments to match function call
+            std::vector<std::string> canon_arg_names = match->argNames();
+            std::sort(canon_arg_names.begin() + args.size(), 
+                      canon_arg_names.end());
 
-        std::vector<std::string> canon_arg_names = match->argNames();
-        std::sort(canon_arg_names.begin() + args.size(), canon_arg_names.end());
+            Handle<ActualArgumentList> function_order_args =
+                reorderArguments(converted_args, 
+                                 canon_arg_names, 
+                                 arrangeKWArgumentsFromFunction(match->argNames(), 
+                                                                args.size()));
+            
+            result = match->call(*function_order_args);
+        }
 
-        Handle<ActualArgumentList> function_order_args = reorderArguments(converted_args, 
-                                                                    canon_arg_names, 
-                                                                    arrangeKWArgumentsFromFunction(match->argNames(), args.size()));
-/*
-        Handle<std::vector<std::string> > reordered_arg_names = reorderArguments(arg_names, canon_arg_names,
-                                                                    arrangeKWArgumentsFromFunction(match->argNames(), args.size()));
-
-    const std::vector<std::string> &argnames = match->argNames();
-    dbg::trace << "Function argument names are: ";
-    for(int i=0; i<argnames.size(); i++) {
-            dbg::trace << argnames[i] << " ";
-    }
-    dbg::trace << dbg::endl;
-    dbg::trace << "Function argument order is: ";
-    for(int i=0; i<reordered_arg_names->size(); i++) {
-            dbg::trace << (*reordered_arg_names)[i] << " ";
-    }
-    dbg::trace << dbg::endl;
-*/
-        // Ahh! At last - call is possible!
-        scripting_element result = match->call(*function_order_args);
         if (m_allow_edge)
             applyEdgeConversions(match->returnType(), result);
         gc.cleanUp();
@@ -829,8 +819,6 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
     else {
         throw OverloadingNoMatchException();
     }
-    
-
 }
 
 
