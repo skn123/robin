@@ -59,7 +59,7 @@ const char *ArgumentArrayLimitExceededException::what() const throw() {
 	return "Robin::OverloadedSet: argument limit exceeded.";
 }
 
-const int OverloadedSet::ARGUMENT_ARRAY_LIMIT = 12;
+const int OverloadedSet::ARGUMENT_ARRAY_LIMIT = 40;
 
 #define I Conversion::Weight::INFINITE /* nasty shortcut */
 

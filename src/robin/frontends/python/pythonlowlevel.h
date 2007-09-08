@@ -50,10 +50,10 @@ public:
 	 */
 	//@{
 	virtual
-	basic_block call_lowlevel(symbol function, const basic_block args[]) const;
+	basic_block call_lowlevel(symbol function, const basic_block* args, size_t argsCount) const;
 	
 	virtual
-	void call_lowlevel_void(symbol function, const basic_block args[]) const;
+	void call_lowlevel_void(symbol function, const basic_block* args, size_t argsCount) const;
 
 	//@}
 

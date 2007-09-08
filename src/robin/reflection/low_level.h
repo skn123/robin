@@ -19,6 +19,7 @@
 #ifndef ROBIN_LOWLEVEL_H
 #define ROBIN_LOWLEVEL_H
 
+#include "argumentsbuffer.h"
 
 namespace Robin {
 
@@ -26,17 +27,10 @@ namespace Robin {
  * \@TYPES
  */
 
-typedef void *basic_block;   /* should be a machine word */
 typedef void *symbol;
 
-typedef basic_block (*external)(basic_block, basic_block, basic_block,
-                basic_block, basic_block, basic_block,
-                basic_block, basic_block, basic_block,
-                basic_block, basic_block, basic_block);
-typedef void (*externalv)(basic_block, basic_block, basic_block,
-                 basic_block, basic_block, basic_block,
-                 basic_block, basic_block, basic_block,
-                 basic_block, basic_block, basic_block);
+typedef basic_block (*external)(void);
+typedef void (*externalv)(void);
 
 /**
  * @class LowLevel
@@ -58,9 +52,9 @@ public:
 	 */
 
 	//@{
-	virtual basic_block call_lowlevel(symbol function, const basic_block args[]) const;
+	virtual basic_block call_lowlevel(symbol function, const basic_block* args, size_t argsCount) const;
 	
-	virtual void call_lowlevel_void(symbol function, const basic_block args[]) const;
+	virtual void call_lowlevel_void(symbol function, const basic_block* args, size_t argsCount) const;
 
 	//@}
 	/**
