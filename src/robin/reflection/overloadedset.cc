@@ -59,7 +59,9 @@ const char *ArgumentArrayLimitExceededException::what() const throw() {
 	return "Robin::OverloadedSet: argument limit exceeded.";
 }
 
-const int OverloadedSet::ARGUMENT_ARRAY_LIMIT = 40;
+#ifdef IS_ARGUMENT_LIMIT
+const int OverloadedSet::ARGUMENT_ARRAY_LIMIT = 12;
+#endif
 
 #define I Conversion::Weight::INFINITE /* nasty shortcut */
 
@@ -655,9 +657,11 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
     
     GarbageCollection gc;                    // temporary objects to clean up
     
+#ifdef IS_ARGUMENT_LIMIT
     // - we intend to use arrays, make sure the array limit is not exceeded
     if (nargs > ARGUMENT_ARRAY_LIMIT)
         throw ArgumentArrayLimitExceededException();
+#endif
     
     // - acquire the cache
     cache = CacheSingleton::getInstance();

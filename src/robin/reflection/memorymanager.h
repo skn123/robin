@@ -40,7 +40,9 @@ public:
 class GarbageCollection
 {
 public:
-	inline GarbageCollection() : m_size(0) { }
+	inline GarbageCollection() {
+        m_heap.reserve(GARBAGE_HEAP_SIZE);
+    }
 
 	void markForDestruction(scripting_element element);
 	void cleanUp();
@@ -48,8 +50,7 @@ public:
 private:
 	static const int GARBAGE_HEAP_SIZE = 40;
 	
-	scripting_element m_heap[GARBAGE_HEAP_SIZE];
-	int m_size;
+    std::vector<scripting_element> m_heap;
 };
 
 
