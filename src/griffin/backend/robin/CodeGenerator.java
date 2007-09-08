@@ -219,6 +219,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#ifdef _WINDLL\n" +
 				"# define EXPORT __declspec(dllexport)\n" +
 				"#else\n# define EXPORT\n#endif\n\n");
+        m_output.write("#ifdef _WIN32\n" +
+                "# define __CDECL __cdecl\n" +
+                "#else\n# define __CDECL\n#endif\n\n");
 		
 		m_output.write("typedef void* basic_block;\n");
 		m_output.write("typedef void* scripting_element;\n\n");
@@ -950,7 +953,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (routine.isConstructor()) {
 			// This is a constructor
 			m_output.write(thisArg.getFullName()
-					+ " *" + wrapperName);
+					+ " __CDECL *" + wrapperName);
 		}
 		else {
 			if (Filters.isPrimitive(returnType.getBaseType()))
@@ -1292,7 +1295,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException
 	{
 		m_output.write(Utils.cleanFullName(subject));
-		m_output.write(" *ctor_" + uid(subject.getScope()));
+		m_output.write(" __CDECL *ctor_" + uid(subject.getScope()));
 		m_output.write("() { return new ");
 		m_output.write(Utils.cleanFullName(subject));
 		m_output.write("; }\n");
@@ -1303,7 +1306,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		String classname = Utils.cleanFullName(subject);
 		
-		m_output.write("void assign_" + uid(subject.getScope()));
+		m_output.write("void __CDECL assign_" + uid(subject.getScope()));
 		m_output.write("(");
 		m_output.write(classname + " *self, ");
 		m_output.write(classname + " *other)");
@@ -1319,7 +1322,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		String classname = Utils.cleanFullName(subject);
 		
-		m_output.write(classname + " *clone_" + uid(subject.getScope()));
+		m_output.write(classname + " __CDECL *clone_" + uid(subject.getScope()));
 		m_output.write("(" + classname + " *self) { return ");
 		m_output.write(" new " + classname + "(*self); }\n");
 	}
@@ -1332,7 +1335,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateSpecialDestructor(Aggregate subject)
 		throws IOException
 	{
-		m_output.write("void dtor_" + uid(subject.getScope()));
+		m_output.write("void __CDECL dtor_" + uid(subject.getScope()));
 		m_output.write("(" + Utils.cleanFullName(subject) + " *self)");
 		m_output.write(" { delete self; }\n");
 	}
@@ -1349,7 +1352,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#define IOSTREAM_INCLUDED\n");
 		m_output.write("#include <iostream>\n");
 		m_output.write("#endif\n");
-		m_output.write("void output_" + uid(subject.getScope()));
+		m_output.write("void __CDECL output_" + uid(subject.getScope()));
 		m_output.write("(");
 		m_output.write(Utils.cleanFullName(subject));
 		m_output.write(" *self) { std::cerr << *self; }\n\n");
@@ -1419,12 +1422,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				 String base2derived = uid(base.getScope()) + "_to_" + uid(subject.getScope());
 				 
 				 m_output.write(
-						 basename + " *upcast_" + derived2base
+						 basename + " __CDECL *upcast_" + derived2base
 						 + "(" + derivedname + " *self) { return self; }\n");
 				 
 				 if (Utils.isPolymorphic(base)) {
 					 m_output.write(
-							 derivedname + " *downcast_" + base2derived
+							 derivedname + " __CDECL *downcast_" + base2derived
 							 + "(" + basename + " *self)");
 					 m_output.write(" { return dynamic_cast<" + derivedname
 							 + "*>(self); }\n");
