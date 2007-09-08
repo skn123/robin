@@ -219,9 +219,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#ifdef _WINDLL\n" +
 				"# define EXPORT __declspec(dllexport)\n" +
 				"#else\n# define EXPORT\n#endif\n\n");
-        m_output.write("#ifdef _WIN32\n" +
-                "# define __CDECL __cdecl\n" +
-                "#else\n# define __CDECL\n#endif\n\n");
+        m_output.write("#ifdef __GNUC__\n" +
+                       "# define __CDECL __attribute__((cdecl))\n" +
+                       "#elif defined(_WIN32)\n" +
+                       "# define __CDECL __cdecl\n" +
+                       "#else\n" +
+                       "# define __CDECL\n" +
+                       "#endif\n\n");
 		
 		m_output.write("typedef void* basic_block;\n");
 		m_output.write("typedef void* scripting_element;\n\n");
