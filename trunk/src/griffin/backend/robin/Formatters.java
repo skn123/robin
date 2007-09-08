@@ -77,7 +77,7 @@ public class Formatters {
 		if (Filters.needsExtraReferencing(type)) {
 			name = extraRefScheme + name;
 		}
-		return type.formatCpp(name);
+		return type.formatCpp("__CDECL " + name);
 	}
 
 	/**
