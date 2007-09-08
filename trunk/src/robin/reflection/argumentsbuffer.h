@@ -19,9 +19,11 @@
 #ifndef ROBIN_ARGUMENTSBUFFER_H
 #define ROBIN_ARGUMENTSBUFFER_H
 
-#include "low_level.h"
+#include <cstddef>
 
 namespace Robin {
+
+typedef void *basic_block;   /* should be a machine word */
 
 /**
  * \@CONSTANTS
@@ -73,6 +75,8 @@ public:
 	inline void push(float value)       { pushFloat(value); }
 	inline void push(const void *value) { pushPointer(value); }
     //@}
+    
+    size_t size() const { return m_pend - m_buffer; }
 
     /**
      * @name Access

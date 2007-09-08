@@ -46,7 +46,7 @@ public:
 	void cleanUp();
 
 private:
-	static const int GARBAGE_HEAP_SIZE = 12;
+	static const int GARBAGE_HEAP_SIZE = 40;
 	
 	scripting_element m_heap[GARBAGE_HEAP_SIZE];
 	int m_size;
