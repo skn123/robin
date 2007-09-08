@@ -118,7 +118,9 @@ private:
 	class Cache;
 	class CacheSingleton;
 
+#ifdef IS_ARGUMENT_LIMIT
 	static const int ARGUMENT_ARRAY_LIMIT;
+#endif
 
 #ifdef HARD_PROFILE
 	class CacheReporter;

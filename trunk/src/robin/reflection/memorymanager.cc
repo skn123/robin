@@ -45,7 +45,7 @@ void MemoryManager::release(scripting_element element)
  */
 void GarbageCollection::markForDestruction(scripting_element element)
 {
-	m_heap[m_size++] = element;
+    m_heap.push_back(element);
 }
 
 /**
@@ -53,10 +53,10 @@ void GarbageCollection::markForDestruction(scripting_element element)
  */
 void GarbageCollection::cleanUp()
 {
-	while (m_size > 0)
-		MemoryManager::release(m_heap[--m_size]);
+    while (m_heap.size() > 0) {
+        MemoryManager::release(m_heap.back());
+        m_heap.pop_back();
+    }
 }
-
-
 
 } // end of namespace Robin
