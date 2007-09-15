@@ -60,6 +60,12 @@ build/robin/frontends/python/pythonlowlevel.cc
 build/robin/frontends/python/pythonobjects.cc
 """
 
+RUBY_FRONTEND_SRC = """build/robin/frontends/ruby/rubyfrontend.cc
+build/robin/frontends/ruby/rubyadapters.cc
+build/robin/frontends/ruby/rubyobjects.cc
+build/robin/frontends/ruby/module.cc
+"""
+
 LIBPREFIX = "lib"
 
 import os
@@ -137,6 +143,10 @@ pyenv.Append(CPPPATH = [INCLUDEPY, CONFINCLUDEPY])
 pyenv.Append(LIBPATH = [".", LIBPYCFG])
 pyenv.Append(CXXFLAGS = "-D_VERSION=" + fullver)
 
+rbenv = env.Copy()
+rbenv.Append(CPPPATH = ["/usr/lib/ruby/1.8/i486-linux"])
+
+
 if conf.arch == "windows":
 	env.Append(CXXFLAGS = "/EHsc")
 	pyenv.Append(CXXFLAGS = "/EHsc /Imsvc")
@@ -185,10 +195,13 @@ else:
 pyfe = pyenv.SharedLibrary("robin_pyfe"+spec, Split(PYTHON_FRONTEND_SRC), 
                            LIBS=["robin"+spec, LIBPY])
 
+rbfe = rbenv.SharedLibrary("robin_rbfe"+spec, Split(RUBY_FRONTEND_SRC),
+			   LIBS=["robin"+spec])
+
 stl = env.SharedLibrary("robin_stl"+spec,
 			["build/robin/modules/stl/stl_robin.cc"])
 
-Default(robin, pyfe, stl)
+Default(robin, pyfe, rbfe, stl)
 
 
 ##################################################
