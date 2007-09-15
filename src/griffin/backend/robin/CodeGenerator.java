@@ -215,17 +215,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			"#else\n" +
 			"# define CONVOP(type,self) self->operator type()\n" +
 			"#endif\n\n");
-		// Win32 specific
-		m_output.write("#ifdef _WINDLL\n" +
-				"# define EXPORT __declspec(dllexport)\n" +
-				"#else\n# define EXPORT\n#endif\n\n");
-        m_output.write("#ifdef __GNUC__\n" +
-                       "# define __CDECL __attribute__((cdecl))\n" +
-                       "#elif defined(_WIN32)\n" +
-                       "# define __CDECL __cdecl\n" +
-                       "#else\n" +
-                       "# define __CDECL\n" +
-                       "#endif\n\n");
+        m_output.write("#ifdef _WINDLL\n" +
+                       "# define EXPORT __declspec(dllexport)\n" +
+                       "#else\n# define EXPORT\n#endif\n\n");
+
 		
 		m_output.write("typedef void* basic_block;\n");
 		m_output.write("typedef void* scripting_element;\n\n");
@@ -957,7 +950,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (routine.isConstructor()) {
 			// This is a constructor
 			m_output.write(thisArg.getFullName()
-					+ " __CDECL *" + wrapperName);
+					+ " *" + wrapperName);
 		}
 		else {
 			if (Filters.isPrimitive(returnType.getBaseType()))
@@ -965,33 +958,35 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			touchupReturnType = Filters.getTouchup(returnType);
 			m_output.write(Formatters.formatDeclaration(returnType, wrapperName, '*'));
 		}
+		m_output.write("(basic_block* params) {\n");
 		
 		// Construct parameters fitting for the flat purpose
 		int paramCount = 0;
-		boolean first = true;
-		m_output.write("(");
 		if (thisArg != null && !routine.isConstructor()) {
+            m_output.write("\t");
 			// - generate a *this
 			if (routine.isConst()) m_output.write("const ");
 			m_output.write(thisArg.getFullName());
 			m_output.write(" *self");
-			first = false;
+			m_output.write(" = reinterpret_cast< " + thisArg.getFullName() + "* >(*(params++));\n");
 		}
 		for (Iterator pi = routine.parameterIterator(); 
 				pi.hasNext() && paramCount < nArguments; paramCount++) {
 			Parameter param = (Parameter)pi.next();
-			if (!first) m_output.write(" , ");
 			Type type = flatUnalias(param.getType());
 			
+            m_output.write("\t");
 			m_output.write(Formatters.formatParameter(type, "arg" + paramCount));
-			first = false;
+            if (type.isReference()) {
+                m_output.write(" = reinterpret_cast< " + Formatters.formatParameter(type, "") + " >(*(params++));\n");
+            } else {
+                m_output.write(" = *reinterpret_cast< " + Formatters.formatParameter(type, "") + "* >(params++);\n");
+            }
 		}
-		m_output.write(")\n");
-		m_output.flush();
 		
 		// Generate the body
 		int parenNest = 0;
-		m_output.write("{\n\t");
+		m_output.write("\t");
 		if (routine.isConstructor()) {
 			m_output.write("return new ");
 			m_output.write(thisArg.getFullName());
@@ -1026,7 +1021,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// - generate call parameters
 		if (!routine.isConversionOperator()) {
 			paramCount = 0;
-			first = true;
+			boolean first = true;
 			
 			m_output.write("("); parenNest++;
 			
@@ -1299,8 +1294,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException
 	{
 		m_output.write(Utils.cleanFullName(subject));
-		m_output.write(" __CDECL *ctor_" + uid(subject.getScope()));
-		m_output.write("() { return new ");
+		m_output.write(" *ctor_" + uid(subject.getScope()));
+		m_output.write("(basic_block* params) { return new ");
 		m_output.write(Utils.cleanFullName(subject));
 		m_output.write("; }\n");
 	}
@@ -1310,11 +1305,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		String classname = Utils.cleanFullName(subject);
 		
-		m_output.write("void __CDECL assign_" + uid(subject.getScope()));
-		m_output.write("(");
-		m_output.write(classname + " *self, ");
-		m_output.write(classname + " *other)");
-		m_output.write(" { *self = *other; }\n");
+		m_output.write("void assign_" + uid(subject.getScope()));
+		m_output.write("(basic_block* params) {\n");
+		m_output.write("\t" + classname + " *self");
+		m_output.write(" = reinterpret_cast< " + classname + "* >(params++);\n");
+		m_output.write("\t" + classname + " *other");
+		m_output.write(" = reinterpret_cast< " + classname + "* >(params++);\n");
+		m_output.write("\t*self = *other;\n}\n");
 		m_output.write("RegData assign_" + uid(subject.getScope())
 			+ "_proto[] = {\n");
 		m_output.write("\t{\"other\", \"*" + classname + "\", 0, 0},\n");
@@ -1326,9 +1323,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		String classname = Utils.cleanFullName(subject);
 		
-		m_output.write(classname + " __CDECL *clone_" + uid(subject.getScope()));
-		m_output.write("(" + classname + " *self) { return ");
-		m_output.write(" new " + classname + "(*self); }\n");
+		m_output.write(classname + " *clone_" + uid(subject.getScope()) + "(basic_block* params) {\n");
+		m_output.write("\t" + classname + " *self");
+		m_output.write(" = reinterpret_cast< " + classname + "* >(params++);\n");
+		m_output.write("return new " + classname + "(*self); }\n");
 	}
 	
 	/**
@@ -1339,9 +1337,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateSpecialDestructor(Aggregate subject)
 		throws IOException
 	{
-		m_output.write("void __CDECL dtor_" + uid(subject.getScope()));
-		m_output.write("(" + Utils.cleanFullName(subject) + " *self)");
-		m_output.write(" { delete self; }\n");
+		m_output.write("void dtor_" + uid(subject.getScope()) + "(basic_block* params) {\n");
+		m_output.write("\t" + Utils.cleanFullName(subject) + " *self");
+		m_output.write(" = reinterpret_cast< " + Utils.cleanFullName(subject) + "* >(params++);\n");
+		m_output.write("\tdelete self;\n}\n");
 	}
 	
 	/**
@@ -1356,10 +1355,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#define IOSTREAM_INCLUDED\n");
 		m_output.write("#include <iostream>\n");
 		m_output.write("#endif\n");
-		m_output.write("void __CDECL output_" + uid(subject.getScope()));
-		m_output.write("(");
-		m_output.write(Utils.cleanFullName(subject));
-		m_output.write(" *self) { std::cerr << *self; }\n\n");
+		m_output.write("void output_" + uid(subject.getScope()) + "(basic_block* params) {\n");
+		m_output.write("\t" + Utils.cleanFullName(subject) + " *self");
+		m_output.write(" = reinterpret_cast< " + Utils.cleanFullName(subject) + "* >(params++);\n");
+        m_output.write("\tstd::cerr << *self;\n}\n\n");
 	}
 	
 	/**
@@ -1425,16 +1424,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				 String derived2base = uid(subject.getScope()) + "_to_" + uid(base.getScope());
 				 String base2derived = uid(base.getScope()) + "_to_" + uid(subject.getScope());
 				 
-				 m_output.write(
-						 basename + " __CDECL *upcast_" + derived2base
-						 + "(" + derivedname + " *self) { return self; }\n");
+				 m_output.write(basename + " *upcast_" + derived2base + "(basic_block* params) {\n");
+                 m_output.write("\t" + derivedname + " *self");
+                 m_output.write(" = reinterpret_cast< " + derivedname + "* >(params++);\n");
+                 m_output.write("\treturn self;\n}\n");
 				 
 				 if (Utils.isPolymorphic(base)) {
-					 m_output.write(
-							 derivedname + " __CDECL *downcast_" + base2derived
-							 + "(" + basename + " *self)");
-					 m_output.write(" { return dynamic_cast<" + derivedname
-							 + "*>(self); }\n");
+					 m_output.write(derivedname + " *downcast_" + base2derived + "(basic_block* params) {\n");
+                     m_output.write("\t" + basename + " *self");
+                     m_output.write(" = reinterpret_cast< " + basename + "* >(params++);\n");
+					 m_output.write("\treturn dynamic_cast<" + derivedname + "*>(self);\n}\n");
 					 m_output.write(
 							 "RegData downcast_" + base2derived + "_proto[] = {\n" 
 							 + "\t{\"arg0\", \"*" + basename + "\", 0, 0},\n"

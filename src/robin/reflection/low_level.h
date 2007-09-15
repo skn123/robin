@@ -29,19 +29,8 @@ namespace Robin {
 
 typedef void *symbol;
 
-#ifdef IS_ARGUMENT_LIMIT
-typedef basic_block (*external)(basic_block, basic_block, basic_block,
-                basic_block, basic_block, basic_block,
-                basic_block, basic_block, basic_block,
-                basic_block, basic_block, basic_block);
-typedef void (*externalv)(basic_block, basic_block, basic_block,
-                 basic_block, basic_block, basic_block,
-                 basic_block, basic_block, basic_block,
-                 basic_block, basic_block, basic_block);
-#else
-typedef basic_block (*external)(void);
-typedef void (*externalv)(void);
-#endif
+typedef basic_block (*external)(const basic_block*);
+typedef void (*externalv)(const basic_block*);
 
 /**
  * @class LowLevel
@@ -63,9 +52,9 @@ public:
 	 */
 
 	//@{
-	virtual basic_block call_lowlevel(symbol function, const basic_block* args, size_t argsCount) const;
+	virtual basic_block call_lowlevel(symbol function, const basic_block* args) const;
 	
-	virtual void call_lowlevel_void(symbol function, const basic_block* args, size_t argsCount) const;
+	virtual void call_lowlevel_void(symbol function, const basic_block* args) const;
 
 	//@}
 	/**

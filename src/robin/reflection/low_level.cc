@@ -27,23 +27,10 @@ namespace Robin {
  * arguments. The function is expected to return a word-sized
  * value.
  */
-basic_block LowLevel::call_lowlevel(symbol function, const basic_block* args, size_t argsCount) const {
+basic_block LowLevel::call_lowlevel(symbol function, const basic_block* args) const {
     // NOTE: Caution! This function is extremly fregile! Handle with care!
     external fcn = (external)function;
-#ifdef IS_ARGUMENT_LIMIT
-    return (*fcn)(args[0], args[1], args[2], args[3], args[4],
-     	args[5], args[6], args[7], args[8], args[9],
-     	args[10], args[11]);
-#else
-    register size_t i = 0;
-    basic_block* sp = (basic_block*)alloca(argsCount * sizeof(basic_block));
-    // NOTE: Can't use here memcpy (or any alternative), because they allocate
-    // variables on the stack!
-    for (i = 0; i < argsCount; ++i) {
-        sp[i] = args[i];
-    }
-    return (*fcn)();
-#endif
+    return fcn(args);
 }
 
 /**
@@ -51,23 +38,10 @@ basic_block LowLevel::call_lowlevel(symbol function, const basic_block* args, si
  * arugments. It is assumed that the function does not return any
  * value (void).
  */
-void LowLevel::call_lowlevel_void(symbol function, const basic_block* args, size_t argsCount) const {
+void LowLevel::call_lowlevel_void(symbol function, const basic_block* args) const {
     // NOTE: Caution! This function is extremly fregile! Handle with care!
     externalv fcn = (externalv)function;
-#ifdef IS_ARGUMENT_LIMIT
-    (*fcn)(args[0], args[1], args[2], args[3], args[4],
-     	args[5], args[6], args[7], args[8], args[9],
-     	args[10], args[11]);
-#else
-    register size_t i = 0;
-    basic_block* sp = (basic_block*)alloca(argsCount * sizeof(basic_block));
-    // NOTE: Can't use here memcpy (or any alternative), because they allocate
-    // variables on the stack!
-    for (i = 0; i < argsCount; ++i) {
-        sp[i] = args[i];
-    }
-    (*fcn)();
-#endif
+    fcn(args);
 }
 } // end of namespace Robin
 

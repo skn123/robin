@@ -235,7 +235,7 @@ basic_block CFunction::call(const ArgumentsBuffer& args) const
 	}
 	
     try {
-		return lowlevel->call_lowlevel(m_functionSymbol, args.getBuffer(), args.size());
+		return lowlevel->call_lowlevel(m_functionSymbol, args.getBuffer());
     }
     catch (std::exception& e) {
 		std::string uw = e.what();

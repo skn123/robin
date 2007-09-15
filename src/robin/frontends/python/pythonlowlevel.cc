@@ -50,10 +50,10 @@ namespace {
  * This method wraps the original with a thread state save,
  * so that this call can be multi-threaded in python.
  */
-basic_block PythonLowLevel::call_lowlevel(symbol function, const basic_block* args, size_t argsCount) const
+basic_block PythonLowLevel::call_lowlevel(symbol function, const basic_block* args) const
 {
 	ThreadStateGuardian guard;
-	return LowLevel::call_lowlevel(function, args, argsCount);
+	return LowLevel::call_lowlevel(function, args);
 }
 
 /**
@@ -63,10 +63,10 @@ basic_block PythonLowLevel::call_lowlevel(symbol function, const basic_block* ar
  * This method wraps the original with a thread state save,
  * so that this call can be multi-threaded in python.
  */
-void PythonLowLevel::call_lowlevel_void(symbol function, const basic_block* args, size_t argsCount) const
+void PythonLowLevel::call_lowlevel_void(symbol function, const basic_block* args) const
 {
 	ThreadStateGuardian guard;
-	LowLevel::call_lowlevel_void(function, args, argsCount);
+	LowLevel::call_lowlevel_void(function, args);
 }
 
 
