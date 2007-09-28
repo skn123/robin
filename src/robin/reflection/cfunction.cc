@@ -210,7 +210,7 @@ void CFunction::call() const
  */
 void CFunction::call(void *thisarg) const
 {
-	((void(*)(void*))m_functionSymbol)(thisarg);
+	((void(*)(void*))m_functionSymbol)(&thisarg);
 }
 
 /**
