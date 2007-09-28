@@ -1308,9 +1308,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("void assign_" + uid(subject.getScope()));
 		m_output.write("(basic_block* params) {\n");
 		m_output.write("\t" + classname + " *self");
-		m_output.write(" = reinterpret_cast< " + classname + "* >(params++);\n");
+		m_output.write(" = reinterpret_cast< " + classname + "* >(*(params++));\n");
 		m_output.write("\t" + classname + " *other");
-		m_output.write(" = reinterpret_cast< " + classname + "* >(params++);\n");
+		m_output.write(" = reinterpret_cast< " + classname + "* >(*(params++));\n");
 		m_output.write("\t*self = *other;\n}\n");
 		m_output.write("RegData assign_" + uid(subject.getScope())
 			+ "_proto[] = {\n");
@@ -1325,7 +1325,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		
 		m_output.write(classname + " *clone_" + uid(subject.getScope()) + "(basic_block* params) {\n");
 		m_output.write("\t" + classname + " *self");
-		m_output.write(" = reinterpret_cast< " + classname + "* >(params++);\n");
+		m_output.write(" = reinterpret_cast< " + classname + "* >(*(params++));\n");
 		m_output.write("return new " + classname + "(*self); }\n");
 	}
 	
@@ -1339,7 +1339,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		m_output.write("void dtor_" + uid(subject.getScope()) + "(basic_block* params) {\n");
 		m_output.write("\t" + Utils.cleanFullName(subject) + " *self");
-		m_output.write(" = reinterpret_cast< " + Utils.cleanFullName(subject) + "* >(params++);\n");
+		m_output.write(" = reinterpret_cast< " + Utils.cleanFullName(subject) + "* >(*(params++));\n");
 		m_output.write("\tdelete self;\n}\n");
 	}
 	
@@ -1357,7 +1357,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#endif\n");
 		m_output.write("void output_" + uid(subject.getScope()) + "(basic_block* params) {\n");
 		m_output.write("\t" + Utils.cleanFullName(subject) + " *self");
-		m_output.write(" = reinterpret_cast< " + Utils.cleanFullName(subject) + "* >(params++);\n");
+		m_output.write(" = reinterpret_cast< " + Utils.cleanFullName(subject) + "* >(*(params++));\n");
         m_output.write("\tstd::cerr << *self;\n}\n\n");
 	}
 	
@@ -1426,13 +1426,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				 
 				 m_output.write(basename + " *upcast_" + derived2base + "(basic_block* params) {\n");
                  m_output.write("\t" + derivedname + " *self");
-                 m_output.write(" = reinterpret_cast< " + derivedname + "* >(params++);\n");
+                 m_output.write(" = reinterpret_cast< " + derivedname + "* >(*(params++));\n");
                  m_output.write("\treturn self;\n}\n");
 				 
 				 if (Utils.isPolymorphic(base)) {
 					 m_output.write(derivedname + " *downcast_" + base2derived + "(basic_block* params) {\n");
                      m_output.write("\t" + basename + " *self");
-                     m_output.write(" = reinterpret_cast< " + basename + "* >(params++);\n");
+                     m_output.write(" = reinterpret_cast< " + basename + "* >(*(params++));\n");
 					 m_output.write("\treturn dynamic_cast<" + derivedname + "*>(self);\n}\n");
 					 m_output.write(
 							 "RegData downcast_" + base2derived + "_proto[] = {\n" 
