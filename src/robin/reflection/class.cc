@@ -146,7 +146,6 @@ Handle<CallableWithInstance> Class::findInstanceMethod(const std::string&
 		return static_hcast<CallableWithInstance>(look);   // Upcast
 	}
 	else {
-        fprintf(stderr, "Some faggot didn't find %s\n", methodname.c_str());
 		throw NoSuchMethodException();
 	}
 }
@@ -167,7 +166,6 @@ Handle<Callable> Class::findUnboundInstanceMethod(const std::string&
 		return static_hcast<Callable>(look);   // Upcast
 	}
 	else {
-        fprintf(stderr, "Some faggot didn't find %s\n", methodname.c_str());
 		throw NoSuchMethodException();
 	}
 }
