@@ -63,7 +63,7 @@ public class Formatters {
 			return "touchup(" + expression + ")";
 	}
 	
-	static String formatDeclaration(Type type, String name, char extraRefScheme)
+	static String formatDeclaration(Type type, String name, char extraRefScheme, boolean isForFunction)
 	{
 		// Handle redundant referencing
 		if (Filters.getOriginalType(type).isReference()
@@ -77,7 +77,13 @@ public class Formatters {
 		if (Filters.needsExtraReferencing(type)) {
 			name = extraRefScheme + name;
 		}
-		return type.formatCpp("__CDECL " + name);
+		if(isForFunction) {
+			// function-level formatting needs the appropriate cdecl
+			return type.formatCpp("__CDECL " + name);
+		} else {
+			return type.formatCpp(name);
+		}
+		
 	}
 
 	/**
