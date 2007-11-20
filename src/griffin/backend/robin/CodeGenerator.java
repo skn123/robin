@@ -367,14 +367,15 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     
 
 
-    private void writeInterceptorFunctionHeader(Routine routine)
+    private void writeInterceptorFunctionHeader(Routine routine, int nArgs)
         throws IOException, MissingInformationException
     {
+
         m_output.write("\tvirtual ");
         m_output.write(routine.getReturnType().formatCpp());
         m_output.write(" " + routine.getName() + "(");
         int i = 0;
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
+        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
             Parameter param = (Parameter) argIter.next();
             // write a generic name, in order to avoid name clashes with our own parameters
             m_output.write(param.getType().formatCpp("interceptor_arg" + i));
@@ -396,14 +397,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(" {\n");
     }
 
-    private void writeInterceptorFunctionBasicBlockArgumentArray(Routine routine)
+    private void writeInterceptorFunctionBasicBlockArgumentArray(Routine routine, int nArgs)
         throws IOException, MissingInformationException
     {
         m_output.write("\t\tbasic_block args[] = {\n");
         int i = 0;
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
+        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
             writeInterceptorFunctionBasicBlockArgument(
-                    (Parameter)argIter.next(), i, argIter.hasNext()
+                    (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs
                 );
         }
         m_output.write("\t\t};\n");
@@ -440,7 +441,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     /**
      * Write the call to __callback
      */
-    private void writeInterceptorFunctionCallbackCall(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter)
+    private void writeInterceptorFunctionCallbackCall(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter, int nArgs)
         throws IOException, MissingInformationException
     {
         ContainedConnection uplink = routine.getContainerConnection();
@@ -476,11 +477,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             // we need to write the name of the first class this routine appeared at
             m_output.write(routine.getContainer().getName() + "::" + routine.getName() + "(");
             int i = 0;
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
+            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
             		argIter.next(); // ignore the result, we just need to advance the iterator
             		// write the generated name instead of a real one
                 m_output.write("interceptor_arg" + i + 
-                    (argIter.hasNext() ? ", " : ""));
+                    (argIter.hasNext() && i < nArgs ? ", " : ""));
             }
             m_output.write(");\n");
         }
@@ -536,99 +537,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(";\n");
     }
     
-//    private void writeInterceptorStaticFunctionHeader(Routine routine)
-//    throws IOException, MissingInformationException
-//    {
-//	    m_output.write("\tstatic ");
-//	    m_output.write(routine.getReturnType().formatCpp());
-//	    m_output.write(" " + routine.getName() + "(");
-//	    int i = 0;
-//	    
-//	    Entity thisArg = null;
-//		if (routine.hasContainer()) {
-//			thisArg = routine.getContainer();
-//			if (! (thisArg instanceof Aggregate)) thisArg = null;
-//		}
-//		
-//			
-//		if (thisArg != null) {
-//			// - generate a *this
-//			if (routine.isConst()) m_output.write("const ");
-//			m_output.write(thisArg.getFullName());
-//			m_output.write(" *self");
-//		} else {
-//			throw new RuntimeException("Virtual function is also static?!");
-//		}
-//	
-//	    for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
-//	    		m_output.write(", ");
-//	        Parameter param = (Parameter) argIter.next();
-//	        // write a generic name, in order to avoid name clashes with our own parameters
-//	        m_output.write(param.getType().formatCpp("interceptor_arg" + i));
-//	        m_output.write(" /* " + param.getName() + " */");
-//	    }
-//	    m_output.write(")");
-//	    if (routine.isConst()) m_output.write(" const");
-//	    // Write a throw() clause if required by the interface
-//	    if (routine.hasThrowClause()) {
-//	        m_output.write(" throw(");
-//	        boolean first = true;
-//	        for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
-//	            if (!first) m_output.write(", ");
-//	            m_output.write(((Entity)ei.next()).getFullName());
-//	        }
-//	        m_output.write(")");
-//	    }
-//	    m_output.write(" {\n");
-//    }
-//    
-//    private void writeInterceptorStaticFunctionBody(Routine routine)
-//    		throws IOException, MissingInformationException
-//    	{
-//    		if (routine.getReturnType().equals(
-//                new Type(new Type.TypeNode(Primitive.VOID))))
-//        {
-//            // void, no return statement
-//            return;
-//        }
-//    		
-//    		Entity thisArg = null;
-//    		if (routine.hasContainer()) {
-//    			thisArg = routine.getContainer();
-//    			if (! (thisArg instanceof Aggregate)) thisArg = null;
-//    		}    		
-//    		if(thisArg == null) {
-//    			throw new RuntimeException("Virtual function is also static?!");
-//    		}
-//    		m_output.write("\t\treturn ");
-//    		
-//
-//		if (routine.isConversionOperator()) {
-//				m_output.write(conversionOperatorSyntax(routine, "self"));
-//		}
-//		else if (routine.getName().equals("operator==") || 
-//				  routine.getName().equals("operator!=")) {
-//				m_output.write("*self " +    // @@@ STL issue workaround
-//						routine.getContainer().getFullName() + "::" + routine.getName().substring("operator".length()));
-//		} else {
-//			m_output.write("self->" + routine.getFullName());
-//		}
-//		
-//	
-//    		if(!routine.isConversionOperator()) {
-//	    		m_output.write("(");
-//			int i = 0;
-//			for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
-//					argIter.next(); // ignore the result, we just need to advance the iterator
-//					// write the generated name instead of a real one
-//			    m_output.write("interceptor_arg" + i + 
-//			        (argIter.hasNext() ? ", " : ""));
-//			}
-//			m_output.write(")");
-//    		}
-//    		m_output.write(";\n");
-// 		
-//    }
 
     private void writeInterceptorFunctionAddRoutineToGriffinClass(Aggregate interceptor, Routine routine) {
         // NOTE: funcCounter is updated outside this method, in createInterceptor, to reflect this addition
@@ -644,31 +552,24 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // TODO: could newRoutine be defined only in writeInterceptorFunctionAddRoutineToGriffinClass?
         Routine newRoutine = (Routine) routine.clone();
         writeInterceptorFunctionAddRoutineToGriffinClass(interceptor, newRoutine);
-        writeInterceptorFunctionHeader(newRoutine); // TODO: should this be 'routine' instead of 'newRoutine'?
-        writeInterceptorFunctionBasicBlockArgumentArray(routine);
-        writeInterceptorFunctionCallbackCall(subject, interceptor, routine, funcCounter);
-        writeInterceptorFunctionReturnStatement(routine);
+        
+        int minArgs = Utils.minimalArgumentCount(routine),
+        		maxArgs = Utils.countParameters(routine);
+        
+        for(int nArgs = minArgs; nArgs <= maxArgs; nArgs++) {
+    			m_output.write("\t /* Wrapper for " + routine.getName());
+    			m_output.write(" taking " + nArgs + " out of " + maxArgs + " parameters */\n");
+	        writeInterceptorFunctionHeader(newRoutine, nArgs); // TODO: should this be 'routine' instead of 'newRoutine'?
+	        writeInterceptorFunctionBasicBlockArgumentArray(routine, nArgs);
+	        writeInterceptorFunctionCallbackCall(subject, interceptor, routine, funcCounter, nArgs);
+	        writeInterceptorFunctionReturnStatement(routine);
+	        m_output.write("\t}\n");
+	        funcCounter++;
+        }
 
-        m_output.write("\t}\n\n");
+        m_output.write("\n");
     }
     
-//    /**
-//     * Writes the routine for interceptor static call, i.e
-//     * InterceptedClass::routine
-//     * @param routine routine to call
-//     */
-//    private void writeInterceptorStaticCallFunction(Aggregate interceptor, Routine routine) 
-//    		throws IOException, MissingInformationException 
-//    	{
-//    		Routine newRoutine = (Routine) routine.clone();
-//    	  //  	writeInterceptorFunctionAddRoutineToGriffinClass(interceptor, newRoutine);
-//    		newRoutine.getContainerConnection().setStorage(Storage.STATIC);
-//    		//newRoutine.setName("__interceptor__" + newRoutine.getName());
-//    		writeInterceptorStaticFunctionHeader(routine);
-//    		writeInterceptorStaticFunctionBody(routine);
-//    		m_output.write("\t}\n\n");
-//   	
-//    }
 
     private Routine createInterceptorInitFunction() {
         // TODO: maybe this should be named createInitFunction?
@@ -749,12 +650,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             final int defaultArgumentCount = 
                 Utils.countParameters(routine) -
                 Utils.minimalArgumentCount(routine);
-            funcCounter += defaultArgumentCount;
             
             	writeInterceptorFunction(subject, result, routine, funcCounter);
             	
             // Increment the function pointer counter
-            funcCounter++;
+            funcCounter += defaultArgumentCount + 1;
         }
         
         // Write private sections of class
