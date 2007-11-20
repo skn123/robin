@@ -1204,10 +1204,18 @@ PyObject *InstanceObject::__repr__(PyObject *self)
 PyObject *InstanceObject::__repr__()
 {
 	const char *format = "<Instance of Robin class '%s'>";
-	std::string classname = getUnderlying()->getClass()->name();
+
+    std::string classname;
+
+    if(!isInitialized()) {
+        classname = "NOT INITIALIZED";
+    } else {
+        classname = getUnderlying()->getClass()->name();
+    }
+    
 	// Format the string
 	char *buffer = new char[strlen(format) + classname.size() + 2 + 16];
-	sprintf(buffer, format, classname.c_str(), getUnderlying()->getObject());
+	sprintf(buffer, format, classname.c_str());
 	// Return string to Python
 	PyObject *fmt = PyString_FromString(buffer);
 	delete[] buffer;
