@@ -11,8 +11,13 @@ package sourceanalysis;
  * [sourceanalysis.Entity#getContainerConnection()] to distinguish between
  * these cases and get the storage type for the Field.</p>
  */
-public class Field extends Entity{
+public class Field extends Entity implements Cloneable {
 
+	
+	public enum FieldType {
+		REGULAR,
+		WRAPPED
+	};
 	/**
 	 * Constructor for Field.
 	 * <ul>
@@ -24,6 +29,7 @@ public class Field extends Entity{
 		super();
 		m_dataType = null;
 		m_initializer = null;
+		m_fieldType = FieldType.REGULAR;
 	}
 
 	/** @name Push API
@@ -60,6 +66,10 @@ public class Field extends Entity{
 	public void setInitializer(String initString)
 	{
 		m_initializer = initString;
+	}
+	
+	public void setFieldType(FieldType type) {
+		m_fieldType = type;
 	}
 
 	/*@}*/	
@@ -105,10 +115,31 @@ public class Field extends Entity{
 	{
 		return m_initializer;
 	}
+	
+	/**
+	 * Returns the type of this field (regular / requires a wrapper)
+	 * @return
+	 */
+	public FieldType getFieldType() {
+		return m_fieldType;
+	}
+	
+	/**
+	 * @see java.lang.Object#clone()
+	 */
+	public Object clone() {
+		try {
+			return super.clone();
+		} catch(CloneNotSupportedException e) {
+			return null;
+		}
+	}
 
 	/*@}*/	
 
 	// Private members
 	Type m_dataType;
 	String m_initializer;
+	
+	FieldType m_fieldType; // field type (regular / requires wrapper call generation)
 }
