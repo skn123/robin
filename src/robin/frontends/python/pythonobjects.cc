@@ -741,6 +741,18 @@ PyObject *ClassObject::__getattr__(const char *name)
 		return Py_BuildValue("(O)", &PyType_Type);
 	}
 	else {
+
+        if(tp_dict) {
+            // look in the dict - this is for a case where our ClassObject is
+            // inherited by python classes
+            PyObject* dictmember = PyDict_GetItemString(tp_dict, (char*)name);
+            if(dictmember) {
+                Py_XINCREF(dictmember);
+                return dictmember;
+            } else {
+                PyErr_Clear();
+            }
+        }
 		// - look for static inners
 		PyObject *inner = PyDict_GetItemString(m_inners, (char*)name);
 		if (inner) {
@@ -1766,6 +1778,10 @@ void initObjects()
 	HybridTypeObject = makeMetaclassType("Robin::Python::HybridObject",
 										 ClassTypeObject);
 	HybridTypeObject->tp_dealloc = ClassObject::__dealloc__;
+    HybridTypeObject->tp_getattr = ClassObject::__getattr__;
+    HybridTypeObject->tp_setattr = ClassObject::__setattr__;
+    HybridTypeObject->tp_getattro = 0;
+    HybridTypeObject->tp_setattro = 0;
 }
 
 
