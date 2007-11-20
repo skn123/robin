@@ -1062,8 +1062,8 @@ Handle<Instance> InstanceObject::getUnderlying() const
  */
 void InstanceObject::keepAlive(PyObject *owner)
 {
-	Py_XDECREF(m_ownership_keep);
-	m_ownership_keep = owner;
+    Py_XDECREF(m_ownership_keep);
+	m_ownership_keep = (owner == this)? NULL : owner;
 	Py_XINCREF(m_ownership_keep);
 }
 
