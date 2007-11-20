@@ -13,6 +13,8 @@ import java.util.Set;
 import java.util.Random;
 import java.util.Vector;
 
+import org.python.parser.ast.aliasType;
+
 import sourceanalysis.*;
 import sourceanalysis.Specifiers.Storage;
 import sourceanalysis.hints.IncludedViaHeader;
@@ -673,6 +675,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // now, we want to add bogus members with public visibility
         // that expose all the members up to 'protected' of parent classes
         
+        Map wrappedTypes = new HashMap();
+        
         for(Iterator fieldIter = Utils.accessibleFields(subject, m_instanceMap, Specifiers.Visibility.PROTECTED).iterator();
         				 fieldIter.hasNext();)
         {
@@ -681,7 +685,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         		
         		
         		
-        		writeInterceptorFieldWrapper(subject, result, f, funcCounter);
+        		writeInterceptorFieldWrapper(subject, result, f, funcCounter, wrappedTypes);
         		
         		
         }
@@ -697,22 +701,56 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 	
 	private void writeInterceptorFieldWrapper(Aggregate subject,
-			Aggregate result, Field originalField, int funcCounter) 
+			Aggregate result, Field originalField, int funcCounter, Map newTypes) 
 	throws IOException, MissingInformationException {
 		
+		Type type = originalField.getType();
+		if(Filters.isArray(type)) {
+			return; // wrapping arrays is not supported
+		}
+		
+		
+		m_output.write("\t/* Wrapper for field " + originalField.getFullName() + "*/");
+		m_output.write("\n");
+		// add a typedef to make field type public
+		String newTypeName = Utils.getTypeHash(type);
+		
+		
+		
+		
+		
+		if(newTypes.containsKey(newTypeName) == false) {
+			Alias interceptedTypeBase = new Alias();
+			interceptedTypeBase.setAliasedType(type);
+			interceptedTypeBase.setName("intercepted_" + newTypeName);
+			result.getScope().addMember(interceptedTypeBase, Specifiers.Visibility.PUBLIC);
+			Type t = new Type(new Type.TypeNode(interceptedTypeBase));
+			newTypes.put(newTypeName, t);
+			m_output.write("\ttypedef " + Formatters.formatDeclaration(removeUnneededConstness(type), t.getBaseType().getName(), '&', false));					
+			m_output.write(";\n");
+		}
+		
+		Type interceptedType = (Type)newTypes.get(newTypeName);
+		
 		Field interceptorF = (Field)originalField.clone();
-		interceptorF.setFieldType(Field.FieldType.WRAPPED);
+		interceptorF.setFieldType(Field.FieldType.WRAPPED);	
+		interceptorF.setType(interceptedType);
+		
 		result.getScope().addMember(
                 interceptorF, Specifiers.Visibility.PUBLIC, 
                 originalField.getContainerConnection().getStorage());
 		
-		m_output.write("\t/* Wrapper for field " + originalField.getFullName() + "*/");
-		m_output.write("\n");
+		
+		
+		
+		
 		
 		// using an extension of generateFlatWrapper because it fits our needs perfectly
-		generateFlatWrapper(interceptorF, interceptorF.getContainerConnection().getStorage() != Specifiers.Storage.STATIC, true);
+		generateFlatWrapper(interceptorF, true, true);
 		
 	}
+
+	
 
 	/**
 	 * Creates definitions of interceptor classes to wrap the classes marked
@@ -1322,16 +1360,20 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				+ " *self) { delete self; }\n");
 	}
 	
+
+	
 	/**
 	 * Generates an accessor function for a program variable.
 	 * @param field
+	 * @param fieldType - the type of the field to generate an accessor for
 	 * @param with if <b>true</b> - the generated code will provide an
 	 * instance invocation (self-&gt;) when applicable. If <b>false</b> - the
 	 * field will be treated as a global variable or a public static member.
+	 * @param forInterceptor if true, the method is generated for an intercepted field
 	 * @throws IOException
 	 * @throws MissingInformationException
 	 */
-	private void generateFlatWrapper(Field field, boolean with, boolean forInterceptor)
+	private void generateFlatWrapper(Field field, boolean with, boolean forInterceptor) 
 		throws IOException, MissingInformationException
 	{
 		String tabs = forInterceptor ? "\t" : "";
@@ -1341,13 +1383,21 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("\n" + tabs +" * " + Formatters.formatLocation(field));
 		m_output.write("\n " + tabs + "*/\n");
 		// Get some information about the type
-		Type type = removeUnneededConstness(Filters.getOriginalType(field.getType()));
-		Entity base = type.getBaseType();
+		
 		// Create a get accessor
 		Entity container = field.getContainer();
 		String accessorName = "data_get_" + uid(field) + fors;
 		
 		Field.FieldType fieldType = field.getFieldType();
+		
+		
+		Type type = field.getType();
+		boolean wrappingInterceptorGetter = (fieldType == Field.FieldType.WRAPPED && !forInterceptor);
+		
+		if(!wrappingInterceptorGetter) {
+			type = removeUnneededConstness(Filters.getOriginalType(type));
+		}
+		Entity base = type.getBaseType();
 		
 		String thisArg;
 		if(forInterceptor) {
@@ -1356,13 +1406,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			thisArg = container instanceof Aggregate ? 
 					container.getFullName() + " *self" : "";
 		}
+		
+		String decl = Formatters.formatDeclaration(type, accessorName, '&', wrappingInterceptorGetter, false);
+		
 		// - generate accessor function header
-		m_output.write(tabs + Formatters.formatDeclaration(type, accessorName, '&', false)
+		m_output.write(tabs + decl
 				+ "(" + thisArg + ")");
 		// - generate accessor function body
 		m_output.write(tabs + " { return ");
 		
-		if(fieldType == Field.FieldType.WRAPPED && !forInterceptor) {
+		if(wrappingInterceptorGetter) {
 			// touchup/touchdown were taken care of in the generated wrapper
 			m_output.write("self->" + accessorName + "()");
 		} else {
@@ -1378,7 +1431,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if(!forInterceptor) {
 				m_output.write(thisArg + ", ");
 			}
-			m_output.write(Formatters.formatDeclaration(type, "newval", '*', false) + ")");
+			m_output.write(Formatters.formatDeclaration(type, "newval", '*', wrappingInterceptorGetter, false) + ")");
 			// - generate accessor function body
 			m_output.write(tabs + "{ ");
 			if(fieldType == Field.FieldType.WRAPPED && !forInterceptor) {
@@ -1401,7 +1454,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if(!forInterceptor) {
 				// - generate regdata
 				if (base instanceof Alias)
-					base = ((Alias)base).getAliasedType().getBaseType();
+					base = Utils.flatUnalias(type).getBaseType();
 				m_output.write("RegData sink_" + uid(field) + fors + "_proto[] = {\n");
 				m_output.write("{\"newval\", \"" + base.getFullName() + "\" ,0,0},\n");
 				m_output.write(END_OF_LIST);
