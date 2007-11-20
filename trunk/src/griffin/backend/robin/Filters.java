@@ -346,6 +346,10 @@ public class Filters {
 		try {
 			Type type = field.getType();
 			type.getBaseType(); // - make sure base type is present
+			
+			type = Utils.flatUnalias(type);
+			
+			
 			return (field.hasContainer()
 					&& field.getContainer() instanceof Aggregate)
 					&& isDirectPrimitive(type)
@@ -449,5 +453,9 @@ public class Filters {
 			return true;
 		else
 			return false;
+	}
+
+	public static boolean isArray(Type type) {
+		return type.isArray() || Utils.flatUnalias(type).isArray();  
 	}
 }
