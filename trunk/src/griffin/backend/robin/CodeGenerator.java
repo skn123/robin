@@ -380,7 +380,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             // write a generic name, in order to avoid name clashes with our own parameters
             m_output.write(param.getType().formatCpp("interceptor_arg" + i));
             m_output.write(" /* " + param.getName() + " */");
-            if (argIter.hasNext()) m_output.write(", ");
+            if (argIter.hasNext() && i < nArgs) m_output.write(", ");
         }
         m_output.write(")");
         if (routine.isConst()) m_output.write(" const");
