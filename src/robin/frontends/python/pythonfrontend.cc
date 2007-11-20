@@ -747,7 +747,7 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
 	int lt = classname.find('<');
 
 	// if it wasn't found, this is not a template
-	if (lt == -1) {
+	if (lt == -1 || strncmp(classname.c_str(), "operator", strlen("operator")) == 0) {
 		return false;
 	}
 	else {
