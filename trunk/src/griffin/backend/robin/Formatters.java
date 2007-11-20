@@ -68,13 +68,20 @@ public class Formatters {
 			return "touchup(" + expression + ")";
 	}
 	
-	static String formatDeclaration(Type type, String name, char extraRefScheme, boolean isForFunction)
+	static String formatDeclaration(Type type, String name, char extraRefScheme, boolean isForFunction) {
+		return formatDeclaration(type, name, extraRefScheme, false, isForFunction);
+	}
+	static String formatDeclaration(Type type, String name, char extraRefScheme, boolean wrappingInterceptor, boolean isForFunction)
 	{
-		// Handle redundant referencing
-		if (Filters.getOriginalType(type).isReference()
-				&& Filters.isPrimitive(type.getBaseType())) {
-			type = dereference(Filters.getOriginalType(type));
+		
+		if(!wrappingInterceptor) {
+			// Handle redundant referencing
+			if (Filters.getOriginalType(type).isReference()
+						&& Filters.isPrimitive(type.getBaseType())) {
+					type = dereference(Filters.getOriginalType(type));
+			}
 		}
+
 		// Handle touch-up
 		Type touchupType = Filters.getTouchup(type);
 		if (touchupType != null) type = touchupType;
