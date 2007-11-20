@@ -107,6 +107,7 @@ public class Launcher implements Backend  {
 		codegen.generateIncludeDirectives();
 		codegen.generatePreface();
 		codegen.generateInterceptors();
+		codegen.generateStaticRoutines();
 		codegen.generateRoutineWrappers();
 		codegen.generateConstantWrappers();
 		codegen.generateEnumeratedTypeWrappers();
