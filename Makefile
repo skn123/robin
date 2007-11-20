@@ -12,6 +12,7 @@ python = python
 jython = jython
 -include config.mak
 
+cxx?=g++
 CXX=$(cxx)
 
 pydir = $(site-packages)/robin
