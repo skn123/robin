@@ -425,9 +425,13 @@ class InheritanceTest(TestCase):
         class MoreTainted(inheritance.ITaintedVirtual):
             def __init__(self, taintParam):
                 inheritance.ITaintedVirtual.__init__(self, taintParam)
+                self.pythonTaint = 5
 
             def returnTaint(self):
                 return inheritance.TaintedVirtual.returnTaint(self) * 2
+
+            def pythonIsPure(self):
+                return 10;
 
         class Untainter(MoreTainted):
             def __init__(self):
@@ -442,15 +446,35 @@ class InheritanceTest(TestCase):
             def returnFilth(self):
                 return 0
 
+        class EvenMoreTainted(MoreTainted):
+            def __init__(self):
+                MoreTainted.__init__(self,500)
+
+
         
         mt = MoreTainted(5)
         self.assertEquals(mt.returnTaint(), 10)
         self.assertEquals(mt.returnFilth(), -1)
+        self.assertEquals(mt.pythonIsPure(), 10)
+        self.assertEquals(mt.pythonTaint,5)
         
         umt = Untainter()
         self.assertEquals(umt.returnTaint(),-1)
         self.assertEquals(umt.returnRealTaint(),0)
         self.assertEquals(umt.returnFilth(),0)
+        self.assertEquals(umt.pythonIsPure(),10)
+        try:
+            i = umt.pythonTaint
+            self.fail()
+        except:
+            pass
+
+
+        emt = EvenMoreTainted()
+        self.assertEquals(emt.pythonTaint,5)
+        self.assertEquals(emt.returnTaint(), 1000)
+        self.assertEquals(emt.pythonIsPure(), 10)
+        self.assertEquals(emt.returnFilth(), -1)
 
 
 class HintsTest(TestCase):
