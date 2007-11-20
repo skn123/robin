@@ -7,7 +7,7 @@ here = os.path.dirname(__file__)
 machine = os.getenv("MACHINE")
 libtemplate = "%(sopre)s%%s%(platspec)s-%(ver)s%(pyspec)s%(soext)s"
 lib = libtemplate % robin.__dict__ % "robin_stl"
-robin.loadLibrary(__name__, os.path.join(here,lib))
+robin.loadLibrary(__name__, lib)
 
 ostringstream = std.ostringstream
 ifstream = std.ifstream
