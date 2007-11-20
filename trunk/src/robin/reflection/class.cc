@@ -146,9 +146,32 @@ Handle<CallableWithInstance> Class::findInstanceMethod(const std::string&
 		return static_hcast<CallableWithInstance>(look);   // Upcast
 	}
 	else {
+        fprintf(stderr, "Some faggot didn't find %s\n", methodname.c_str());
 		throw NoSuchMethodException();
 	}
 }
+
+/**
+ * Finds the method with the specified name in the map
+ * of instance methods. It is returned as a non-bound 
+ * <classref>Callable</classref> handle.<br />
+ * NoSuchMethodException is thrown if there is no method with that
+ * name in the collection.
+ */
+Handle<Callable> Class::findUnboundInstanceMethod(const std::string&
+													   methodname) const
+{
+	Handle<StandardMethod> look = lookupInstanceMethod(methodname);
+
+	if (look) {
+		return static_hcast<Callable>(look);   // Upcast
+	}
+	else {
+        fprintf(stderr, "Some faggot didn't find %s\n", methodname.c_str());
+		throw NoSuchMethodException();
+	}
+}
+
 
 /**
  * Check for the existance of a specific instance method by name.
@@ -267,6 +290,16 @@ std::vector<std::string> Class::listConciseMethods() const
 bool Class::isEmpty() const
 {
 	return (m_instanceMethods.size() == 0 && !m_hasConstructors);
+}
+
+
+/*
+ * Returns a list of base classes for this class
+ */
+const std::vector<Handle<Class> > &Class::getBases() const
+{
+    return m_baseClasses;
+
 }
 
 /**
