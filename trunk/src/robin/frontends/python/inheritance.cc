@@ -198,6 +198,9 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 	assert(underlyingBase);
 
     ClassObject *newtypeClassObject = new ClassObject(*baseClass);
+    // this is a hack, since we used default copy constructor, so we must reset
+    // initialization in order to readd methods / recreate mro
+    newtypeClassObject->resetInitialization();
     PyTypeObject *newtype = (PyTypeObject *)newtypeClassObject;
     
     if (newtype == NULL) return NULL;
@@ -213,6 +216,9 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
     newtype->tp_dictoffset = offsetof_nw(HybridObject, m_dict);
 	newtype->tp_base = baseClass;
 	newtype->tp_dict = PyDict_Copy(dict);
+
+    // hack for PyType_Ready to readmit our class
+    newtype->tp_flags &= ~Py_TPFLAGS_READY;
     Py_XINCREF(baseClass);
 
     // initialize bases and ready the type    

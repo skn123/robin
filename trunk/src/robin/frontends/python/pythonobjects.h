@@ -109,7 +109,7 @@ public:
     // @{
     void prepare();
     bool isFullyInitialized() const;
-
+    void resetInitialization(); // hack, for HybridObject
     //@}
     
 	/**

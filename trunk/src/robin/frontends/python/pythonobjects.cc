@@ -972,6 +972,10 @@ bool ClassObject::isFullyInitialized() const {
     return m_fully_initialized;
 }
 
+void ClassObject::resetInitialization() {
+    m_fully_initialized = false;
+}
+
 void ClassObject::initClassBases()
 {
 
