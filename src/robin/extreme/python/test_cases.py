@@ -298,6 +298,11 @@ class TemplateTest(TestCase):
 		robin.declareTemplate("Less::Yets", t)
 		self.assertEquals(t, {'Carrier':1})
 
+    def testNestedTemplateArgs(self):
+        t = templates.NestedTemplate();
+        self.assertEquals(t.method(), 1);
+
+
 
 class ProtocolsTest(TestCase):
 
