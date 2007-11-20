@@ -339,6 +339,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
             Parameter param = (Parameter) argIter.next();
             m_output.write(param.getType().formatCpp(param.getName()));
+            if(param.hasDefault()) {
+            		m_output.write(" = ");
+            		m_output.write(param.getDefaultString());
+            }
             if (argIter.hasNext()) m_output.write(", ");
         }
         m_output.write(") : " + subject.getName() + "(");
