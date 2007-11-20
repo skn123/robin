@@ -26,6 +26,7 @@
 #include <robin/reflection/callable.h>
 #include "enhancements.h"
 
+#include "xrefdebug.h"
 
 namespace Robin {
 
@@ -178,6 +179,8 @@ public:
 protected:
 	InstanceObject();
 	void init(Handle<Instance> underlying);
+
+    Handle<CallableWithInstance> findFieldWrapper(const std::string &prefix, const char *name);
 
 	friend class ClassObject;
 

@@ -5,6 +5,7 @@
 #include "pythonobjects.h"
 #include "../../reflection/class.h"
 #include "../../reflection/instance.h"
+#include "pythonfrontend.h"
 
 
 namespace Robin {
@@ -147,9 +148,10 @@ PyObject *HybridObject::__getattr__(char *nm)
 	else {
 		PyErr_Clear();
 		if (value = PyDict_GetItemString(ob_type->tp_dict, nm)) {
-            if(PyMethod_Check(value)) {
+            if(PyMethod_Check(value) || PyFunction_Check(value)) {
     			return PyMethod_New(value, this, PyObject_Type(this));
-            } else {
+            }
+            else {
                 Py_XINCREF(value);
                 return value;
             }
@@ -164,6 +166,15 @@ PyObject *HybridObject::__getattr__(char *nm)
 int HybridObject::__setattr__(char *nm, PyObject *value)
 {
 	Py_XINCREF(value);
+
+    const std::string &SINKMEMBER_PREFIX = PythonFrontend::SINKMEMBER_PREFIX;
+    try {
+        findFieldWrapper(SINKMEMBER_PREFIX, nm);
+        return InstanceObject::__setattr__(nm, value);
+    } catch(NoSuchMethodException &e) {
+        // ignore
+    }
+
 	return PyDict_SetItemString(m_dict, nm, value);
 }
 

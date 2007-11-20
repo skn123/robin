@@ -750,7 +750,7 @@ PyObject *ClassObject::__getattr__(const char *name)
             // inherited by python classes
             PyObject* dictmember = PyDict_GetItemString(tp_dict, (char*)name);
             if(dictmember) {
-                if(PyMethod_Check(dictmember)) {
+                if(PyMethod_Check(dictmember) || PyFunction_Check(dictmember)) {
                     return PyMethod_New(dictmember, NULL, (PyObject*)this); 
                 } else {
                     Py_XINCREF(dictmember);
@@ -1138,6 +1138,11 @@ int InstanceObject::__setattr__(PyObject *self, char *name, PyObject *val)
  */
 int InstanceObject::__setattr__(char *name, PyObject *val)
 {
+    if(val == NULL) {
+        PyErr_SetString(PyExc_AttributeError, "Can't delete native attributes");
+        return -1;
+    }
+
 	if (strcmp(name, "__owner__") == 0) {
 		// - set the owner
 		keepAlive(val);
@@ -1145,12 +1150,9 @@ int InstanceObject::__setattr__(char *name, PyObject *val)
 	}
 	else {
 		const std::string &SINKMEMBER_PREFIX = PythonFrontend::SINKMEMBER_PREFIX;
-		const char *internal_name;
 		try {
-			Handle<CallableWithInstance> meth = 
-				((ClassObject*)ob_type)->findInstanceMethod(
-					(SINKMEMBER_PREFIX + name).c_str(), &internal_name);
-			if (!meth) throw NoSuchMethodException();
+			Handle<CallableWithInstance> meth =
+                findFieldWrapper(SINKMEMBER_PREFIX, name); 
 
 			// - data member setter
 			ActualArgumentList args;
@@ -1168,6 +1170,22 @@ int InstanceObject::__setattr__(char *name, PyObject *val)
 		}
 	}
 }
+
+
+Handle<CallableWithInstance> InstanceObject::findFieldWrapper(const std::string &prefix, const char* name) 
+{
+
+    std::string full_name = prefix + name;
+    const char *internal_name;    
+    Handle<CallableWithInstance> meth = 
+        ((ClassObject*)ob_type)->findInstanceMethod(
+            full_name.c_str(), &internal_name);
+    if (!meth) throw NoSuchMethodException();
+
+    return meth;
+
+}
+        
 
 /**
  * Tries to find an instance method and bind it with the current instance.
