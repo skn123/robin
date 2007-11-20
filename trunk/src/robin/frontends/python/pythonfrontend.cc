@@ -612,14 +612,13 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 	Handle<Namespace> globals = newcomer.globalNamespace();
 
 	typedef Handle<Namespace::NameIterator> hiterator;
-	// Update and expose classes
+	// Expose classes
 	for (hiterator cname_iter = globals->enumerateClasses();
 		 !cname_iter->done(); cname_iter->next()) {
 		// Create a class object in the module
 		std::string name = cname_iter->value();
 		Handle<Class> clas = globals->lookupClass(name);
 		ClassObject *pyclass = getClassObject(clas);
-        pyclass->prepare();
 		pyclass->inModule(module);
 		insertIntoNamespace(newcomer.name(), module, name, (PyObject*)pyclass);
 		// Register class in classes map
