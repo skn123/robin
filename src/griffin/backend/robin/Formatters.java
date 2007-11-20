@@ -88,7 +88,7 @@ public class Formatters {
 		// Handle extra referencing
         
         if(isForFunction) {
-            name = "__CDECL" + name;
+            name = "__CDECL " + name;
         }
 		if (Filters.needsExtraReferencing(type) && !wrappingInterceptor) {
 			name = extraRefScheme + name;
