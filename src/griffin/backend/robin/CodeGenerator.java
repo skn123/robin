@@ -647,6 +647,17 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             funcIter.hasNext(); ++i) {
             Routine routine = (Routine) funcIter.next();
             
+            /* for the odd case of an idiot writing
+             * private:
+             * 	virtual void method();
+             * 
+             * we still want to create compilable code
+             * 
+             */
+            if(routine.getContainerConnection().getVisibility() == Specifiers.Visibility.PRIVATE) {
+            		continue;
+            }
+            
             // If the current function has some default arguments, increment
             // the function pointer to the last function
             final int defaultArgumentCount = 
@@ -659,6 +670,24 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             funcCounter += defaultArgumentCount + 1;
         }
         
+        // now, we want to add bogus members with public visibility
+        // that expose all the members up to 'protected' of parent classes
+        
+        for(Iterator fieldIter = Utils.accessibleFields(subject, m_instanceMap, Specifiers.Visibility.PROTECTED).iterator();
+        				 fieldIter.hasNext();)
+        {
+        	
+        		Field f = (Field)fieldIter.next();
+        		
+        		
+        		
+        		writeInterceptorFieldWrapper(subject, result, f, funcCounter);
+        		
+        		
+        }
+        
+        
+        
         // Write private sections of class
         m_output.write("private:\n");
         m_output.write("\tscripting_element twin;\n");
@@ -667,6 +696,24 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         return result;
     }
 	
+	private void writeInterceptorFieldWrapper(Aggregate subject,
+			Aggregate result, Field originalField, int funcCounter) 
+	throws IOException, MissingInformationException {
+		
+		Field interceptorF = (Field)originalField.clone();
+		interceptorF.setFieldType(Field.FieldType.WRAPPED);
+		result.getScope().addMember(
+                interceptorF, Specifiers.Visibility.PUBLIC, 
+                originalField.getContainerConnection().getStorage());
+		
+		m_output.write("\t/* Wrapper for field " + originalField.getFullName() + "*/");
+		m_output.write("\n");
+		
+		// using an extension of generateFlatWrapper because it fits our needs perfectly
+		generateFlatWrapper(interceptorF, interceptorF.getContainerConnection().getStorage() != Specifiers.Storage.STATIC, true);
+		
+	}
+
 	/**
 	 * Creates definitions of interceptor classes to wrap the classes marked
 	 * for interceptor creation, so that they can be implemented or extended
@@ -738,7 +785,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						
 						staticWrapper.getContainerConnection().setStorage(Specifiers.Storage.STATIC);
 						staticWrapper.removeParameters();
-						staticWrapper.setImaginary(true);
+						staticWrapper.setRoutineType(Routine.RoutineType.STATIC_CALL_WRAPPER);
 						
 						Parameter self_parameter = new Parameter();
 						self_parameter.setName("self");
@@ -826,7 +873,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				ContainedConnection connection = (ContainedConnection)fieldIter.next();
 				Field field = (Field)connection.getContained();
 				if (Filters.isAvailable(field, connection))
-					generateFlatWrapper(field, true);
+					generateFlatWrapper(field, true, false);
 			}
 			// More special stuff
 			if (!ctors && mustHaveCtor && !isAbstractClass) {
@@ -887,7 +934,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		for (Iterator ci = m_globalDataMembers.iterator(); ci.hasNext(); ) {
 			Field global = (Field)ci.next();
-			generateFlatWrapper(global, false);
+			generateFlatWrapper(global, false, false);
 		}
 	}
 	
@@ -1062,7 +1109,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		m_output.write("/*\n * "); m_output.write(routine.getFullName());
 		
-		if(routine.isImaginary()) {
+		if(routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER) {
 			m_output.write("\n * Wraps non-static method " + routine.getFullName());
 		}
 		
@@ -1097,7 +1144,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Construct parameters fitting for the flat purpose
 		int paramCount = 0;
 		boolean first = true;
-		boolean imaginarySkipped = false;
+		boolean staticParam = false;
 		m_output.write("(");
 		if (thisArg != null && !routine.isConstructor()) {
 			// - generate a *this
@@ -1105,7 +1152,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(thisArg.getFullName());
 			m_output.write(" *self");
 			first = false;
-		} else if(routine.isImaginary()) {
+		} else if(routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER) {
 			// - generate a *this for imaginary functions
 			if (routine.isConst()) m_output.write("const ");
 			m_output.write(routine.getContainer().getFullName());
@@ -1117,8 +1164,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		for (Iterator pi = routine.parameterIterator(); 
 				pi.hasNext() && paramCount < nArguments; paramCount++) {
 			Parameter param = (Parameter)pi.next();
-			if(routine.isImaginary() && !imaginarySkipped) {
-				imaginarySkipped = true;
+			if(routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER && !staticParam) {
+				staticParam = true;
 				continue;
 			}
 			if (!first) m_output.write(" , ");
@@ -1153,7 +1200,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				}
 			}
 			// - write function name to call
-			if (thisArg != null || routine.isImaginary())
+			if (thisArg != null || routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER)
 				if (routine.isConversionOperator())
 					m_output.write(conversionOperatorSyntax(routine, "self"));
 				else if (routine.getName().equals("operator==") || 
@@ -1162,7 +1209,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 							routine.getName().substring("operator".length()));
 				else {
 					m_output.write("self->");
-					if(routine.isImaginary()) {
+					if(routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER) {
 						m_output.write(routine.getFullName());
 					} else {
 						m_output.write(routine.getName());
@@ -1175,7 +1222,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (!routine.isConversionOperator()) {
 			paramCount = 0;
 			first = true;
-			imaginarySkipped = false;
+			staticParam = false;
 			
 			m_output.write("("); parenNest++;
 			
@@ -1186,8 +1233,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				//Type type = flatUnalias(param.getType());
 				Type type = param.getType();
 				// skip 'self' for generated static wrapper
-				if(routine.isImaginary() && !imaginarySkipped) {
-					imaginarySkipped = true;
+				if(routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER && !staticParam) {
+					staticParam = true;
 					continue;
 				}
 				
@@ -1284,56 +1331,81 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * @throws IOException
 	 * @throws MissingInformationException
 	 */
-	private void generateFlatWrapper(Field field, boolean with)
+	private void generateFlatWrapper(Field field, boolean with, boolean forInterceptor)
 		throws IOException, MissingInformationException
 	{
+		String tabs = forInterceptor ? "\t" : "";
 		String fors = with ? "f" : "s";
-		m_output.write("/*\n * var ");
+		m_output.write(tabs + "/*\n" + tabs +" * var ");
 		m_output.write(field.getFullName());
-		m_output.write("\n * " + Formatters.formatLocation(field));
-		m_output.write("\n */\n");
+		m_output.write("\n" + tabs +" * " + Formatters.formatLocation(field));
+		m_output.write("\n " + tabs + "*/\n");
 		// Get some information about the type
 		Type type = removeUnneededConstness(Filters.getOriginalType(field.getType()));
 		Entity base = type.getBaseType();
 		// Create a get accessor
 		Entity container = field.getContainer();
 		String accessorName = "data_get_" + uid(field) + fors;
-		String thisArg = container instanceof Aggregate ? 
-			container.getFullName() + " *self" : "";
+		
+		Field.FieldType fieldType = field.getFieldType();
+		
+		String thisArg;
+		if(forInterceptor) {
+			thisArg = "";
+		} else {
+			thisArg = container instanceof Aggregate ? 
+					container.getFullName() + " *self" : "";
+		}
 		// - generate accessor function header
-		m_output.write(Formatters.formatDeclaration(type, accessorName, '&', false)
+		m_output.write(tabs + Formatters.formatDeclaration(type, accessorName, '&', false)
 				+ "(" + thisArg + ")");
 		// - generate accessor function body
-		m_output.write(" { return "
-		 	+ Formatters.formatExpression(type, Formatters.formatMember(field))
-		 	+ "; }\n");
+		m_output.write(tabs + " { return ");
+		
+		if(fieldType == Field.FieldType.WRAPPED && !forInterceptor) {
+			// touchup/touchdown were taken care of in the generated wrapper
+			m_output.write("self->" + accessorName + "()");
+		} else {
+		 	m_output.write(Formatters.formatExpression(type, Formatters.formatMember(field, !forInterceptor)));
+		}
+		m_output.write("; }\n");
 		// Create a set accessor
 		if (Filters.hasSetter(field)) {
 			Type touchedUpType = Filters.getTouchup(type);
 			accessorName = "data_set_" + uid(field) + fors;
 			// - generate accessor function header
-			m_output.write("void " + accessorName + "(" + thisArg + ", " 
-					+ Formatters.formatDeclaration(type, "newval", '*', false) + ")");
+			m_output.write(tabs + "void " + accessorName + "(");
+			if(!forInterceptor) {
+				m_output.write(thisArg + ", ");
+			}
+			m_output.write(Formatters.formatDeclaration(type, "newval", '*', false) + ")");
 			// - generate accessor function body
-			m_output.write("{ "
-				+ Formatters.formatMember(field) 
-				+ " =  ");
-			
-			// we used a touchup, and now we need to touchdown
-			// ugly hack - should be done in formatter
-			if(touchedUpType != null && touchedUpType != type) {
-				m_output.write("touchdown(newval)");
+			m_output.write(tabs + "{ ");
+			if(fieldType == Field.FieldType.WRAPPED && !forInterceptor) {
+				m_output.write("self->" + accessorName + "(newval)");
 			} else {
-				m_output.write(Formatters.formatArgument(type, "newval"));
+				m_output.write(Formatters.formatMember(field, !forInterceptor) 
+					+ " =  ");
+				
+				// we used a touchup, and now we need to touchdown
+				// ugly hack - should be done in formatter
+				if(touchedUpType != null && touchedUpType != type) {
+					m_output.write("touchdown(newval)");
+				} else {
+					m_output.write(Formatters.formatArgument(type, "newval"));
+				}
 			}
 	
 			m_output.write("; }\n");
-			// - generate regdata
-			if (base instanceof Alias)
-				base = ((Alias)base).getAliasedType().getBaseType();
-			m_output.write("RegData sink_" + uid(field) + fors + "_proto[] = {\n");
-			m_output.write("{\"newval\", \"" + base.getFullName() + "\" ,0,0},\n");
-			m_output.write(END_OF_LIST);
+			
+			if(!forInterceptor) {
+				// - generate regdata
+				if (base instanceof Alias)
+					base = ((Alias)base).getAliasedType().getBaseType();
+				m_output.write("RegData sink_" + uid(field) + fors + "_proto[] = {\n");
+				m_output.write("{\"newval\", \"" + base.getFullName() + "\" ,0,0},\n");
+				m_output.write(END_OF_LIST);
+			}
 		}
 	}
 	

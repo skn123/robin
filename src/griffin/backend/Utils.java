@@ -1450,6 +1450,149 @@ public class Utils {
 	}
 	
 	/**
+	 * Returns the narrower visibility access (protected->public, etc) 
+	 * @param current visibility level
+	 * @return the next more strict visibility level 
+	 */
+	public static int getNextVisibilityLevel(int visibility) {
+		switch(visibility) {
+		case Specifiers.Visibility.PUBLIC:
+			return -1;
+		case Specifiers.Visibility.PROTECTED:
+			return Specifiers.Visibility.PUBLIC;
+		case Specifiers.Visibility.PACKAGE:
+			return Specifiers.Visibility.PROTECTED;
+		case Specifiers.Visibility.PRIVATE:
+			return Specifiers.Visibility.PROTECTED;
+		default:
+			return -1;
+		}
+	}
+	
+	public static boolean isVisible(int minimumVisibility, int memberVisibility) {
+		switch(minimumVisibility) {
+		case Specifiers.Visibility.PUBLIC:
+			return memberVisibility == Specifiers.Visibility.PUBLIC;
+		case Specifiers.Visibility.PROTECTED:
+			return memberVisibility == Specifiers.Visibility.PUBLIC ||
+				   memberVisibility == Specifiers.Visibility.PROTECTED;
+		case Specifiers.Visibility.PACKAGE:
+			return memberVisibility == Specifiers.Visibility.PACKAGE ||
+				   memberVisibility == Specifiers.Visibility.PROTECTED ||
+				   memberVisibility == Specifiers.Visibility.PUBLIC;
+		case Specifiers.Visibility.PRIVATE:
+			return memberVisibility == Specifiers.Visibility.PACKAGE ||
+			   memberVisibility == Specifiers.Visibility.PROTECTED ||
+			   memberVisibility == Specifiers.Visibility.PUBLIC ||
+			   memberVisibility == Specifiers.Visibility.PRIVATE;
+		default:
+			return false;
+		}
+		
+	}
+	
+	
+	/**
+	 * Collects all of the public inheritance-accessible fields in the given class
+	 */
+	public static Collection accessibleFields(Aggregate subject, Map instanceMap, 
+			int minimumAllowedVisibility)
+		throws MissingInformationException
+	{
+		
+		List accessible = new LinkedList();
+		
+		for(Iterator subjectFieldIter = subject.getScope().fieldIterator(); 
+			subjectFieldIter.hasNext();) 
+		{
+			ContainedConnection fieldConnection = (ContainedConnection)subjectFieldIter.next();
+			Field myField = (Field)fieldConnection.getContained();
+			
+			if(isVisible(minimumAllowedVisibility, fieldConnection.getVisibility())) {
+				accessible.add(myField);
+			}
+			
+		}
+		
+		// Get virtual methods from base classes
+		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
+		{
+			InheritanceConnection bconnection =
+				(InheritanceConnection)baseIter.next();
+			Aggregate base = bconnection.getBase();
+			TemplateArgument targs[] = bconnection.getBaseTemplateArguments();
+			if (targs != null) {
+				String expr = templateExpression(base, targs);
+				if (instanceMap != null) 
+					base = (Aggregate)instanceMap.get(expr);
+			}
+			if (base == null) continue;
+			
+		
+			
+			// we need to fetch the fields based on allowedVisibility
+			// and our inheritance connection type
+			int baseMinimumAllowedVisibility = -1;
+			
+			
+			
+			switch(bconnection.getVisibility()) {
+			case Specifiers.Visibility.PUBLIC:
+				// private -> private
+				// protected -> protected
+				// public -> public
+				baseMinimumAllowedVisibility = minimumAllowedVisibility;
+				break;
+			case Specifiers.Visibility.PROTECTED:
+				// public -> protected
+				// protected -> private
+				// private -> (not inherited)
+				
+				if(minimumAllowedVisibility != Specifiers.Visibility.PUBLIC) {
+					baseMinimumAllowedVisibility = getNextVisibilityLevel(minimumAllowedVisibility);
+				}
+				
+				break;
+			case Specifiers.Visibility.PRIVATE:
+				// nothing 
+				break;
+			case Specifiers.Visibility.PACKAGE:
+				// nothing too
+				break;
+			}
+			
+			// we can't get any new fields from this base
+			if(baseMinimumAllowedVisibility == -1) {
+				continue;
+			}
+			
+			Collection baseVisibleFields = accessibleFields(base, instanceMap, baseMinimumAllowedVisibility);
+			for (Iterator baseFieldIter = baseVisibleFields.iterator(); 
+			baseFieldIter.hasNext(); ) {
+                Field baseField = (Field)baseFieldIter.next();
+
+                // - ensure that a compatible method has not previously 
+                //  occurred
+				boolean found = false;
+				
+				for (Iterator accessIter = accessible.iterator(); accessIter.hasNext(); ) {
+					Field childField = (Field)accessIter.next();
+					if (childField.getName().equals(baseField.getName())) {
+						found = true;
+						break;
+					}
+				}
+				
+				if(!found) {
+					accessible.add(baseField);
+				}
+            }
+		}
+		
+		return accessible;
+	}
+	
+	/**
 	 * Collects all the virtual methods that are in the given class - including
 	 * those inherited from base classes.
 	 * @param subject a class to observe

@@ -41,10 +41,15 @@ public class Formatters {
 		}
 	}
 	
-	static String formatMember(Field field)
+	static String formatMember(Field field, boolean hasThis)
 	{
-		if (field.getContainer() instanceof Aggregate)
-			return "self->" + field.getName();
+		if (field.getContainer() instanceof Aggregate) {
+			if(hasThis) {
+				return "self->" + field.getName();
+			} else {
+				return field.getName();
+			}
+		}
 		else
 			return Utils.cleanFullName(field);
 	}
