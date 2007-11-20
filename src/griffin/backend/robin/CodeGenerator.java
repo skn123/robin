@@ -407,14 +407,18 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void writeInterceptorFunctionBasicBlockArgumentArray(Routine routine, int nArgs)
         throws IOException, MissingInformationException
     {
-        m_output.write("\t\tbasic_block args[] = {\n");
-        int i = 0;
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
-            writeInterceptorFunctionBasicBlockArgument(
-                    (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
-                );
+        if(nArgs == 0) {
+                m_output.write("\t\tbasic_block *args = NULL;\n");
+        } else {
+                m_output.write("\t\tbasic_block args[] = {\n");
+                int i = 0;
+                for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
+                    writeInterceptorFunctionBasicBlockArgument(
+                            (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
+                        );
+                }
+                m_output.write("\t\t};\n");
         }
-        m_output.write("\t\t};\n");
     }
 
     private void writeInterceptorFunctionBasicBlockArgument(Parameter param, int index, boolean moreParams)
