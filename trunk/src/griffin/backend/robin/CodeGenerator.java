@@ -635,7 +635,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_interceptorMethods.add(routine);
         interceptor.getScope().addMember(
                 routine, Specifiers.Visibility.PUBLIC, 
-                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+                Specifiers.Virtuality.VIRTUAL, Specifiers.Storage.EXTERN);
     }
 
     private void writeInterceptorFunction(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter)
@@ -720,7 +720,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
             		addInterceptorBaseConstructor(ctor, subject, result);
                 anyCtors = true;
-                ++funcCounter;
+                // allow for default argument ctors
+                funcCounter += (Utils.countParameters(ctor) - Utils.minimalArgumentCount(ctor) + 1);
             }
         }
 
