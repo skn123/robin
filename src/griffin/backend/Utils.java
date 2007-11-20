@@ -783,7 +783,7 @@ public class Utils {
 		
 		Map substitution = (institute != null) ? institute : new HashMap();
 		Map macros = new HashMap();
-	    System.err.println("Started instantiation for " + template + " with arguments " + java.util.Arrays.toString(arguments));
+	    //System.err.println("Started instantiation for " + template + " with arguments " + java.util.Arrays.toString(arguments));
 		// - these final variables are for use inside anonymous classes
 		final Aggregate fin_template = template;
 		final Map fin_substitution = substitution;
@@ -837,7 +837,6 @@ public class Utils {
 		Traverse.TypeInformationVisitor typeVisitor = 
 		new Traverse.TypeInformationVisitor() {
 			public void visit(Type typei) {
-				System.err.println("* Class is a " + typei);
 				if (typei.getRoot() != null)
 					collectInnersOfTemplateParameter(typei,
 						fin_template, 
@@ -1248,7 +1247,7 @@ public class Utils {
 							&& existingInstancesMap.containsKey(expression)) {
 						traitsClass = (Aggregate)existingInstancesMap.get(expression);
 						foundInstantiation = true;
-						System.err.println("Found instantiation for " + expression + ": " + traitsClass);
+						//System.err.println("Found instantiation for " + expression + ": " + traitsClass);
 					}
 				}
 				if(targs == null || foundInstantiation) {
