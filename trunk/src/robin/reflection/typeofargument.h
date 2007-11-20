@@ -115,9 +115,9 @@ public:
      */
 
     //@{
-    TypeOfArgument(TypeCategory category, TypeSpec spec);
-    TypeOfArgument(Handle<Class>);
-    TypeOfArgument(Handle<EnumeratedType>);
+    TypeOfArgument(TypeCategory category, TypeSpec spec, bool borrowed = false);
+    TypeOfArgument(Handle<Class>, bool borrowed = false);
+    TypeOfArgument(Handle<EnumeratedType>, bool borrowed = false);
 
     ~TypeOfArgument();
 
@@ -129,6 +129,7 @@ public:
     //@{
     Type basetype() const;
 	bool isPointer() const;
+    bool isBorrowed() const;
 	Handle<TypeOfArgument> pointer() const;
 	const TypeOfArgument& pointed() const;
     //@}
@@ -157,6 +158,7 @@ private:
     Type m_basetype;
     int  m_redirection_degree;
     bool m_reference_flag;
+    bool m_borrowed;
     std::vector<int> m_array_dimensions;
 
     Handle<Adapter> m_adapter;

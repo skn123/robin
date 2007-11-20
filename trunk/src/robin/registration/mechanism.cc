@@ -315,8 +315,9 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 		  { "void", ArgumentVoid },
 		  { "*char", ArgumentCString },
 		  { "@string", ArgumentPascalString },
-		  { "scripting_element", ArgumentScriptingElement },
-		  { "#scripting_element", ArgumentScriptingElement }, // @@@
+		  { "scripting_element", ArgumentScriptingElementNewRef },
+          { "&scripting_element", ArgumentScriptingElementBorrowedRef },
+		  { "#scripting_element", ArgumentScriptingElementNewRef }, // @@@
 		  { 0 } };
 
 	Handle<TypeOfArgument> rtype;

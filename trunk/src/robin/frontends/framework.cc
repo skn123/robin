@@ -51,7 +51,8 @@ void FrontendsFramework::selectFrontend(Handle<Frontend> fe)
 	fillAdapter(Robin::ArgumentBoolean);
 	fillAdapter(Robin::ArgumentCString);
 	fillAdapter(Robin::ArgumentPascalString);
-	fillAdapter(Robin::ArgumentScriptingElement);
+	fillAdapter(Robin::ArgumentScriptingElementNewRef);
+    fillAdapter(Robin::ArgumentScriptingElementBorrowedRef);
 }
 
 /**

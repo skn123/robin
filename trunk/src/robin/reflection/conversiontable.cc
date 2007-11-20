@@ -436,7 +436,7 @@ void ConversionTable::addTrivialConversions(
 		AdjacencyList &list, const TypeOfArgument *from) const
 {
 	Adjacency adj;
-	adj.targetNode = ArgumentScriptingElement;
+	adj.targetNode = ArgumentScriptingElementNewRef;
 	adj.edge = Handle<Conversion>(new TrivialConversion);
 	if (m_graph.find(from) != m_graph.end())
 		adj.edge->setSourceType(

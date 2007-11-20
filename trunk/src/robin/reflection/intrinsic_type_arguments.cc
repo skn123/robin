@@ -68,9 +68,13 @@ Handle<TypeOfArgument> ArgumentPascalString
                                    (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
 						            TYPE_EXTENDED_PASCALSTRING));
 
-Handle<TypeOfArgument> ArgumentScriptingElement
+Handle<TypeOfArgument> ArgumentScriptingElementNewRef
                                    (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
 						            TYPE_EXTENDED_ELEMENT));
+
+Handle<TypeOfArgument> ArgumentScriptingElementBorrowedRef
+                                   (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
+						            TYPE_EXTENDED_ELEMENT, /* borrowed = */true));
 
 #endif
 

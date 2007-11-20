@@ -47,6 +47,7 @@ namespace Robin {
 	extern Handle<TypeOfArgument> ArgumentCString;
 	extern Handle<TypeOfArgument> ArgumentPascalString;
 
-	extern Handle<TypeOfArgument> ArgumentScriptingElement;
+	extern Handle<TypeOfArgument> ArgumentScriptingElementNewRef;
+	extern Handle<TypeOfArgument> ArgumentScriptingElementBorrowedRef;
 
 } // end of namespace Robin
