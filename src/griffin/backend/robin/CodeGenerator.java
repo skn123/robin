@@ -51,8 +51,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"\tunion { void *word; float f; } u; u.f = val;\n" +
 						"\treturn u.word;\n" +
 						"}\n" +
-						"float touchdown(void* val)\n{\n" +
-						"\tunion { void *word; float f; } u; u.word = val;\n" +
+						"float touchdown(const void* val)\n{\n" +
+						"\tunion { const void *word; float f; } u; u.word = val;\n" +
 						"\treturn u.f;\n" +
 						"}\n"));
 		Type doubleptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
@@ -64,8 +64,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"double *touchup(double val)\n{\n" +
 						"\treturn new double(val);\n" +
 						"}\n" +
-						"double touchdown(double* val)\n{\n" +
-						"\treturn *std::auto_ptr<double>(val);\n" +
+						"double touchdown(const double* val)\n{\n" +
+						"\treturn *std::auto_ptr<const double>(val);\n" +
 						"}\n"));
 		Type longlongptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		longlongptr.getRootNode().add(new Type.TypeNode(Primitive.LONGLONG));
@@ -380,7 +380,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             // write a generic name, in order to avoid name clashes with our own parameters
             m_output.write(param.getType().formatCpp("interceptor_arg" + i));
             m_output.write(" /* " + param.getName() + " */");
-            if (argIter.hasNext() && i < nArgs) m_output.write(", ");
+            if (argIter.hasNext() && i < nArgs - 1) m_output.write(", ");
         }
         m_output.write(")");
         if (routine.isConst()) m_output.write(" const");
@@ -404,7 +404,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         int i = 0;
         for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
             writeInterceptorFunctionBasicBlockArgument(
-                    (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs
+                    (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
                 );
         }
         m_output.write("\t\t};\n");
@@ -481,7 +481,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             		argIter.next(); // ignore the result, we just need to advance the iterator
             		// write the generated name instead of a real one
                 m_output.write("interceptor_arg" + i + 
-                    (argIter.hasNext() && i < nArgs ? ", " : ""));
+                    (argIter.hasNext() && i < nArgs - 1 ? ", " : ""));
             }
             m_output.write(");\n");
         }
@@ -1120,7 +1120,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				continue;
 			}
 			if (!first) m_output.write(" , ");
-			Type type = flatUnalias(param.getType());
+			//Type type = flatUnalias(param.getType());
+			Type type = param.getType();
 			
 			m_output.write(Formatters.formatParameter(type, "arg" + paramCount));
 			first = false;
@@ -1180,7 +1181,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 					pi.hasNext() && paramCount < nArguments; paramCount++) {
 				Parameter param = (Parameter)pi.next();
 				// Get parameter attributes
-				Type type = flatUnalias(param.getType());
+				//Type type = flatUnalias(param.getType());
+				Type type = param.getType();
 				// skip 'self' for generated static wrapper
 				if(routine.isImaginary() && !imaginarySkipped) {
 					imaginarySkipped = true;
