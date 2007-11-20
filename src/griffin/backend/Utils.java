@@ -698,6 +698,34 @@ public class Utils {
 	}
 	
 	/**
+	 * Instantiates a template contained in a type
+	 * @throws InappropriateKindException 
+	 * @throws MissingInformationException 
+	 */
+	public static Entity instantiateTemplate(Type templateType, Map existingInstancesMap) 
+		throws MissingInformationException, InappropriateKindException 
+	{
+		
+		Entity typeEntity = templateType.getBaseType();
+		TemplateArgument[] typeTemplateArguments = templateType.getTemplateArguments();
+		
+		
+		
+		if(!typeEntity.isTemplated() || ! (typeEntity instanceof Aggregate) || typeTemplateArguments == null) {
+			return typeEntity;
+		}
+		
+		Aggregate typeAggregate = (Aggregate)typeEntity;
+		
+		
+		
+		return instantiateTemplate(typeAggregate, typeTemplateArguments, existingInstancesMap);
+		
+		
+	}
+	
+	
+	/**
 	 * Generates a specialization for a template class, given actual
 	 * values for the template parameters.
 	 * @param template a templated Aggregate entity
@@ -706,7 +734,8 @@ public class Utils {
 	 * 'template'
 	 * @param institute a map of Entity to Type which instructs which
 	 * elements are known to require replacement - this usually carries
-	 * values when 
+	 * values when
+	 * @param existingInstancesMap map of existing template instantiations
 	 * @return A <b>new</b> Aggregate object
 	 * @throws MissingInformationException when some information inside the
 	 * template object is incomplete
@@ -714,10 +743,10 @@ public class Utils {
 	 * is encountered
 	 */
 	public static Aggregate instantiateTemplate(Aggregate template,
-		TemplateArgument[] arguments)
+		TemplateArgument[] arguments, Map existingInstancesMap)
 		throws MissingInformationException, InappropriateKindException
 	{
-		return instantiateTemplate(template, arguments, null, null);
+		return instantiateTemplate(template, arguments, null, null, existingInstancesMap);
 	}
 	
 	/**
@@ -734,6 +763,7 @@ public class Utils {
 	 * @param d a clean, ready instance of Aggregate into which to add
 	 * the instantiated elements. If <b>null</b>, a new instance is
 	 * generated in the template's container scope.
+	 * @param existingInstancesMap map of existing templates instantiations
 	 * @return A <b>new</b> Aggregate object
 	 * @throws MissingInformationException when some information inside the
 	 * template object is incomplete
@@ -741,16 +771,33 @@ public class Utils {
 	 * is encountered
 	 */
 	public static Aggregate instantiateTemplate(Aggregate template,
-		TemplateArgument[] arguments, Map institute, Aggregate d)
+		TemplateArgument[] arguments, Map institute, Aggregate d, Map existingInstancesMap)
 		throws MissingInformationException, InappropriateKindException
 	{
+		// Don't instantiate the same template twice
+		String existingExpression = templateExpression(template, arguments);
+		if(existingInstancesMap.containsKey(existingExpression)) {
+			return (Aggregate)existingInstancesMap.get(existingExpression);
+		}
+		
+		
 		Map substitution = (institute != null) ? institute : new HashMap();
 		Map macros = new HashMap();
-	
+	    System.err.println("Started instantiation for " + template + " with arguments " + java.util.Arrays.toString(arguments));
 		// - these final variables are for use inside anonymous classes
 		final Aggregate fin_template = template;
 		final Map fin_substitution = substitution;
 		final List fin_targs = new ArrayList();
+		final Map fin_existingInstancesMap = existingInstancesMap;
+		
+		// ---------------------------
+		// Create instantiations for template arguments
+		// ---------------------------
+		for(int i=0; i<arguments.length; ++i) {
+			TemplateArgument arg = arguments[i];
+			if(arg instanceof TypenameTemplateArgument)
+			instantiateTemplate(((TypenameTemplateArgument)arg).getValue(), existingInstancesMap);
+		}
 		
 		// ---------------------------
 		// Create the substitution map
@@ -790,11 +837,13 @@ public class Utils {
 		Traverse.TypeInformationVisitor typeVisitor = 
 		new Traverse.TypeInformationVisitor() {
 			public void visit(Type typei) {
+				System.err.println("* Class is a " + typei);
 				if (typei.getRoot() != null)
 					collectInnersOfTemplateParameter(typei,
 						fin_template, 
 						fin_targs, 
-						fin_substitution);
+						fin_substitution,
+						fin_existingInstancesMap);
 			}
 		};
 		new Traverse().traverse(template, typeVisitor, true, 
@@ -992,7 +1041,12 @@ public class Utils {
 			Aggregate innerClass = (Aggregate)element[0];
 			Aggregate instance = (Aggregate)element[1];
 			instantiateTemplate(innerClass, new TemplateArgument[0],
-					substitution, instance);
+					substitution, instance, existingInstancesMap);
+		}
+		
+		if (existingInstancesMap != null) {
+			String expression = templateExpression(template, arguments);
+			existingInstancesMap.put(expression, templateInstance);
 		}
 		
 		return templateInstance;
@@ -1128,12 +1182,13 @@ public class Utils {
 	 * @param substitution accumulates the inner entities collected
 	 */
 	private static void collectInnersOfTemplateParameter(Type type, 
-		Aggregate template, List arguments, Map substitution)
+		Aggregate template, List arguments, Map substitution, Map existingInstancesMap)
 	{
 		final Aggregate fin_template = template;
 		final Map fin_substitution = substitution;
 		final TemplateArgument[] fin_targs =
 			(TemplateArgument[])arguments.toArray(new TemplateArgument[] { });
+		final Map fin_existingInstancesMap = existingInstancesMap;
 		
 		Type.Transformation collect = new Type.Transformation() {
 			public TypeNode transform(TypeNode typeNode) 
@@ -1158,7 +1213,7 @@ public class Utils {
 							// - replace with actual argument string and 
 							//  create a substitution in the map
 							String traitSpec = name.substring(parameterName.length() + 2);
-							Entity entity = trait(argument, traitSpec);
+							Entity entity = trait(argument, traitSpec, fin_existingInstancesMap);
 							fin_substitution.put(typeNode.getBase(), 
 								new Type(new Type.TypeNode(entity)));
 						}
@@ -1177,17 +1232,30 @@ public class Utils {
 		}
 	}
 
-	private static Entity trait(TemplateArgument traitsHolder, String field)
+	private static Entity trait(TemplateArgument traitsHolder, String field, Map existingInstancesMap)
 	{
 		if (traitsHolder instanceof TypenameTemplateArgument) {
 			Type val = ((TypenameTemplateArgument)traitsHolder).getValue();
 			Entity traitsEntity = val.getBaseType();
+			TemplateArgument[] targs = val.getTemplateArguments();
 			// - if the referenced entity is a class, look for a member there
 			if (traitsEntity instanceof Aggregate) {
 				Aggregate traitsClass = (Aggregate)traitsEntity;
-				Entity element = lookup(traitsClass.getScope(), field);
-				if (element != null)
-					return element;
+				boolean foundInstantiation = false;
+				if (targs != null) {
+					String expression = templateExpression(traitsClass, targs);
+					if (existingInstancesMap != null 
+							&& existingInstancesMap.containsKey(expression)) {
+						traitsClass = (Aggregate)existingInstancesMap.get(expression);
+						foundInstantiation = true;
+						System.err.println("Found instantiation for " + expression + ": " + traitsClass);
+					}
+				}
+				if(targs == null || foundInstantiation) {
+					Entity element = lookup(traitsClass.getScope(), field);
+					if (element != null)
+						return element;
+				}
 			}
 		}
 		// - fallback to creating a new orphan entity using macro replacement
