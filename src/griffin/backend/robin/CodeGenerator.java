@@ -369,7 +369,18 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         }
     }
     
-
+    private void writeInterceptorFunctionThrowsClause(Routine routine) 
+    		throws IOException, MissingInformationException {
+    		if (routine != null && routine.hasThrowClause()) {
+            m_output.write(" throw(");
+            boolean first = true;
+            for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
+                if (!first) m_output.write(", ");
+                m_output.write(((Entity)ei.next()).getFullName());
+            }
+            m_output.write(")");
+        }
+    }
 
     private void writeInterceptorFunctionHeader(Routine routine, int nArgs)
         throws IOException, MissingInformationException
@@ -389,15 +400,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(")");
         if (routine.isConst()) m_output.write(" const");
         // Write a throw() clause if required by the interface
-        if (routine.hasThrowClause()) {
-            m_output.write(" throw(");
-            boolean first = true;
-            for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
-                if (!first) m_output.write(", ");
-                m_output.write(((Entity)ei.next()).getFullName());
-            }
-            m_output.write(")");
-        }
+        writeInterceptorFunctionThrowsClause(routine);
         m_output.write(" {\n");
     }
 
@@ -617,7 +620,22 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("class " + result.getName() + " : public " + subject.getFullName() + "\n");
         m_output.write("{\n");
         m_output.write("public:\n");
-        m_output.write("\tvirtual ~" + result.getName() + "() {}\n\n");
+        
+        // get the dtor
+        Routine dtor = null;
+        for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
+            ContainedConnection connection = (ContainedConnection) ctorIter.next();
+            final Routine possibleDtor = (Routine) connection.getContained();
+
+            if (possibleDtor.isDestructor()) {
+            		dtor = possibleDtor;
+            }
+        }
+
+        m_output.write("\tvirtual ~" + result.getName() + "()");
+        writeInterceptorFunctionThrowsClause(dtor);
+        
+        m_output.write(" {}\n\n");
         
         // Create base constructor calls
         boolean anyCtors = false;
