@@ -43,6 +43,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Register touchups for special types
 		Type voidptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		voidptr.getRootNode().add(new Type.TypeNode(Primitive.VOID));
+		voidptr.getRootNode().setCV(Specifiers.CVQualifiers.CONST);
 		Filters.getTouchupsMap().put(
 				new Type(new Type.TypeNode(Primitive.FLOAT)),
 				new Filters.Touchup(
@@ -57,6 +58,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"}\n"));
 		Type doubleptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		doubleptr.getRootNode().add(new Type.TypeNode(Primitive.DOUBLE));
+		doubleptr.getRootNode().setCV(Specifiers.CVQualifiers.CONST);
 		Filters.getTouchupsMap().put(
 				new Type(new Type.TypeNode(Primitive.DOUBLE)),
 				new Filters.Touchup(
