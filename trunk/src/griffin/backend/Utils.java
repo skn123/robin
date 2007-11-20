@@ -1960,4 +1960,8 @@ public class Utils {
 		};
 		
 	static public Map defaultInstanceMap = null;
+
+	public static String getTypeHash(Type type) {
+		return Integer.toHexString(type.getBaseType().getFullName().hashCode());
+	}
 }
