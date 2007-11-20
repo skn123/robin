@@ -83,10 +83,10 @@ public class Formatters {
 		}
 
 		// Handle touch-up
-		Type touchupType = Filters.getTouchup(type);
+		Type touchupType = Filters.getTouchup(Utils.flatUnalias(type));
 		if (touchupType != null) type = touchupType;
 		// Handle extra referencing
-		if (Filters.needsExtraReferencing(type)) {
+		if (Filters.needsExtraReferencing(type) && !wrappingInterceptor) {
 			name = extraRefScheme + name;
 		}
 		if(isForFunction) {
