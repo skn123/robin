@@ -10,6 +10,7 @@
 #include <Python.h>
 #include "pythonobjects.h"
 
+#include "xrefdebug.h"
 
 namespace Robin {
 
