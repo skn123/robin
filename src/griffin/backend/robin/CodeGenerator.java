@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Random;
+import java.util.Vector;
 
 import sourceanalysis.*;
+import sourceanalysis.Specifiers.Storage;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
 
@@ -347,6 +349,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         }
         m_output.write(") {}\n\n");
     }
+    
+
 
     private void writeInterceptorFunctionHeader(Routine routine)
         throws IOException, MissingInformationException
@@ -516,6 +520,100 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         m_output.write(";\n");
     }
+    
+//    private void writeInterceptorStaticFunctionHeader(Routine routine)
+//    throws IOException, MissingInformationException
+//    {
+//	    m_output.write("\tstatic ");
+//	    m_output.write(routine.getReturnType().formatCpp());
+//	    m_output.write(" " + routine.getName() + "(");
+//	    int i = 0;
+//	    
+//	    Entity thisArg = null;
+//		if (routine.hasContainer()) {
+//			thisArg = routine.getContainer();
+//			if (! (thisArg instanceof Aggregate)) thisArg = null;
+//		}
+//		
+//			
+//		if (thisArg != null) {
+//			// - generate a *this
+//			if (routine.isConst()) m_output.write("const ");
+//			m_output.write(thisArg.getFullName());
+//			m_output.write(" *self");
+//		} else {
+//			throw new RuntimeException("Virtual function is also static?!");
+//		}
+//	
+//	    for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
+//	    		m_output.write(", ");
+//	        Parameter param = (Parameter) argIter.next();
+//	        // write a generic name, in order to avoid name clashes with our own parameters
+//	        m_output.write(param.getType().formatCpp("interceptor_arg" + i));
+//	        m_output.write(" /* " + param.getName() + " */");
+//	    }
+//	    m_output.write(")");
+//	    if (routine.isConst()) m_output.write(" const");
+//	    // Write a throw() clause if required by the interface
+//	    if (routine.hasThrowClause()) {
+//	        m_output.write(" throw(");
+//	        boolean first = true;
+//	        for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
+//	            if (!first) m_output.write(", ");
+//	            m_output.write(((Entity)ei.next()).getFullName());
+//	        }
+//	        m_output.write(")");
+//	    }
+//	    m_output.write(" {\n");
+//    }
+//    
+//    private void writeInterceptorStaticFunctionBody(Routine routine)
+//    		throws IOException, MissingInformationException
+//    	{
+//    		if (routine.getReturnType().equals(
+//                new Type(new Type.TypeNode(Primitive.VOID))))
+//        {
+//            // void, no return statement
+//            return;
+//        }
+//    		
+//    		Entity thisArg = null;
+//    		if (routine.hasContainer()) {
+//    			thisArg = routine.getContainer();
+//    			if (! (thisArg instanceof Aggregate)) thisArg = null;
+//    		}    		
+//    		if(thisArg == null) {
+//    			throw new RuntimeException("Virtual function is also static?!");
+//    		}
+//    		m_output.write("\t\treturn ");
+//    		
+//
+//		if (routine.isConversionOperator()) {
+//				m_output.write(conversionOperatorSyntax(routine, "self"));
+//		}
+//		else if (routine.getName().equals("operator==") || 
+//				  routine.getName().equals("operator!=")) {
+//				m_output.write("*self " +    // @@@ STL issue workaround
+//						routine.getContainer().getFullName() + "::" + routine.getName().substring("operator".length()));
+//		} else {
+//			m_output.write("self->" + routine.getFullName());
+//		}
+//		
+//	
+//    		if(!routine.isConversionOperator()) {
+//	    		m_output.write("(");
+//			int i = 0;
+//			for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
+//					argIter.next(); // ignore the result, we just need to advance the iterator
+//					// write the generated name instead of a real one
+//			    m_output.write("interceptor_arg" + i + 
+//			        (argIter.hasNext() ? ", " : ""));
+//			}
+//			m_output.write(")");
+//    		}
+//    		m_output.write(";\n");
+// 		
+//    }
 
     private void writeInterceptorFunctionAddRoutineToGriffinClass(Aggregate interceptor, Routine routine) {
         // NOTE: funcCounter is updated outside this method, in createInterceptor, to reflect this addition
@@ -538,6 +636,24 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
         m_output.write("\t}\n\n");
     }
+    
+//    /**
+//     * Writes the routine for interceptor static call, i.e
+//     * InterceptedClass::routine
+//     * @param routine routine to call
+//     */
+//    private void writeInterceptorStaticCallFunction(Aggregate interceptor, Routine routine) 
+//    		throws IOException, MissingInformationException 
+//    	{
+//    		Routine newRoutine = (Routine) routine.clone();
+//    	  //  	writeInterceptorFunctionAddRoutineToGriffinClass(interceptor, newRoutine);
+//    		newRoutine.getContainerConnection().setStorage(Storage.STATIC);
+//    		//newRoutine.setName("__interceptor__" + newRoutine.getName());
+//    		writeInterceptorStaticFunctionHeader(routine);
+//    		writeInterceptorStaticFunctionBody(routine);
+//    		m_output.write("\t}\n\n");
+//   	
+//    }
 
     private Routine createInterceptorInitFunction() {
         // TODO: maybe this should be named createInitFunction?
@@ -620,9 +736,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             funcCounter += defaultArgumentCount;
             
             	writeInterceptorFunction(subject, result, routine, funcCounter);
-
-           
-
+            	
             // Increment the function pointer counter
             funcCounter++;
         }
@@ -666,6 +780,83 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		
 		// Add all of the new subjects to the subjects set
 		m_subjects.addAll(newSubjects);
+	}
+	
+	/**
+	 * Generates static method wrappers for every routine
+	 * This is done by adding a static version of every method that accepts
+	 * *this as first argument
+	 */
+	public void generateStaticRoutines() {
+		
+		Set newRoutines = new HashSet();
+		
+		// Generate routine wrappers for class methods
+		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
+			Aggregate subject = (Aggregate) subjectIter.next();
+		/*
+			boolean hasOutput = Utils.hasOutputOperator(subject, m_program);
+			boolean hasAssignment = Filters.isAssignmentSupportive(subject);
+			boolean hasClone = Filters.isCloneable(subject);
+		*/	
+			// Grab all the routines from subject aggregate
+			for (Iterator routineIter = subject.getScope().routineIterator();
+				routineIter.hasNext(); ) {
+				// Generate wrapper for routine
+				ContainedConnection connection = (ContainedConnection)routineIter.next();
+				Routine routine = (Routine)connection.getContained();
+				if (routine.isConstructor()) continue;
+				
+				if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
+					&& !routine.isDestructor()
+					&& Filters.isAvailable(routine) && connection.getVirtuality() == Specifiers.Virtuality.VIRTUAL) {
+		
+					// - align the number of arguments
+					int minArgs = Utils.minimalArgumentCount(routine),
+						maxArgs = Utils.countParameters(routine);
+					for (int nArguments = minArgs; nArguments <= maxArgs;
+							++nArguments) {
+						Routine staticWrapper = (Routine) routine.clone();
+						
+						staticWrapper.getContainerConnection().setStorage(Specifiers.Storage.STATIC);
+						staticWrapper.removeParameters();
+						staticWrapper.setImaginary(true);
+						
+						Parameter self_parameter = new Parameter();
+						self_parameter.setName("self");
+						self_parameter.setType(new Type(new Type.TypeNode(routine.getContainer())));
+						
+						staticWrapper.addParameter(self_parameter);
+						
+						Iterator parameterIterator = routine.parameterIterator();
+						for(int param_idx = 0; param_idx < nArguments; param_idx++) {
+							Parameter p = (Parameter) parameterIterator.next();
+							staticWrapper.addParameter(p);
+						}
+						
+						newRoutines.add(staticWrapper);
+					}
+					
+				}
+			}
+			
+			/*
+			if (hasAssignment) {
+				generateSpecialAssignmentOperator(subject);
+			}
+			if (hasClone) {
+				generateSpecialCloneMethod(subject);
+			}
+			if (hasOutput) {
+				generateSpecialOutputOperator(subject);
+				generateSpecialStringConverter(subject);
+			}*/
+			
+		}
+		
+		m_globalFuncs.addAll(newRoutines);
+
+		
 	}
 	
 	/**
@@ -952,6 +1143,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException, MissingInformationException
 	{
 		m_output.write("/*\n * "); m_output.write(routine.getFullName());
+		
+		if(routine.isImaginary()) {
+			m_output.write("\n * Wraps non-static method " + routine.getFullName());
+		}
+		
 		m_output.write("\n * returns " + routine.getReturnType().toString());
 		m_output.write("\n * " + Formatters.formatLocation(routine));
 		m_output.write("\n */\n");
@@ -966,6 +1162,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		Type touchupReturnType = null;
 		String wrapperName = "routine_" + uid(routine) 
 			+ (with ? "r" : "s") + nArguments;
+		
+		
 		if (routine.isConstructor()) {
 			// This is a constructor
 			m_output.write(thisArg.getFullName()
@@ -981,6 +1179,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Construct parameters fitting for the flat purpose
 		int paramCount = 0;
 		boolean first = true;
+		boolean imaginarySkipped = false;
 		m_output.write("(");
 		if (thisArg != null && !routine.isConstructor()) {
 			// - generate a *this
@@ -988,10 +1187,22 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(thisArg.getFullName());
 			m_output.write(" *self");
 			first = false;
+		} else if(routine.isImaginary()) {
+			// - generate a *this for imaginary functions
+			if (routine.isConst()) m_output.write("const ");
+			m_output.write(routine.getContainer().getFullName());
+			m_output.write(" *self");
+			first = false;
 		}
+		
+		
 		for (Iterator pi = routine.parameterIterator(); 
 				pi.hasNext() && paramCount < nArguments; paramCount++) {
 			Parameter param = (Parameter)pi.next();
+			if(routine.isImaginary() && !imaginarySkipped) {
+				imaginarySkipped = true;
+				continue;
+			}
 			if (!first) m_output.write(" , ");
 			Type type = flatUnalias(param.getType());
 			
@@ -1023,15 +1234,21 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				}
 			}
 			// - write function name to call
-			if (thisArg != null)
+			if (thisArg != null || routine.isImaginary())
 				if (routine.isConversionOperator())
 					m_output.write(conversionOperatorSyntax(routine, "self"));
 				else if (routine.getName().equals("operator==") || 
 						  routine.getName().equals("operator!="))
 					m_output.write("*self " +    // @@@ STL issue workaround
 							routine.getName().substring("operator".length()));
-				else
-					m_output.write("self->" + routine.getName());
+				else {
+					m_output.write("self->");
+					if(routine.isImaginary()) {
+						m_output.write(routine.getFullName());
+					} else {
+						m_output.write(routine.getName());
+					}
+				}
 			else
 				m_output.write(routine.getFullName());
 		}
@@ -1039,6 +1256,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (!routine.isConversionOperator()) {
 			paramCount = 0;
 			first = true;
+			imaginarySkipped = false;
 			
 			m_output.write("("); parenNest++;
 			
@@ -1047,6 +1265,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				Parameter param = (Parameter)pi.next();
 				// Get parameter attributes
 				Type type = flatUnalias(param.getType());
+				// skip 'self' for generated static wrapper
+				if(routine.isImaginary() && !imaginarySkipped) {
+					imaginarySkipped = true;
+					continue;
+				}
+				
 				// Print name of argument
 				if (!first) m_output.write(", ");
 				// If this is one of the "special" primitives, touchdown
@@ -1802,4 +2026,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	
 	// Code skeletons
 	private static final String END_OF_LIST = "\t{ 0 }\n};\n\n";
+
+	
 }
