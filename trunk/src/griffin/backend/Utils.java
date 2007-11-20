@@ -1660,7 +1660,7 @@ public class Utils {
                 ContainedConnection conn = 
                     (ContainedConnection)routineIter.next();
                 Routine candidate = (Routine)conn.getContained();
-                System.err.println("candidate " + candidate.getFullName());
+                //System.err.println("candidate " + candidate.getFullName());
                 if (routine.isCompatible(candidate))
                     return candidate;
             }
