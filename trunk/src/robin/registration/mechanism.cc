@@ -531,7 +531,7 @@ RegData *RegistrationMechanism::acquireRegData_impl(std::string library)
 {
 	try {
 		// dlopen lib
-		void *libhandle = dlopen(library.c_str(), RTLD_LAZY);
+		void *libhandle = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 		if (libhandle == 0) throw DynamicLibraryOpenException(errno);
 		// fetch callback symbol
 		Interface::callback_t *__callback = 
