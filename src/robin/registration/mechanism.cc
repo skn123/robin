@@ -536,7 +536,7 @@ RegData *RegistrationMechanism::acquireRegData_impl(std::string library)
 		if (libhandle == 0) throw DynamicLibraryOpenException(errno);
 		// fetch callback symbol
 		Interface::callback_t *__callback = 
-			(Interface::callback_t*)dlsym(libhandle, "__callback");
+			(Interface::callback_t*)dlsym(libhandle, "__robin_callback");
 		if (__callback)
 			*__callback = &Interface::global_callback;
 		// fetch entry symbol

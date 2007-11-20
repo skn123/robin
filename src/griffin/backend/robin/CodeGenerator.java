@@ -237,7 +237,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("typedef void* scripting_element;\n\n");
 		
         final String callbackvar = 
-                "bool (*__callback)(scripting_element twin, " + 
+                "bool (*__robin_callback)(scripting_element twin, " + 
                 "RegData *signature, basic_block args[], " +
                 "basic_block *result, bool isPure)";
 		m_output.write("extern " + callbackvar + ";\n");
@@ -455,7 +455,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 
     /**
-     * Write the call to __callback
+     * Write the call to __robin_callback
      */
     private void writeInterceptorFunctionCallbackCall(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter, int nArgs)
         throws IOException, MissingInformationException
@@ -472,7 +472,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         if (!isPure) {
             m_output.write("if (!");
         }
-        m_output.write("__callback(twin, ");
+        m_output.write("__robin_callback(twin, ");
         m_output.write("scope_" + 
                 interceptor.getScope().hashCode() + 
                 " + " +
