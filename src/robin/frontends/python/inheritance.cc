@@ -46,6 +46,7 @@ HybridObject::HybridObject(PyTypeObject *obtype)
 {
 	PyObject_Init(this, obtype);
 	m_dict = PyDict_New();
+
 }
 
 HybridObject::~HybridObject()
@@ -109,15 +110,28 @@ void HybridObject::__del__(PyObject *object)
 	delete (HybridObject*)object;
 }
 
+
+PyObject *HybridObject::__getattro__(PyObject *self, PyObject *nm)
+{
+	return __getattr__(self, PyString_AsString(nm));
+}
+
 PyObject *HybridObject::__getattr__(PyObject *self, char *nm)
 {
 	return ((HybridObject*)self)->__getattr__(nm);
+}
+
+
+int HybridObject::__setattro__(PyObject *self, PyObject *nm, PyObject *value)
+{
+    return __setattr__(self, PyString_AsString(nm), value);
 }
 
 int HybridObject::__setattr__(PyObject *self, char *nm, PyObject *value)
 {
 	return ((HybridObject*)self)->__setattr__(nm, value);
 }
+
 
 /**
  * Hybrid object attribute access:
@@ -189,9 +203,9 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
     newtype->tp_dealloc = __del__;
 	
     newtype->tp_getattr = HybridObject::__getattr__;
-    newtype->tp_getattro = 0;
+    newtype->tp_getattro = HybridObject::__getattro__;
 	newtype->tp_setattr = HybridObject::__setattr__;
-	newtype->tp_setattro = 0;
+	newtype->tp_setattro = HybridObject::__setattro__;
     newtype->tp_dictoffset = offsetof_nw(HybridObject, m_dict);
 	newtype->tp_base = baseClass;
 	newtype->tp_dict = PyDict_Copy(dict);

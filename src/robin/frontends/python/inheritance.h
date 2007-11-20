@@ -39,14 +39,15 @@ public:
 	static void      __del__(PyObject *object);
 	static PyObject *__getattr__(PyObject *self, char *nm);
 	static int       __setattr__(PyObject *self, char *nm, PyObject *value);
-	
+	static PyObject *__getattro__(PyObject *self, PyObject *nm);
+	static int       __setattro__(PyObject *self, PyObject *nm, PyObject *value);
+
 	PyObject *__getattr__(char *nm);
 	int __setattr__(char *nm, PyObject *value);
 
 public:
 	PyObject *m_dict;
 };
-
 
 
 } // end of namespace Robin::Python
