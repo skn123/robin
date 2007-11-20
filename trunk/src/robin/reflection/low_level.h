@@ -21,6 +21,7 @@
 
 #include "argumentsbuffer.h"
 
+#define IS_ARGUMENT_LIMIT
 namespace Robin {
 
 /**
