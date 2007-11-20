@@ -203,4 +203,29 @@ Barrier4 barr()
 	return b4;
 }
 
+
+class InnerDummy {{
+
+};
+
+template<typename T>
+class TemplatedInner {
+
+public:
+    typedef InnerDummy TemplatedInnerDummy;
+
+};
+
+template<typename G>
+class TemplatedOuter {
+
+public:
+    void method(G::TemplatedInnerDummy param) {
+        return 1;
+    }
+
+};
+
+typedef Nest<Test<int> > NestedTemplate;
+
 #endif
