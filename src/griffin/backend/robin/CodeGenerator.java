@@ -50,7 +50,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				new Type(new Type.TypeNode(Primitive.FLOAT)),
 				new Filters.Touchup(
 						voidptr,
-						"void *touchup(float val)\n{\n" +
+						"const void *touchup(float val)\n{\n" +
 						"\tunion { void *word; float f; } u; u.f = val;\n" +
 						"\treturn u.word;\n" +
 						"}\n" +
@@ -65,7 +65,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				new Type(new Type.TypeNode(Primitive.DOUBLE)),
 				new Filters.Touchup(
 						doubleptr,
-						"double *touchup(double val)\n{\n" +
+						"const double *touchup(double val)\n{\n" +
 						"\treturn new double(val);\n" +
 						"}\n" +
 						"double touchdown(const double* val)\n{\n" +
@@ -1725,11 +1725,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#define PASCALSTRING_CTOR_INCLUDED\n");
 		m_output.write("inline struct PascalString *toPascal(const std::string& cpp)\n");
 		m_output.write("{ unsigned long size = (unsigned long)cpp.size();\n");
-		m_output.write("  PascalString *pascal = (PascalString*)\n");
+		m_output.write("  PascalString *pascal_string = (PascalString*)\n");
 		m_output.write("    malloc(sizeof(PascalString) + size);\n");
-		m_output.write("  pascal->size = size; pascal->chars = pascal->buffer;\n");
-		m_output.write("  memcpy(pascal->buffer, cpp.c_str(), size);\n");
-		m_output.write("  return pascal;\n}\n");
+		m_output.write("  pascal_string->size = size; pascal_string->chars = pascal_string->buffer;\n");
+		m_output.write("  memcpy(pascal_string->buffer, cpp.c_str(), size);\n");
+		m_output.write("  return pascal_string;\n}\n");
 		m_output.write("#endif\n");
 		// Write operator
 		m_output.write("struct PascalString *toString_" 
