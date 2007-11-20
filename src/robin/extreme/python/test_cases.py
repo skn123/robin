@@ -420,6 +420,38 @@ class InheritanceTest(TestCase):
         self.assertEquals(melements2, 
             map(lambda x,y:x+str(y), elements, range(len(elements))))
 
+    def testInterceptorsForNonPure(self):
+        import inheritance
+        class MoreTainted(inheritance.ITaintedVirtual):
+            def __init__(self, taintParam):
+                inheritance.ITaintedVirtual.__init__(self, taintParam)
+
+            def returnTaint(self):
+                return inheritance.TaintedVirtual.returnTaint(self) * 2
+
+        class Untainter(MoreTainted):
+            def __init__(self):
+                inheritance.ITaintedVirtual.__init__(self, 0)
+
+            def returnTaint(self):
+                return -1
+
+            def returnRealTaint(self):
+                return MoreTainted.returnTaint(self)
+
+            def returnFilth(self):
+                return 0
+
+        
+        mt = MoreTainted(5)
+        self.assertEquals(mt.returnTaint(), 10)
+        self.assertEquals(mt.returnFilth(), -1)
+        
+        umt = Untainter()
+        self.assertEquals(umt.returnTaint(),-1)
+        self.assertEquals(umt.returnRealTaint(),0)
+        self.assertEquals(umt.returnFilth(),0)
+
 
 class HintsTest(TestCase):
 
