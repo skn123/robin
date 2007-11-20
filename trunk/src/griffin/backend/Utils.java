@@ -1618,7 +1618,7 @@ public class Utils {
 
 			if (rconnection.getVirtuality() 
 			    != Specifiers.Virtuality.NON_VIRTUAL &&
-				(withDestructors == myMethod.isDestructor())) {
+				(withDestructors || !myMethod.isDestructor())) {
 			    virtual.add(myMethod); 
 			}
 		}
