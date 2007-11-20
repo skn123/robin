@@ -685,7 +685,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         		
         		
         		
-        		writeInterceptorFieldWrapper(subject, result, f, funcCounter, wrappedTypes);
+        		writeInterceptorFieldWrapper(subject, result, f, funcCounter, m_instanceMap, wrappedTypes);
         		
         		
         }
@@ -701,12 +701,18 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 	
 	private void writeInterceptorFieldWrapper(Aggregate subject,
-			Aggregate result, Field originalField, int funcCounter, Map newTypes) 
+			Aggregate result, Field originalField, int funcCounter, Map templateInstances, Map newTypes) 
 	throws IOException, MissingInformationException {
 		
 		Type type = originalField.getType();
 		if(Filters.isArray(type)) {
 			return; // wrapping arrays is not supported
+		}
+		if(!m_subjects.contains(type) && 
+		   !m_subjects.contains(Filters.getOriginalType(type)) 
+		   && ((type.getBaseType() instanceof Aggregate) && type.getTemplateArguments() != null && !templateInstances.containsKey(
+				   Utils.templateExpression((Aggregate)type.getBaseType(), type.getTemplateArguments())))) {
+			return; // don't wrap members of unavailable types
 		}
 		
 		
@@ -1454,7 +1460,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if(!forInterceptor) {
 				// - generate regdata
 				if (base instanceof Alias)
-					base = Utils.flatUnalias(type).getBaseType();
+					base = Filters.getOriginalType(type).getBaseType();
 				m_output.write("RegData sink_" + uid(field) + fors + "_proto[] = {\n");
 				m_output.write("{\"newval\", \"" + base.getFullName() + "\" ,0,0},\n");
 				m_output.write(END_OF_LIST);
