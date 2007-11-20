@@ -630,13 +630,13 @@ public class GenericCodeGenerator
 		// 'expression' is used to uniquely describe the template
 		// instantiation, so that we avoid multiple specialization
 		// of the same template with the same arguments
+
 		String expression = Utils.templateExpression(template, arguments);
 		if (!m_instanceSet.contains(expression)) {
 			try {
 				Aggregate instance =
-					Utils.instantiateTemplate(template, arguments);
+					Utils.instantiateTemplate(template, arguments, m_instanceMap);
 				instanceList.add(instance);
-				m_instanceMap.put(expression, instance);
 			}
 			catch (MissingInformationException e) {
 				System.err.println("*** WARNING: implicit "
