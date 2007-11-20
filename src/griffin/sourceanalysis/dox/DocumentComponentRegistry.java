@@ -51,16 +51,23 @@ public class DocumentComponentRegistry {
 		{
 			m_kind = kind;
 			m_component_id = component_id;
-			
-			Matcher separator = m_id_cap_pattern.matcher(component_id);
-			// If the separator exists, the document name is taken to be the
-			// portion of the id left to the separator. Otherwise, the id and
-			// the document name are identical.
-			if (separator.find())
-				m_document = component_id.substring(0, separator.start());
-			else
-				m_document = component_id;
-		}
+	
+
+            if(m_kind.equals("compound")  ||
+               m_kind.equals("namespace") ||
+               m_kind.equals("any") || 
+               m_kind.equals("dir")) {
+
+                m_document = component_id;
+            } else {
+                final int capIndex = component_id.lastIndexOf("_1");
+                if(capIndex == -1) {
+                        throw new RuntimeException("Unexpected component id format encountered for entity of kind: " + kind);
+                }
+                m_document = component_id.substring(0,capIndex);
+                
+            }
+        }
 		
 		/**
 		 * Returns the referenced entity's kind.
@@ -96,7 +103,6 @@ public class DocumentComponentRegistry {
 		private String m_document;
 		private String m_component_id;
 	
-		private static Pattern m_id_cap_pattern = Pattern.compile("_1[a-z][0-9]+(?:_[0-9]+)?$");
 		
 	}
 
