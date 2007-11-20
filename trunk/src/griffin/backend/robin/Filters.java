@@ -411,6 +411,7 @@ public class Filters {
 	 */
 	public static Type getOriginalType(Type type) {
 		// Un-typedef
+		Type passedType = type; // to get the modifiers
 		Entity base = type.getBaseType();
 		Entity prev = null;
 		while (base instanceof Alias && base != prev && !Filters.needsEncapsulation((Alias)base, true)) {
@@ -418,6 +419,10 @@ public class Filters {
 			prev = base; // - avoid singular loops "typedef struct A A;"
 			base = type.getBaseType();
 		}
+		// add the const / volatile modifiers back
+		Type.TypeNode rootNode = type.getRootNode();
+		rootNode.setCV(rootNode.getCV() | passedType.getRootNode().getCV());
+		
 		return type;
 	}
 	
