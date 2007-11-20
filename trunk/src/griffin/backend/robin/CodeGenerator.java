@@ -354,9 +354,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("\tvirtual ");
         m_output.write(routine.getReturnType().formatCpp());
         m_output.write(" " + routine.getName() + "(");
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+        int i = 0;
+        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
             Parameter param = (Parameter) argIter.next();
-            m_output.write(param.getType().formatCpp(param.getName()));
+            // write a generic name, in order to avoid name clashes with our own parameters
+            m_output.write(param.getType().formatCpp("interceptor_arg" + i));
+            m_output.write(" /* " + param.getName() + " */");
             if (argIter.hasNext()) m_output.write(", ");
         }
         m_output.write(")");
@@ -378,15 +381,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         throws IOException, MissingInformationException
     {
         m_output.write("\t\tbasic_block args[] = {\n");
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
+        int i = 0;
+        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
             writeInterceptorFunctionBasicBlockArgument(
-                    (Parameter)argIter.next(), argIter.hasNext()
+                    (Parameter)argIter.next(), i, argIter.hasNext()
                 );
         }
         m_output.write("\t\t};\n");
     }
 
-    private void writeInterceptorFunctionBasicBlockArgument(Parameter param, boolean moreParams)
+    private void writeInterceptorFunctionBasicBlockArgument(Parameter param, int index, boolean moreParams)
         throws IOException, MissingInformationException
     {
         m_output.write("\t\t\t" +
@@ -407,8 +411,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 param.getType().formatCpp() + ")) ");
             m_output.write("touchup");
         }
+        // use generic parameter name
         m_output.write(")" +
-                "(" + param.getName() + ")");
+                "(" + "interceptor_arg" + index + ")");
         if (moreParams) m_output.write(",");
         m_output.write("\n");
     }
@@ -448,9 +453,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                     new Type(new Type.TypeNode(Primitive.VOID)))) {
                 m_output.write("return ");
             }
-            m_output.write(subject.getName() + "::" + routine.getName() + "(");
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext();) {
-                m_output.write(((Parameter)argIter.next()).getName() + 
+            // in case the child class routine shadows the other routines,
+            // we need to write the name of the first class this routine appeared at
+            m_output.write(routine.getContainer().getName() + "::" + routine.getName() + "(");
+            int i = 0;
+            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext(); i++) {
+            		argIter.next(); // ignore the result, we just need to advance the iterator
+            		// write the generated name instead of a real one
+                m_output.write("interceptor_arg" + i + 
                     (argIter.hasNext() ? ", " : ""));
             }
             m_output.write(");\n");
@@ -609,7 +619,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
                 Utils.minimalArgumentCount(routine);
             funcCounter += defaultArgumentCount;
             
-            writeInterceptorFunction(subject, result, routine, funcCounter);
+            	writeInterceptorFunction(subject, result, routine, funcCounter);
+
+           
 
             // Increment the function pointer counter
             funcCounter++;
@@ -963,7 +975,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if (Filters.isPrimitive(returnType.getBaseType()))
 				returnType = Formatters.dereference(returnType);
 			touchupReturnType = Filters.getTouchup(returnType);
-			m_output.write(Formatters.formatDeclaration(returnType, wrapperName, '*'));
+			m_output.write(Formatters.formatDeclaration(returnType, wrapperName, '*', true));
 		}
 		
 		// Construct parameters fitting for the flat purpose
@@ -1108,7 +1120,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		Type realType = Filters.getOriginalType(alias.getAliasedType());
 		Type touchupType = Filters.getTouchup(realType);
 		m_output.write(
-				Formatters.formatDeclaration(realType, "routine_unalias_" + uid(alias), '&'));
+				Formatters.formatDeclaration(realType, "routine_unalias_" + uid(alias), '&', true));
 		m_output.write("(" + alias.getFullName() + " *self)"
 				+ " { return " 
 				+ Formatters.formatExpression(realType, "*self") 
@@ -1145,7 +1157,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		String thisArg = container instanceof Aggregate ? 
 			container.getFullName() + " *self" : "";
 		// - generate accessor function header
-		m_output.write(Formatters.formatDeclaration(type, accessorName, '&')
+		m_output.write(Formatters.formatDeclaration(type, accessorName, '&', false)
 				+ "(" + thisArg + ")");
 		// - generate accessor function body
 		m_output.write(" { return "
@@ -1157,7 +1169,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			accessorName = "data_set_" + uid(field) + fors;
 			// - generate accessor function header
 			m_output.write("void " + accessorName + "(" + thisArg + ", " 
-					+ Formatters.formatDeclaration(type, "newval", '*') + ")");
+					+ Formatters.formatDeclaration(type, "newval", '*', false) + ")");
 			// - generate accessor function body
 			m_output.write("{ "
 				+ Formatters.formatMember(field) 
