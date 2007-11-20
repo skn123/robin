@@ -53,6 +53,7 @@ HybridObject::~HybridObject()
 	Py_XDECREF(m_dict);
 }
 
+
 /**
  * Creates and initializes a new Hybrid object.
  */
@@ -119,6 +120,18 @@ int HybridObject::__setattr__(PyObject *self, char *nm, PyObject *value)
 	return ((HybridObject*)self)->__setattr__(nm, value);
 }
 
+PyObject *HybridObject::__getattro__(PyObject *self, PyObject *nm)
+{
+    char *cnm = PyString_AsString(nm);
+	return ((HybridObject*)self)->__getattr__(cnm);
+}
+
+int HybridObject::__setattro__(PyObject *self, PyObject *nm, PyObject *value)
+{
+    char *cnm = PyString_AsString(nm);
+	return ((HybridObject*)self)->__setattr__(cnm, value);
+}
+
 /**
  * Hybrid object attribute access:
  */
@@ -147,6 +160,9 @@ int HybridObject::__setattr__(char *nm, PyObject *value)
 	Py_XINCREF(value);
 	return PyDict_SetItemString(m_dict, nm, value);
 }
+
+
+
 
 /**
  * Makes a new Hybrid class object. This is not intended to be invoked
@@ -181,7 +197,9 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 
 	assert(underlyingBase);
 
-    PyTypeObject *newtype = new ClassObject(*baseClass);
+    ClassObject *newtypeClassObject = new ClassObject(*baseClass);
+    PyTypeObject *newtype = (PyTypeObject *)newtypeClassObject;
+    
     if (newtype == NULL) return NULL;
 	newtype->ob_type = HybridTypeObject;
 	newtype->tp_name = strdup(name);
@@ -189,13 +207,18 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
     newtype->tp_dealloc = __del__;
 	
     newtype->tp_getattr = HybridObject::__getattr__;
-    newtype->tp_getattro = 0;
+    newtype->tp_getattro = HybridObject::__getattro__;
 	newtype->tp_setattr = HybridObject::__setattr__;
-	newtype->tp_setattro = 0;
+	newtype->tp_setattro = HybridObject::__setattro__;
     newtype->tp_dictoffset = offsetof_nw(HybridObject, m_dict);
 	newtype->tp_base = baseClass;
 	newtype->tp_dict = PyDict_Copy(dict);
-	Py_XINCREF(baseClass);
+    Py_XINCREF(baseClass);
+
+    // initialize bases and ready the type    
+    newtypeClassObject->prepare(); 
+    
+    
     return (PyObject*)newtype;
 }
 
