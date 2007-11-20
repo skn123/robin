@@ -21,6 +21,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import sourceanalysis.*;
 import sourceanalysis.Type.TypeNode;
 import sourceanalysis.view.Traverse;
+import backend.robin.Filters;
 
 /**
  * A class which contains some static methods for the use in backend
@@ -508,9 +509,6 @@ public class Utils {
 	public static boolean hasDefaultConstructor(Aggregate entity)
 		throws MissingInformationException
 	{
-        // TODO: Should check for case when a class has no constructor at all.
-        // This is the case where there's no constructors at all, and one of the
-        // members has no default constructor.
 		Scope scope = entity.getScope();
 		boolean anyConstructor = false;
 	
@@ -529,8 +527,27 @@ public class Utils {
 			if (routine.isConstructor()) anyConstructor = true;
 		}
 		
+        boolean membersHaveDefaultConstructors = true;
+
+        for(Iterator fi = scope.fieldIterator(); fi.hasNext(); ) {
+                ContainedConnection connection = (ContainedConnection)fi.next();
+                Field field = (Field)connection.getContained();
+                
+                Type fieldType = Filters.getOriginalType(field.getType());
+                Entity fieldBaseType = fieldType.getBaseType();
+
+                if(fieldBaseType instanceof Primitive) {
+                        continue;
+                } else if(fieldBaseType instanceof Aggregate && 
+                          !hasDefaultConstructor((Aggregate)fieldBaseType))
+                {
+                        membersHaveDefaultConstructors = false;
+                }
+        }
+
+
 		// No default constructor found
-		return !anyConstructor;
+		return !anyConstructor && membersHaveDefaultConstructors;
 	}
 
 	/**
