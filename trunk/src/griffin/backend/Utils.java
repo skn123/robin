@@ -1604,7 +1604,7 @@ public class Utils {
 	 * @throws MissingInformationException
 	 */
 	public static Collection virtualMethods(Aggregate subject,
-			Map instanceMap) throws MissingInformationException
+			Map instanceMap, boolean withDestructors) throws MissingInformationException
 	{
 		List virtual = new LinkedList();
 		
@@ -1618,7 +1618,7 @@ public class Utils {
 
 			if (rconnection.getVirtuality() 
 			    != Specifiers.Virtuality.NON_VIRTUAL &&
-				!myMethod.isDestructor()) {
+				(withDestructors == myMethod.isDestructor())) {
 			    virtual.add(myMethod); 
 			}
 		}
@@ -1637,7 +1637,7 @@ public class Utils {
 			}
 			if (base == null) continue;
 			// - recursively fetch the virtual methods in the base class
-			Collection baseVirtual = virtualMethods(base, instanceMap);
+			Collection baseVirtual = virtualMethods(base, instanceMap, withDestructors);
 			for (Iterator baseVirtIter = baseVirtual.iterator(); 
                  baseVirtIter.hasNext(); ) {
                 Routine baseMethod = (Routine)baseVirtIter.next();

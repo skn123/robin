@@ -650,7 +650,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         // Write functions in interceptor class, and add them to the griffin class
         int i = 0;
-        for (Iterator funcIter = Utils.virtualMethods(subject, m_instanceMap).iterator();
+        for (Iterator funcIter = Utils.virtualMethods(subject, m_instanceMap, false).iterator();
             funcIter.hasNext(); ++i) {
             Routine routine = (Routine) funcIter.next();
             
@@ -713,10 +713,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if(Filters.isArray(type)) {
 			return; // wrapping arrays is not supported
 		}
-		if(!m_subjects.contains(type) && 
+		/*if(!m_subjects.contains(type) && 
 		   !m_subjects.contains(Filters.getOriginalType(type)))
 		{
-			if(type.getBaseType() instanceof Aggregate) {
+			if(type.getBaseType() instanceof Aggregate && !(type.getBaseType() instanceof Primitive)) {
 				if(type.getTemplateArguments() == null) {
 					return;
 				} else if(!templateInstances.containsKey(
@@ -727,7 +727,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			} else {
 				return;
 			}
-		}
+		}*/
 
 		
 		
@@ -794,7 +794,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             if (subject.isSpecialized()) continue;
             
             // Skip when there are no virtual methods
-            if (Utils.virtualMethods(subject, m_instanceMap).isEmpty()) continue;
+            if (Utils.virtualMethods(subject, m_instanceMap, true).isEmpty()) continue;
 
             // Skip when there are only private constructors
             if (!Filters.isClassExtendible(subject)) continue;
@@ -1142,12 +1142,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 */
 	private void writeDecoratedFlatBase(Type type) throws IOException
 	{
-		if (type.getBaseType() instanceof sourceanalysis.Enum) {
-			m_output.write("#");
+		if (type.getBaseType() instanceof Alias) {
+			writeDecoratedFlatBase(((Alias)type.getBaseType()).getAliasedType());
+		} else { 
+			if (type.getBaseType() instanceof sourceanalysis.Enum) {
+				m_output.write("#");
+			}
+			writeFlatBase(type);
+			if (type.isArray())
+				m_output.write("[]");
 		}
-		writeFlatBase(type);
-		if (type.isArray())
-			m_output.write("[]");
 	}
 
 	
