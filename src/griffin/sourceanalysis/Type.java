@@ -408,10 +408,13 @@ public class Type extends DefaultTreeModel {
 			return hash;
 		}
 
+		
 		// Private members
 		int m_kind;
 		Entity m_base;   // base type, can be Aggregate, Enum or Alias
 		int m_cvQualifiers;
+
+		
 	}
 
 
@@ -609,6 +612,8 @@ public class Type extends DefaultTreeModel {
 		// Array spec. in a flat type must be at the root
 		return (getRootNode().getKind() == TypeNode.NODE_ARRAY);
 	}
+	
+	
 	
 	/**
 	 * Extracts the array dimensions of a flat type.
@@ -876,10 +881,147 @@ public class Type extends DefaultTreeModel {
 
 	/*@}*/
 	
+	
+	
+	
 	/**
 	 * @name Comparison Functions
 	 */
+	
 	/*@{*/
+	
+	/**
+	 * Compares TypeNode trees for equality
+	 * 
+	 * If 'expandTypedefs' is true, then typedefs are expanded into a typenode tree
+	 */
+	
+	private boolean equalTypenodes(TypeNode first, TypeNode second, boolean expandTypedefs) {
+		
+		// trivial case, same nodes
+		if(first == second) {
+			return true;
+		}
+		
+		// base type, kind and and qualifiers are the same
+		if(first.equals(second)) {
+			if(first.getChildCount() != second.getChildCount()) {
+				return false;
+			} else {
+				
+				Enumeration firstChildren = first.children();
+				Enumeration secondChildren = second.children();
+				for(; firstChildren.hasMoreElements() && secondChildren.hasMoreElements();) {
+					
+					Object firstChildObject = firstChildren.nextElement();
+					Object secondChildObject = secondChildren.nextElement();
+					
+					
+					if(firstChildObject instanceof TypeNode && secondChildObject instanceof TypeNode) {
+						if(!equalTypenodes((TypeNode)firstChildObject, (TypeNode)secondChildObject, expandTypedefs)) {
+							return false;
+						}
+					} else if(firstChildObject instanceof DefaultMutableTreeNode && secondChildObject instanceof DefaultMutableTreeNode) {
+						// this can happen if our node is NODE_ARRAY and we are looking at its dimensions
+						// or if we are NODE_TEMPLATE_INSTANTIATION and we are looking at template arguments
+						Object firstContainedUserObject = ((DefaultMutableTreeNode)firstChildObject).getUserObject();
+						Object secondContainedUserObject = ((DefaultMutableTreeNode)secondChildObject).getUserObject();
+						
+						if(!compareTypenodeUserObjects(firstContainedUserObject, secondContainedUserObject, expandTypedefs)) {
+							return false;
+						}
+					}
+				}
+	
+		
+				// all children are equal
+				return true;
+			}
+		}
+		
+		if(expandTypedefs == false) {
+			// do not perform any more expansion
+			return false;
+		}
+		
+		// not strictly equal, one of them may be an alias that needs expanding
+		try {
+			Entity firstBase = first.getBase();
+			// if firstBase is not Alias, it's not equal at all - basic types
+			// were compared before by TypeNode.equals()
+			if(!(firstBase instanceof Alias) ) {
+				return false;
+			}
+			
+			return equalTypenodes(((Alias)firstBase).getAliasedType().getRootNode(),second, expandTypedefs);
+		} catch(InappropriateKindException e) {
+			// ignore
+		}
+		
+		try {
+			Entity secondBase = second.getBase();
+			// if secondBase is not Alias, it's not equal at all - basic types
+			// were compared before by TypeNode.equals()
+			if(!(secondBase instanceof Alias) ) {
+				return false;
+			}
+			
+			return equalTypenodes(first, ((Alias)secondBase).getAliasedType().getRootNode(),expandTypedefs);
+		} catch(InappropriateKindException e) {
+			// ignore
+		}
+		
+		return false;
+		
+	}
+	
+	/**
+	 * Compares two objects that were contained in DefaultMutableTreeNode
+	 * The objects can be either - TemplateArgument or Integer
+	 * In case of TemplateArgument, the case where both are TypenameTemplateArguments is interesting, since
+	 * expandTypedefs must be taken into account
+	 * @param first first object
+	 * @param second second object
+	 * @param expandTypedefs whether to expand typedefs during comparison
+	 * @return true if the objects are equal w.r.t above
+	 */
+	private boolean compareTypenodeUserObjects(Object first, Object second, boolean expandTypedefs) {
+		if(first instanceof TemplateArgument && second instanceof TemplateArgument) {
+			if(first instanceof DataTemplateArgument && second instanceof DataTemplateArgument) {
+				return ((DataTemplateArgument)first).getValueString().equals(((DataTemplateArgument)second).getValueString());
+
+			} else if(first instanceof TypenameTemplateArgument && second instanceof TypenameTemplateArgument) {
+				Type firstChildType = ((TypenameTemplateArgument)first).getValue();
+				Type secondChildType = ((TypenameTemplateArgument)second).getValue();
+				return firstChildType.isCompatible(secondChildType, expandTypedefs);
+				
+			} else {
+				return false;
+			}
+		} else {
+			return first.equals(second);
+		}
+	}
+
+	/**
+	 * Checks whether both types are compatible, i.e they are the same type 
+	 * if expandTypedefs is true, then typedefs to compatible types are explored
+	 * @param other other type
+	 * @param expandTypedefs if <b>true</b>, any Alias nodes will get expanded to trees
+	 * @return boolean <b>true</b> if they are compatible as per the above definition
+	 */
+	public boolean isCompatible(Type other, boolean expandTypedefs) {
+				
+		try {
+			return equalTypenodes(getRootNode(), other.getRootNode(), expandTypedefs);
+		}
+		catch (NullPointerException e) {
+			return false;
+		}
+		
+		
+		
+	}
 	
 	/**
 	 * @see java.lang.Object#equals(Object)
@@ -892,8 +1034,7 @@ public class Type extends DefaultTreeModel {
 		
 		Type othertype = (Type)other;
 		try {
-			return (othertype.m_isEmpty == m_isEmpty) &&
-		        	(root == othertype.root || othertype.root.equals(root));
+			 return isCompatible(othertype, false);
 		}
 		catch (NullPointerException e) {
 			return false;

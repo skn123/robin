@@ -262,9 +262,11 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
         Iterator my, his;
         for (my = parameterIterator(), his = other.parameterIterator();
                 my.hasNext() && his.hasNext(); ) {
-            if (!((Parameter)my.next()).getType()
-                   .equals( ((Parameter)his.next()).getType())) {
-                return false;
+        	
+        		final Type myType = ((Parameter)my.next()).getType();
+        		final Type hisType = ((Parameter)his.next()).getType();
+            if(!myType.isCompatible(hisType, true)) {
+            		return false;
             }
         }
         return (!my.hasNext() && !his.hasNext());
