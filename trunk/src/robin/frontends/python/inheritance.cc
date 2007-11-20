@@ -208,7 +208,19 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 	newtype->tp_setattro = HybridObject::__setattro__;
     newtype->tp_dictoffset = offsetof_nw(HybridObject, m_dict);
 	newtype->tp_base = baseClass;
-	newtype->tp_dict = PyDict_Copy(dict);
+    if(baseClass->tp_dict) {
+        // copy dict from base class to transfer python methods
+        newtype->tp_dict = PyDict_Copy(baseClass->tp_dict);
+
+        // remove base class __init__ to avoid python finding it and calling it
+        // automatically
+        PyDict_DelItemString(newtype->tp_dict, "__init__");
+        // merge with our new methods
+	    PyDict_Merge(newtype->tp_dict, dict, true);
+    } else {
+        newtype->tp_dict = PyDict_Copy(dict);
+    }
+    
 	Py_XINCREF(baseClass);
     return (PyObject*)newtype;
 }
