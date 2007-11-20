@@ -728,7 +728,10 @@ PyObject *ClassObject::__getattr__(const char *name)
 		Py_INCREF(dict);
 		return dict;
 	}
-	else if (strcmp(name, "__init__") == 0) {
+    // return C++ instance __init__ only if the tp_dict doesn't have __init__
+    // already
+	else if (strcmp(name, "__init__") == 0 && (tp_dict == NULL ||
+                !PyDict_GetItemString(tp_dict, (char*)name))) {
 		static PyMethodDef method = {
 			"__init__", 
 			__init_ex__, 
@@ -747,8 +750,12 @@ PyObject *ClassObject::__getattr__(const char *name)
             // inherited by python classes
             PyObject* dictmember = PyDict_GetItemString(tp_dict, (char*)name);
             if(dictmember) {
-                Py_XINCREF(dictmember);
-                return dictmember;
+                if(PyMethod_Check(dictmember)) {
+                    return PyMethod_New(dictmember, NULL, (PyObject*)this); 
+                } else {
+                    Py_XINCREF(dictmember);
+                    return dictmember;
+                }
             } else {
                 PyErr_Clear();
             }
