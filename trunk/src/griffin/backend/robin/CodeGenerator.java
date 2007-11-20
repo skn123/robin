@@ -417,27 +417,32 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void writeInterceptorFunctionBasicBlockArgument(Parameter param, int index, boolean moreParams)
         throws IOException, MissingInformationException
     {
+    	
+    	 	Type originalType = Filters.getOriginalType(param.getType());
+        Type touchupType = Filters.getTouchup(originalType);
+        boolean addReference = Filters.needsExtraReferencing(param.getType()) && touchupType == null;
         m_output.write("\t\t\t" +
                 "(" +
                 "(" +
                 "basic_block (*)" +
-                "(" + param.getType().formatCpp() + ")" +
+                "(" + param.getType().formatCpp() + (addReference ? "*":"") + ")" +
                 ")");
-        Type touchupType = Filters.getTouchup(param.getType());
-        if (touchupType == null) { 
-            m_output.write("SameClass< " + param.getType().formatCpp() + " >" +
+       
+        if (touchupType == null) {
+        	
+            m_output.write("SameClass< " + param.getType().formatCpp() + (addReference ? "*":"") + " >" +
                 "::same");
+        } else {
+        		m_output.write(" (" + 
+                    touchupType.formatCpp() + 
+                    " (*)(" + 
+                    param.getType().formatCpp() + ")) ");
+                m_output.write("touchup");
         }
-        else {
-            m_output.write(" (" + 
-                touchupType.formatCpp() + 
-                " (*)(" + 
-                param.getType().formatCpp() + ")) ");
-            m_output.write("touchup");
-        }
+        
         // use generic parameter name
         m_output.write(")" +
-                "(" + "interceptor_arg" + index + ")");
+                "(" + (addReference ? "&":"") +  "interceptor_arg" + index + ")");
         if (moreParams) m_output.write(",");
         m_output.write("\n");
     }
@@ -709,11 +714,21 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			return; // wrapping arrays is not supported
 		}
 		if(!m_subjects.contains(type) && 
-		   !m_subjects.contains(Filters.getOriginalType(type)) 
-		   && ((type.getBaseType() instanceof Aggregate) && type.getTemplateArguments() != null && !templateInstances.containsKey(
-				   Utils.templateExpression((Aggregate)type.getBaseType(), type.getTemplateArguments())))) {
-			return; // don't wrap members of unavailable types
+		   !m_subjects.contains(Filters.getOriginalType(type)))
+		{
+			if(type.getBaseType() instanceof Aggregate) {
+				if(type.getTemplateArguments() == null) {
+					return;
+				} else if(!templateInstances.containsKey(
+						   Utils.templateExpression((Aggregate)type.getBaseType(), type.getTemplateArguments()))) 
+				{
+					return;
+				}
+			} else {
+				return;
+			}
 		}
+
 		
 		
 		m_output.write("\t/* Wrapper for field " + originalField.getFullName() + "*/");
@@ -1040,7 +1055,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if (aliased.isFlat()) {
 				m_output.write("\t{\"");
 				m_output.write(Utils.cleanFullName(subject));
-				if (Filters.needsEncapsulation(subject,true)) {
+				if (Filters.needsEncapsulation(subject,false)) {
 					m_output.write("\", \"class\", alias_" + uid(subject));
 					m_output.write("},\n");
 				}
