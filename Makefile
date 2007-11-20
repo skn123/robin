@@ -12,6 +12,8 @@ python = python
 jython = jython
 -include config.mak
 
+CXX=$(cxx)
+
 pydir = $(site-packages)/robin
 libdir = $(exec_prefix)/lib
 scriptdir = $(prefix)/bin
