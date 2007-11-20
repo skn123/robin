@@ -36,8 +36,8 @@ Type::~Type()
  * TYPE_CATEGORY_INTRINSIC or category==TYPE_CATEGORY_EXTENDED).
  * It assigns no redirection, reference or array indicators.
  */
-TypeOfArgument::TypeOfArgument(TypeCategory category, TypeSpec spec)
-	: m_redirection_degree(0), m_reference_flag(false)
+TypeOfArgument::TypeOfArgument(TypeCategory category, TypeSpec spec, bool borrowed /* = false */)
+	: m_redirection_degree(0), m_reference_flag(false), m_borrowed(borrowed)
 {
     m_basetype.category = category;
     m_basetype.spec = spec;
@@ -48,8 +48,8 @@ TypeOfArgument::TypeOfArgument(TypeCategory category, TypeSpec spec)
  * value TYPE_CATEGORY_USERDEFINED to category and TYPE_USERDEFINED_OBJECT
  * to spec.
  */
-TypeOfArgument::TypeOfArgument(Handle<Class> classtype)
-	: m_redirection_degree(0), m_reference_flag(true)
+TypeOfArgument::TypeOfArgument(Handle<Class> classtype, bool borrowed /* = false */)
+	: m_redirection_degree(0), m_reference_flag(true), m_borrowed(borrowed)
 {
     m_basetype.category = TYPE_CATEGORY_USERDEFINED;
     m_basetype.spec = TYPE_USERDEFINED_OBJECT;
@@ -61,8 +61,8 @@ TypeOfArgument::TypeOfArgument(Handle<Class> classtype)
  * value TYPE_CATEGORY_USERDEFINED to category and TYPE_USERDEFINED_ENUM
  * to spec.
  */
-TypeOfArgument::TypeOfArgument(Handle<EnumeratedType> enumtype)
-	: m_redirection_degree(0), m_reference_flag(false)
+TypeOfArgument::TypeOfArgument(Handle<EnumeratedType> enumtype, bool borrowed /* = false */)
+	: m_redirection_degree(0), m_reference_flag(false), m_borrowed(borrowed)
 {
     m_basetype.category = TYPE_CATEGORY_USERDEFINED;
     m_basetype.spec = TYPE_USERDEFINED_ENUM;
@@ -101,6 +101,15 @@ bool TypeOfArgument::isPointer() const
 	return (m_redirection_degree > 0);
 }
 
+/**
+ * Checks whether this type is borrowed
+ *
+ * @return true if this is a borrowed type
+ */
+bool TypeOfArgument::isBorrowed() const
+{
+	return m_borrowed;
+}
 
 /**
  * Returns a handle to a TypeOfArgument which represents a pointer to the

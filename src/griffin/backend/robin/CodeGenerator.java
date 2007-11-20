@@ -596,6 +596,17 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         result.setReturnType(new Type(new Type.TypeNode(Primitive.VOID)));
         return result;
     }
+    
+    private Routine createInterceptorDowncastFunction() {
+        Routine result = new Routine();
+        result.setName("_py");
+        
+        Primitive scripting_element = new Primitive();
+        scripting_element.setName("scripting_element");
+        result.setReturnType(new Type(new Type.TypeNode(scripting_element)));
+        result.addProperty(new Entity.Property(".robin", "returns borrowed"));
+        return result;
+    }
 
     private Aggregate createInterceptor(Aggregate subject)
 		throws IOException, MissingInformationException
@@ -612,6 +623,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // Add the _init function
         result.getScope().addMember(
                 createInterceptorInitFunction(), Specifiers.Visibility.PUBLIC, 
+                Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
+        ++funcCounter;
+        result.getScope().addMember(
+        			createInterceptorDowncastFunction(), Specifiers.Visibility.PUBLIC, 
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
         ++funcCounter;
         
@@ -665,6 +680,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         }
         
         m_output.write("\tvoid _init(scripting_element imp) { twin = imp; }\n\n");
+        m_output.write("\tscripting_element _py() { return twin; }\n\n");
         
         // Write functions in interceptor class, and add them to the griffin class
         int i = 0;
@@ -1800,10 +1816,22 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				m_output.write((with && container instanceof Aggregate) 
 								? routine.getName() : Utils.cleanFullName(routine));
 				m_output.write("\", ");
-				// Write return type
-				char ref = '&';
-				char ptr = Filters.isForceBorrowed(routine) ? '&' : '*';
-				writeTypeSimply(routine.getReturnType(), ref, ptr, '*');
+				
+				Type ret = routine.getReturnType();
+				// hack, because scripting_element is primitive, so the ptr
+				// does not get written
+				if(ret.getBaseType().getName().equals("scripting_element") && 
+						Filters.isForceBorrowed(routine)) {
+					
+					m_output.write("\"&" + ret.formatCpp() + "\"");
+				} else {
+					
+					// Write return type
+					char ref = '&';
+					char ptr = Filters.isForceBorrowed(routine) ? '&' : '*';
+					
+					writeTypeSimply(ret, ref, ptr, '*');
+				}
 				m_output.write(", ");
 			}
 			// Write pointer to prototype

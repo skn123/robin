@@ -264,6 +264,18 @@ public:
 	virtual scripting_element get(basic_block data);	
 };
 
+template <typename ADAPTER>
+class BorrowedAdapter : public ADAPTER
+{
+public:
+    virtual ~BorrowedAdapter() { }
+
+    virtual scripting_element get(basic_block data) {
+        Py_INCREF((PyObject *)data);
+        return ADAPTER::get(data);
+    }
+};
+
 // Python-specific argument types
 extern Handle<TypeOfArgument> ArgumentPythonList;
 extern Handle<TypeOfArgument> ArgumentPythonTuple;

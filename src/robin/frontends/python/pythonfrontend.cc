@@ -349,7 +349,7 @@ void PythonFrontend::initialize() const
 	hpascal2cstring  ->setSourceType(ArgumentPascalString);
 	hpascal2cstring  ->setTargetType(ArgumentCString);
 	hlist2element    ->setSourceType(ArgumentPythonList);
-	hlist2element    ->setTargetType(ArgumentScriptingElement);
+	hlist2element    ->setTargetType(ArgumentScriptingElementNewRef);
 	hlongtruncate    ->setSourceType(ArgumentPythonLong);
 	hlongtruncate    ->setTargetType(ArgumentLong);
 
@@ -422,7 +422,7 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 	}
 	else if (PyInstance_Check(object) || _PyObject_GetDictPtr(object) != 0
 			 || PyCObject_Check(object)) {
-		return ArgumentScriptingElement;
+		return ArgumentScriptingElementNewRef;
 	}
 	else if (obtype == (PyObject*)&AddressTypeObject) {
 		Handle<Address> address = ((AddressObject*)object)->getUnderlying();
@@ -571,8 +571,14 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 				 ());
 		else if (basetype.spec == TYPE_EXTENDED_PASCALSTRING)
 			return Handle<Adapter>(new PascalStringAdapter);
-		else if (basetype.spec == TYPE_EXTENDED_ELEMENT)
-			return Handle<Adapter>(new PyObjectAdapter);
+		else if (basetype.spec == TYPE_EXTENDED_ELEMENT) {
+
+            if(type.isBorrowed()) {
+    			return Handle<Adapter>(new BorrowedAdapter<PyObjectAdapter>);
+            } else {
+                return Handle<Adapter>(new PyObjectAdapter);
+            }
+        }
 		else
 			throw UnsupportedInterfaceException();
 	}
