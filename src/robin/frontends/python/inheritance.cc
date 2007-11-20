@@ -52,7 +52,15 @@ HybridObject::HybridObject(PyTypeObject *obtype)
 
 HybridObject::~HybridObject()
 {
-	Py_XDECREF(m_dict);
+ 
+    PyObject *keys = PyDict_Keys(m_dict);
+
+    for(int i=0; i<PyList_GET_SIZE(keys); i++) {
+        PyDict_DelItem(m_dict, PyList_GET_ITEM(keys, i));
+    }
+
+	Py_XDECREF(keys);
+    Py_XDECREF(m_dict);
 }
 
 /**
