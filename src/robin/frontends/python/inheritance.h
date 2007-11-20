@@ -38,9 +38,7 @@ public:
 							 PyObject *args, PyObject *kw);
 	static void      __del__(PyObject *object);
 	static PyObject *__getattr__(PyObject *self, char *nm);
-    static PyObject *__getattro__(PyObject *self, PyObject *nm);
 	static int       __setattr__(PyObject *self, char *nm, PyObject *value);
-    static int       __setattro__(PyObject *self, PyObject *nm, PyObject *value);
 	
 	PyObject *__getattr__(char *nm);
 	int __setattr__(char *nm, PyObject *value);
