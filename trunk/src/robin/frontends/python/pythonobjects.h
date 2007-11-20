@@ -102,16 +102,6 @@ public:
 
 	Handle<Instance> construct(PyObject *args, PyObject *kw);
 
-
-    /**
-     * @name Initialization for python
-     */
-    // @{
-    void prepare();
-    bool isFullyInitialized() const;
-    void resetInitialization(); // hack, for HybridObject
-    //@}
-    
 	/**
 	 * @name Access
 	 */
@@ -141,8 +131,6 @@ private:
 	PyObject         *m_inners;       //!< A Python dictionary of st. members
 	EnhancementsPack  m_enhance;
 
-    bool              m_fully_initialized; // Was extra initialization (dict, bases, etc) done already
-
 	// - optimization
 	struct MethodDef {
 		const char *name;
@@ -156,9 +144,6 @@ private:
 													 const char **internal)
 		const;
 	void x_releaseMethodTable();
-
-    void initClassMethods();
-    void initClassBases();
 };
 
 /**

@@ -541,8 +541,7 @@ PyObject *FunctionObject::__repr__()
  * ClassObject constructor.
  */
 ClassObject::ClassObject(Handle<Class> underlying)
-	: m_underlying(underlying), m_in_module(NULL), m_x_methods(NULL),
-    m_fully_initialized(false)
+	: m_underlying(underlying), m_in_module(NULL), m_x_methods(NULL)
 {
 	(PyTypeObject&)(*this) = NullTypeObject;
 
@@ -583,8 +582,6 @@ ClassObject::ClassObject(Handle<Class> underlying)
 	tp_weaklistoffset = offsetof_nw(InstanceObject, m_ob_weak);
 
 	m_inners = PyDict_New();
-    tp_dict = PyDict_New();
-
 }
 
 ClassObject::~ClassObject()
@@ -592,8 +589,6 @@ ClassObject::~ClassObject()
 	if (m_x_methods) x_releaseMethodTable();
 	Py_XDECREF(m_in_module);
 }
-
-
 
 /**
  * Initializes a C instance.
@@ -742,15 +737,18 @@ PyObject *ClassObject::__getattr__(const char *name)
 		};
 		return PyMethod_New(PyCFunction_New(&method,0), NULL, (PyObject*)this);
 	}
+	else if (strcmp(name, "__bases__") == 0) {
+		return Py_BuildValue("(O)", &PyType_Type);
+	}
 	else {
 		// - look for static inners
-		PyObject *inner = PyDict_GetItemString(this->getDict(), (char*)name);
+		PyObject *inner = PyDict_GetItemString(m_inners, (char*)name);
 		if (inner) {
 			return pyowned(inner);
 		}
 		else {
-            return PyObject_GenericGetAttr((PyObject*)this,
-                    PyString_FromString((char*)name));
+			PyErr_SetString(PyExc_AttributeError, name);
+			return NULL;
 		}
 	}
 }
@@ -883,7 +881,7 @@ PyObject *ClassObject::getContainingModule() const
  */
 PyObject *ClassObject::getDict() const
 {
-	return tp_dict;
+	return m_inners;
 }
 
 /**
@@ -926,9 +924,6 @@ const EnhancementsPack& ClassObject::getEnhancements() const
  */
 void ClassObject::x_optimizeMethodTable() const
 {
-    if (m_x_methods != NULL) {
-        return;
-    }
 	const std::string& DATAMEMBER_PREFIX = PythonFrontend::DATAMEMBER_PREFIX;
 	// Get the names of the methods to put in table
 	//     (note that inherited methods are transparently returned by
@@ -956,77 +951,6 @@ void ClassObject::x_optimizeMethodTable() const
 	// Sentinel
 	m_x_methods[method_names.size()].name = NULL;
 }
-
-void ClassObject::prepare() {
-    if(isFullyInitialized()) {
-        return;
-    }
-    initClassBases();
-    initClassMethods();
-    PyType_Ready(this);
-    
-    m_fully_initialized = true;
-}
-
-bool ClassObject::isFullyInitialized() const {
-    return m_fully_initialized;
-}
-
-void ClassObject::resetInitialization() {
-    m_fully_initialized = false;
-}
-
-void ClassObject::initClassBases()
-{
-
-    const std::vector<Handle<Class> > bases = m_underlying->getBases();
-
-    PyObject *basesTuple;
-    if(bases.size() != 0) {
-       basesTuple = PyTuple_New(bases.size());
-    
-        for(int i=0; i<bases.size(); i++) {
-            ClassObject *base = dynamic_cast<PythonFrontend*>(FrontendsFramework::activeFrontend())->getClassObject(bases[i]);
-            if(!base->isFullyInitialized()) {
-                base->prepare();
-            }
-            Py_XINCREF(base);
-            PyTuple_SET_ITEM(basesTuple, i, (PyObject *)base);
-        }
-    } else {
-        basesTuple = PyTuple_New(1);
-        Py_XINCREF(&PyBaseObject_Type);
-        PyTuple_SET_ITEM(basesTuple, 0, (PyObject *)&PyBaseObject_Type);
-    }
-       
-    tp_bases = basesTuple;
-
-}
-
-
-
-void ClassObject::initClassMethods()
-{
-    x_optimizeMethodTable();
-    for(int i=0; m_x_methods[i].name != NULL; i++) {
-
-        try {
-            Handle<Callable> unboundMethod =
-                m_underlying->findUnboundInstanceMethod(m_x_methods[i].name);
-
-            FunctionObject *method = new FunctionObject(unboundMethod);
-            method->setName(m_x_methods[i].name);
-            Py_XINCREF(method);
-            PyDict_SetItemString(tp_dict, m_x_methods[i].name, method);
-        } catch(NoSuchMethodException &e) {
-            // m_x_methods contain also data members, which we don't want to
-            // have
-
-        }
-    }
-
-}
-
 
 Handle<CallableWithInstance> ClassObject::
 x_findMethod(const char *name, const char **internal_name) const
@@ -1811,7 +1735,7 @@ PyTypeObject *makeMetaclassType(const char *name, PyTypeObject *base)
 {
   PyObject *bases = PyTuple_New(1);
   PyTuple_SET_ITEM(bases, 0, (PyObject*)base);
-  Py_XINCREF(base);
+  Py_XINCREF(&PyType_Type);
 
   PyObject *args = PyTuple_New(3);
   PyTuple_SET_ITEM(args, 0, PyString_FromString(name));

@@ -72,15 +72,11 @@ public:
     Handle<Namespace> innerNamespace() const;
     Handle<CallableWithInstance> findInstanceMethod(const std::string&
 													methodname)const;
-    Handle<Callable> findUnboundInstanceMethod(const std::string &methodname)
-        const;
 	bool hasInstanceMethod(const std::string& methodname) const;
     std::vector<std::string> listMethods() const;
     std::vector<std::string> listConciseMethods() const;
 
 	bool isEmpty() const;
-
-    const std::vector<Handle<Class> > &getBases() const;
     //@}
     /**
      * @name Declaration API
