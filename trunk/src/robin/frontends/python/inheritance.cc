@@ -147,7 +147,12 @@ PyObject *HybridObject::__getattr__(char *nm)
 	else {
 		PyErr_Clear();
 		if (value = PyDict_GetItemString(ob_type->tp_dict, nm)) {
-			return PyMethod_New(value, this, PyObject_Type(this));
+            if(PyMethod_Check(value)) {
+    			return PyMethod_New(value, this, PyObject_Type(this));
+            } else {
+                Py_XINCREF(value);
+                return value;
+            }
 		}
 		else {
 			PyErr_Clear();
