@@ -54,4 +54,27 @@ float reducer(std::vector<Functor*> functors)
 }
 */
 
+class TaintedVirtual
+{
+    public:
+        TaintedVirtual(int taintValue)
+            : m_taintValue(taintValue)
+        {}
+
+        virtual ~TaintedVirtual() {}
+
+        virtual int returnTaint() {
+            return m_taintValue;
+        }
+
+        virtual int returnFilth() {
+            return -1; // infinitely filthy
+        }
+
+    private:
+        int m_taintValue;
+};
+
+
+
 #endif

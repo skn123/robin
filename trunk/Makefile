@@ -130,7 +130,7 @@ protocols-test@%:
 inheritance-test@%:
 	$($*)/griffin --in $(extreme_python)/inheritance.h               \
 	        --out $(extreme_python)/libinheritance_robin.cc          \
-	        --interceptors Functor FunctorImpl mapper mul
+	        --interceptors Functor FunctorImpl mapper mul TaintedVirtual
 	$(CXX) -shared $(extreme_python)/libinheritance_robin.cc         \
 		-o $(extreme_python)/libinheritance.so
 
