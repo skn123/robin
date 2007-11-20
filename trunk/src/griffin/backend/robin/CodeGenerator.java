@@ -328,30 +328,41 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void addInterceptorBaseConstructor(Routine ctor, Aggregate subject, Aggregate interceptor)
         throws IOException, MissingInformationException
     {
-        // TODO: check out the long parameter list, maybe extract a class out of createInterceptor?
+        
+    	
+    	
+    		// TODO: check out the long parameter list, maybe extract a class out of createInterceptor?
         Routine newCtor = (Routine) ctor.clone();
+        
+        
+        
         newCtor.setName(interceptor.getName());
         interceptor.getScope().addMember(
                 newCtor, Specifiers.Visibility.PUBLIC, 
                 Specifiers.Virtuality.NON_VIRTUAL, Specifiers.Storage.EXTERN);
         
-        m_output.write("\t" + interceptor.getName() + "(");
-        for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
-            Parameter param = (Parameter) argIter.next();
-            m_output.write(param.getType().formatCpp(param.getName()));
-            if(param.hasDefault()) {
-            		m_output.write(" = ");
-            		m_output.write(param.getDefaultString());
-            }
-            if (argIter.hasNext()) m_output.write(", ");
+        int minArgs = Utils.minimalArgumentCount(newCtor),
+        		maxArgs = Utils.countParameters(newCtor);
+        
+        for(int nArgs = minArgs; nArgs <= maxArgs; nArgs++) {
+        		m_output.write("\t// Interceptor wrapper for constructor with " + nArgs + " out of " + maxArgs + " arguments");
+        		m_output.write("\n");
+	        m_output.write("\t" + interceptor.getName() + "(");
+	        int paramIndex = 0;
+	        for (Iterator argIter = newCtor.parameterIterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	            Parameter param = (Parameter) argIter.next();
+	            m_output.write(param.getType().formatCpp(param.getName()));
+	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
+	        }
+	        m_output.write(") : " + subject.getName() + "(");
+	        paramIndex = 0;
+	        for (Iterator argIter = newCtor.parameterIterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	            Parameter param = (Parameter) argIter.next();
+	            m_output.write(param.getName());
+	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
+	        }
+	        m_output.write(") {}\n\n");
         }
-        m_output.write(") : " + subject.getName() + "(");
-        for (Iterator argIter = ctor.parameterIterator(); argIter.hasNext();) {
-            Parameter param = (Parameter) argIter.next();
-            m_output.write(param.getName());
-            if (argIter.hasNext()) m_output.write(", ");
-        }
-        m_output.write(") {}\n\n");
     }
     
 
@@ -707,7 +718,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             if (ctor.isConstructor() &&
                 (connection.getVisibility() != Specifiers.Visibility.PRIVATE)) {
         
-                addInterceptorBaseConstructor(ctor, subject, result);
+            		addInterceptorBaseConstructor(ctor, subject, result);
                 anyCtors = true;
                 ++funcCounter;
             }
