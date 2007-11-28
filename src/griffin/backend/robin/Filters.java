@@ -375,12 +375,14 @@ public class Filters {
 	}
 	// The map from function return type to the new type and the touchup code
 	private static Map m_touchups = new HashMap();
-	static boolean isPrimitive(Entity base)
+
+	// TODO: should be package protected?
+	public static boolean isPrimitive(Entity base)
 	{
 		return (base instanceof Primitive);
 	}
 
-	static boolean isSmallPrimitive(Entity base)
+	public static boolean isSmallPrimitive(Entity base)
 	{
 		return (base instanceof Primitive) &&
 		       (!base.getName().equals("double")) &&
@@ -390,20 +392,26 @@ public class Filters {
 
 	/**
 	 * An aggregate (non-primitive) type needs at least one level of pointer
-	 * reference.
+	 * reference. This also applies for primitive types larger then the size
+	 * of a pointer.
 	 * @param type argument or return type
 	 * @return boolean
 	 */
-	static boolean needsExtraReferencing(Type type)
+	static public boolean needsExtraReferencing(Type type)
 	{
 		int pointers = type.getPointerDegree();
 		boolean reference = type.isReference();
 		Entity base = Filters.getOriginalType(type).getBaseType();
 		
 		if ((!reference && pointers == 0) && 
-			!(isSmallPrimitive(base) || base instanceof sourceanalysis.Enum)) return true;
+			needsExtraReferencing(base)) return true;
 		else
 			return false;
+	}
+	
+	static public boolean needsExtraReferencing(Entity base)
+	{
+		return !(isSmallPrimitive(base) || base instanceof sourceanalysis.Enum);
 	}
 	
 	/**
