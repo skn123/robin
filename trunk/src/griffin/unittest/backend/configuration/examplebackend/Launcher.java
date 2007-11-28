@@ -46,4 +46,6 @@ public class Launcher implements Backend {
             defaultValue = "")
    private boolean bar;
 
+   // to prevent "'...' is never read locally" warning
+   void silenceWarnings() { if (foo); if (bar); }
 }

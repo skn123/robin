@@ -5,10 +5,9 @@ package unittest.backend.configuration;
 
 import java.util.Collection;
 
-import backend.Backend;
+import junit.framework.TestCase;
 import backend.configuration.BackendData;
 import backend.configuration.PropertyData;
-import junit.framework.TestCase;
 
 /**
  * Tests that backend data is parsed correctly

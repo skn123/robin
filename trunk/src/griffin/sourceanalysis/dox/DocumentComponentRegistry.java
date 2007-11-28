@@ -5,11 +5,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.w3c.dom.Document;
-import sourceanalysis.*;
+
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
 
 /**
  * The Document/Component Registry 
