@@ -6,15 +6,13 @@ package backend.man;
 
 import java.io.IOException;
 
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.ProgramDatabase;
 import backend.Backend;
 import backend.PropertyPage;
 import backend.annotations.BackendDescription;
 import backend.annotations.PropertyDescription;
 import backend.configuration.PropertyData;
-import sourceanalysis.ElementNotFoundException;
-import sourceanalysis.MissingInformationException;
-import sourceanalysis.ProgramDatabase;
-import sourceanalysis.dox.DoxygenAnalyzer;
 
 @BackendDescription(backendName = "man", backendDescription = "Generate manpage documentation for the classes")
 public class Launcher implements Backend{
