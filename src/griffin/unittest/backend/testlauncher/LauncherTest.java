@@ -3,7 +3,6 @@ package unittest.backend.testlauncher;
 import unittest.backend.configuration.testbackendconfiguration.BackendConfigurationTest;
 import backend.Launcher;
 import backend.PropertyPage;
-import backend.configuration.BackendConfiguration;
 import backend.exceptions.BackendException;
 import backend.exceptions.InvalidCommandLineException;
 import backend.exceptions.configuration.BackendNotFoundException;
