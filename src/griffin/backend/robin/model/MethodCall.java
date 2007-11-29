@@ -11,7 +11,7 @@ public class MethodCall implements CppExpression {
 	}
 	
 	public String evaluate(String argument) {
-		return "self->" + method.getName() + "(" + argument + ")";
+		return "self." + method.getName() + "(" + argument + ")";
 	}
 
 }

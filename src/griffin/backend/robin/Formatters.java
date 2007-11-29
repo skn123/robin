@@ -1,6 +1,9 @@
 package backend.robin;
 
+import java.util.List;
+
 import backend.Utils;
+import backend.robin.model.CppExpression;
 import backend.robin.model.RoutineDeduction;
 import backend.robin.model.TypeToolbox;
 import backend.robin.model.RoutineDeduction.ParameterTransformer;
@@ -23,22 +26,53 @@ public class Formatters {
 				.evaluate(name);
 	}
 
-	static String formatParameters(ParameterTransformer[] params) throws MissingInformationException
+	static String formatParameters(List<ParameterTransformer> params)
 	{
-		String[] fmtd = new String[params.length];
+		String[] fmtd = new String[params.size()];
 		for (int i = 0; i < fmtd.length; i++) {
-			fmtd[i] = params[i].getPrototypeType().formatCpp("arg"+i);
+			fmtd[i] = params.get(i).getPrototypeType().formatCpp("arg"+i);
 		}
 		return join(", ", fmtd);
 	}
 	
-	static String formatArguments(ParameterTransformer[] params)
+	static String formatArguments(List<ParameterTransformer> params)
 	{
-		String[] fmtd = new String[params.length];
+		String[] fmtd = new String[params.size()];
 		for (int i = 0; i < fmtd.length; i++) {
-			fmtd[i] = params[i].getBodyExpr().evaluate("arg"+i);
+			fmtd[i] = params.get(i).getBodyExpr().evaluate("arg"+i);
 		}
 		return join(", ", fmtd);
+	}
+	
+	static String formatFunction(Entity routine, String name, 
+			List<ParameterTransformer> params, CppExpression semantic)
+	{
+		String doc = formatDocBlock(routine);
+		String header = "void " + name + "(" + formatParameters(params) + ")"; 
+		String body = semantic.evaluate(formatArguments(params));
+		String proto = formatRegData(name, params);
+		return doc + header + "\n{\n\t" + body + ";\n}\n" + proto + "\n";
+	}
+	
+	static String formatRegData(String name, List<ParameterTransformer> params)
+	{
+		StringBuffer buf = new StringBuffer();
+		buf.append("RegData " + name + "_proto[] = {\n");
+		for (int i = 0; i < params.size(); ++i) {
+			String pname = "arg" + i;
+			String ptype = params.get(i).getRegDataType();
+			buf.append("\t{ \"" + pname + "\", \"" + ptype + "\", 0, 0 },\n");
+		}
+		buf.append("\t{ 0 }\n};\n");
+		return buf.toString();
+	}
+	
+	static String formatDocBlock(Entity entity)
+	{
+		return "/*\n" +
+		       " * " + entity.getFullName() + "\n" +
+		       " * " + formatLocation(entity) + "\n" +
+		       " */\n";
 	}
 	
 	private static String join(String sep, String[] items) {
