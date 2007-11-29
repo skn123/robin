@@ -15,7 +15,9 @@ import java.util.Set;
 import sourceanalysis.*;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
+import backend.robin.model.NopExpression;
 import backend.robin.model.RoutineDeduction;
+import backend.robin.model.StaticMethodCall;
 import backend.robin.model.TypeToolbox;
 import backend.robin.model.RoutineDeduction.ParameterTransformer;
 
@@ -844,76 +846,46 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * This is done by adding a static version of every method that accepts
 	 * *this as first argument
 	 */
-	public void generateStaticRoutines() {
-		
-		Set newRoutines = new HashSet();
-		
+	public void generateStaticRoutines() throws IOException 
+	{
 		// Generate routine wrappers for class methods
 		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
-		/*
-			boolean hasOutput = Utils.hasOutputOperator(subject, m_program);
-			boolean hasAssignment = Filters.isAssignmentSupportive(subject);
-			boolean hasClone = Filters.isCloneable(subject);
-		*/	
+			
+			RoutineDeduction.ParameterTransformer thisParam = 
+				new RoutineDeduction.ParameterTransformer(
+						TypeToolbox.makeReference(subject),
+						new NopExpression(), "&" + subject.getFullName());
+
 			// Grab all the routines from subject aggregate
 			for (Iterator routineIter = subject.getScope().routineIterator();
 				routineIter.hasNext(); ) {
 				// Generate wrapper for routine
 				ContainedConnection connection = (ContainedConnection)routineIter.next();
 				Routine routine = (Routine)connection.getContained();
-				if (routine.isConstructor()) continue;
-				
-				if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
-					&& !routine.isDestructor()
-					&& Filters.isAvailable(routine) && connection.getVirtuality() == Specifiers.Virtuality.VIRTUAL) {
-		
+
+				if (Filters.isAvailableStatic(routine)) {
 					// - align the number of arguments
 					int minArgs = Utils.minimalArgumentCount(routine),
 						maxArgs = Utils.countParameters(routine);
 					for (int nArguments = minArgs; nArguments <= maxArgs;
 							++nArguments) {
-						Routine staticWrapper = (Routine) routine.clone();
-						
-						staticWrapper.getContainerConnection().setStorage(Specifiers.Storage.STATIC);
-						staticWrapper.removeParameters();
-						staticWrapper.setRoutineType(Routine.RoutineType.STATIC_CALL_WRAPPER);
-						
-						Parameter self_parameter = new Parameter();
-						self_parameter.setName("self");
-						self_parameter.setType(new Type(new Type.TypeNode(routine.getContainer())));
-						
-						staticWrapper.addParameter(self_parameter);
-						
-						Iterator parameterIterator = routine.parameterIterator();
-						for(int param_idx = 0; param_idx < nArguments; param_idx++) {
-							Parameter p = (Parameter) parameterIterator.next();
-							staticWrapper.addParameter(p);
+						try {
+							List<RoutineDeduction.ParameterTransformer> paramf =
+								RoutineDeduction.deduceParameterTransformers(routine.parameterIterator(), nArguments);
+							paramf.add(0, thisParam);
+							m_output.write(Formatters.formatFunction(routine,
+									"static_" + uid(routine), 
+									paramf, new StaticMethodCall(routine)));
 						}
-						
-						newRoutines.add(staticWrapper);
+						catch (MissingInformationException e) {
+							System.err.println("*** Warning: skipped static wrapper for method " + routine.getFullName());
+						}
 					}
 					
 				}
 			}
-			
-			/*
-			if (hasAssignment) {
-				generateSpecialAssignmentOperator(subject);
-			}
-			if (hasClone) {
-				generateSpecialCloneMethod(subject);
-			}
-			if (hasOutput) {
-				generateSpecialOutputOperator(subject);
-				generateSpecialStringConverter(subject);
-			}*/
-			
-		}
-		
-		m_globalFuncs.addAll(newRoutines);
-
-		
+		}		
 	}
 	
 	/**
@@ -1262,7 +1234,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			staticParam = true;
 		}
 		
-		ParameterTransformer[] paramf = RoutineDeduction
+		List<ParameterTransformer> paramf = RoutineDeduction
 			.deduceParameterTransformers(routine.parameterIterator(), nArguments);
 		m_output.write(Formatters.formatParameters(paramf));
 		m_output.write(")\n");

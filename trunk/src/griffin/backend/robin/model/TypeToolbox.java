@@ -2,6 +2,7 @@ package backend.robin.model;
 
 import javax.swing.tree.MutableTreeNode;
 
+import sourceanalysis.Entity;
 import sourceanalysis.Type;
 
 public class TypeToolbox {
@@ -33,6 +34,12 @@ public class TypeToolbox {
 	static public Type makeReference(Type refof) {
 		Type.TypeNode root = new Type.TypeNode(Type.TypeNode.NODE_REFERENCE);
 		root.add((MutableTreeNode)refof.getRootNode());
+		return new Type(root);
+	}
+	
+	static public Type makeReference(Entity base) {
+		Type.TypeNode root = new Type.TypeNode(Type.TypeNode.NODE_REFERENCE);
+		root.add(new Type.TypeNode(base));
 		return new Type(root);
 	}
 }

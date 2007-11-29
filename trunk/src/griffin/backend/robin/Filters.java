@@ -110,6 +110,26 @@ public class Filters {
 	}
 
 	/**
+	 * Determines whether a routine should or should not be wrapped as a
+	 * static call.
+	 * A non-static routine should be wrapped as a static call when all the
+	 * following are fulfilled:
+	 * + The routine is available for wrapping (isAvailable)
+	 * + The routine is neither a constructor nor a destructor
+	 * + The routine is publicly visible
+	 * + The routine is virtual, but not pure
+	 */
+	public static boolean isAvailableStatic(Routine routine)
+	{
+		ContainedConnection uplink = routine.getContainerConnection();
+		
+		return (isAvailable(routine)
+				&& !routine.isConstructor() && !routine.isDestructor()
+				&& uplink.getVisibility() == Specifiers.Visibility.PUBLIC
+				&& uplink.getVirtuality() == Specifiers.Virtuality.VIRTUAL);
+	}
+		
+	/**
 	 * Checks whether an entity is actually declared in a header file.
 	 * This is used to distinguish between, for instance, global constants
 	 * and internally used global variables.

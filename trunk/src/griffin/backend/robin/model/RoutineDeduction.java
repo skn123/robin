@@ -2,6 +2,7 @@ package backend.robin.model;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import sourceanalysis.Aggregate;
 import sourceanalysis.ContainedConnection;
@@ -106,7 +107,7 @@ public class RoutineDeduction {
 	 * @return
 	 * @throws MissingInformationException
 	 */
-	public static ParameterTransformer[] deduceParameterTransformers(Parameter[] formal) throws MissingInformationException
+	public static ParameterTransformer[] deduceParametefrTransformers(Parameter[] formal) throws MissingInformationException
 	{
 		ParameterTransformer[] qual = new ParameterTransformer[formal.length];
 		for (int i = 0; i < formal.length; i++) {
@@ -124,13 +125,13 @@ public class RoutineDeduction {
 	 * @return
 	 * @throws MissingInformationException
 	 */
-	public static ParameterTransformer[] deduceParameterTransformers(Iterator formal, int count) throws MissingInformationException
+	public static List<ParameterTransformer> deduceParameterTransformers(Iterator formal, int count) throws MissingInformationException
 	{
 		ArrayList<ParameterTransformer> qual = new ArrayList<ParameterTransformer>();
 		for (int n = 0; formal.hasNext() && n < count; ++n) {
 			qual.add(deduceParameterTransformer((Parameter)formal.next()));
 		}
-		return qual.toArray(new ParameterTransformer[0]);
+		return qual;
 	}
 	
 	/**
