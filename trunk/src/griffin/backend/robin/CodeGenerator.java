@@ -51,7 +51,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				new Type(new Type.TypeNode(Primitive.FLOAT)),
 				new Filters.Touchup(
 						voidptr,
-						"void *touchup(float val)\n{\n" +
+						"const void *touchup(float val)\n{\n" +
 						"\tunion { void *word; float f; } u; u.f = val;\n" +
 						"\treturn u.word;\n" +
 						"}\n" +
@@ -66,7 +66,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				new Type(new Type.TypeNode(Primitive.DOUBLE)),
 				new Filters.Touchup(
 						doubleptr,
-						"double *touchup(double val)\n{\n" +
+						"const double *touchup(double val)\n{\n" +
 						"\treturn new double(val);\n" +
 						"}\n" +
 						"double touchdown(const double* val)\n{\n" +
@@ -238,7 +238,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("typedef void* scripting_element;\n\n");
 		
         final String callbackvar = 
-                "bool (*__callback)(scripting_element twin, " + 
+                "bool (*__robin_callback)(scripting_element twin, " + 
                 "RegData *signature, basic_block args[], " +
                 "basic_block *result, bool isPure)";
 		m_output.write("extern " + callbackvar + ";\n");
@@ -408,14 +408,20 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void writeInterceptorFunctionBasicBlockArgumentArray(Routine routine, int nArgs)
         throws IOException, MissingInformationException
     {
-        m_output.write("\t\tbasic_block args[] = {\n");
-        int i = 0;
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
-            writeInterceptorFunctionBasicBlockArgument(
-                    (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
-                );
+        if(nArgs == 0) {
+                // Fix MSVS not allowing 0-length array
+                // definition with initializer block
+            m_output.write("\t\tbasic_block *args = NULL;\n");
+        } else {
+            m_output.write("\t\tbasic_block args[] = {\n");
+            int i = 0;
+            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
+                writeInterceptorFunctionBasicBlockArgument(
+                        (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
+                    );
+            }
+            m_output.write("\t\t};\n");
         }
-        m_output.write("\t\t};\n");
     }
 
     private void writeInterceptorFunctionBasicBlockArgument(Parameter param, int index, boolean moreParams)
@@ -452,7 +458,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 
     /**
-     * Write the call to __callback
+     * Write the call to __robin_callback
      */
     private void writeInterceptorFunctionCallbackCall(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter, int nArgs)
         throws IOException, MissingInformationException
@@ -469,7 +475,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         if (!isPure) {
             m_output.write("if (!");
         }
-        m_output.write("__callback(twin, ");
+        m_output.write("__robin_callback(twin, ");
         m_output.write("scope_" + 
                 interceptor.getScope().hashCode() + 
                 " + " +
@@ -1200,7 +1206,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (routine.isConstructor()) {
 			// This is a constructor
 			m_output.write(thisArg.getFullName()
-					+ " __CDECL *" + wrapperName);
+					+ "* __CDECL " + wrapperName);
 		}
 		else {
 			if (Filters.isPrimitive(returnType.getBaseType()))
@@ -1573,7 +1579,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException
 	{
 		m_output.write(Utils.cleanFullName(subject));
-		m_output.write(" __CDECL *ctor_" + uid(subject.getScope()));
+		m_output.write("* __CDECL ctor_" + uid(subject.getScope()));
 		m_output.write("() { return new ");
 		m_output.write(Utils.cleanFullName(subject));
 		m_output.write("; }\n");
@@ -1600,7 +1606,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		String classname = Utils.cleanFullName(subject);
 		
-		m_output.write(classname + " __CDECL *clone_" + uid(subject.getScope()));
+		m_output.write(classname + "* __CDECL clone_" + uid(subject.getScope()));
 		m_output.write("(" + classname + " *self) { return ");
 		m_output.write(" new " + classname + "(*self); }\n");
 	}
@@ -1655,11 +1661,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#define PASCALSTRING_CTOR_INCLUDED\n");
 		m_output.write("inline struct PascalString *toPascal(const std::string& cpp)\n");
 		m_output.write("{ unsigned long size = (unsigned long)cpp.size();\n");
-		m_output.write("  PascalString *pascal = (PascalString*)\n");
+		m_output.write("  PascalString *pascal_string = (PascalString*)\n");
 		m_output.write("    malloc(sizeof(PascalString) + size);\n");
-		m_output.write("  pascal->size = size; pascal->chars = pascal->buffer;\n");
-		m_output.write("  memcpy(pascal->buffer, cpp.c_str(), size);\n");
-		m_output.write("  return pascal;\n}\n");
+		m_output.write("  pascal_string->size = size; pascal_string->chars = pascal_string->buffer;\n");
+		m_output.write("  memcpy(pascal_string->buffer, cpp.c_str(), size);\n");
+		m_output.write("  return pascal_string;\n}\n");
 		m_output.write("#endif\n");
 		// Write operator
 		m_output.write("struct PascalString *toString_" 
@@ -1700,12 +1706,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				 String base2derived = uid(base.getScope()) + "_to_" + uid(subject.getScope());
 				 
 				 m_output.write(
-						 basename + " __CDECL *upcast_" + derived2base
+						 basename + "* __CDECL upcast_" + derived2base
 						 + "(" + derivedname + " *self) { return self; }\n");
 				 
 				 if (Utils.isPolymorphic(base)) {
 					 m_output.write(
-							 derivedname + " __CDECL *downcast_" + base2derived
+							 derivedname + "* __CDECL downcast_" + base2derived
 							 + "(" + basename + " *self)");
 					 m_output.write(" { return dynamic_cast<" + derivedname
 							 + "*>(self); }\n");

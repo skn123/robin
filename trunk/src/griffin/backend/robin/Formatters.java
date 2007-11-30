@@ -148,16 +148,17 @@ public class Formatters {
 		// Handle touch-up
 		Type touchupType = Filters.getTouchup(Utils.flatUnalias(type));
 		if (touchupType != null) type = touchupType;
+
+        // This needs to be done before extra referencing is handled, because
+        // __CDECL must not split the type
+        if(isForFunction) {
+                name = " __CDECL " + name;
+        }
 		// Handle extra referencing
 		if (Filters.needsExtraReferencing(type) && !wrappingInterceptor) {
 			name = extraRefScheme + name;
 		}
-		if(isForFunction) {
-			// function-level formatting needs the appropriate cdecl
-			return type.formatCpp("__CDECL " + name);
-		} else {
-			return type.formatCpp(name);
-		}
+	    return type.formatCpp(name);
 		
 	}
 
