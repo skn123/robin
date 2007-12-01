@@ -18,10 +18,32 @@ import java.util.Vector;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.DataTemplateParameter;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.InappropriateKindException;
+import sourceanalysis.IncompleteTemplateInstance;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.TemplateEnabledEntity;
+import sourceanalysis.TemplateParameter;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateArgument;
+import sourceanalysis.TypenameTemplateParameter;
 import sourceanalysis.Type.TypeNode;
 import sourceanalysis.view.Traverse;
-import backend.robin.Filters;
 
 /**
  * A class which contains some static methods for the use in backend
@@ -499,7 +521,6 @@ public class Utils {
     }
 	
 
-    // TODO: Should change name to something like "hasNoUserConstructors"
 	/**
 	 * Searches the scope to see if there is a public default constructor.
 	 * @param entity
@@ -512,6 +533,7 @@ public class Utils {
 		Scope scope = entity.getScope();
 		boolean anyConstructor = false;
 	
+		if (entity instanceof Primitive) return true;
 		if (entity.getDeclaration() == null) return false;
 		
 		for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
@@ -530,21 +552,24 @@ public class Utils {
         boolean membersHaveDefaultConstructors = true;
 
         for(Iterator fi = scope.fieldIterator(); fi.hasNext(); ) {
-                ContainedConnection connection = (ContainedConnection)fi.next();
-                Field field = (Field)connection.getContained();
-                
-                Type fieldType = Filters.getOriginalType(field.getType());
-                Entity fieldBaseType = fieldType.getBaseType();
+            ContainedConnection connection = (ContainedConnection)fi.next();
+            Field field = (Field)connection.getContained();
+            
+            Type fieldType = flatUnalias(field.getType());
+            Entity fieldBaseType = fieldType.getBaseType();
 
-                if(fieldBaseType instanceof Primitive) {
-                        continue;
-                } else if(fieldBaseType instanceof Aggregate && 
-                          !hasDefaultConstructor((Aggregate)fieldBaseType))
-                {
-                        membersHaveDefaultConstructors = false;
-                }
+            if (fieldType.getPointerDegree() > 0) 
+            	continue;
+            else if (fieldType.isReference()) {
+            	membersHaveDefaultConstructors = false;
+            }
+            else {
+            	if (fieldBaseType instanceof Aggregate &&
+                      !hasDefaultConstructor((Aggregate)fieldBaseType)) {
+                    membersHaveDefaultConstructors = false;
+            	}
+            }
         }
-
 
 		// No default constructor found
 		return !anyConstructor && membersHaveDefaultConstructors;

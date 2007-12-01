@@ -4,7 +4,9 @@ import java.util.List;
 
 import backend.Utils;
 import backend.robin.model.CppExpression;
+import backend.robin.model.RegData;
 import backend.robin.model.RoutineDeduction;
+import backend.robin.model.SimpleType;
 import backend.robin.model.TypeToolbox;
 import backend.robin.model.RoutineDeduction.ParameterTransformer;
 import sourceanalysis.*;
@@ -45,13 +47,21 @@ public class Formatters {
 	}
 	
 	static String formatFunction(Entity routine, String name, 
+			ParameterTransformer ret,
 			List<ParameterTransformer> params, CppExpression semantic)
 	{
 		String doc = formatDocBlock(routine);
-		String header = "void " + name + "(" + formatParameters(params) + ")"; 
-		String body = semantic.evaluate(formatArguments(params));
+		String header = ret.getPrototypeType().formatCpp(name) + "(" + formatParameters(params) + ")"; 
+		String body = ret.getBodyExpr().evaluate(
+				semantic.evaluate(formatArguments(params)));
 		String proto = formatRegData(name, params);
 		return doc + header + "\n{\n\t" + body + ";\n}\n" + proto + "\n";
+	}
+	
+	static String formatSimpleType(SimpleType stype)
+	{
+		// TODO template arguments
+		return stype.redir + Utils.cleanFullName(stype.base);
 	}
 	
 	static String formatRegData(String name, List<ParameterTransformer> params)
@@ -60,13 +70,21 @@ public class Formatters {
 		buf.append("RegData " + name + "_proto[] = {\n");
 		for (int i = 0; i < params.size(); ++i) {
 			String pname = "arg" + i;
-			String ptype = params.get(i).getRegDataType();
+			String ptype = formatSimpleType(params.get(i).getRegDataType());
 			buf.append("\t{ \"" + pname + "\", \"" + ptype + "\", 0, 0 },\n");
 		}
 		buf.append("\t{ 0 }\n};\n");
 		return buf.toString();
 	}
 	
+	static String formatRegData(RegData regData)
+	{
+		String type = formatSimpleType(regData.type); 
+		String symbol = (regData.symbol == null) ? "0" : "(void*)&" + regData.symbol;
+		return "\t{ \"" + regData.name + "\", \"" + type + "\", "
+				+ regData.proto + ", " + symbol + "},";
+	}
+
 	static String formatDocBlock(Entity entity)
 	{
 		return "/*\n" +
@@ -139,9 +157,9 @@ public class Formatters {
 		
 		if(!wrappingInterceptor) {
 			// Handle redundant referencing
-			if (Filters.getOriginalType(type).isReference()
+			if (TypeToolbox.getOriginalType(type).isReference()
 						&& Filters.isPrimitive(type.getBaseType())) {
-					type = TypeToolbox.dereference(Filters.getOriginalType(type));
+					type = TypeToolbox.dereference(TypeToolbox.getOriginalType(type));
 			}
 		}
 

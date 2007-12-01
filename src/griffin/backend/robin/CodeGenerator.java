@@ -16,7 +16,9 @@ import sourceanalysis.*;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
 import backend.robin.model.NopExpression;
+import backend.robin.model.RegData;
 import backend.robin.model.RoutineDeduction;
+import backend.robin.model.SimpleType;
 import backend.robin.model.StaticMethodCall;
 import backend.robin.model.TypeToolbox;
 import backend.robin.model.RoutineDeduction.ParameterTransformer;
@@ -40,6 +42,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_interceptorMethods = new HashSet();
 		m_downCasters = new LinkedList();
 		m_interceptors = new LinkedList();
+		m_entry = new LinkedList<RegData>();
 
 	    m_randomNamespace = generateNamespaceName();
 
@@ -426,9 +429,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
     private void writeInterceptorFunctionBasicBlockArgument(Parameter param, int index, boolean moreParams)
         throws IOException, MissingInformationException
-    {
-    	
-    	 	Type originalType = Filters.getOriginalType(param.getType());
+    { 	
+   	 	Type originalType = TypeToolbox.getOriginalType(param.getType());
         Type touchupType = Filters.getTouchup(originalType);
         boolean addReference = Filters.needsExtraReferencing(param.getType()) && touchupType == null;
         m_output.write("\t\t\t" +
@@ -861,7 +863,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			RoutineDeduction.ParameterTransformer thisParam = 
 				new RoutineDeduction.ParameterTransformer(
 						TypeToolbox.makeReference(subject),
-						new NopExpression(), "&" + subject.getFullName());
+						new NopExpression(), new SimpleType(subject, null, "&"));
 
 			// Grab all the routines from subject aggregate
 			for (Iterator routineIter = subject.getScope().routineIterator();
@@ -879,10 +881,15 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						try {
 							List<RoutineDeduction.ParameterTransformer> paramf =
 								RoutineDeduction.deduceParameterTransformers(routine.parameterIterator(), nArguments);
+							RoutineDeduction.ParameterTransformer retf =
+								RoutineDeduction.deduceReturnTransformer(routine);
+							String name = "static_" + uid(routine) + "r" + nArguments;
 							paramf.add(0, thisParam);
-							m_output.write(Formatters.formatFunction(routine,
-									"static_" + uid(routine), 
-									paramf, new StaticMethodCall(routine)));
+							m_output.write(Formatters.formatFunction(routine, name, 
+									retf, paramf, new StaticMethodCall(routine)));
+							m_entry.add(new RegData(Utils.cleanFullName(routine), 
+									retf.getRegDataType(), 
+									name+"_proto", name));
 						}
 						catch (MissingInformationException e) {
 							System.err.println("*** Warning: skipped static wrapper for method " + routine.getFullName());
@@ -1094,6 +1101,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				generateRegistrationLine(subject, 0, false);
 			}
 		}
+		for (Iterator<RegData> iter = m_entry.iterator(); iter.hasNext(); ) {
+			m_output.write(Formatters.formatRegData(iter.next()) + "\n");
+		}
 		// - enter global data members
 		for (Iterator fieldIter = m_globalDataMembers.iterator();
 			fieldIter.hasNext(); ) {
@@ -1120,8 +1130,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 */
 	private void writeFlatBase(Type type) throws IOException
 	{
-		Entity base = Filters.getOriginalType(type).getBaseType();
-		type = Filters.getOriginalType(type);
+		type = TypeToolbox.getOriginalType(type);
+		Entity base = type.getBaseType();
 		// express basename
 		m_output.write(Utils.cleanFullName(base));
 		// express template
@@ -1345,7 +1355,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write(")\n{\n\treturn new " + alias.getFullName());
 		m_output.write("(arg0);\n}\n");
 		// Create an access method to retrieve stored type
-		Type realType = Filters.getOriginalType(alias.getAliasedType());
+		Type realType = TypeToolbox.getOriginalType(alias.getAliasedType());
 		Type touchupType = Filters.getTouchup(realType);
 		m_output.write(
 				Formatters.formatDeclaration(realType, "routine_unalias_" + uid(alias), '&', true));
@@ -1394,7 +1404,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		boolean wrappingInterceptorGetter = (fieldType == Field.FieldType.WRAPPED && !forInterceptor);
 		
 		if(!wrappingInterceptorGetter) {
-			type = removeUnneededConstness(Filters.getOriginalType(type));
+			type = removeUnneededConstness(TypeToolbox.getOriginalType(type));
 		}
 		Entity base = type.getBaseType();
 		
@@ -1453,7 +1463,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if(!forInterceptor) {
 				// - generate regdata
 				if (base instanceof Alias)
-					base = Filters.getOriginalType(type).getBaseType();
+					base = TypeToolbox.getOriginalType(type).getBaseType();
 				m_output.write("RegData sink_" + uid(field) + fors + "_proto[] = {\n");
 				m_output.write("{\"newval\", \"" + base.getFullName() + "\" ,0,0},\n");
 				m_output.write(END_OF_LIST);
@@ -1482,7 +1492,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("\", ");
 			// Write type
 			// - get attributes
-			Type type = Filters.getOriginalType(parameter.getType());
+			Type type = TypeToolbox.getOriginalType(parameter.getType());
 			Entity base = type.getBaseType();
 			int pointers = type.getPointerDegree();
 			boolean reference = type.isReference();
@@ -1942,30 +1952,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(type.getBaseType() instanceof Primitive 
 					? '*' : ptrOperator);
 		else if (Filters.needsExtraReferencing(type)
-			&& !(Filters.getOriginalType(type).getBaseType() instanceof Primitive))
+			&& !(TypeToolbox.getOriginalType(type).getBaseType() instanceof Primitive))
 			m_output.write(extraOperator);
 		if (type.getRoot() != null)
 			writeDecoratedFlatBase(type);
 		m_output.write("\"");
 	}
-	
-	/**
-	 * Resolves typedefs for flat types in a way similar to Utils.flatUnalias,
-	 * with one difference that encapsulated aliases are not resolved.
-	 * @param type original type expression
-	 * @return resolved type expression (may be the original type if no
-	 * resolution takes place).
-	 */
-	/* package */ Type flatUnalias(Type type)
-	{
-		Entity base = type.getBaseType();
-		if (!type.isReference() &&type.getPointerDegree() == 0 
-				&& base instanceof Alias && !Filters.needsEncapsulation((Alias)base))
-			return ((Alias)base).getAliasedType();
-		else
-			return type;
-	}
-	
+
 	/**
 	 * Generates invocation of a conversion operator.
 	 * @param op conversion operator routine
@@ -2073,6 +2066,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private int m_uidNext;
 	private List m_globalDataMembers;
 	private List m_downCasters;
+	private List<RegData> m_entry;
 
 	private List m_interceptors;
 	private Set m_interceptorMethods;

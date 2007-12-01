@@ -121,7 +121,7 @@ language-test@%:
 	        -o $(extreme_python)/liblanguage.so
 
 protocols-test@%:
-	$($*)/griffin --in $(extreme_python)/protocols.h                 \
+	$($*)/griffin $G --in $(extreme_python)/protocols.h              \
 	        --out $(extreme_python)/libprotocols_robin.cc            \
 	        Times
 	$(CXX) -shared $(extreme_python)/libprotocols_robin.cc           \
@@ -129,28 +129,28 @@ protocols-test@%:
 	        -o $(extreme_python)/libprotocols.so
 
 inheritance-test@%:
-	$($*)/griffin --in $(extreme_python)/inheritance.h               \
+	$($*)/griffin $G --in $(extreme_python)/inheritance.h               \
 	        --out $(extreme_python)/libinheritance_robin.cc          \
 	        --interceptors Functor FunctorImpl mapper mul TaintedVirtual
 	$(CXX) -shared $(extreme_python)/libinheritance_robin.cc         \
 		-o $(extreme_python)/libinheritance.so
 
 hints-test@%:
-	$($*)/griffin --in $(extreme_python)/hinted.h -I                 \
+	$($*)/griffin $G --in $(extreme_python)/hinted.h -I              \
 	        --out $(extreme_python)/libhints_robin.cc                \
 	        --hints=$(extreme_python)/hint.py Clue
 	$(CXX) -shared $(extreme_python)/libhints_robin.cc         \
 		-o $(extreme_python)/libhints.so
 
 autocollect-test@%:
-	$($*)/griffin --in $(extreme_python)/autocollect.h               \
+	$($*)/griffin $G --in $(extreme_python)/autocollect.h             \
 	        --out $(extreme_python)/libautocollect_robin.cc
 	$(CXX) -shared $(extreme_python)/libautocollect_robin.cc   \
 		-o $(extreme_python)/libautocollect.so
 
 
 kwargs-test@%:
-	$($*)/griffin --in $(extreme_python)/kwargs.h 	                 \
+	$($*)/griffin $G --in $(extreme_python)/kwargs.h                 \
 	        --out $(extreme_python)/libkwargs_robin.cc            	 \
 	        KwClass
 	$(CXX) -shared $(extreme_python)/libkwargs_robin.cc              \

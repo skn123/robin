@@ -6,6 +6,8 @@ package sourceanalysis;
  * This class does not add any functionality over Entity, and is introduced
  * only so back-end writers can check the condition:
  * <ul><li><tt>(base instanceof Primitive)</tt></li></ul>
+ * 
+ * TODO: Primitive should not be derived from Aggregate.
  */
 public class Primitive extends Aggregate {
 

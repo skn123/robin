@@ -24,12 +24,11 @@ public class RoutineDeduction {
 	 */
 	public static class ParameterTransformer {
 		private Type prototypeType;
-		private String regDataType;
+		private SimpleType regDataType;
 		private CppExpression bodyExpr;
 
 		public ParameterTransformer(Type prototypeType, CppExpression bodyExpr,
-				String regDataType) {
-			System.err.println("+ " + prototypeType);
+				SimpleType regDataType) {
 			this.prototypeType = prototypeType;
 			this.bodyExpr = bodyExpr;
 			this.regDataType = regDataType;
@@ -39,7 +38,7 @@ public class RoutineDeduction {
 			return prototypeType;
 		}
 
-		public String getRegDataType() {
+		public SimpleType getRegDataType() {
 			return regDataType;
 		}
 
@@ -58,44 +57,43 @@ public class RoutineDeduction {
 	 */
 	public static ParameterTransformer deduceParameterTransformer(Parameter formal) throws MissingInformationException {
 		Type paramType = formal.getType();
+		Type realType = TypeToolbox.getOriginalTypeShallow(paramType);
 		assert paramType.isFlat();
-		Entity base = paramType.getBaseType();
-		int pointers = paramType.getPointerDegree();
-		boolean reference = paramType.isReference();
-		
-		System.err.println("- " + paramType);
+		Entity base = realType.getBaseType();
+		int pointers = realType.getPointerDegree();
+		boolean reference = realType.isReference();
 		
 		if (base instanceof Primitive) {
 			if (Filters.isSmallPrimitive(base)) {
-				if (pointers > 0 && base != Primitive.CHAR) {
+				if (pointers > 0 && base != Primitive.CHAR && base != Primitive.VOID) {
 					assert pointers == 1 && !paramType.isReference();
 					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(paramType),
-							new AddressOf(), base.getName());
+							new AddressOf(), new SimpleType(base));
 				} else {
 					return new ParameterTransformer(TypeToolbox.dereference(paramType),
-							new NopExpression(), base.getName());
+							new NopExpression(), new SimpleType(base));
 				}				
 			} else {
 				if (pointers > 0) {
 					assert pointers == 1 && !paramType.isReference();
 					return new ParameterTransformer(
 							TypeToolbox.makeReference(TypeToolbox.dereferencePtrOne(paramType)),
-							new AddressOf(), base.getName());
+							new AddressOf(), new SimpleType(base));
 				} else if (reference) {
-					return new ParameterTransformer(paramType, new NopExpression(), base.getName());
+					return new ParameterTransformer(paramType, new NopExpression(), new SimpleType(base));
 				} else {
 					return new ParameterTransformer(TypeToolbox.makeReference(paramType), 
-							new NopExpression(), base.getName());
+							new NopExpression(), new SimpleType(base));
 				}
 			}
 		} else {
 			if (pointers > 0) {
 				assert pointers == 1 && !paramType.isReference();
-				return new ParameterTransformer(paramType, new NopExpression(), "*" + base.getFullName());
+				return new ParameterTransformer(paramType, new NopExpression(), new SimpleType(base, null, "*"));
 			} else if (reference) {
-				return new ParameterTransformer(paramType, new NopExpression(), "&" + base.getFullName());
+				return new ParameterTransformer(paramType, new NopExpression(), new SimpleType(base, null, "&"));
 			} else {
-				return new ParameterTransformer(TypeToolbox.makeReference(paramType), new NopExpression(), "&" + base.getName());
+				return new ParameterTransformer(TypeToolbox.makeReference(paramType), new NopExpression(), new SimpleType(base, null, "&"));
 			}
 		}
 	}
@@ -156,5 +154,64 @@ public class RoutineDeduction {
 		else {
 			return new FunctionCall(routine);
 		}
+	}
+	
+	/**
+	 * Produces a transformer which is suitable for the return value of a 
+	 * function.
+	 * @throws MissingInformationException 
+	 */
+	public static ParameterTransformer deduceReturnTransformer(Routine routine)
+			throws MissingInformationException
+	{
+		Type returnType = routine.getReturnType();
+		Type realType = TypeToolbox.getOriginalTypeShallow(returnType);
+		assert returnType.isFlat();
+		Entity base = realType.getBaseType();
+		int pointers = realType.getPointerDegree();
+		boolean reference = realType.isReference();
+		
+		if (!reference && pointers == 0 && base == Primitive.VOID) { /* void */
+			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base));
+		}
+		else if (base instanceof Primitive) {
+			if (Filters.isSmallPrimitive(base)) {
+				if (pointers > 0 && base != Primitive.CHAR && base != Primitive.VOID) {
+					assert pointers == 1 && !returnType.isReference();
+					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(returnType),
+							ret(new Dereference()), new SimpleType(base));
+				} else {
+					return new ParameterTransformer(TypeToolbox.dereference(returnType),
+							ret(new NopExpression()), new SimpleType(base));
+				}				
+			} else {
+				if (pointers > 0) {
+					assert pointers == 1 && !returnType.isReference();
+					return new ParameterTransformer(
+							returnType,
+							ret(new NopExpression()), new SimpleType(base));
+				} else if (reference) {
+					return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, null, "&"));
+				} else {
+					return new ParameterTransformer(TypeToolbox.makePointer(returnType), 
+							ret(new ConstructCopy(base)), new SimpleType(base));
+				}
+			}
+		} else {
+			if (pointers > 0) {
+				assert pointers == 1 && !returnType.isReference();
+				return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, null, "*"));
+			} else if (reference) {
+				return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, null, "&"));
+			} else {
+				return new ParameterTransformer(TypeToolbox.makePointer(returnType), ret(new ConstructCopy(base)), 
+						new SimpleType(base, null, "*"));
+			}
+		}
+	}
+	
+	private static CppExpression ret(CppExpression expr)
+	{
+		return new ReturnDecorator(expr);
 	}
 }

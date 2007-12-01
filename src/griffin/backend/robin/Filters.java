@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import backend.Utils;
+import backend.robin.model.TypeToolbox;
 import sourceanalysis.*;
 
 /**
@@ -421,7 +422,7 @@ public class Filters {
 	{
 		int pointers = type.getPointerDegree();
 		boolean reference = type.isReference();
-		Entity base = Filters.getOriginalType(type).getBaseType();
+		Entity base = TypeToolbox.getOriginalType(type).getBaseType();
 		
 		if ((!reference && pointers == 0) && 
 			needsExtraReferencing(base)) return true;
@@ -432,30 +433,6 @@ public class Filters {
 	static public boolean needsExtraReferencing(Entity base)
 	{
 		return !(isSmallPrimitive(base) || base instanceof sourceanalysis.Enum);
-	}
-	
-	/**
-	 * Given a type, returns the type it was 
-	 * originally derived from
-	 * 
-	 * @param type type to be stripped from typedefs
-	 * @return Base of the typedef
-	 */
-	public static Type getOriginalType(Type type) {
-		// Un-typedef
-		Type passedType = type; // to get the modifiers
-		Entity base = type.getBaseType();
-		Entity prev = null;
-		while (base instanceof Alias && base != prev && !Filters.needsEncapsulation((Alias)base, true)) {
-			type = ((Alias)base).getAliasedType();
-			prev = base; // - avoid singular loops "typedef struct A A;"
-			base = type.getBaseType();
-		}
-		// add the const / volatile modifiers back
-		Type.TypeNode rootNode = type.getRootNode();
-		rootNode.setCV(rootNode.getCV() | passedType.getRootNode().getCV());
-		
-		return type;
 	}
 	
 	public static boolean needsEncapsulation(Alias alias)
