@@ -10,6 +10,7 @@ lib = libtemplate % robin.__dict__ % "robin_stl"
 robin.loadLibrary(__name__, lib)
 
 ostringstream = std.ostringstream
+istringstream = std.istringstream
 ifstream = std.ifstream
 ofstream = std.ofstream
 string = std.string
