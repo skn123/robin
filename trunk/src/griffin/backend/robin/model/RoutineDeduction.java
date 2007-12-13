@@ -55,16 +55,29 @@ public class RoutineDeduction {
 	 * @return
 	 * @throws MissingInformationException
 	 */
-	public static ParameterTransformer deduceParameterTransformer(Parameter formal) throws MissingInformationException {
-		Type paramType = formal.getType();
+	public static ParameterTransformer deduceParameterTransformer(Parameter formal) throws MissingInformationException
+	{
+		return deduceParameterTransformer(formal.getType());
+	}
+
+	/**
+	 * Produces a transformer which is suitable for a given parameter.
+	 * 
+	 * @param paramType type of the parameter
+	 * @return
+	 * @throws MissingInformationException
+	 */
+	public static ParameterTransformer deduceParameterTransformer(Type paramType)
+			throws MissingInformationException 
+	{
 		Type realType = TypeToolbox.getOriginalTypeShallow(paramType);
 		assert paramType.isFlat();
 		Entity base = realType.getBaseType();
 		int pointers = realType.getPointerDegree();
 		boolean reference = realType.isReference();
 		
-		if (base instanceof Primitive) {
-			if (Filters.isSmallPrimitive(base)) {
+		if (base instanceof Primitive || base instanceof sourceanalysis.Enum) {
+			if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
 				if (pointers > 0 && base != Primitive.CHAR && base != Primitive.VOID) {
 					assert pointers == 1 && !paramType.isReference();
 					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(paramType),
@@ -164,7 +177,17 @@ public class RoutineDeduction {
 	public static ParameterTransformer deduceReturnTransformer(Routine routine)
 			throws MissingInformationException
 	{
-		Type returnType = routine.getReturnType();
+		return deduceReturnTransformer(routine.getReturnType());
+	}
+	
+	/**
+	 * Produces a transformer which is suitable for the return value of a 
+	 * function.
+	 * @throws MissingInformationException 
+	 */
+	public static ParameterTransformer deduceReturnTransformer(Type returnType)
+			throws MissingInformationException
+	{
 		Type realType = TypeToolbox.getOriginalTypeShallow(returnType);
 		assert returnType.isFlat();
 		Entity base = realType.getBaseType();
@@ -174,8 +197,8 @@ public class RoutineDeduction {
 		if (!reference && pointers == 0 && base == Primitive.VOID) { /* void */
 			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base));
 		}
-		else if (base instanceof Primitive) {
-			if (Filters.isSmallPrimitive(base)) {
+		else if (base instanceof Primitive || base instanceof sourceanalysis.Enum) {
+			if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
 				if (pointers > 0 && base != Primitive.CHAR && base != Primitive.VOID) {
 					assert pointers == 1 && !returnType.isReference();
 					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(returnType),

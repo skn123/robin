@@ -76,6 +76,18 @@ public class TypeToolbox {
 	}
 	
 	/**
+	 * Creates a pointer-to-object type, e.g. MyClass*.
+	 * 
+	 * @param base the basic type entity (usually Aggregate or Primitive)
+	 * @return a Type representing a pointer to 'base'.
+	 */
+	static public Type makePointer(Entity base) {
+		Type.TypeNode root = new Type.TypeNode(Type.TypeNode.NODE_POINTER);
+		root.add(new Type.TypeNode(base));
+		return new Type(root);
+	}
+
+	/**
 	 * Given a type alias, returns the type it was 
 	 * originally meant to alias
 	 * 
