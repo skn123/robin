@@ -2,6 +2,7 @@ package backend.robin;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +16,9 @@ import java.util.Set;
 import sourceanalysis.*;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
+import backend.robin.model.ConstructCopy;
+import backend.robin.model.DeleteSelf;
+import backend.robin.model.Dereference;
 import backend.robin.model.NopExpression;
 import backend.robin.model.RegData;
 import backend.robin.model.RoutineDeduction;
@@ -430,7 +434,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void writeInterceptorFunctionBasicBlockArgument(Parameter param, int index, boolean moreParams)
         throws IOException, MissingInformationException
     { 	
-   	 	Type originalType = TypeToolbox.getOriginalType(param.getType());
+   	 	Type originalType = TypeToolbox.getOriginalTypeShallow(param.getType());
         Type touchupType = Filters.getTouchup(originalType);
         boolean addReference = Filters.needsExtraReferencing(param.getType()) && touchupType == null;
         m_output.write("\t\t\t" +
@@ -1342,31 +1346,32 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * @param alias
 	 * @throws IOException
 	 */
-	private void generateFlatWrapper(Alias alias) throws IOException
+	private void generateFlatWrapper(Alias alias) throws IOException, MissingInformationException
 	{
 		m_output.write("/*\n * typedef ");
 		m_output.write(alias.getFullName());
 		m_output.write("\n */\n");
 		// Create a constructor from aliased type
-		m_output.write(alias.getFullName());
-		m_output.write(" *routine_alias_" + uid(alias));
-		m_output.write("(");
-		m_output.write(alias.getAliasedType().formatCpp("arg0"));
-		m_output.write(")\n{\n\treturn new " + alias.getFullName());
-		m_output.write("(arg0);\n}\n");
+		ParameterTransformer valf = 
+			RoutineDeduction.deduceParameterTransformer(alias.getAliasedType());
+		ParameterTransformer retf =
+			new ParameterTransformer(TypeToolbox.makePointer(alias),
+					new ConstructCopy(alias), new SimpleType(alias, null, "*"));
+		List<RoutineDeduction.ParameterTransformer> paramf = new ArrayList<RoutineDeduction.ParameterTransformer>();
+		paramf.add(valf);
+		String ctor = "routine_alias_" + uid(alias);
+		m_output.write(Formatters.formatFunction(alias, ctor, retf, paramf,
+				new NopExpression()));
 		// Create an access method to retrieve stored type
-		Type realType = TypeToolbox.getOriginalType(alias.getAliasedType());
-		Type touchupType = Filters.getTouchup(realType);
-		m_output.write(
-				Formatters.formatDeclaration(realType, "routine_unalias_" + uid(alias), '&', true));
-		m_output.write("(" + alias.getFullName() + " *self)"
-				+ " { return " 
-				+ Formatters.formatExpression(realType, "*self") 
-				+ "; }\n");
+		valf = new ParameterTransformer(TypeToolbox.makePointer(alias), new Dereference(), new SimpleType(alias, null, "*"));
+		retf = RoutineDeduction.deduceReturnTransformer(alias.getAliasedType());
+		paramf.set(0, valf);
+		String as = "routine_unalias_" + uid(alias);
+		m_output.write(Formatters.formatFunction(null, as, retf, paramf, new NopExpression()));
 		// Create a destructor
-		m_output.write("void dtor_alias_" + uid(alias));
-		m_output.write("(" + alias.getFullName()
-				+ " *self) { delete self; }\n");
+		retf = RoutineDeduction.deduceReturnTransformer(new Type(new Type.TypeNode(Primitive.VOID)));
+		String dtor = "dtor_alias_" + uid(alias);
+		m_output.write(Formatters.formatFunction(null, dtor, retf, paramf, new DeleteSelf()));
 	}
 	
 
@@ -1552,17 +1557,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateRegistrationPrototype(Alias alias)
 		throws IOException
 	{
-		// Register creator
-		m_output.write("RegData routine_alias_" + uid(alias) + "_proto[] = {\n");
-		m_output.write("\t{\"value\", \"" 
-			+ Utils.cleanFullName(alias.getAliasedType().getBaseType()));
-		m_output.write("\", 0},\n");
-		m_output.write(END_OF_LIST);
-		// Register accessor
-		m_output.write("RegData routine_unalias_" + uid(alias) 
-			+ "_proto[] = {\n");
-		m_output.write(END_OF_LIST);
-		// Register proxy class
+		// Register a proxy class
 		m_output.write("RegData alias_" + uid(alias) + "[] = {\n");
 		// - ctor
 		m_output.write("\t{ \"^\", \"constructor\", routine_alias_" 

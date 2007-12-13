@@ -50,7 +50,7 @@ public class Formatters {
 			ParameterTransformer ret,
 			List<ParameterTransformer> params, CppExpression semantic)
 	{
-		String doc = formatDocBlock(routine);
+		String doc = (routine == null) ? "" : formatDocBlock(routine);
 		String header = ret.getPrototypeType().formatCpp(name) + "(" + formatParameters(params) + ")"; 
 		String body = ret.getBodyExpr().evaluate(
 				semantic.evaluate(formatArguments(params)));
