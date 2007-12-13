@@ -147,6 +147,29 @@ void dtor_stdifstream(std::ifstream *self)
 	delete self;
 }
 
+/*
+ * std::istringstream
+ */
+
+std::istream *upcast_stdistringstream_to_stdistream(std::istringstream& i)
+{
+	return &i;
+}
+
+std::istringstream *ctor_stdistringstream1(const std::string& buffer)
+{
+	return new std::istringstream(buffer);
+}
+
+RegData ctor_stdistringstream1_proto[] = {
+	{ "buffer", "&std::string", 0, 0 },
+	{ 0 }
+};
+
+void dtor_stdistringstream(std::istringstream *self)
+{
+	delete self;
+}
 
 RegData stdstring_proto[] = {
 	{ "*", "constructor", 0, F ctor_stdstring0 },
@@ -191,6 +214,13 @@ RegData stdifstream_proto[] = {
 	{ 0 }
 };
 
+RegData stdistringstream_proto[] = {
+	{ "std::istream", "extends", 0, F upcast_stdistringstream_to_stdistream },
+	{ "*", "constructor", ctor_stdistringstream1_proto, F ctor_stdistringstream1 },
+	{ ".", "destructor", 0, F dtor_stdistringstream },
+	{ 0 }
+};
+
 #ifdef _WIN32
 extern "C"
 __declspec(dllexport)
@@ -201,6 +231,7 @@ RegData entry[] = {
 	{ "std::ostringstream", "class", stdostringstream_proto, 0 },
 	{ "std::ofstream", "class", stdofstream_proto, 0 },
 	{ "std::istream", "class", stdistream_proto, 0 },
+	{ "std::istringstream", "class", stdistringstream_proto, 0 },
 	{ "std::ifstream", "class", stdifstream_proto, 0 },
 	{ 0 }
 };
