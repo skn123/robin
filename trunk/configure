@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys
+import griffin as conf
 
 class Configure:
 
@@ -94,7 +95,9 @@ class Configure:
 		self._set_var("site-packages", options.py_prefix)
 		# C++ and Java
 		if options.cxx != "":
-				self._set_var("cxx", options.cxx)
+			self._set_var("cxx", options.cxx)
+		if conf.arch == "darwin":
+			self._set_var("shared", "-dynamiclib")
 		self._set_var("java", options.java)
 		# Liberty
 		self._set_var("has-liberty", options.liberty)

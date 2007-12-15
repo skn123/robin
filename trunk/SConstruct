@@ -132,6 +132,7 @@ else:
 	LIBPYCFG = os.path.join(EXEC_PREFIX, "libs")
 LIBPY1 = "python%i.%i" % sys.version_info[:2]
 LIBPY2 = "python%i%i" % sys.version_info[:2]
+LIBPY = None
 AUXLIBS = []
 
 # - Start configuring
@@ -150,6 +151,9 @@ rbenv.Append(CPPPATH = ["/usr/lib/ruby/1.8/i486-linux"])
 if conf.arch == "windows":
 	env.Append(CXXFLAGS = "/EHsc")
 	pyenv.Append(CXXFLAGS = "/EHsc /Imsvc")
+elif conf.arch == "darwin":
+	pyenv.Append(LINKFLAGS="-Wl,-undefined,dynamic_lookup")
+	LIBPY = []
 if not configure.CheckCXXHeader("Python.h"):
 	print "Missing Python.h !"
 	Exit(1)
@@ -158,25 +162,26 @@ if configure.CheckTemplate("__gnu_cxx::hash_map", "#include <ext/hash_map>\n"):
 elif configure.CheckTemplate("std::hash_map", "#include <ext/hash_map>\n"):
 	env.Append(CXXFLAGS = '-DWITH_STD_HASHMAP')
 if conf.config.has_liberty and \
-   configure.CheckCXXHeader("libiberty.h") and configure.CheckLibPIC("iberty", libiberty_use):
+   configure.CheckCXXHeader("libiberty.h") and \
+   configure.CheckLibPIC("iberty", libiberty_use):
 	env.Append(CXXFLAGS = '-DWITH_LIBERTY')
 	AUXLIBS.append("iberty")
 if configure.CheckLib("dl"):
 	AUXLIBS.append("dl")
-if configure.CheckLib(LIBPY1):
-	LIBPY = LIBPY1
-else:
-	if configure.CheckLib(LIBPY2):
-		LIBPY = LIBPY2
+if LIBPY is None:
+	if configure.CheckLib(LIBPY1):
+		LIBPY = [LIBPY1]
 	else:
-		print "Missing library for -l%s or -l%s !" % (LIBPY1, LIBPY2)
-		Exit(1)
+		if configure.CheckLib(LIBPY2):
+			LIBPY = [LIBPY2]
+		else:
+			print "Missing library for -l%s or -l%s !" % (LIBPY1, LIBPY2)
+			Exit(1)
 if not hasattr(env, "Java"):
 	print "No Java compiler (javac) found!"
 	Exit(1)
 
 # Add additional flags
-#env.Append(LINKFLAGS = "-Wl,-z,defs")
 spec = conf.platspec + "-" + ver + conf.pyspec
 
 # Set up targets
@@ -192,16 +197,17 @@ else:
 	                                        Split(FRONTEND_FRAMEWORK_SRC),
 	                          LIBS = AUXLIBS)
 
-pyfe = pyenv.SharedLibrary("robin_pyfe"+spec, Split(PYTHON_FRONTEND_SRC), 
-                           LIBS=["robin"+spec, LIBPY])
+pyfe = pyenv.LoadableModule(conf.sopre+"robin_pyfe"+spec+".dylib", 
+                            Split(PYTHON_FRONTEND_SRC), 
+                            LIBS=["robin"+spec] + LIBPY)
 
-rbfe = rbenv.SharedLibrary("robin_rbfe"+spec, Split(RUBY_FRONTEND_SRC),
-			   LIBS=["robin"+spec])
+rbfe = rbenv.LoadableModule("librobin_rbfe"+spec, Split(RUBY_FRONTEND_SRC),
+                            LIBS=["robin"+spec])
 
 stl = env.SharedLibrary("robin_stl"+spec,
-			["build/robin/modules/stl/stl_robin.cc"])
+                        ["build/robin/modules/stl/stl_robin.cc"])
 
-Default(robin, pyfe, rbfe, stl)
+Default(robin, pyfe, stl)
 
 
 ##################################################

@@ -520,7 +520,7 @@ RegData *RegistrationMechanism::acquireRegData_impl(std::string library)
 }
 #endif
 
-#if defined(__unix)
+#if defined(__unix) || defined(__APPLE__)
 /**
  * (Unix implementation)
  * Retrieve the registration data stored in the library
