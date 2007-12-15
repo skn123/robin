@@ -12,8 +12,8 @@ python = python
 jython = jython
 -include config.mak
 
-cxx?=g++
-CXX=$(cxx)
+cxx ?= g++
+shared ?= -shared
 
 pydir = $(site-packages)/robin
 libdir = $(exec_prefix)/lib
@@ -105,7 +105,7 @@ uninstall:
 
 extreme_python = src/robin/extreme/python
 SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
-       LD_LIBRARY_PATH=$(PWD) \
+       DYLD_LIBRARY_PATH=$(PWD) \
        PYTHONPATH=$(PWD):$(PWD)/src/robin/modules
 . = .
 
@@ -117,14 +117,14 @@ language-test@%:
 	        Conversions Exceptions Interface Abstract NonAbstract    \
 	        Primitives Pointers UsingStrings UsingStringConversions  \
 	        UsingVectors UsingPairs UsingComplex Typedefs PublicDouble
-	$(CXX) -shared $(extreme_python)/liblanguage_robin.cc            \
+	$(cxx) $(shared) $(extreme_python)/liblanguage_robin.cc            \
 	        -o $(extreme_python)/liblanguage.so
 
 protocols-test@%:
 	$($*)/griffin $G --in $(extreme_python)/protocols.h              \
 	        --out $(extreme_python)/libprotocols_robin.cc            \
 	        Times
-	$(CXX) -shared $(extreme_python)/libprotocols_robin.cc           \
+	$(cxx) $(shared) $(extreme_python)/libprotocols_robin.cc           \
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
@@ -132,20 +132,20 @@ inheritance-test@%:
 	$($*)/griffin $G --in $(extreme_python)/inheritance.h               \
 	        --out $(extreme_python)/libinheritance_robin.cc          \
 	        --interceptors Functor FunctorImpl mapper mul TaintedVirtual
-	$(CXX) -shared $(extreme_python)/libinheritance_robin.cc         \
+	$(cxx) $(shared) $(extreme_python)/libinheritance_robin.cc         \
 		-o $(extreme_python)/libinheritance.so
 
 hints-test@%:
 	$($*)/griffin $G --in $(extreme_python)/hinted.h -I              \
 	        --out $(extreme_python)/libhints_robin.cc                \
 	        --hints=$(extreme_python)/hint.py Clue
-	$(CXX) -shared $(extreme_python)/libhints_robin.cc         \
+	$(cxx) $(shared) $(extreme_python)/libhints_robin.cc         \
 		-o $(extreme_python)/libhints.so
 
 autocollect-test@%:
 	$($*)/griffin $G --in $(extreme_python)/autocollect.h             \
 	        --out $(extreme_python)/libautocollect_robin.cc
-	$(CXX) -shared $(extreme_python)/libautocollect_robin.cc   \
+	$(cxx) $(shared) $(extreme_python)/libautocollect_robin.cc   \
 		-o $(extreme_python)/libautocollect.so
 
 
@@ -153,7 +153,7 @@ kwargs-test@%:
 	$($*)/griffin $G --in $(extreme_python)/kwargs.h                 \
 	        --out $(extreme_python)/libkwargs_robin.cc            	 \
 	        KwClass
-	$(CXX) -shared $(extreme_python)/libkwargs_robin.cc              \
+	$(cxx) $(shared) $(extreme_python)/libkwargs_robin.cc              \
 	        -o $(extreme_python)/libkwargs.so
 
 

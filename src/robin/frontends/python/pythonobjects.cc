@@ -413,7 +413,7 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
     if(kw != NULL && kw != Py_None) {
         assert(PyDict_Check(kw));
         PyObject *key, *value;
-        ssize_t pos = 0;
+        int pos = 0;
         while(PyDict_Next(kw, &pos, &key, &value)) {
             std::string kwmap_key(PyString_AsString(key));
             kwargs[kwmap_key] = value;
