@@ -61,7 +61,8 @@ public:
 	 */
 	//@{
 	virtual scripting_element call(const ActualArgumentList& args,
-                                const KeywordArgumentMap &kwargs)
+                                   const KeywordArgumentMap &kwargs,
+                                   scripting_element owner=0)
 		const;
 	//@}
 

@@ -50,7 +50,8 @@ public:
 	//@{
 	virtual scripting_element callUpon(Instance& self,
 									   const ActualArgumentList& args, 
-                                       const KeywordArgumentMap &kwargs) const;
+                                       const KeywordArgumentMap &kwargs,
+                                       scripting_element owner=0) const;
 	//@}
 };
 

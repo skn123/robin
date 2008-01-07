@@ -129,6 +129,7 @@ public:
     //@{
     Type basetype() const;
 	bool isPointer() const;
+	bool isReference() const;
     bool isBorrowed() const;
 	Handle<TypeOfArgument> pointer() const;
 	const TypeOfArgument& pointed() const;
@@ -157,7 +158,6 @@ public:
 private:
     Type m_basetype;
     int  m_redirection_degree;
-    bool m_reference_flag;
     bool m_borrowed;
     std::vector<int> m_array_dimensions;
 

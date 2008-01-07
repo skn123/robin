@@ -75,7 +75,8 @@ public:
 	 * interface.
 	 */
 	//@{
-	virtual scripting_element call(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const;
+	virtual scripting_element call(const ActualArgumentList& args,
+			const KeywordArgumentMap &kwargs, scripting_element owner=0) const;
 
 	//@}
 
@@ -99,18 +100,12 @@ public:
 	//@}
     
 
-
+protected:
+    bool isKwargsValid(const CFunction& cfunc, const ActualArgumentList& args,
+    		const KeywordArgumentMap &kwargs) const;
+    
 private:
-
     typedef std::vector<Handle<CFunction> > altvec;
-
-
-    bool isKwargsValid(const CFunction& cfunc, const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const;
-/*    scripting_element callWithoutKWargs(const ActualArgumentList& args) const;
-    scripting_element callWithKWargs(const ActualArgumentList& args, const KeywordArgumentMap& kwargs) const;*/
-    scripting_element call_impl(const ActualArgumentList& args, const KeywordArgumentMap& kwargs) const;
-
-
 
 	altvec m_alternatives;
 	bool m_allow_edge;

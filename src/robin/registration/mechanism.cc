@@ -181,6 +181,8 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 					Handle<TypeOfArgument> ret =
 						interpretType(pdata->type, container);
 					cfun->specifyReturnType(ret);
+					if (ret->isReference())
+						cfun->supplyMemoryManagementHint(false);
 				}
 				// set arguments
 				if (klass) {

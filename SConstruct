@@ -145,7 +145,7 @@ pyenv.Append(LIBPATH = [".", LIBPYCFG])
 pyenv.Append(CXXFLAGS = "-D_VERSION=" + fullver)
 
 rbenv = env.Copy()
-rbenv.Append(CPPPATH = ["/usr/lib/ruby/1.8/i486-linux"])
+rbenv.Append(CPPPATH = ["/usr/lib/ruby/1.8/i486-linux", "/sw/lib/ruby/1.8/i686-darwin"])
 
 
 if conf.arch == "windows":
@@ -153,6 +153,7 @@ if conf.arch == "windows":
 	pyenv.Append(CXXFLAGS = "/EHsc /Imsvc")
 elif conf.arch == "darwin":
 	pyenv.Append(LINKFLAGS="-Wl,-undefined,dynamic_lookup")
+	rbenv.Append(LINKFLAGS="-Wl,-undefined,dynamic_lookup")
 	LIBPY = []
 if not configure.CheckCXXHeader("Python.h"):
 	print "Missing Python.h !"

@@ -55,8 +55,10 @@ public:
      * Invokes the Callable object given a list
      * of arguments. Override to implement a callable action.
      */
-    virtual scripting_element call(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) 
-      const = 0;
+    virtual scripting_element 
+    		call(const ActualArgumentList& args, 
+    		     const KeywordArgumentMap &kwargs, 
+    		     scripting_element owner=0) const = 0;
 
 	virtual ~Callable() { }
 };
@@ -76,9 +78,11 @@ public:
      * Invokes the object with a class instance.
      * Override to implement a callable action.
      */
-    virtual scripting_element callUpon(Instance& self, 
-				       const ActualArgumentList& args,
-                       const KeywordArgumentMap &kwargs) 
+    virtual scripting_element
+    		callUpon(Instance& self, 
+			         const ActualArgumentList& args,
+			         const KeywordArgumentMap &kwargs,
+			         scripting_element owner=0) 
       const = 0;
 
 	virtual ~CallableWithInstance() { }

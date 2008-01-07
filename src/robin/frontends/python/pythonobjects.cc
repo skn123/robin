@@ -424,8 +424,8 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 	scripting_element return_value;
 	try {
 		if (m_self)
-			return_value = m_underlying_thiscall
-				->callUpon(*m_self->getUnderlying(), pass_args, kwargs);
+			return_value = m_underlying_thiscall->
+				callUpon(*m_self->getUnderlying(), pass_args, kwargs, m_self);
 		else
 			return_value = m_underlying->call(pass_args, kwargs);
 	}
@@ -458,12 +458,7 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 		return pyowned(Py_None);
 	}
 	else {
-		PyObject *pyreturned = (PyObject *)return_value;
-		// store reference to 'self' in return value
-		// FIXME: actually, the reference should only be stored under certain
-		//        circumstances.
-		if (m_self) keepMeAlive(m_self, pyreturned);
-		return pyreturned;
+		return (PyObject*)return_value;
 	}
 }
 

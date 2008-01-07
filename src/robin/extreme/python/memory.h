@@ -12,11 +12,15 @@ public:
 
 	static unsigned long counter;
 
+	ConsumptionUnit& me() { return *this; }
+
 	/**
 	 * @par .robin
 	 * returns borrowed
 	 */
 	ConsumptionUnit *meAgain() { return this; }
+
+	ConsumptionUnit *notMe() { return new ConsumptionUnit; }
 
 private:
 	long m_space[4];

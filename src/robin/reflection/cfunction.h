@@ -67,31 +67,27 @@ public:
 	 * Methods for shaping the prototype of the C-Function
 	 * in terms of the Internal Reflection data structures.
      */
-
     //@{
     void specifyReturnType(Handle<TypeOfArgument> type);
     void addFormalArgument(Handle<TypeOfArgument> type);
     void addFormalArgument(std::string name, Handle<TypeOfArgument> type);
-
+    void supplyMemoryManagementHint(bool is_return_owner);
 	//@}
+
 	/**
 	 * @name Access
 	 */
-
 	//@{
 	const FormalArgumentList& signature() const;
 	Handle<TypeOfArgument> returnType() const;
     const std::vector<std::string> &argNames() const;
-
     //@}
 
     /**
      * @name Translation of keyword arguments
      */
-    
     //@{
     Handle<ActualArgumentList> mergeWithKeywordArguments(const ActualArgumentList &args, const KeywordArgumentMap &kwargs) const;
-
     //@}
     
     /**
@@ -102,21 +98,28 @@ public:
 	void              call() const;
 	void              call(void *thisarg) const;
     basic_block       call(const ArgumentsBuffer& args) const;
-    scripting_element call(const ActualArgumentList& args) const;  
+    scripting_element call(const ActualArgumentList& args,
+                           scripting_element owner=0) const;  
 	scripting_element call(size_t nargs, 
-						   const ActualArgumentArray args) const;
+						   const ActualArgumentArray args,
+						   scripting_element owner=0) const;
 
 	//@}
+
+protected:
+	scripting_element owned(scripting_element value,
+	                        scripting_element owner) const;
 
 private:
     typedef FormalArgumentList arglist;
     typedef std::map<std::string, unsigned int> ArgumentPositionMap;
 
     symbol                   m_functionSymbol;
-    Handle<TypeOfArgument>   m_returnType;
     arglist                  m_formalArguments;
     std::vector<std::string> m_formalArgumentNames;
-
+    Handle<TypeOfArgument>   m_returnType;
+    bool                     m_returnIsOwner;
+    
     ArgumentPositionMap m_formalArgumentNamePositionMap;
 };
 

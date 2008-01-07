@@ -177,11 +177,15 @@ public:
 	void release(scripting_element element) = 0;
 
     /**
-     * Assigns 'ownership' (control over instance deletion) for the slave to the
-     * master.
+     * Assigns 'ownership' (control over instance deletion) for the slave to 
+     * the master.
      *
-     * This means that as long as the 'real' reference lives, the 'imposter' lives as well.
+     * This means that as long as the 'master' reference lives, the 'slave'
+     * lives as well.
      */
+	virtual
+	void own(scripting_element master, scripting_element slave) = 0;
+	
     virtual
     void bond(scripting_element master, scripting_element slave) = 0;
 	//@}

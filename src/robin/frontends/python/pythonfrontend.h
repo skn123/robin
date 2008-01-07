@@ -115,6 +115,9 @@ public:
 	void release(scripting_element element);
 
     virtual
+    void own(scripting_element master, scripting_element slave);
+
+    virtual
     void bond(scripting_element master, scripting_element slave);
 	//@}
 	
