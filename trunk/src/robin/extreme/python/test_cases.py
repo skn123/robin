@@ -1,4 +1,4 @@
-# -*- mode: python; tab-width: 4; py-indent-offset: 4 -*-
+# -*- mode: python; tab-width: 4; py-indent-offset: 4; python-indent: 4 -*-
 
 #############################################################################
 # Robin & Python - test cases
@@ -518,10 +518,37 @@ class MemoryManagementTest(TestCase):
 		import memprof
 
 	def testBorrowed(self):
+		self.assertEquals(memprof.getCounter(), 0)
 		c = memprof.ConsumptionUnit()
 		d = c.meAgain()
 		del d
 		del c
+		self.assertEquals(memprof.getCounter(), 0)
+
+	def testKeepAlive(self):
+		self.assertEquals(memprof.getCounter(), 0)
+		c = memprof.ConsumptionUnit()
+		d = c.me()
+		self.assertEquals(memprof.getCounter(), 1)
+		del c
+		self.assertEquals(memprof.getCounter(), 1)
+		del d
+		self.assertEquals(memprof.getCounter(), 0)
+		c = memprof.ConsumptionUnit()
+		d = c.meAgain()
+		del c
+		self.assertEquals(memprof.getCounter(), 1)
+		del d
+
+	def testNotKeepAlive(self):
+		self.assertEquals(memprof.getCounter(), 0)
+		c = memprof.ConsumptionUnit()
+		d = c.notMe()
+		self.assertEquals(memprof.getCounter(), 2)
+		del c
+		self.assertEquals(memprof.getCounter(), 1)
+		del d
+		self.assertEquals(memprof.getCounter(), 0)
 
 
 class ZCompanionTest(TestCase):
@@ -591,8 +618,8 @@ class DocumentationTest(TestCase):
 class KwargsTest(TestCase):
     
     def setUp(self):
-        import kwargs
-        self.k = kwargs.KwClass()
+        import language
+        self.k = language.KwClass()
     def testSimpleKwargs(self):
         self.k.setMembers(a=1,b=2)
         self.failUnless(self.k.m_a == 1)

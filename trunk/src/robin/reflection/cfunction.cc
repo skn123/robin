@@ -35,7 +35,7 @@ namespace Robin {
  * symbol from the Library).
  */
 CFunction::CFunction(symbol cfun)
-    : m_functionSymbol(cfun)
+    : m_functionSymbol(cfun), m_returnIsOwner(true)
 {
 }
 
@@ -83,7 +83,17 @@ void CFunction::addFormalArgument(Handle<TypeOfArgument> type)
     addFormalArgument("", type);
 }
 
-
+/**
+ * Provides useful information which is important for correct memory
+ * management when the C function is called.
+ * @param is_return_owner 'true' if the return value is owner of its own
+ *   memory, or is the call 'owner' the real owner of the memory
+ * @see CFunction::call
+ */
+void CFunction::supplyMemoryManagementHint(bool is_return_owner)
+{
+	m_returnIsOwner = is_return_owner;
+}
 
 /**
  * Return a list of this function's formal arguments.
@@ -262,9 +272,10 @@ basic_block CFunction::call(const ArgumentsBuffer& args) const
  * <p>If the number of arguments mismatches,
  * <classref>InvalidArgumentsException</classref> is thrown.
  */
-scripting_element CFunction::call(const ActualArgumentList& args) const
+scripting_element CFunction::call(const ActualArgumentList& args,
+                                  scripting_element owner) const
 {
-	return call(args.size(), &*args.begin());
+	return call(args.size(), &*args.begin(), owner);
 }
 
 /**
@@ -279,7 +290,8 @@ scripting_element CFunction::call(const ActualArgumentList& args) const
  * (this is an optimization version of call(ActualArgumentList) )
  */
 scripting_element CFunction::call(size_t nargs, 
-								  const ActualArgumentArray args) const
+								  const ActualArgumentArray args,
+								  scripting_element owner) const
 {
     // Check the number of arguments
     if (nargs != m_formalArguments.size())
@@ -299,13 +311,18 @@ scripting_element CFunction::call(size_t nargs,
 
     // Translate return value
     if (m_returnType)
-		return m_returnType->get(return_value);
+		return owned(m_returnType->get(return_value), owner);
     else
 		return NONE;
 }
 
 
-
+scripting_element CFunction::owned(scripting_element value, scripting_element owner) const
+{
+	if (!m_returnIsOwner && owner != 0)
+		FrontendsFramework::activeFrontend()->own(value, owner);
+	return value;
+}
 
 
 /**

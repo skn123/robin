@@ -242,6 +242,15 @@ void SimpleFrontend::release(scripting_element element)
  * allocated objects will thus never be freed, hence no memory ownership is
  * required.
  */
+void SimpleFrontend::own(scripting_element master, scripting_element slave)
+{
+}
+
+/**
+ * Does nothing. The SimpleFrontend implements no garbage collection -
+ * allocated objects will thus never be freed, hence no memory ownership is
+ * required.
+ */
 void SimpleFrontend::bond(scripting_element master, scripting_element slave)
 {
 }

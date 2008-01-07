@@ -35,9 +35,10 @@ BoundMethod::~BoundMethod()
  * method.
  */
 scripting_element BoundMethod::call(const ActualArgumentList& args,
-                                    const KeywordArgumentMap &kwargs) const
+                                    const KeywordArgumentMap &kwargs,
+                                    scripting_element owner) const
 {
-    return m_method->callUpon(*m_instance, args, kwargs);
+    return m_method->callUpon(*m_instance, args, kwargs, owner);
 }
 
 } // end of namespace Robin

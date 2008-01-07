@@ -618,32 +618,9 @@ void OverloadedSet::setAllowEdgeConversions(bool allow)
  * is thrown if the smallest weight is shared among more than one
  * alternative.
  */
-scripting_element OverloadedSet::call(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const
-{
-
-    /*if(kwargs.size() == 0) {
-        return callWithoutKWargs(args);
-    } else {
-        return callWithKWargs(args, kwargs);
-    }*/
-    dbg::trace << "==============OverloadedSet::call started==============" << dbg::endl;
-    scripting_element ret = call_impl(args, kwargs);
-    dbg::trace << "==============OverloadedSet::call ended================" << dbg::endl;
-    return ret;
-}
-
-bool OverloadedSet::isKwargsValid(const CFunction& cfunc, const ActualArgumentList& args,
-                                  const KeywordArgumentMap &kwargs) const {
-    // TODO: maybe get this function into CFunctions...
-try {
-        cfunc.mergeWithKeywordArguments(args, kwargs);
-        return true;
-    } catch(InvalidArgumentsException &e) {
-        return false;
-    }
-}
-
-scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const KeywordArgumentMap &kwargs) const { 
+scripting_element OverloadedSet::call(const ActualArgumentList& args, 
+		const KeywordArgumentMap &kwargs, scripting_element owner) const 
+{ 
     const int nargs = args.size() + kwargs.size();
     #   define msize nargs
     
@@ -784,7 +761,7 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
     if (match) {
         scripting_element result;
         if (kwargs.size() == 0) {
-            result = match->call(converted_args);
+            result = match->call(converted_args, owner);
         }
         else {
             // reverse the order of canonic arguments to match function call
@@ -798,7 +775,7 @@ scripting_element OverloadedSet::call_impl(const ActualArgumentList& args, const
                                  arrangeKWArgumentsFromFunction(match->argNames(), 
                                                                 args.size()));
             
-            result = match->call(*function_order_args);
+            result = match->call(*function_order_args, owner);
         }
 
         if (m_allow_edge)
@@ -828,6 +805,18 @@ OverloadedSet::seekAlternative(const FormalArgumentList& prototype) const
 	}
 
 	return Handle<CFunction>();
+}
+
+
+bool OverloadedSet::isKwargsValid(const CFunction& cfunc, const ActualArgumentList& args,
+                                  const KeywordArgumentMap &kwargs) const 
+{
+    try {
+        cfunc.mergeWithKeywordArguments(args, kwargs);
+        return true;
+    } catch(InvalidArgumentsException &e) {
+        return false;
+    }
 }
 
 

@@ -908,6 +908,17 @@ void PythonFrontend::release(scripting_element element)
 	Py_XDECREF(object);
 }
 
+void PythonFrontend::own(scripting_element master, scripting_element slave)
+{
+	if (!InstanceObject_Check((PyObject*)master)) {
+		return ;
+	}
+	
+    InstanceObject *imaster = reinterpret_cast<InstanceObject*>(master);
+
+    imaster->keepAlive((PyObject*)slave);
+}
+
 void PythonFrontend::bond(scripting_element master, scripting_element slave)
 {
     if (!InstanceObject_Check((PyObject*)master) || !InstanceObject_Check((PyObject*)slave)) {

@@ -1,5 +1,5 @@
 ver = 1.0
-minor = 2
+minor = 3
 
 ###
 # Installation
@@ -110,13 +110,14 @@ SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
 . = .
 
 language-test@%:
-	$($*)/griffin $G -I --in $(extreme_python)/language.h            \
+	$($*)/griffin $G -I --in $(extreme_python)/language.h $(extreme_python)/kwargs.h           \
 	        --out $(extreme_python)/liblanguage_robin.cc             \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
 	        Conversions Exceptions Interface Abstract NonAbstract    \
 	        Primitives Pointers UsingStrings UsingStringConversions  \
-	        UsingVectors UsingPairs UsingComplex Typedefs PublicDouble
+	        UsingVectors UsingPairs UsingComplex Typedefs            \
+	        PublicDouble KwClass
 	$(cxx) $(shared) $(extreme_python)/liblanguage_robin.cc            \
 	        -o $(extreme_python)/liblanguage.so
 
@@ -149,16 +150,15 @@ autocollect-test@%:
 		-o $(extreme_python)/libautocollect.so
 
 
-kwargs-test@%:
-	$($*)/griffin $G --in $(extreme_python)/kwargs.h                 \
-	        --out $(extreme_python)/libkwargs_robin.cc            	 \
-	        KwClass
-	$(cxx) $(shared) $(extreme_python)/libkwargs_robin.cc              \
-	        -o $(extreme_python)/libkwargs.so
+memprof-test@%:
+	$($*)/griffin $G --in $(extreme_python)/memory.h                 \
+	        --out $(extreme_python)/libmemprof_robin.cc
+	$(cxx) $(shared) $(extreme_python)/libmemprof_robin.cc           \
+	        -o $(extreme_python)/libmemprof.so
 
 
-TESTS = language-test protocols-test inheritance-test hints-test autocollect-test kwargs-test
-TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest KwargsTest
+TESTS = language-test protocols-test inheritance-test hints-test autocollect-test memprof-test
+TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
 TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
 TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)
 TESTING_PYTHON_VG = cd $(extreme_python) && $(SELF) valgrind --tool=memcheck $(python)
@@ -194,7 +194,7 @@ manifest:
 	$(MAKE) -n install prefix=/demo exec_prefix=/demo site-packages=/demo \
 	  install=install cp-r=install \
 	   | grep '^install' | awk '{ print $$2; }' \
-	   | xargs --replace find {} -type f -o -name .svn -prune -false \
+	   | xargs -J {} find {} -type f -o -name .svn -prune -type f \
 	   > manifest
 	echo Makefile >> manifest
 	echo configure >> manifest
