@@ -9,6 +9,7 @@ import java.util.Vector;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 
 /**
@@ -408,6 +409,18 @@ public class Type extends DefaultTreeModel {
 			return hash;
 		}
 
+		@Override
+		public TypeNode clone() {
+			TypeNode replica = new TypeNode(m_kind);
+			replica.m_base = m_base;
+			replica.m_cvQualifiers = m_cvQualifiers;
+			Enumeration cen = children();
+			while (cen.hasMoreElements()) {
+				replica.add((MutableTreeNode)
+						((DefaultMutableTreeNode)cen.nextElement()).clone());
+			}
+			return replica;
+		}
 		
 		// Private members
 		int m_kind;

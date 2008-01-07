@@ -278,7 +278,7 @@ public class Filters {
 	 * @return <b>true</b> if the borrow flag (<code>returns borrowed</code>)
 	 * is specified; <b>false</b> otherwise.
 	 */
-	static boolean isForceBorrowed(Routine routine)
+	public static boolean isForceBorrowed(Routine routine)
 	{
 		return hasFlag(routine, "returns borrowed");
 	}

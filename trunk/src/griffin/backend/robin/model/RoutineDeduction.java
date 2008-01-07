@@ -11,6 +11,7 @@ import sourceanalysis.MissingInformationException;
 import sourceanalysis.Parameter;
 import sourceanalysis.Primitive;
 import sourceanalysis.Routine;
+import sourceanalysis.TemplateArgument;
 import sourceanalysis.Type;
 import backend.robin.Filters;
 
@@ -70,9 +71,10 @@ public class RoutineDeduction {
 	public static ParameterTransformer deduceParameterTransformer(Type paramType)
 			throws MissingInformationException 
 	{
-		Type realType = TypeToolbox.getOriginalTypeShallow(paramType);
+		Type realType = TypeToolbox.getOriginalTypeDeep(paramType);
 		assert paramType.isFlat();
 		Entity base = realType.getBaseType();
+		TemplateArgument[] targs = realType.getTemplateArguments();
 		int pointers = realType.getPointerDegree();
 		boolean reference = realType.isReference();
 		
@@ -102,11 +104,11 @@ public class RoutineDeduction {
 		} else {
 			if (pointers > 0) {
 				assert pointers == 1 && !paramType.isReference();
-				return new ParameterTransformer(paramType, new NopExpression(), new SimpleType(base, null, "*"));
+				return new ParameterTransformer(paramType, new NopExpression(), new SimpleType(base, targs, "*"));
 			} else if (reference) {
-				return new ParameterTransformer(paramType, new NopExpression(), new SimpleType(base, null, "&"));
+				return new ParameterTransformer(paramType, new NopExpression(), new SimpleType(base, targs, "&"));
 			} else {
-				return new ParameterTransformer(TypeToolbox.makeReference(paramType), new NopExpression(), new SimpleType(base, null, "&"));
+				return new ParameterTransformer(TypeToolbox.makeReference(paramType), new NopExpression(), new SimpleType(base, targs, "&"));
 			}
 		}
 	}
@@ -177,25 +179,48 @@ public class RoutineDeduction {
 	public static ParameterTransformer deduceReturnTransformer(Routine routine)
 			throws MissingInformationException
 	{
-		return deduceReturnTransformer(routine.getReturnType());
+		return deduceReturnTransformer(routine.getReturnType(), 
+				Filters.isForceBorrowed(routine));
 	}
 	
 	/**
 	 * Produces a transformer which is suitable for the return value of a 
 	 * function.
+	 * @param returnType function's return type
 	 * @throws MissingInformationException 
 	 */
 	public static ParameterTransformer deduceReturnTransformer(Type returnType)
 			throws MissingInformationException
 	{
-		Type realType = TypeToolbox.getOriginalTypeShallow(returnType);
+		return deduceReturnTransformer(returnType, false);
+	}
+
+	/**
+	 * Produces a transformer which is suitable for the return value of a 
+	 * function.
+	 * @param returnType function's return type
+	 * @param forceBorrow 'true' to enforce the generation of a reference
+	 *   return value in the RegData
+	 * @throws MissingInformationException 
+	 */
+	public static ParameterTransformer deduceReturnTransformer(Type returnType, boolean forceBorrow)
+			throws MissingInformationException
+	{
+		if (returnType.getRootNode() == null)
+			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(null));
+		
+		Type realType = TypeToolbox.getOriginalTypeDeep(returnType);
 		assert returnType.isFlat();
 		Entity base = realType.getBaseType();
+		TemplateArgument[] targs = realType.getTemplateArguments();
 		int pointers = realType.getPointerDegree();
 		boolean reference = realType.isReference();
 		
 		if (!reference && pointers == 0 && base == Primitive.VOID) { /* void */
 			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base));
+		}
+		if (base.getName().equals("scripting_element") && forceBorrow) {
+			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base, null, "&"));
 		}
 		else if (base instanceof Primitive || base instanceof sourceanalysis.Enum) {
 			if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
@@ -223,12 +248,13 @@ public class RoutineDeduction {
 		} else {
 			if (pointers > 0) {
 				assert pointers == 1 && !returnType.isReference();
-				return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, null, "*"));
+				return new ParameterTransformer(returnType, ret(new NopExpression()), 
+						new SimpleType(base, targs, forceBorrow ? "&" : "*"));
 			} else if (reference) {
-				return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, null, "&"));
+				return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, targs, "&"));
 			} else {
 				return new ParameterTransformer(TypeToolbox.makePointer(returnType), ret(new ConstructCopy(base)), 
-						new SimpleType(base, null, "*"));
+						new SimpleType(base, targs, "*"));
 			}
 		}
 	}

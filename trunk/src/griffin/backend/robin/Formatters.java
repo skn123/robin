@@ -60,8 +60,9 @@ public class Formatters {
 	
 	static String formatSimpleType(SimpleType stype)
 	{
-		// TODO template arguments
-		return stype.redir + Utils.cleanFullName(stype.base);
+		String typespec = (stype.base instanceof sourceanalysis.Enum) ? "#" : "";
+		return stype.redir + typespec + Utils.cleanFullName(stype.base)
+				+ formatTemplateArguments(stype.templateArgs);
 	}
 	
 	static String formatRegData(String name, List<ParameterTransformer> params)
@@ -180,4 +181,32 @@ public class Formatters {
 		
 	}
 
+	/**
+	 * Formats a list of template arguments in the form "< A,B,C >".
+	 *  
+	 * @param templateArgs an array of template arguments
+	 * @return a formatted string
+	 */
+	static String formatTemplateArguments(TemplateArgument[] templateArgs)
+	{
+		StringBuffer fmtd = new StringBuffer();
+		
+		if (templateArgs != null) {
+			fmtd.append("< ");
+			for (int i = 0; i < templateArgs.length; i++) {
+				TemplateArgument templateArgument = templateArgs[i];
+				if (i > 0) fmtd.append(",");					
+				if (templateArgument == null) fmtd.append("?");	
+				else if (templateArgument instanceof TypenameTemplateArgument)
+					fmtd.append(Utils.cleanFormatCpp(
+						((TypenameTemplateArgument)templateArgument)
+						.getValue(),""));
+				else fmtd.append(templateArgument.toString());
+			}
+			fmtd.append(" >");
+		}
+		
+		return fmtd.toString();
+	}
+	
 }

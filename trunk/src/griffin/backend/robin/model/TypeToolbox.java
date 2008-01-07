@@ -1,7 +1,5 @@
 package backend.robin.model;
 
-import javax.swing.tree.MutableTreeNode;
-
 import backend.robin.Filters;
 
 import sourceanalysis.Alias;
@@ -23,16 +21,16 @@ public class TypeToolbox {
 		Type.TypeNode root = type.getRootNode();
 		// Descend until node is not a reference
 		while (root.getKind() == Type.TypeNode.NODE_REFERENCE) {
-			root = (Type.TypeNode) root.getFirstChild();
+			root = (Type.TypeNode)root.getFirstChild();
 		}
-		return new Type(root);
+		return new Type(root.clone());
 	}
 
 	static public Type dereferencePtrOne(Type type) {
 		Type.TypeNode root = type.getRootNode();
 		// Root should be a pointer node. Skip it.
 		assert root.getKind() == Type.TypeNode.NODE_REFERENCE;
-		return new Type((Type.TypeNode)root.getFirstChild());
+		return new Type(((Type.TypeNode)root.getFirstChild()).clone());
 	}
 	
 	/**
@@ -45,7 +43,7 @@ public class TypeToolbox {
 	 */
 	static public Type makeReference(Type refof) {
 		Type.TypeNode root = new Type.TypeNode(Type.TypeNode.NODE_REFERENCE);
-		root.add((MutableTreeNode)refof.getRootNode());
+		root.add(refof.getRootNode().clone());
 		return new Type(root);
 	}
 	
@@ -71,7 +69,7 @@ public class TypeToolbox {
 	 */
 	static public Type makePointer(Type ptrto) {
 		Type.TypeNode root = new Type.TypeNode(Type.TypeNode.NODE_POINTER);
-		root.add((MutableTreeNode)ptrto.getRootNode());
+		root.add(ptrto.getRootNode().clone());
 		return new Type(root);
 	}
 	
@@ -127,5 +125,30 @@ public class TypeToolbox {
 			assert false;
 			return type;
 		}
+	}
+	
+	public static Type getOriginalTypeDeep(Type type) {
+		return getOriginalTypeDeep(type.getRootNode());
+	}
+	
+	private static Type getOriginalTypeDeep(Type.TypeNode root)
+	{
+		Type child = null;
+		Type original = null;
+		
+		switch (root.getKind()) {
+		case Type.TypeNode.NODE_POINTER:
+			original = makePointer(
+					getOriginalTypeDeep((Type.TypeNode)root.getFirstChild()));
+			break;
+		case Type.TypeNode.NODE_REFERENCE:
+			original = makeReference(
+					getOriginalTypeDeep((Type.TypeNode)root.getFirstChild()));
+			break;
+		default:
+			return getOriginalTypeShallow(new Type(root));
+		}
+		original.getRootNode().setCV(root.getCV());
+		return original;
 	}
 }

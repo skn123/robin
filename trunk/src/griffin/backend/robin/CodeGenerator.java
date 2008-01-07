@@ -1746,6 +1746,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateRegistrationLine(Routine routine, int nSkip, boolean with) 
 		throws IOException, MissingInformationException
 	{
+		RoutineDeduction.ParameterTransformer retf =
+			RoutineDeduction.deduceReturnTransformer(routine);
+		
 		int minArgs = Utils.minimalArgumentCount(routine),
 			maxArgs = Utils.countParameters(routine);
 		for (int nArguments = minArgs; nArguments <= maxArgs; 
@@ -1760,24 +1763,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				m_output.write("{\"");
 				m_output.write((with && container instanceof Aggregate) 
 								? routine.getName() : Utils.cleanFullName(routine));
-				m_output.write("\", ");
-				
-				Type ret = routine.getReturnType();
-				// hack, because scripting_element is primitive, so the ptr
-				// does not get written
-				if(ret.getBaseType().getName().equals("scripting_element") && 
-						Filters.isForceBorrowed(routine)) {
-					
-					m_output.write("\"&" + ret.formatCpp() + "\"");
-				} else {
-					
-					// Write return type
-					char ref = '&';
-					char ptr = Filters.isForceBorrowed(routine) ? '&' : '*';
-					
-					writeTypeSimply(ret, ref, ptr, '*');
-				}
-				m_output.write(", ");
+				m_output.write("\", \"" 
+						+ Formatters.formatSimpleType(retf.getRegDataType())
+						+ "\", ");
 			}
 			// Write pointer to prototype
 			String wrapperName = "routine_" + uid(routine) 
