@@ -56,13 +56,16 @@ public class DocumentComponentRegistry {
             if(m_kind.equals("compound")  ||
                m_kind.equals("namespace") ||
                m_kind.equals("any") || 
-               m_kind.equals("dir")) {
+               m_kind.equals("dir") ||
+               m_kind.equals("page")) {
 
                 m_document = component_id;
             } else {
                 final int capIndex = component_id.lastIndexOf("_1");
                 if(capIndex == -1) {
-                        throw new RuntimeException("Unexpected component id format encountered for entity of kind: " + kind);
+                    throw new RuntimeException("Unexpected component id "
+                    		+ "format encountered for entity of kind '" 
+                    		+ kind + "'");
                 }
                 m_document = component_id.substring(0,capIndex);
                 

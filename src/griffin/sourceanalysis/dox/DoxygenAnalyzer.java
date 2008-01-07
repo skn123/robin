@@ -1612,7 +1612,8 @@ public class DoxygenAnalyzer {
 			throw new XMLFormatException("reference without kind", referrer);
 		if (id == null)
 			throw new XMLFormatException("reference without refid", referrer);
-		if (kind.equals(Tags.CLASS) || kind.equals(Tags.STRUCT)
+		if (kind.equals(Tags.CLASS) 
+				|| kind.equals(Tags.STRUCT) || kind.equals(Tags.UNION)
 				|| kind.equals(Tags.NAMESPACE) || kind.equals(Tags.FILE))
 			kind = Tags.COMPOUND;
 		// Create a locator object
