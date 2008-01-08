@@ -193,6 +193,15 @@ void RubyFrontend::release(scripting_element element)
  * allocated objects will thus never be freed, hence no memory ownership is
  * required.
  */
+void RubyFrontend::own(scripting_element master, scripting_element slave)
+{
+}
+
+/**
+ * Does nothing. The RubyFrontend implements no garbage collection -
+ * allocated objects will thus never be freed, hence no memory ownership is
+ * required.
+ */
 void RubyFrontend::bond(scripting_element master, scripting_element slave)
 {
 }

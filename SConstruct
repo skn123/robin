@@ -147,14 +147,23 @@ pyenv.Append(CXXFLAGS = "-D_VERSION=" + fullver)
 rbenv = env.Copy()
 rbenv.Append(CPPPATH = ["/usr/lib/ruby/1.8/i486-linux", "/sw/lib/ruby/1.8/i686-darwin"])
 
+PythonModule = pyenv.SharedLibrary
+RubyModule = rbenv.SharedLibrary
+
 
 if conf.arch == "windows":
 	env.Append(CXXFLAGS = "/EHsc")
 	pyenv.Append(CXXFLAGS = "/EHsc /Imsvc")
 elif conf.arch == "darwin":
+	LIBPY = []
 	pyenv.Append(LINKFLAGS="-Wl,-undefined,dynamic_lookup")
 	rbenv.Append(LINKFLAGS="-Wl,-undefined,dynamic_lookup")
-	LIBPY = []
+	def PythonModule(name, *x, **kw):
+		return pyenv.LoadableModule(conf.sopre+name+conf.soext,
+					    *x, **kw)
+	def RubyModule(name, *x, **kw):
+		return rbenv.LoadableModule(conf.sopre+name+conf.soext,
+					    *x, **kw)
 if not configure.CheckCXXHeader("Python.h"):
 	print "Missing Python.h !"
 	Exit(1)
@@ -198,12 +207,13 @@ else:
 	                                        Split(FRONTEND_FRAMEWORK_SRC),
 	                          LIBS = AUXLIBS)
 
-pyfe = pyenv.LoadableModule(conf.sopre+"robin_pyfe"+spec+".dylib", 
-                            Split(PYTHON_FRONTEND_SRC), 
-                            LIBS=["robin"+spec] + LIBPY)
+pyfe = PythonModule("robin_pyfe"+spec, 
+                    Split(PYTHON_FRONTEND_SRC), 
+                    LIBS=["robin"+spec] + LIBPY)
 
-rbfe = rbenv.LoadableModule("librobin_rbfe"+spec, Split(RUBY_FRONTEND_SRC),
-                            LIBS=["robin"+spec])
+rbfe = RubyModule("robin_rbfe"+spec,
+		  Split(RUBY_FRONTEND_SRC),
+                  LIBS=["robin"+spec])
 
 stl = env.SharedLibrary("robin_stl"+spec,
                         ["build/robin/modules/stl/stl_robin.cc"])
