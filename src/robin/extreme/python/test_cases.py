@@ -16,7 +16,7 @@ class LanguageTest(TestCase):
 		global language
 		import language
 
-	def testPublicDataMembers(self):
+	def testPublicDataMembers1(self):
 		data = 92
 		u = language.DataMembers(data)
 		self.assertEquals(u.square, data * data);
@@ -25,6 +25,12 @@ class LanguageTest(TestCase):
 
 		self.assertEquals(u.zero, 0)
 
+	def testPublicDataMembers2(self):
+		data = 26
+		u = language.DataMembers(data)
+		u.v.v = data
+		self.assertEquals(u.v.v, data)
+
 	def testFloat(self):
 		a = language.AssignmentOperator(0.5)
 		f = a.x_factor
@@ -32,7 +38,7 @@ class LanguageTest(TestCase):
 	def testFloatTouchup(self):
 		prim = language.Primitives()
 		
-		for i in range(10):
+		for i in range(20):
 			f = prim.getAFloat()
 			s = prim.getAStringFloat()
 			fs = "%.3f" % f

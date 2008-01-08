@@ -79,7 +79,18 @@ public class RoutineDeduction {
 		boolean reference = realType.isReference();
 		
 		if (base instanceof Primitive || base instanceof sourceanalysis.Enum) {
-			if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
+			if (base == Primitive.FLOAT) {
+				if (pointers > 0) {
+					assert pointers == 1 && !paramType.isReference();
+					return new ParameterTransformer(XFER_FLOAT,
+							new Composition(new Apply("reinterpret_cast<float*>"), new AddressOf()),
+							new SimpleType(base));
+				} else {
+					return new ParameterTransformer(XFER_FLOAT,
+							new Apply("union_cast<float>"), new SimpleType(base));
+				}				
+			}
+			else if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
 				if (pointers > 0 && base != Primitive.CHAR && base != Primitive.VOID) {
 					assert pointers == 1 && !paramType.isReference();
 					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(paramType),
@@ -179,35 +190,52 @@ public class RoutineDeduction {
 	public static ParameterTransformer deduceReturnTransformer(Routine routine)
 			throws MissingInformationException
 	{
-		return deduceReturnTransformer(routine.getReturnType(), 
+		return deduceReturnTransformer(routine.getReturnType(),
+				ElementKind.FUNCTION_CALL,
 				Filters.isForceBorrowed(routine));
 	}
 	
 	/**
 	 * Produces a transformer which is suitable for the return value of a 
 	 * function.
-	 * @param returnType function's return type
 	 * @throws MissingInformationException 
 	 */
 	public static ParameterTransformer deduceReturnTransformer(Type returnType)
 			throws MissingInformationException
 	{
-		return deduceReturnTransformer(returnType, false);
+		return deduceReturnTransformer(returnType, ElementKind.FUNCTION_CALL, false);
+	}
+	
+	/**
+	 * Produces a transformer which is suitable for returning a value from
+	 * a flat wrapper function.
+	 * @param returnType function's return type
+	 * @param kind 'FUNCTION_CALL' if the value is the return value of a
+	 *   function, 'VARIABLE' if it is a global variable or a field
+	 * @throws MissingInformationException 
+	 */
+	public static ParameterTransformer deduceReturnTransformer(Type returnType, ElementKind kind)
+			throws MissingInformationException
+	{
+		return deduceReturnTransformer(returnType, kind, false);
 	}
 
 	/**
-	 * Produces a transformer which is suitable for the return value of a 
-	 * function.
+	 * Produces a transformer which is suitable for returning a value from
+	 * a flat wrapper function.
 	 * @param returnType function's return type
+	 * @param kind 'FUNCTION_CALL' if the value is the return value of a
+	 *   function, 'VARIABLE' if it is a global variable or a field
 	 * @param forceBorrow 'true' to enforce the generation of a reference
 	 *   return value in the RegData
 	 * @throws MissingInformationException 
 	 */
-	public static ParameterTransformer deduceReturnTransformer(Type returnType, boolean forceBorrow)
+	public static ParameterTransformer deduceReturnTransformer(Type returnType, 
+			ElementKind kind, boolean forceBorrow)
 			throws MissingInformationException
 	{
 		if (returnType.getRootNode() == null)
-			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(null));
+			return new ParameterTransformer(returnType, new NopExpression(), null);
 		
 		Type realType = TypeToolbox.getOriginalTypeDeep(returnType);
 		assert returnType.isFlat();
@@ -223,7 +251,18 @@ public class RoutineDeduction {
 			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base, null, "&"));
 		}
 		else if (base instanceof Primitive || base instanceof sourceanalysis.Enum) {
-			if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
+			if (base == Primitive.FLOAT) {
+				if (pointers > 0) {
+					assert pointers == 1 && !returnType.isReference();
+					return new ParameterTransformer(XFER_FLOAT,
+							ret(new Composition(new Apply("union_cast<xfer_float>"), new Dereference())),
+							new SimpleType(base));
+				} else {
+					return new ParameterTransformer(XFER_FLOAT,
+							ret(new Apply("union_cast<xfer_float>")), new SimpleType(base));
+				}				
+			}
+			else if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
 				if (pointers > 0 && base != Primitive.CHAR && base != Primitive.VOID) {
 					assert pointers == 1 && !returnType.isReference();
 					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(returnType),
@@ -239,7 +278,7 @@ public class RoutineDeduction {
 							returnType,
 							ret(new NopExpression()), new SimpleType(base));
 				} else if (reference) {
-					return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, null, "&"));
+					return new ParameterTransformer(TypeToolbox.makePointer(base), ret(new ConstructCopy(base)), new SimpleType(base));
 				} else {
 					return new ParameterTransformer(TypeToolbox.makePointer(returnType), 
 							ret(new ConstructCopy(base)), new SimpleType(base));
@@ -253,8 +292,12 @@ public class RoutineDeduction {
 			} else if (reference) {
 				return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, targs, "&"));
 			} else {
-				return new ParameterTransformer(TypeToolbox.makePointer(returnType), ret(new ConstructCopy(base)), 
-						new SimpleType(base, targs, "*"));
+				if (kind == ElementKind.FUNCTION_CALL)
+					return new ParameterTransformer(TypeToolbox.makePointer(returnType), ret(new ConstructCopy(realType)), 
+							new SimpleType(base, targs, "*"));
+				else
+					return new ParameterTransformer(TypeToolbox.makeReference(returnType), ret(new NopExpression()), 
+							new SimpleType(base, targs, "&"));
 			}
 		}
 	}
@@ -263,4 +306,7 @@ public class RoutineDeduction {
 	{
 		return new ReturnDecorator(expr);
 	}
+
+	
+	private static Type XFER_FLOAT = new Type(new Type.TypeNode(new Primitive("xfer_float")));
 }

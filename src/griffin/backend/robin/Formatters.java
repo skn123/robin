@@ -4,6 +4,7 @@ import java.util.List;
 
 import backend.Utils;
 import backend.robin.model.CppExpression;
+import backend.robin.model.ElementKind;
 import backend.robin.model.RegData;
 import backend.robin.model.RoutineDeduction;
 import backend.robin.model.SimpleType;
@@ -136,49 +137,27 @@ public class Formatters {
 			return Utils.cleanFullName(field);
 	}
 	
-	static String formatExpression(Type type, String expression)
+	static String formatDeclaration(Type type, String name, ElementKind kind, boolean isForFunction)
+		throws MissingInformationException
 	{
-		// Handle redundant referencing
-		if (type.isReference()
-				&& Filters.isPrimitive(type.getBaseType())) {
-			type = TypeToolbox.dereference(type);
-		}
-		Type touchupType = Filters.getTouchup(type);
-		if (touchupType == null)
-			return expression;
-		else
-			return "touchup(" + expression + ")";
+		return formatDeclaration(type, name, kind, false, isForFunction);
 	}
-	
-	static String formatDeclaration(Type type, String name, char extraRefScheme, boolean isForFunction) {
-		return formatDeclaration(type, name, extraRefScheme, false, isForFunction);
-	}
-	static String formatDeclaration(Type type, String name, char extraRefScheme, boolean wrappingInterceptor, boolean isForFunction)
+
+	static String formatDeclaration(Type type, String name, ElementKind kind, boolean wrappingInterceptor, boolean isForFunction)
+			throws MissingInformationException
 	{
 		
 		if(!wrappingInterceptor) {
 			// Handle redundant referencing
 			if (TypeToolbox.getOriginalType(type).isReference()
 						&& Filters.isPrimitive(type.getBaseType())) {
-					type = TypeToolbox.dereference(TypeToolbox.getOriginalType(type));
+				type = TypeToolbox.dereference(TypeToolbox.getOriginalType(type));
 			}
 		}
 
-		// Handle touch-up
-		Type touchupType = Filters.getTouchup(Utils.flatUnalias(type));
-		if (touchupType != null) type = touchupType;
-
-        // This needs to be done before extra referencing is handled, because
-        // __CDECL must not split the type
-        if(isForFunction) {
-                name = " __CDECL " + name;
-        }
-		// Handle extra referencing
-		if (Filters.needsExtraReferencing(type) && !wrappingInterceptor) {
-			name = extraRefScheme + name;
-		}
-	    return type.formatCpp(name);
-		
+		RoutineDeduction.ParameterTransformer retf =
+			RoutineDeduction.deduceReturnTransformer(type, kind);
+		return retf.getPrototypeType().formatCpp(name);
 	}
 
 	/**

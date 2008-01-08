@@ -19,6 +19,7 @@ import backend.Utils;
 import backend.robin.model.ConstructCopy;
 import backend.robin.model.DeleteSelf;
 import backend.robin.model.Dereference;
+import backend.robin.model.ElementKind;
 import backend.robin.model.NopExpression;
 import backend.robin.model.RegData;
 import backend.robin.model.RoutineDeduction;
@@ -59,13 +60,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				new Filters.Touchup(
 						voidptr,
 						"const void *touchup(float val)\n{\n" +
-						"\tunion { void *word; float f; } u; u.f = val;\n" +
-						"\treturn u.word;\n" +
+						"\treturn union_cast<void*>(val);\n" +
 						"}\n" +
 						"float touchdown(const void* val)\n{\n" +
-						"\tunion { const void *word; float f; } u; u.word = val;\n" +
-						"\treturn u.f;\n" +
+						"\treturn union_cast<float>(val);\n" +
 						"}\n"));
+
 		Type doubleptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
 		doubleptr.getRootNode().add(new Type.TypeNode(Primitive.DOUBLE));
 		doubleptr.getRootNode().setCV(Specifiers.CVQualifiers.CONST);
@@ -243,6 +243,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		
 		m_output.write("typedef void* basic_block;\n");
 		m_output.write("typedef void* scripting_element;\n\n");
+		m_output.write("typedef void* xfer_float;\n\n");
+		m_output.write("template < typename TO, typename FROM > TO union_cast(FROM v) { union { FROM f; TO t; } u; u.f = v; return u.t; }\n\n");
 		
         final String callbackvar = 
                 "bool (*__robin_callback)(scripting_element twin, " + 
@@ -794,7 +796,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			result.getScope().addMember(interceptedTypeBase, Specifiers.Visibility.PUBLIC);
 			Type t = new Type(new Type.TypeNode(interceptedTypeBase));
 			newTypes.put(newTypeName, t);
-			m_output.write("\ttypedef " + Formatters.formatDeclaration(removeUnneededConstness(type), t.getBaseType().getName(), '&', false));					
+			m_output.write("\ttypedef " + Formatters.formatDeclaration(removeUnneededConstness(type), 
+					t.getBaseType().getName(), ElementKind.VARIABLE, false));					
 			m_output.write(";\n");
 		}
 		
@@ -1223,10 +1226,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 					+ "* __CDECL " + wrapperName);
 		}
 		else {
-			if (Filters.isPrimitive(returnType.getBaseType()))
-				returnType = TypeToolbox.dereference(returnType);
-			touchupReturnType = Filters.getTouchup(returnType);
-			m_output.write(Formatters.formatDeclaration(returnType, wrapperName, '*', true));
+			m_output.write(Formatters.formatDeclaration(returnType, wrapperName, ElementKind.FUNCTION_CALL, true));
 		}
 		
 		// Construct parameters fitting for the flat purpose
@@ -1256,48 +1256,37 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		
 		List<ParameterTransformer> paramf = RoutineDeduction
 			.deduceParameterTransformers(routine.parameterIterator(), nArguments);
+		ParameterTransformer retf = RoutineDeduction.deduceReturnTransformer(routine);
 		m_output.write(Formatters.formatParameters(paramf));
 		m_output.write(")\n");
 		
 		// Generate the body
 		int parenNest = 0;
 		m_output.write("{\n\t");
+		
+		StringBuffer invocation = new StringBuffer();
 		if (routine.isConstructor()) {
-			m_output.write("return new ");
-			m_output.write(thisArg.getFullName());
+			invocation.append("return new " + thisArg.getFullName());
 		}
 		else {
-			// - write 'return' where needed
-			if (Filters.needsExtraReferencing(returnType)) {
-				m_output.write("return new ");
-				m_output.write(Utils.cleanFormatCpp(returnType,""));
-				m_output.write("("); parenNest++;
-			}
-			else if (Filters.needsReturnStatement(returnType)) {
-				m_output.write("return ");
-				// - add touchup if necessary
-				if (touchupReturnType != null) {
-					m_output.write("touchup("); parenNest++;
-				}
-			}
 			// - write function name to call
 			if (thisArg != null || routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER)
 				if (routine.isConversionOperator())
-					m_output.write(conversionOperatorSyntax(routine, "self"));
+					invocation.append(conversionOperatorSyntax(routine, "self"));
 				else if (routine.getName().equals("operator==") || 
 						  routine.getName().equals("operator!="))
-					m_output.write("*self " +    // @@@ STL issue workaround
+					invocation.append("*self " +    // @@@ STL issue workaround
 							routine.getName().substring("operator".length()));
 				else {
-					m_output.write("self->");
+					invocation.append("self->");
 					if(routine.getRoutineType() == Routine.RoutineType.STATIC_CALL_WRAPPER) {
-						m_output.write(routine.getFullName());
+						invocation.append(routine.getFullName());
 					} else {
-						m_output.write(routine.getName());
+						invocation.append(routine.getName());
 					}
 				}
 			else
-				m_output.write(routine.getFullName());
+				invocation.append(routine.getFullName());
 		}
 		// - generate call parameters
 		if (!routine.isConversionOperator()) {
@@ -1305,13 +1294,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			first = true;
 			staticParam = false;
 			
-			m_output.write("("); parenNest++;
-			m_output.write(Formatters.formatArguments(paramf));
+			invocation.append("("); parenNest++;
+			invocation.append(Formatters.formatArguments(paramf));
 		}
 		while (parenNest > 0) {
-			m_output.write(")");
+			invocation.append(")");
 			parenNest--;
 		}
+		m_output.write(retf.getBodyExpr().evaluate(invocation.toString()));
 		m_output.write(";\n}\n");
 		m_output.flush();
 	}
@@ -1364,7 +1354,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				new NopExpression()));
 		// Create an access method to retrieve stored type
 		valf = new ParameterTransformer(TypeToolbox.makePointer(alias), new Dereference(), new SimpleType(alias, null, "*"));
-		retf = RoutineDeduction.deduceReturnTransformer(alias.getAliasedType());
+		retf = RoutineDeduction.deduceReturnTransformer(alias.getAliasedType(), ElementKind.VARIABLE);
 		paramf.set(0, valf);
 		String as = "routine_unalias_" + uid(alias);
 		m_output.write(Formatters.formatFunction(null, as, retf, paramf, new NopExpression()));
@@ -1420,20 +1410,23 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			thisArg = container instanceof Aggregate ? 
 					container.getFullName() + " *self" : "";
 		}
-		
-		String decl = Formatters.formatDeclaration(type, accessorName, '&', wrappingInterceptorGetter, false);
+
+		RoutineDeduction.ParameterTransformer retf =
+			RoutineDeduction.deduceReturnTransformer(type, ElementKind.VARIABLE);
+		String decl = Formatters.formatDeclaration(type, accessorName, ElementKind.VARIABLE,
+				wrappingInterceptorGetter, false);
 		
 		// - generate accessor function header
 		m_output.write(tabs + decl
 				+ "(" + thisArg + ")");
 		// - generate accessor function body
-		m_output.write(tabs + " { return ");
+		m_output.write(tabs + " { ");
 		
 		if(wrappingInterceptorGetter) {
 			// touchup/touchdown were taken care of in the generated wrapper
-			m_output.write("self->" + accessorName + "()");
+			m_output.write("return self->" + accessorName + "()");
 		} else {
-		 	m_output.write(Formatters.formatExpression(type, Formatters.formatMember(field, !forInterceptor)));
+		 	m_output.write(retf.getBodyExpr().evaluate(Formatters.formatMember(field, !forInterceptor)));
 		}
 		m_output.write("; }\n");
 		// Create a set accessor
@@ -1445,22 +1438,17 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if(!forInterceptor) {
 				m_output.write(thisArg + ", ");
 			}
-			m_output.write(Formatters.formatDeclaration(type, "newval", '*', wrappingInterceptorGetter, false) + ")");
+			RoutineDeduction.ParameterTransformer paramf =
+				RoutineDeduction.deduceParameterTransformer(type);
+			m_output.write(paramf.getPrototypeType().formatCpp("newval") + ") ");
 			// - generate accessor function body
-			m_output.write(tabs + "{ ");
+			m_output.write("{ ");
 			if(fieldType == Field.FieldType.WRAPPED && !forInterceptor) {
 				m_output.write("self->" + accessorName + "(newval)");
 			} else {
 				m_output.write(Formatters.formatMember(field, !forInterceptor) 
-					+ " =  ");
-				
-				// we used a touchup, and now we need to touchdown
-				// ugly hack - should be done in formatter
-				if(touchedUpType != null && touchedUpType != type) {
-					m_output.write("touchdown(newval)");
-				} else {
-					m_output.write(Formatters.formatArgument(type, "newval"));
-				}
+					+ " = ");
+				m_output.write(paramf.getBodyExpr().evaluate("newval"));
 			}
 	
 			m_output.write("; }\n");
