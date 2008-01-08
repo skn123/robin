@@ -26,6 +26,9 @@ public:
 
 	static const int zero;
 
+	class Value { public: Value() : v(4) { } int v; };
+	Value v;
+
 private:
 	int hidden;
 };
