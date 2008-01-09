@@ -3,6 +3,8 @@ package sourceanalysis.dox;
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -110,8 +112,32 @@ public class DocumentComponentRegistry {
 	}
 
 	/**
+	 * Represents a document retrieved by 
+	 * DocumentComponentRegistry.locateAllDocuments.
+	 */
+	public static class RequestedDocument
+	{
+		private File directory;
+		private Document document;
+
+		public RequestedDocument(Document document, File directory)
+		{
+			this.directory = directory;
+			this.document = document;
+		}
+
+		public File getDirectory() {
+			return directory;
+		}
+
+		public Document getDocument() {
+			return document;
+		}
+	}
+	
+	/**
 	 * DocumentComponentRegistry constructor.
-	 * <p>Prepares an empty registry for activity. </p>
+	 * Prepares an empty registry for activity.
 	 */
 	public DocumentComponentRegistry()
 	{
@@ -139,6 +165,15 @@ public class DocumentComponentRegistry {
 		else
 			m_xmldir = xmldir + "/";
 		m_xmlpath[0] = m_xmldir;
+	}
+	
+	/**
+	 * @param directory
+	 * @return 'true' if the directory belongs to an external reference
+	 */
+	public boolean isExternal(File directory)
+	{
+		return !directory.equals(new File(m_xmldir));
 	}
 
 	/**
@@ -211,6 +246,25 @@ public class DocumentComponentRegistry {
 			return anew;
 		}
 	}
+	
+	public List<RequestedDocument> locateAllDocuments(String documentname)
+	{
+		List<RequestedDocument> docs = new LinkedList<RequestedDocument>();
+		
+		for (File documentfile : searchAllInPath(documentname + ".xml")) {
+			try {
+				Document doc = open(documentname, documentfile);
+				File dir = documentfile.getParentFile();
+				docs.add(new RequestedDocument(doc, dir));
+			}
+			catch (ElementNotFoundException e) {
+				System.err.println("*** WARNING: document '"
+						+ documentfile.getPath() + "' is malformed");
+			}
+		}
+		
+		return docs;
+	}
 
 	/**
 	 * Reads XML using a DOM parser.
@@ -220,8 +274,18 @@ public class DocumentComponentRegistry {
 		throws ElementNotFoundException
 	{
 		// Find document in XML search path
-		File documentfile = searchInPath(documentname + ".xml");
-		// Open and parse XML
+		return open(documentname, searchInPath(documentname + ".xml"));
+	}
+	
+	/**
+	 * Reads XML using a DOM parser.
+	 * @param documentname document title
+	 * @param documentfile XML file
+	 * @return Document the XML document as a DOM tree
+	 */
+	private Document open(String documentname, File documentfile)
+		throws ElementNotFoundException
+	{
 		org.apache.xerces.parsers.DOMParser p = new org.apache.xerces.parsers.DOMParser();
 		try {
 			p.parse(documentfile.toString());
@@ -235,8 +299,8 @@ public class DocumentComponentRegistry {
 			throw new ElementNotFoundException("document", documentname); 
 		}
 		return p.getDocument();
-	}
-	
+	}	
+
 	/**
 	 * Looks for a document in the XML search path. The path is taken
 	 * from the system properties when the DocumentComponentRegistry is
@@ -259,6 +323,31 @@ public class DocumentComponentRegistry {
 		}
 		// - fallback to xmldir
 		return new File(new File(m_xmldir), filename);
+	}
+	
+	/**
+	 * Looks for a document in the XML search path. The path is taken
+	 * from the system properties when the DocumentComponentRegistry is
+	 * first created.
+	 * @param filename the name of the file to be searched
+	 * @return A list of Files each referring to an existing file with
+	 * the requested basename and which resides in one of the directories
+	 * sought.
+	 */
+	private List<File> searchAllInPath(String filename)
+	{
+		List<File> found = new LinkedList<File>();
+		
+		for (int i = 0; i < m_xmlpath.length; i++) {
+			File directory = new File(m_xmlpath[i]);
+			if (directory.exists() && directory.isDirectory()) {
+				File file = new File(directory, filename);
+				if (file.exists() && file.isFile())
+					found.add(file);
+			}
+		}
+		
+		return found;
 	}
 	
 	/*@}*/

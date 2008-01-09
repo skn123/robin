@@ -117,7 +117,7 @@ language-test@%:
 	        Conversions Exceptions Interface Abstract NonAbstract    \
 	        Primitives Pointers UsingStrings UsingStringConversions  \
 	        UsingVectors UsingPairs UsingComplex Typedefs            \
-	        PublicDouble KwClass
+	        PublicDouble KwClass --module language
 	$(cxx) $(shared) $(extreme_python)/liblanguage_robin.cc            \
 	        -o $(extreme_python)/liblanguage.so
 
@@ -139,9 +139,10 @@ inheritance-test@%:
 hints-test@%:
 	$($*)/griffin $G --in $(extreme_python)/hinted.h -I              \
 	        --out $(extreme_python)/libhints_robin.cc                \
-	        --hints=$(extreme_python)/hint.py Clue
+		--import language                                        \
+	        --hints=$(extreme_python)/hint.py Clue Templates
 	$(cxx) $(shared) $(extreme_python)/libhints_robin.cc         \
-		-o $(extreme_python)/libhints.so
+		-o $(extreme_python)/libhints.so -I$(extreme_python)
 
 autocollect-test@%:
 	$($*)/griffin $G --in $(extreme_python)/autocollect.h             \

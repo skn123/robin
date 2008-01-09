@@ -11,6 +11,7 @@ class Clue
 {
 public:
   hinted_size_t get() { return 0; }
+  Templates<hinted_size_t> gets() { return Templates<hinted_size_t>(1); }
 };
 
 

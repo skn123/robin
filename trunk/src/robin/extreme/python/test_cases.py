@@ -516,6 +516,8 @@ class HintsTest(TestCase):
 	def testClue(self):
 		import hints
 		c = hints.Clue()
+		self.assertEquals(c.get(), 0)
+		self.assertEquals(c.gets().value, 1)
 	
 
 class AutocollectTest(TestCase):

@@ -313,6 +313,14 @@ private:
 	
 // ----------------------------------------------------------------------
 
+template < typename T >
+class Templates
+{
+public:
+	Templates(T val) : value(val) { }
+	T value;
+};
+
 class PublicDouble {
 	public:
 		double foo;

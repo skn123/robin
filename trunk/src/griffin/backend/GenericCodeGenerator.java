@@ -102,6 +102,7 @@ public class GenericCodeGenerator
 	public void collect(String componentname)
 	{
 		collect(m_program.getGlobalNamespace().getScope(), componentname);
+		collect(m_program.getExternals(), componentname);
 	}
 	
 	/**
