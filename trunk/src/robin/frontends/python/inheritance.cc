@@ -63,6 +63,19 @@ HybridObject::~HybridObject()
     Py_XDECREF(m_dict);
 }
 
+PyObject *with_self(PyObject *self, PyObject *args)
+{
+	PyObject *self_args = PyTuple_New(PyTuple_Size(args) + 1);
+	Py_INCREF(self);
+	PyTuple_SET_ITEM(self_args, 0, self);
+	for (int i = 0; i < PyTuple_Size(args); ++i) {
+		PyObject *arg = PyTuple_GET_ITEM(args, i);
+		Py_INCREF(arg);
+		PyTuple_SET_ITEM(self_args, i+1, arg);
+	}
+	return self_args;
+}
+
 /**
  * Creates and initializes a new Hybrid object.
  */
@@ -76,8 +89,9 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
 
 	// - try to invoke derived class __init__, fall back to C++ constructor
 	if (value = PyDict_GetItemString(classtype->tp_dict, "__init__")) {
-		rc = PyObject_Call(PyMethod_New(value, hybrid, PyObject_Type(hybrid)), 
-						   args, NULL);
+		PyObject *self_args = with_self(hybrid, args);
+		rc = PyObject_Call(value, self_args, NULL);
+		Py_DECREF(self_args);
 		if (rc && !hybrid->isInitialized()) {
 			PyObject *noargs = PyTuple_New(0);
 			rc = ClassObject::__init__(hybrid, noargs);
@@ -94,6 +108,7 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
 		if (value = hybrid->getBoundMethodOrDataMember("_init")) {
 			PyObject *twin = PyTuple_New(1);
 			PyTuple_SetItem(twin, 0, hybrid);
+			Py_DECREF(rc);
 			rc = PyObject_Call(value, twin, NULL);
 			Py_XDECREF(twin);
 		}
@@ -107,6 +122,7 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
 		Py_XDECREF(hybrid);
 		return NULL;
 	}
+	else Py_DECREF(rc);
 
 	return hybrid;
 }
@@ -116,6 +132,10 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
  */
 void HybridObject::__del__(PyObject *object)
 {
+	object->ob_refcnt = 99; // hack to prevent infinite loop
+	PyObject *r = PyObject_CallMethod(object, "__del__", "");
+	Py_XDECREF(r);
+	PyErr_Clear();
 	delete (HybridObject*)object;
 }
 
