@@ -40,6 +40,7 @@ import sourceanalysis.TemplateEnabledEntity;
 import sourceanalysis.TemplateParameter;
 import sourceanalysis.Type;
 import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.dox.DocumentComponentRegistry.RequestedDocument;
 import sourceanalysis.xml.XML;
 import sourceanalysis.xml.XMLFormatException;
 import antlr.RecognitionException;
@@ -1433,12 +1434,12 @@ public class DoxygenAnalyzer {
 	 * Extracts all the elements in the index and adds them to the anonymous
 	 * namespace.
 	 * @param global a scope to put translated entities in
+	 * @param index the index XML document
 	 * @throws ElementNotFoundException if the index document is
 	 * unavailable.
 	 */
-	public void processIndex(Scope global) throws ElementNotFoundException
+	public void processIndex(Scope global, Document index) throws ElementNotFoundException
 	{
-		Document index = m_registry.locateDocument("index");
 		Node indexRoot = index.getFirstChild();
 		// Translate compounds
 		Collection compoundnodes = XML.subNodes(indexRoot, Tags.COMPOUND);
@@ -1504,7 +1505,13 @@ public class DoxygenAnalyzer {
 	{
 		ProgramDatabase program = new ProgramDatabase();
 		m_db = program;
-		processIndex(program.getGlobalNamespace().getScope());
+		List<RequestedDocument> indices =
+				m_registry.locateAllDocuments("index");
+		for (RequestedDocument index : indices) {
+			Scope scope = m_registry.isExternal(index.getDirectory()) 
+				? program.getExternals() : program.getGlobalNamespace().getScope();
+			processIndex(scope, index.getDocument());
+		}
 		return program;
 	}
 	

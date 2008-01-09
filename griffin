@@ -18,6 +18,7 @@ class Griffin:
         self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
         self.javacmd = "backend.Launcher robin"
         self.javaflags = ""
+        self.module = "."
         self.verbose = False
 
     def setXML(self, xmldir):
@@ -25,25 +26,28 @@ class Griffin:
             raise OSError, "'%s' not found" % xmldir
         self.xmldir = xmldir
 
-    def setSources(self, sources):
-        self.doxygen(sources)
-        self.xmldir = "./xml"
+    def setSources(self, sources, modules):
+        self.doxygen(self.module, sources, modules)
+        self.xmldir = os.path.join(self.module, "xml")
 
-    def doxygen(self, sources):
+    def doxygen(self, project, sources, modules):
         import os.path
         stltag = os.path.join(here, "build/stl.tag")
         if not os.path.isfile(stltag): stltag = os.path.join(here, "stl.tag")
+        tagfiles = [stltag] + [os.path.join(x, "module.tag") for x in modules]
+        tagfile = os.path.join(project, "module.tag")
         doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
-                   "TAGFILES = %s\n" \
+                   "OUTPUT_DIRECTORY = %s\nTAGFILES = %s\n" \
+                   "GENERATE_TAGFILE = %s\n" \
                    "GENERATE_HTML=No\nGENERATE_LATEX=No\n" % \
-                     (" ".join(sources), stltag)
+                     (" ".join(sources), project, " ".join(tagfiles), tagfile)
         if self.verbose: print ".griffin-doxyfile:\n" + doxyfile
         open(".griffin-doxyfile", "w").write(doxyfile)
         Dots(self.verbose).run("doxygen .griffin-doxyfile")
         if self.verbose: print "unlink .griffin-doxyfile"
         os.unlink(".griffin-doxyfile")
 
-    def _command(self):
+    def _command(self, modules):
         from os.path import join
         classpath = [join(here, self.premisedir, x) for x in self.premises]
         classpath += [self.griffin_bin]
@@ -52,16 +56,19 @@ class Griffin:
         stpath = join(here, "src/griffin/modules/stl")
         if not os.path.isdir(doxpath): doxpath = os.path.join(here, "dox-xml")
         if not os.path.isdir(stpath): stpath = here
+        doxpath = [doxpath] + [os.path.join(x, "xml") for x in modules]
+        stpath = [stpath]
 
         cmd = "%s -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
                   "-classpath '%s' %s %s" % \
-                  (conf.config.java, conf.classpath([doxpath]), 
-                   conf.classpath([stpath]), conf.classpath(classpath),
+                  (conf.config.java, conf.classpath(doxpath), 
+                   conf.classpath(stpath), conf.classpath(classpath),
                    self.javaflags, self.javacmd)
         return cmd
 
-    def run(self, args):
-        cmdline = " ".join([self._command(), "--input", self.xmldir] + args)
+    def run(self, args, modules):
+        cmdline = " ".join([self._command(modules),
+                            "--input", self.xmldir] + args)
         if self.verbose: print >> sys.stderr, cmdline
         os.system(cmdline)
 
@@ -83,8 +90,18 @@ class Griffin:
             default=self.DEFAULT_OUTFILE,
             help="generated output file (default: %s)" % self.DEFAULT_OUTFILE)
         parser.add_argument(
-            "classes", metavar="identifier", type=str, nargs="*",
+            "inputs", metavar="identifier", type=str, nargs="*",
             help="classes and functions to be wrapped")
+        parser.add_argument(
+            "--classes", metavar="identifier", type=str, nargs="+", default=[],
+            help="classes and functions to be wrapped")
+        parser.add_argument(
+            "--module", metavar="module-name",
+            help="name for the generated module (generates doxygen tag file"
+            " and xml output directory for use in later projects)")
+        parser.add_argument(
+            "--import", metavar="path", type=str, nargs="+", default=[],
+            help="doxygen output directory of external modules to refer to")
         parser.add_argument(
             "-I", action='store_true', default=False,
             help="process #included header files recursively")
@@ -108,17 +125,17 @@ class Griffin:
         if not args: args = ["-h"]
 
         values = parser.parse_args(args)
-        OPTS = ["I", "v", "debug", "interceptors", "hints"]
-
+        FLAGS = ["I", "v", "debug", "interceptors", "module"]
+        OPTS = ["hints", "import"]
         arg_in = values.__dict__['in']
         arg_out = values.out
         arg_classes = values.classes
         arg_opts = dict([(x,y) for (x,y) in values.__dict__.items()
-                         if y and x in OPTS])
+                         if (y and x in FLAGS) or x in OPTS])
 
-        if arg_classes and not arg_in:
-            arg_in = arg_classes[0:1]
-            arg_classes = arg_classes[1:]
+        if values.inputs:
+            arg_in += [x for x in values.inputs if "." in x]
+            arg_classes += [x for x in values.inputs if "." not in x]
         if values.eclipse:
             self._opt_eclipse()
         return arg_in, [arg_out], arg_opts, arg_classes
@@ -155,11 +172,14 @@ class Griffin:
         self.verbose = "v" in arg_opts
         wizard = "w" in arg_opts or "wizard" in arg_opts
 
+        imported = arg_opts["import"]
+        if "module" in arg_opts: self.module = arg_opts["module"]
+
         # Set input source
         if input_type == "sources":
             if "I" in arg_opts:
                 arg_in = Preprocessor().extractAllIncluded(arg_in)
-            self.setSources(arg_in)
+            self.setSources(arg_in, imported)
         elif input_type == "xml" or wizard:
             if len(arg_in) == 0:
                 self.setXML("xml")
@@ -182,7 +202,7 @@ class Griffin:
                                   "org.eclipse.core.runtime.jar"])
 
         # engage
-        self.run(arg_out + arg_jopts + arg_other)
+        self.run(arg_out + arg_jopts + arg_other, imported)
 
 
 

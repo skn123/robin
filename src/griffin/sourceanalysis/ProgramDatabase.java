@@ -69,6 +69,8 @@ public class ProgramDatabase extends Entity {
 		m_macros = new LinkedList();
 		m_globalNamespace = new Namespace();
 		m_globalNamespace.setName("");
+		m_externalsNamespace = new Namespace();
+		m_externalsNamespace.setName("");
 		setName("Package Database");
 	}
 
@@ -108,6 +110,17 @@ public class ProgramDatabase extends Entity {
 	public Namespace getGlobalNamespace()
 	{
 		return m_globalNamespace;
+	}
+	
+	/**
+	 * Access elements which are not directly part of the analyzed program,
+	 * but are referenced by it and reside in external dependencies, such
+	 * as libraries. 
+	 * @return a Scope which can be enumerated to access external entities
+	 */
+	public Scope getExternals()
+	{
+		return m_externalsNamespace.getScope();
 	}
 
 	/**
@@ -151,4 +164,6 @@ public class ProgramDatabase extends Entity {
 	private Namespace m_globalNamespace;
 	private List m_sources;
 	private List m_macros;
+
+	private Namespace m_externalsNamespace;
 }
