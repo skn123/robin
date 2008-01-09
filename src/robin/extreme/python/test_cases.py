@@ -385,6 +385,29 @@ class InheritanceTest(TestCase):
 		except TypeError:
 			pass
 
+	def testDtor(self):
+		class MyString(stl.string):
+			def __del__(self):
+				vars["counter"] -= 1
+		t = MyString("H")
+		vars = {"counter": 1}
+		del t
+		self.assertEquals(vars["counter"], 0)
+
+	def testObjectCleanup(self):
+		import inheritance
+		vars = {"counter": 0}
+		class MyFunctor(inheritance.IFunctor):
+			def __init__(self):
+				vars["counter"] += 1
+			def __del__(self):
+				vars["counter"] -= 1
+
+		objs = [MyFunctor() for i in xrange(200)]
+		self.assertEquals(vars["counter"], 200)
+		del objs
+		self.assertEquals(vars["counter"], 0)
+
 	def testInterceptors(self):
 		import inheritance, robin
 		class MyFunctor(inheritance.IFunctor):
