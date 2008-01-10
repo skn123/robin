@@ -317,7 +317,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 					IncludedViaHeader hint = (IncludedViaHeader)
 						header.lookForHint(IncludedViaHeader.class);
 					if (hint != null) header = hint.getIncludingHeader();
-					headers.add(header.getFullName());
+					if (!header.isExternal())
+						headers.add(header.getFullName());
 				}
 				catch (MissingInformationException e) {
 					// Issue a comment indicating the absence of a SourceFile
