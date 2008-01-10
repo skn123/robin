@@ -31,6 +31,9 @@ class Configure:
 		p.add_option("-j", "--with-java", dest = "java",
 					 default = "java",
 					 help = "Determines which Java VM to use")
+		p.add_option("--with-javac", dest = "javac",
+					 default = "",
+					 help = "Determines which Java compiler to use")
 		p.add_option("", "--without-libiberty", dest = "liberty",
 		             action = "store_false",
 		             default = True,
@@ -96,6 +99,8 @@ class Configure:
 		# C++ and Java
 		if options.cxx != "":
 			self._set_var("cxx", options.cxx)
+		if options.javac != "":
+			self._set_var("javac", options.javac)
 		if conf.arch == "darwin":
 			self._set_var("shared", "-dynamiclib")
 		self._set_var("java", options.java)

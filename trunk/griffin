@@ -91,7 +91,7 @@ class Griffin:
             help="generated output file (default: %s)" % self.DEFAULT_OUTFILE)
         parser.add_argument(
             "inputs", metavar="identifier", type=str, nargs="*",
-            help="classes and functions to be wrapped")
+            help="source files, classes, and functions to be wrapped")
         parser.add_argument(
             "--classes", metavar="identifier", type=str, nargs="+", default=[],
             help="classes and functions to be wrapped")
@@ -194,7 +194,7 @@ class Griffin:
                      if x in JOPTS]
 
         if "debug" in arg_opts:
-            self.javaflags = "-Xrunjdwp:transport=dt_socket,address=1234,server=y,suspend=y"
+            self.javaflags = "-Xrunjdwp:transport=dt_socket,address=%d,server=y,suspend=y" % arg_opts["debug"]
 
         if wizard:
             self.javacmd = "wizard.Main"

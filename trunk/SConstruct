@@ -6,7 +6,7 @@
 ##################################################
 
 ver = "1.0"
-fullver = "1.0.3"
+fullver = "1.0.4"
 
 BuildDir('build', 'src')
 
@@ -98,6 +98,10 @@ if conf.isCygwin:
 # Configure C++ compiler
 if hasattr(conf.config, 'cxx'):
 	env["CXX"] = conf.config.cxx
+
+# Configure Java compiler
+if hasattr(conf.config, 'javac'):
+	env["JAVAC"] = conf.config.javac
 
 # Configure Python include and library
 import sys, distutils.sysconfig
