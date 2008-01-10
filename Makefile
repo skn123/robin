@@ -1,5 +1,5 @@
 ver = 1.0
-minor = 3
+minor = 4
 
 ###
 # Installation
@@ -105,12 +105,13 @@ uninstall:
 
 extreme_python = src/robin/extreme/python
 SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
-       DYLD_LIBRARY_PATH=$(PWD) \
+       DYLD_LIBRARY_PATH=$(PWD) LD_LIBRARY_PATH=$(PWD) \
        PYTHONPATH=$(PWD):$(PWD)/src/robin/modules
 . = .
 
 language-test@%:
-	$($*)/griffin $G -I --in $(extreme_python)/language.h $(extreme_python)/kwargs.h           \
+	$($*)/griffin $G -I --in $(extreme_python)/language.h            \
+                $(extreme_python)/kwargs.h                               \
 	        --out $(extreme_python)/liblanguage_robin.cc             \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
