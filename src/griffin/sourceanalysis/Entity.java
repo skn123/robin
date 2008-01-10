@@ -71,6 +71,7 @@ public abstract class Entity {
 		m_group = null;
 		m_affiliates = new LinkedList();
 		m_templateParameters = new Vector();
+		m_external = false;
 	}
 
 	/** @name Push API
@@ -202,6 +203,11 @@ public abstract class Entity {
 			new SourceFile.DeclDefConnection(sourceFilename, position, this);
 	}
 
+	public void setExternal(boolean external)
+	{
+		m_external = external;
+	}
+	
 	/*@}*/
 
 
@@ -467,6 +473,16 @@ public abstract class Entity {
 		return m_definitionAt;
 	}
 
+	/**
+	 * Indicates whether this entity originates from an external module
+	 * (such as a library dependency).
+	 * @return boolean if 'true', this entity is external
+	 */
+	public boolean isExternal()
+	{
+		return m_external;
+	}
+	
 	/*@}*/
 
 	// Private members
@@ -482,4 +498,5 @@ public abstract class Entity {
 	
 	private SourceFile.DeclDefConnection m_declarationAt;
 	private SourceFile.DeclDefConnection m_definitionAt;
+	private boolean m_external;
 }

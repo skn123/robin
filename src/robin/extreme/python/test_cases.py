@@ -31,6 +31,9 @@ class LanguageTest(TestCase):
 		u.v.v = data
 		self.assertEquals(u.v.v, data)
 
+	def testGlobalVariable(self):
+		self.assertEquals(language.global_one.square, 1.0)
+
 	def testFloat(self):
 		a = language.AssignmentOperator(0.5)
 		f = a.x_factor

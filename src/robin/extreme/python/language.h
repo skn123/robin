@@ -34,7 +34,7 @@ private:
 };
 
 const int DataMembers::zero = 0;
-
+const DataMembers global_one(1.0);
 
 class PrimitiveTypedef
 {

@@ -1,3 +1,4 @@
+#error this file should never be included
 
 namespace std {
 

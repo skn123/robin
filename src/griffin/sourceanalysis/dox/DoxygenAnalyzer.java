@@ -1386,7 +1386,10 @@ public class DoxygenAnalyzer {
 		collectReferences(xmlnode, reference_map);
 		// Step 2. Actually parse text in node
 		String exprtext = XML.collectText(xmlnode);
-		if (arrnode != null) exprtext += XML.collectText(arrnode);
+		if (arrnode != null) {
+			String arrtext = XML.collectText(arrnode);
+			if (arrtext.startsWith("[")) exprtext += arrtext;
+		}
 		return parseType(exprtext, reference_map);
 	}
 	
@@ -1435,10 +1438,13 @@ public class DoxygenAnalyzer {
 	 * namespace.
 	 * @param global a scope to put translated entities in
 	 * @param index the index XML document
+	 * @param isExternal 'true' indicates that all compound entities analyzed
+	 *   should have the external flag set
 	 * @throws ElementNotFoundException if the index document is
 	 * unavailable.
 	 */
-	public void processIndex(Scope global, Document index) throws ElementNotFoundException
+	public void processIndex(Scope global, Document index, boolean isExternal)
+			throws ElementNotFoundException
 	{
 		Node indexRoot = index.getFirstChild();
 		// Translate compounds
@@ -1457,6 +1463,7 @@ public class DoxygenAnalyzer {
 					if (name.indexOf("::") == -1 && !anonymous &&
 							locator.getKind().equals(Tags.COMPOUND)) {
 						Entity comp = followReference(locator);
+						comp.setExternal(isExternal);
 						compounds.add(comp);
 					}
 				}
@@ -1493,7 +1500,7 @@ public class DoxygenAnalyzer {
 		// Fill any broken type links which may be fixed
 		repairDamagedReferences();
 		// Put global variables in global scope
-		fillGlobalVariables();
+		fillGlobalVariables(global);
 	}
 	
 	/**
@@ -1505,12 +1512,13 @@ public class DoxygenAnalyzer {
 	{
 		ProgramDatabase program = new ProgramDatabase();
 		m_db = program;
+		Scope globals = program.getGlobalNamespace().getScope();
 		List<RequestedDocument> indices =
 				m_registry.locateAllDocuments("index");
 		for (RequestedDocument index : indices) {
-			Scope scope = m_registry.isExternal(index.getDirectory()) 
-				? program.getExternals() : program.getGlobalNamespace().getScope();
-			processIndex(scope, index.getDocument());
+			boolean isExternal = m_registry.isExternal(index.getDirectory()); 
+			Scope scope =  isExternal ? program.getExternals() : globals;
+			processIndex(scope, index.getDocument(), isExternal);
 		}
 		return program;
 	}
@@ -1849,10 +1857,11 @@ public class DoxygenAnalyzer {
 	 * Inserts information collected about global fields (variables) into
 	 * the global namespace in the program database.
 	 */
-	private void fillGlobalVariables()
+	private void fillGlobalVariables(Scope globalScope)
 	{
-		DoxygenHandyman.transferFields(m_db.getGlobalNamespace().getScope(),
+		DoxygenHandyman.transferFields(globalScope,
 			m_globalFields_byname);
+		m_globalFields_byname.clear();
 	}
 	
 	/*@}*/
