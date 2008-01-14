@@ -81,7 +81,8 @@ import antlr.TokenStreamException;
  * encounter an Entity representing it in type-expressions (see Type), but
  * going through namespaces and scopes you will see no recognition of it.
  * This is the desired behavior, since the user wants to refer to his/her own
- * classes and not proprietary and third-party classes.
+ * classes and not proprietary and third-party classes. To access external
+ * entities, use p.getExternals().
  * </p>
  */
 public class DoxygenAnalyzer {
@@ -262,32 +263,29 @@ public class DoxygenAnalyzer {
 	 */
 	private class GlobalScope extends Scope
 	{
-        GlobalScope(Entity owner) {
+        private Scope globals;
+
+		GlobalScope(Entity owner, Scope globals) {
             super(owner);
+            this.globals = globals;
         }
 		public void addMember(Routine routine, int visibility,
 			int virtuality, int storage)
 		{
 			// Add member to global scope instead
-			if (m_db != null)
-				m_db.getGlobalNamespace().getScope()
-					.addMember(routine, visibility, virtuality, storage);
+			globals.addMember(routine, visibility, virtuality, storage);
 		}
 
 		public void addMember(sourceanalysis.Enum enume, int visibility)
 		{
 			// Add member to global scope instead
-			if (m_db != null)
-				m_db.getGlobalNamespace().getScope()
-					.addMember(enume, visibility);
+			globals.addMember(enume, visibility);
 		}
 		
 		public void addMember(Alias alias, int visibility)
 		{
 			// Add member to... you guessed it! global scope
-			if (m_db != null)
-				m_db.getGlobalNamespace().getScope()
-					.addMember(alias, visibility);
+			globals.addMember(alias, visibility);
 		}
 		
 		public void addMember(Field field, int visibility, int storage)
@@ -299,8 +297,7 @@ public class DoxygenAnalyzer {
 		
 		public void addMember(Namespace inner)
 		{
-			if (m_db != null)
-				m_db.getGlobalNamespace().getScope().addMember(inner);
+			globals.addMember(inner);
 		}
 		
 		protected void mirrorRelationToMember(Entity contained, 
@@ -640,17 +637,19 @@ public class DoxygenAnalyzer {
 	}
 	
 	/**
-	 * Translates a namespace, class, struct, or union node into a Namespace
-	 * or an Aggregate entity.
+	 * Translates a namespace, class, struct, union, or source file node
+	 * into a Namespace, Aggregate, or SourceFile entity.
 	 * @param xmlnode root of compound sub-tree
 	 * @param entityClass the Entity to generate, takes either "Namespace",
-	 * "Aggregate", or <b>null</b>, in which case the decision is made based
-	 * on the "kind" attribute of the compounddef node.
+	 * "Aggregate", or "SourceFile"
+	 * @param isExternal 'true' if the compound being translated occurs as
+	 * an external reference (this only has any effect when entityClass is
+	 * "SourceFile")
 	 * @throws XMLFormatException if the sub-tree's composition does not
 	 * match expected schema.
 	 */
-	public Entity translateCompound(Node xmlnode, String entityClass)
-		throws XMLFormatException
+	public Entity translateCompound(Node xmlnode, String entityClass, 
+			boolean isExternal) throws XMLFormatException
 	{
 		Entity compound = null;
 		Scope scope = null;
@@ -673,7 +672,9 @@ public class DoxygenAnalyzer {
 			 * For source files - a phony scope is created to put members in
 			 * global namespace (a SourceFile is not really a container).
 			 */
-			scope = new GlobalScope(compound);
+			scope = new GlobalScope(compound,
+					isExternal ? m_db.getExternals() 
+					           : m_db.getGlobalNamespace().getScope());
 		}
 		
 		selfSubscribe(xmlnode, compound);
@@ -1294,10 +1295,13 @@ public class DoxygenAnalyzer {
 	 * translation algorithm to put to action is based on the value of the
 	 * 'kind' attribute.
 	 * @param xmlnode root node of entity subtree
+	 * @param isExternal 'true' indicates that the entity being translated 
+	 * belongs to an external reference (this only has any effect when this
+	 * entity is a source file - i.e. kind is Tags.FILE) 
 	 * @throws XMLFormatException if a 'kind' attribute is missing or invalid,
 	 * or the sub-tree's composition does not match expected schema.
 	 */
-	public Entity translationSwitch(Node xmlnode) throws XMLFormatException
+	public Entity translationSwitch(Node xmlnode, boolean isExternal) throws XMLFormatException
 	{
 		// Get kind
 		String kind = XML.attribute(xmlnode, Tags.KIND, null);
@@ -1305,11 +1309,11 @@ public class DoxygenAnalyzer {
 			throw new XMLFormatException("no kind mentioned", xmlnode);
 		}
 		else if (kind.equals(Tags.NAMESPACE)) {
-			return translateCompound(xmlnode, "Namespace");
+			return translateCompound(xmlnode, "Namespace", isExternal);
 		}
 		else if (kind.equals(Tags.CLASS) || kind.equals(Tags.STRUCT) 
 			|| kind.equals(Tags.UNION)) {
-			return translateCompound(xmlnode, "Aggregate");
+			return translateCompound(xmlnode, "Aggregate", isExternal);
 		}
 		else if (kind.equals(Tags.FUNCTION)) {
 			return translateRoutine(xmlnode);
@@ -1324,7 +1328,7 @@ public class DoxygenAnalyzer {
 			return translateEnum(xmlnode);
 		}
 		else if (kind.equals(Tags.FILE)) {
-			return translateCompound(xmlnode, "SourceFile");
+			return translateCompound(xmlnode, "SourceFile", isExternal);
 		}
 		else {
 			// Invalid or unrecognized kind
@@ -1516,7 +1520,7 @@ public class DoxygenAnalyzer {
 		List<RequestedDocument> indices =
 				m_registry.locateAllDocuments("index");
 		for (RequestedDocument index : indices) {
-			boolean isExternal = m_registry.isExternal(index.getDirectory()); 
+			boolean isExternal = m_registry.isExternal(index); 
 			Scope scope =  isExternal ? program.getExternals() : globals;
 			processIndex(scope, index.getDocument(), isExternal);
 		}
@@ -1555,12 +1559,12 @@ public class DoxygenAnalyzer {
 		}
 		catch (ElementNotFoundException e) {
 			// Open XML document
-			Document document =
+			RequestedDocument document =
 				m_registry.locateDocument(locator.getDocumentName());
 			// Scan all <...def> tags (with corresponding kind) to find that with
 			// the requested id
-			NodeList refs =
-				document.getElementsByTagName(Tags.def(locator.getKind()));
+			NodeList refs = document.getDocument()
+				.getElementsByTagName(Tags.def(locator.getKind()));
 			Node found = null;
 			for (int refi = 0; refi < refs.getLength(); ++refi) {
 				Node refnode = refs.item(refi);
@@ -1576,7 +1580,7 @@ public class DoxygenAnalyzer {
 				ElementNotFoundException(locator.getKind(), locator.unique());
 			
 			// Translate the node that was found into an entity
-			return translationSwitch(found);
+			return translationSwitch(found, m_registry.isExternal(document));
 		}
 	}
 

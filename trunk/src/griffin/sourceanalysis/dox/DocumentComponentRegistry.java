@@ -177,6 +177,15 @@ public class DocumentComponentRegistry {
 	}
 
 	/**
+	 * @param document
+	 * @return 'true' if the document belongs to an external reference
+	 */
+	public boolean isExternal(RequestedDocument document)
+	{
+		return isExternal(document.getDirectory());
+	}
+
+	/**
 	 * @name Registration API
 	 * Methods for writing data into the registry.
 	 */
@@ -224,11 +233,12 @@ public class DocumentComponentRegistry {
 	 * Finds an XML document. If the document has been read and stored,
 	 * returns stored document, otherwise - it fetches the document anew.
 	 * @param documentname name of XML document
-	 * @return Document DOM document
+	 * @return RequestedDocument DOM document and the directory where it was
+	 *   found.
 	 * @throws ElementNotFoundException the document is not in the registry,
 	 * and also there exists no document by that name in the input directory.
 	 */
-	public Document locateDocument(String documentname)
+	public RequestedDocument locateDocument(String documentname)
 		throws ElementNotFoundException
 	{
 		// Check that object was not previously deferred
@@ -237,11 +247,11 @@ public class DocumentComponentRegistry {
 		// Try getting object from registry
 		Object document = m_docname2dom.get(documentname);
 		if (document != null) {
-			return (Document)document;
+			return (RequestedDocument)document;
 		}
 		else {
 			// Fetch from input directory (exception may occur here)
-			Document anew = fetch(documentname);
+			RequestedDocument anew = fetch(documentname);
 			m_docname2dom.put(documentname, anew);
 			return anew;
 		}
@@ -270,11 +280,13 @@ public class DocumentComponentRegistry {
 	 * Reads XML using a DOM parser.
 	 * @return Document the XML document as a DOM tree
 	 */
-	private Document fetch(String documentname) 
+	private RequestedDocument fetch(String documentname) 
 		throws ElementNotFoundException
 	{
 		// Find document in XML search path
-		return open(documentname, searchInPath(documentname + ".xml"));
+		File documentfile = searchInPath(documentname + ".xml");
+		return new RequestedDocument(open(documentname, documentfile),
+				documentfile.getParentFile());
 	}
 	
 	/**
