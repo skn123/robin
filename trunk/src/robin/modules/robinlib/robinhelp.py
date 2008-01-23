@@ -25,7 +25,7 @@ def _search_on_path(paths, filenames):
 		for filename in filenames:
 			candidate = os.path.join(path, filename)
 			if os.path.exists(candidate): return open(candidate, "rb")
-	raise IOError, "Your momma's so fat, she can't find any of the following files: %s" % filenames
+	raise IOError, "can't find any of the following files: %s" % filenames
     
 def _find_submodule_name(modulename):
 	return _find_submodule(modulename)[1]
@@ -179,7 +179,15 @@ class Helper(site._Helper):
 		    return 0
 
 	def _classname(self, klass):
-		return klass.__name__.split("::")[-1].split("<")[0]
+		# - strip away template arguments 
+		bal = 0
+		s = ""
+		for c in klass.__name__:
+			if c == "<": bal += 1
+			elif c == ">": bal -= 1
+			elif bal == 0: s += c
+		# - extract short name
+		return s.split("::")[-1]
 	
 
 help = Helper()
