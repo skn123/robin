@@ -783,7 +783,7 @@ public class DoxygenAnalyzer {
 							scope.addFriend(emember);
 							if (group != null)
 								group.getScope().addFriend(emember);
-							adjustFriend(compound, emember);
+							adjustFriend(compound, emember, isExternal);
 						}
 					}
 					/* Any other members which might occur in the XML are
@@ -1392,7 +1392,8 @@ public class DoxygenAnalyzer {
 		String exprtext = XML.collectText(xmlnode);
 		if (arrnode != null) {
 			String arrtext = XML.collectText(arrnode);
-			if (arrtext.startsWith("[")) exprtext += arrtext;
+			if (arrtext.startsWith("[") || arrtext.startsWith(")"))
+				exprtext += arrtext;
 		}
 		return parseType(exprtext, reference_map);
 	}
@@ -1780,8 +1781,9 @@ public class DoxygenAnalyzer {
 	 * Corrects properties of a friend function to a class. 
 	 * @param compound the class containing the friend declaration
 	 * @param emember the routine declared as friend
+	 * @param isExternal if the class belongs to an external reference
 	 */
-	private void adjustFriend(Entity compound, Routine emember)
+	private void adjustFriend(Entity compound, Routine emember, boolean isExternal)
 	{
 		// Add class' template parameters of container
 		for (Iterator ti = compound.templateParameterIterator();
@@ -1791,11 +1793,13 @@ public class DoxygenAnalyzer {
 			emember.addTemplateParameter((TemplateParameter)parameter.clone());
 		}
 		// Create connection to global scope
-		m_db.getGlobalNamespace().getScope().addMember(
-				emember, Specifiers.DONT_CARE, 
-				Specifiers.DONT_CARE, Specifiers.DONT_CARE);
+		if (!isExternal) {
+			m_db.getGlobalNamespace().getScope().addMember(
+					emember, Specifiers.DONT_CARE, 
+					Specifiers.DONT_CARE, Specifiers.DONT_CARE);
+		}
 	}
-	
+
 	/**
 	 * Attempts to fill information which is missing and appears as unfulfilled
 	 * connections in the declaration and definition attributes of an entity.
