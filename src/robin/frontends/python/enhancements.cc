@@ -23,6 +23,7 @@
 #include <robin/reflection/instance.h>
 #include "pythonobjects.h"
 
+
 namespace Robin {
 
 namespace Python {
@@ -307,7 +308,7 @@ public:
 		type->getEnhancements().setSlot(EnhancementsPack::LENGTH, handler);
 	}
 
-	static int __len__(PyObject *self)
+	static Py_ssize_t __len__(PyObject *self)
 	{
 		PyObject *args = PyTuple_New(0);
 		PyObject *r = self_trigger(EnhancementsPack::LENGTH, self, args);
@@ -338,7 +339,7 @@ public:
 		type->getEnhancements().setSlot(EnhancementsPack::GETITEM, handler);
 	}
 
-	static PyObject *__getitem__(PyObject *self, int index)
+	static PyObject *__getitem__(PyObject *self, Py_ssize_t index)
 	{
 		// If a LENGTH handler exists, validate index
 		if (self_supports(EnhancementsPack::LENGTH, self)) {
@@ -371,7 +372,7 @@ public:
 		type->getEnhancements().setSlot(EnhancementsPack::SETITEM, handler);
 	}
 
-	static int __setdelitem__(PyObject *self, int index, PyObject *v)
+	static int __setdelitem__(PyObject *self, Py_ssize_t index, PyObject *v)
 	{
 		PyObject *args, *r;
 		if (v == NULL) {
@@ -416,7 +417,9 @@ public:
 		type->getEnhancements().setSlot(EnhancementsPack::GETSLICE, handler);
 	}
 
-	static inline void normalizeSliceIndex(int len, int& index)
+	typedef Py_ssize_t index;
+
+	static inline void normalizeSliceIndex(int len, index& index)
 	{
 		if (index < 0)
 			index = 0;
@@ -424,14 +427,14 @@ public:
 			index = len;
 	}
 
-	static inline void normalizeSlice(int len, int& from, int& to)
+	static inline void normalizeSlice(index len, index& from, index& to)
 	{
 		normalizeSliceIndex(len, from);
 		normalizeSliceIndex(len, to);
 		if (from > to) from = to;
 	}
 
-	static PyObject *__getslice__(PyObject *self, int from, int to)
+	static PyObject *__getslice__(PyObject *self, index from, index to)
 	{
 		// If a LENGTH handler exists, validate indices
 		if (self_supports(EnhancementsPack::LENGTH, self)) {
@@ -461,7 +464,10 @@ public:
 		type->getEnhancements().setSlot(EnhancementsPack::SETSLICE, handler);
 	}
 
-	static int __setdelslice__(PyObject *self, int from, int to, PyObject *v)
+	typedef Py_ssize_t index;
+
+	static int __setdelslice__(PyObject *self, index from, index to,
+							   PyObject *v)
 	{
 		// If a LENGTH handler exists, validate indices
 		if (self_supports(EnhancementsPack::LENGTH, self)) {
@@ -917,11 +923,11 @@ public:
 		type->getEnhancements().setSlot(EnhancementsPack::MAPSIZE, handler);
 	}
 
-	static int __mapsize__(PyObject *self)
+	static Py_ssize_t __mapsize__(PyObject *self)
 	{
 		PyObject *pysize = unaryOperation(EnhancementsPack::MAPSIZE, self);
 		if (pysize) {
-			long size = PyInt_AsLong(pysize);
+			Py_ssize_t size = PyInt_AsLong(pysize);
 			Py_DECREF(pysize);
 			return size;
 		}
