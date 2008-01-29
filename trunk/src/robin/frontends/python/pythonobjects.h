@@ -336,4 +336,8 @@ extern void initObjects();
 } // end of namespace Robin
 
 
+#ifndef PY_SSIZE_T_MAX
+typedef int Py_ssize_t;
+#endif
+
 #endif
