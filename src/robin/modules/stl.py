@@ -282,4 +282,54 @@ Vector.VectorOwner = Vector.STLOwner
 make_vector_weigher = _make_container_weigher
 guess_vector_type = guess_container_type
 
+
+# std::streambuf
+class streambuf(Igluebuf):
+
+    def __init__(self, fileobj):
+        self._file = fileobj
+
+    def write(self, data):
+        self._file.write(str(data))
+
+    def read(self, n):
+        return string(self._file.read(n))
+
+
+# std::iostream
+class _ostream(std.ostream):
+
+    def __init__(self, file):
+        self.gb = streambuf(file.pyfile)
+        std.ostream.__init__(self, self.gb)
+
+
+class _istream(std.istream):
+
+    def __init__(self, file):
+        self.gb = streambuf(file.pyfile)
+        std.istream.__init__(self, self.gb)
+
+
+class file(object): 
+
+    def __init__(self, pyfile):
+        self.pyfile = pyfile
+
+
+class ifile(file): pass
+class ofile(file): pass
+
+
+
+robin.familiarize(ofile)
+robin.familiarize(ifile)
+robin.familiarize(file)
+
+std.ostream.__from__[ofile(None)] = _ostream
+std.ostream.__from__[file(None)]  = _ostream
+std.istream.__from__[ifile(None)] = _istream
+std.istream.__from__[file(None)]  = _istream
+
+
 del os

@@ -127,6 +127,34 @@ namespace StandardLibrary
 		std::vector<Qubit> m_states;
 	};
 
+	class UsingStreams
+	{
+	public:
+		struct Datum {
+			int num; std::string text;
+			
+			Datum() {} 
+			void setText(const std::string& t) { text = t; }
+		};
+		
+		void read_or_write(std::ostream& out, Datum& datum)
+		{
+			out << datum.text << ", " << datum.num;
+		}
+		void read_or_write(std::istream& in, Datum& datum)
+		{
+			in >> datum.text >> datum.num;
+		}
+		
+		void write(std::ostream& out, Datum& datum)
+		{
+			out << datum.text << ", " << datum.num;
+		}
+		void read(std::istream& in, Datum& datum)
+		{
+			in >> datum.text >> datum.num;
+		}
+	};
 }
 
 

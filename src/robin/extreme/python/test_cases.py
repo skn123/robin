@@ -95,38 +95,6 @@ class LanguageTest(TestCase):
 		except RuntimeError, value:
 			self.failUnless(str(value).find(ZeroDivisionError.__name__) >= 0)
 
-	def testConversionPriorities(self):
-		"""testConversionPriorities - Verify that the priorities of certain
-		conversions are higher than others, specifically that std::string
-		conversions are higher than char*."""
-		# Construct the class with a string, and verify that the std::string
-		# constructor was used, and not char*
-		conv = language.StandardLibrary.UsingStringConversions("test")
-		self.failUnless(conv.getConversionType() == 1,
-						"char* conversion favoured over std::string")
-
-	def testVectors(self):
-		import stl
-		ve =  language.StandardLibrary.UsingVectors([])
-		vl =  language.StandardLibrary.UsingVectors([1,2,3])
-		vd =  language.StandardLibrary.UsingVectors([1.0,2.0,3.0])
-		vs =  language.StandardLibrary.UsingVectors(["one","two","three"])
-		vll = language.StandardLibrary.UsingVectors([1l,2l,5l])
-		self.assertEquals(vl.getVectorType(), 1,
-						  "vector<double> favoured over vector<long>")
-		self.assertEquals(vd.getVectorType(), 0,
-						  "vector<long> favoured over vector<double>")
-		self.assertEquals(vs.getVectorType(), 2,
-						  "vector<string> not favoured over others")
-		self.assertEquals(vll.getVectorType(), 3,
-						  "vector<long long> not favoured over others")
-
-	def testVectorOfChar(self):
-		import stl
-		ve =  language.StandardLibrary.UsingVectors([])
-		ve.atof(['0','.','5','\0'])
-		self.assertEquals([0.5], ve.get())
-		
 	def testExceptions(self):
 		try:
 			e = language.Exceptions()
@@ -144,13 +112,6 @@ class LanguageTest(TestCase):
 		language.Inners().staticMethodIn()
 		language.Inners.staticMethodIn()
 	
-	def testVolatileVector(self):
-		l = range(10)
-		lorig = l[:]
-		language.StandardLibrary.UsingVectors.modifyVectorInPlace(l)
-		for i in xrange(len(l)):
-			self.failUnless(l[i] == lorig[i] * 2)
-
 	def testShorts(self):
 		p = language.Primitives()
 		p.shorten(5)
@@ -166,19 +127,6 @@ class LanguageTest(TestCase):
 		ii_a = language.dynamic_cast[language.Abstract](ii)
 		ii_na = language.dynamic_cast[language.NonAbstract](ii_a)
 		ii_na.abstraction()
-
-	def testComplex(self):
-		uc = language.StandardLibrary.UsingComplex()
-		self.assertEquals(uc.pivot(), 1+1j)
-		uc.append(5,1j)
-		uc.append(5+1j, 1+5j)
-
-	def testVectorOfComplex(self):
-		uc = language.StandardLibrary.UsingComplex()
-		qubits = [(6j+1,4+3j), (5, 2j)]
-		tensor = [(5+30j), (-12+2j), (20+15j), (-6+8j)]
-		for q in qubits: uc.append(*q)
-		self.assertEquals(uc.tensor(), tensor)
 
 	def testPointerPrimitives(self):
 		import robin
@@ -210,6 +158,82 @@ class LanguageTest(TestCase):
 		c.floatfoo = 10.5
 		self.assertEquals("%.3f" % c.foo, "%.3f" % 10.5)
 		self.assertEquals("%.3f" % c.floatfoo, "%.3f" % 10.5)
+
+
+class STLTest(TestCase):
+
+    def testStringConversionPriorities(self):
+        """testStringConversionPriorities - Verify that std::string
+        conversions are higher prioritized than char*."""
+        # Construct the class with a string, and verify that the std::string
+        # constructor was used, and not char*
+        conv = language.StandardLibrary.UsingStringConversions("test")
+        self.failUnless(conv.getConversionType() == 1,
+                        "char* conversion favoured over std::string")
+
+    def testVectors(self):
+        import stl
+        ve =  language.StandardLibrary.UsingVectors([])
+        vl =  language.StandardLibrary.UsingVectors([1,2,3])
+        vd =  language.StandardLibrary.UsingVectors([1.0,2.0,3.0])
+        vs =  language.StandardLibrary.UsingVectors(["one","two","three"])
+        vll = language.StandardLibrary.UsingVectors([1l,2l,5l])
+        self.assertEquals(vl.getVectorType(), 1,
+                          "vector<double> favoured over vector<long>")
+        self.assertEquals(vd.getVectorType(), 0,
+                          "vector<long> favoured over vector<double>")
+        self.assertEquals(vs.getVectorType(), 2,
+                          "vector<string> not favoured over others")
+        self.assertEquals(vll.getVectorType(), 3,
+                          "vector<long long> not favoured over others")
+
+    def testVectorOfChar(self):
+        import stl
+        ve =  language.StandardLibrary.UsingVectors([])
+        ve.atof(['0','.','5','\0'])
+        self.assertEquals([0.5], ve.get())
+        
+    def testComplex(self):
+        uc = language.StandardLibrary.UsingComplex()
+        self.assertEquals(uc.pivot(), 1+1j)
+        uc.append(5,1j)
+        uc.append(5+1j, 1+5j)
+
+    def testVectorOfComplex(self):
+        uc = language.StandardLibrary.UsingComplex()
+        qubits = [(6j+1,4+3j), (5, 2j)]
+        tensor = [(5+30j), (-12+2j), (20+15j), (-6+8j)]
+        for q in qubits: uc.append(*q)
+        self.assertEquals(uc.tensor(), tensor)
+
+    def testVolatileVector(self):
+        l = range(10)
+        lorig = l[:]
+        language.StandardLibrary.UsingVectors.modifyVectorInPlace(l)
+        for i in xrange(len(l)):
+            self.failUnless(l[i] == lorig[i] * 2)
+    
+    def testStreams(self):
+    	import StringIO, stl
+    	o = language.StandardLibrary.UsingStreams()
+    	def samples():
+    	    return StringIO.StringIO(), StringIO.StringIO("word 99871")
+    	# Using stl.ifile and stl.ofile
+        go, gi = samples()
+        d = language.StandardLibrary.UsingStreams.Datum()
+        d.setText("robin"); d.num = 104
+        o.read_or_write(stl.ofile(go), d)
+        self.assertEquals(go.getvalue(), "%s, %i" % (d.text, d.num))
+        o.read_or_write(stl.ifile(gi), d)
+        self.assertEquals((d.text, d.num), ("word", 99871))
+        # Using stl.file
+        go, gi = samples()
+        d = language.StandardLibrary.UsingStreams.Datum()
+        d.setText("robin"); d.num = 104
+        o.write(stl.file(go), d)
+        self.assertEquals(go.getvalue(), "%s, %i" % (d.text, d.num))
+        o.read(stl.file(gi), d)
+        self.assertEquals((d.text, d.num), ("word", 99871))
 
 
 class ThreadingTest(TestCase):
@@ -306,10 +330,10 @@ class TemplateTest(TestCase):
 		t = TemplateObject()
 		robin.declareTemplate("Less::Yets", t)
 		self.assertEquals(t, {'Carrier':1})
-
-    def testNestedTemplateArgs(self):
-        t = templates.NestedTemplate();
-        self.assertEquals(t.method(), 1);
+		
+	def testNestedTemplateArgs(self):
+		t = templates.NestedTemplate()
+		self.assertEquals(t.method(), 1)
 
 
 
