@@ -111,13 +111,12 @@ SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
 
 language-test@%:
 	$($*)/griffin $G -I --in $(extreme_python)/language.h            \
-                $(extreme_python)/kwargs.h                               \
+                $(extreme_python)/kwargs.h                           \
 	        --out $(extreme_python)/liblanguage_robin.cc             \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
 	        Conversions Exceptions Interface Abstract NonAbstract    \
-	        Primitives Pointers UsingStrings UsingStringConversions  \
-	        UsingVectors UsingPairs UsingComplex Typedefs            \
+	        Primitives Pointers StandardLibrary Typedefs             \
 	        PublicDouble KwClass --module language
 	$(cxx) $(shared) $(extreme_python)/liblanguage_robin.cc            \
 	        -o $(extreme_python)/liblanguage.so
@@ -160,7 +159,7 @@ memprof-test@%:
 
 
 TESTS = language-test protocols-test inheritance-test hints-test autocollect-test memprof-test
-TEST_SUITES = LanguageTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
+TEST_SUITES = LanguageTest STLTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
 TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
 TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)
 TESTING_PYTHON_VG = cd $(extreme_python) && $(SELF) valgrind --tool=memcheck $(python)

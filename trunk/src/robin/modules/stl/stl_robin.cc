@@ -4,10 +4,20 @@
 #include <fstream>
 #include <stdio.h>
 
+#include "streams.h"
+
 struct RegData { const char *name; const char *type; RegData *i; void *sym; };
 struct PascalString { unsigned long size; const char *chars; char buffer[1]; };
+typedef void *scripting_element;
+typedef void *basic_block;
 
 #define F (void*)&
+
+typedef bool (*__interceptor)(scripting_element twin,
+			      RegData *signature, basic_block args[], 
+			      basic_block *result, bool isPure);
+extern __interceptor __robin_callback;
+__interceptor __robin_callback = 0;
 
 /*
  * std::string
@@ -64,6 +74,32 @@ void stdstring_dtor(std::string *self)
 {
 	delete self;
 }
+
+/*
+ * std::istream
+ */
+std::istream *ctor_stdistream(std::streambuf *buf)
+{
+	return new std::istream(buf);
+}
+
+RegData ctor_stdistream_proto[] = {
+	{ "buf", "*Igluebuf", 0, 0 },
+	{ 0 }
+};
+
+/*
+ * std::ostream
+ */
+std::ostream *ctor_stdostream(std::streambuf *buf)
+{
+	return new std::ostream(buf);
+}
+
+RegData ctor_stdostream_proto[] = {
+	{ "buf", "*Igluebuf", 0, 0 },
+	{ 0 }
+};
 
 /*
  * std::ostringstream
@@ -171,6 +207,54 @@ void dtor_stdistringstream(std::istringstream *self)
 	delete self;
 }
 
+/*
+ * std::streambuf
+ */
+extern RegData Igluebuf_proto[];
+
+class Igluebuf : public ::gluebuf
+{
+public:
+	void _init(scripting_element imp) { twin = imp; }
+
+	virtual void write(const std::string &data) {
+		void *args[] = { (void*)(&data) };
+		void *result;
+		__robin_callback(twin, Igluebuf_proto+2, args, &result, true);
+	}
+
+	virtual std::string read(int n) { 
+		void *args[] = { (void*)n };
+		void *result;
+		__robin_callback(twin, Igluebuf_proto+3, args, &result, true);
+		return *std::auto_ptr<std::string>((std::string*)result);
+	}
+
+private:
+	scripting_element twin;
+};
+
+Igluebuf *ctor_Igluebuf() { return new Igluebuf; }
+void dtor_Igluebuf(Igluebuf *esc) { delete esc; };
+
+void Igluebuf_init(Igluebuf *gb, scripting_element imp) { gb->_init(imp); }
+
+RegData Igluebuf_init_proto[] = {
+	{ "imp", "scripting_element", 0, 0 },
+	{ 0 }
+};
+
+RegData Igluebuf_write_proto[] = {
+	{ "data", "&std::string", 0, 0 },
+	{ 0 }
+};
+
+RegData Igluebuf_read_proto[] = {
+	{ "n", "int", 0, 0 },
+	{ 0 }
+};
+
+
 RegData stdstring_proto[] = {
 	{ "*", "constructor", 0, F ctor_stdstring0 },
 	//{ "*", "constructor", ctor_stdstring1_proto, F ctor_stdstring1 },
@@ -183,6 +267,7 @@ RegData stdstring_proto[] = {
 };
 
 RegData stdostream_proto[] = {
+	{ "*", "constructor", ctor_stdostream_proto, F ctor_stdostream },
 	{ 0 }
 };
 
@@ -203,6 +288,7 @@ RegData stdofstream_proto[] = {
 };
 
 RegData stdistream_proto[] = {
+	{ "*", "constructor", ctor_stdistream_proto, F ctor_stdistream },
 	{ 0 }
 };
 
@@ -221,6 +307,15 @@ RegData stdistringstream_proto[] = {
 	{ 0 }
 };
 
+RegData Igluebuf_proto[] = {
+	{ "*", "constructor", 0, F ctor_Igluebuf },
+	{ "_init", "void", Igluebuf_init_proto, F Igluebuf_init },
+	{ "write", "void", Igluebuf_write_proto, 0 },
+	{ "read", "*std::string", Igluebuf_read_proto, 0 },
+	{ ".", "destructor", 0, F dtor_Igluebuf },
+	{ 0 }
+};
+
 #ifdef _WIN32
 extern "C"
 __declspec(dllexport)
@@ -233,5 +328,6 @@ RegData entry[] = {
 	{ "std::istream", "class", stdistream_proto, 0 },
 	{ "std::istringstream", "class", stdistringstream_proto, 0 },
 	{ "std::ifstream", "class", stdifstream_proto, 0 },
+	{ "Igluebuf", "class", Igluebuf_proto, 0 },
 	{ 0 }
 };
