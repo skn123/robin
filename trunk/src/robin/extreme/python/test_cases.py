@@ -449,93 +449,90 @@ class InheritanceTest(TestCase):
 		for i in xrange(len(elements)):
 			self.assertEquals(elements[i] * i, melements[i])
 
-        self.assertEquals(reduce(inheritance.mul, [f,f], 9), 9.0)
+		self.assertEquals(reduce(inheritance.mul, [f,f], 9), 9.0)
 
-    def testInterceptorsNonPure1(self):
-        import inheritance, robin
-        class Functor(inheritance.IFunctor):
-            pass
-        class MyFunctor(inheritance.IFunctor):
-            def __init__(self, fac):
-                self.fac = fac
-            def factor(self):
-                return self.fac
+	def testInterceptorsNonPure1(self):
+		import inheritance, robin
+		class Functor(inheritance.IFunctor):
+			pass
+		class MyFunctor(inheritance.IFunctor):
+			def __init__(self, fac):
+				self.fac = fac
+			def factor(self):
+				return self.fac
 
-        fs = [MyFunctor(0.25), Functor(), MyFunctor(0.5)]
-        self.assertEquals(reduce(inheritance.mul, fs, 2), 0.25)
+		fs = [MyFunctor(0.25), Functor(), MyFunctor(0.5)]
+		self.assertEquals(reduce(inheritance.mul, fs, 2), 0.25)
 
-    def testInterceptorsNonPure2(self):
-        import inheritance, robin
-        class FunctorImpl(inheritance.IFunctorImpl):
-            pass
-        class MyFunctorImpl(inheritance.IFunctorImpl):
-            def operate(self, s, n):
-                return robin.disown(stl.string(str(s) + str(n)))
+	def testInterceptorsNonPure2(self):
+		import inheritance, robin
+		class FunctorImpl(inheritance.IFunctorImpl):
+			pass
+		class MyFunctorImpl(inheritance.IFunctorImpl):
+			def operate(self, s, n):
+				return robin.disown(stl.string(str(s) + str(n)))
 
-        fi = FunctorImpl()
-        mfi = MyFunctorImpl()
-        elements = ["Elaine", "John", "Theodore"]
-        melements1 = inheritance.mapper(elements, fi)
-        melements2 = inheritance.mapper(elements, mfi)
-        self.assertEquals(melements1, elements)
-        self.assertEquals(melements2, 
-            map(lambda x,y:x+str(y), elements, range(len(elements))))
+		fi = FunctorImpl()
+		mfi = MyFunctorImpl()
+		elements = ["Elaine", "John", "Theodore"]
+		melements1 = inheritance.mapper(elements, fi)
+		melements2 = inheritance.mapper(elements, mfi)
+		self.assertEquals(melements1, elements)
+		self.assertEquals(melements2, 
+			map(lambda x,y:x+str(y), elements, range(len(elements))))
 
-    def testInterceptorsForNonPure(self):
-        import inheritance
-        class MoreTainted(inheritance.ITaintedVirtual):
-            def __init__(self, taintParam):
-                inheritance.ITaintedVirtual.__init__(self, taintParam)
-                self.pythonTaint = 5
+	def testInterceptorsForNonPure(self):
+		import inheritance
+		class MoreTainted(inheritance.ITaintedVirtual):
+			def __init__(self, taintParam):
+				inheritance.ITaintedVirtual.__init__(self, taintParam)
+				self.pythonTaint = 5
 
-            def returnTaint(self):
-                return inheritance.TaintedVirtual.returnTaint(self) * 2
+			def returnTaint(self):
+				return inheritance.TaintedVirtual.returnTaint(self) * 2
 
-            def pythonIsPure(self):
-                return 10;
+			def pythonIsPure(self):
+				return 10;
 
-        class Untainter(MoreTainted):
-            def __init__(self):
-                inheritance.ITaintedVirtual.__init__(self, 0)
+		class Untainter(MoreTainted):
+			def __init__(self):
+				inheritance.ITaintedVirtual.__init__(self, 0)
 
-            def returnTaint(self):
-                return -1
+			def returnTaint(self):
+				return -1
 
-            def returnRealTaint(self):
-                return MoreTainted.returnTaint(self)
+			def returnRealTaint(self):
+				return MoreTainted.returnTaint(self)
 
-            def returnFilth(self):
-                return 0
+			def returnFilth(self):
+				return 0
 
-        class EvenMoreTainted(MoreTainted):
-            def __init__(self):
-                MoreTainted.__init__(self,500)
+		class EvenMoreTainted(MoreTainted):
+			def __init__(self):
+				MoreTainted.__init__(self,500)
 
+		mt = MoreTainted(5)
+		self.assertEquals(mt.returnTaint(), 10)
+		self.assertEquals(mt.returnFilth(), -1)
+		self.assertEquals(mt.pythonIsPure(), 10)
+		self.assertEquals(mt.pythonTaint,5)
+		
+		umt = Untainter()
+		self.assertEquals(umt.returnTaint(),-1)
+		self.assertEquals(umt.returnRealTaint(),0)
+		self.assertEquals(umt.returnFilth(),0)
+		self.assertEquals(umt.pythonIsPure(),10)
+		try:
+			i = umt.pythonTaint
+			self.fail()
+		except:
+			pass
 
-        
-        mt = MoreTainted(5)
-        self.assertEquals(mt.returnTaint(), 10)
-        self.assertEquals(mt.returnFilth(), -1)
-        self.assertEquals(mt.pythonIsPure(), 10)
-        self.assertEquals(mt.pythonTaint,5)
-        
-        umt = Untainter()
-        self.assertEquals(umt.returnTaint(),-1)
-        self.assertEquals(umt.returnRealTaint(),0)
-        self.assertEquals(umt.returnFilth(),0)
-        self.assertEquals(umt.pythonIsPure(),10)
-        try:
-            i = umt.pythonTaint
-            self.fail()
-        except:
-            pass
-
-
-        emt = EvenMoreTainted()
-        self.assertEquals(emt.pythonTaint,5)
-        self.assertEquals(emt.returnTaint(), 1000)
-        self.assertEquals(emt.pythonIsPure(), 10)
-        self.assertEquals(emt.returnFilth(), -1)
+		emt = EvenMoreTainted()
+		self.assertEquals(emt.pythonTaint,5)
+		self.assertEquals(emt.returnTaint(), 1000)
+		self.assertEquals(emt.pythonIsPure(), 10)
+		self.assertEquals(emt.returnFilth(), -1)
 
 
 class HintsTest(TestCase):
