@@ -332,11 +332,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Generate #include directives
 		for (Iterator headerIterator = headers.iterator(); 
 			headerIterator.hasNext();) {
-			m_output.write("#include \"");
-			m_output.write(Utils.FileTools.absoluteToRelative(
-					(String)headerIterator.next(),
-					m_outputDirectory));
-			m_output.write("\"\n");
+			String header_abs = (String)headerIterator.next();
+			String header_rel = Utils.FileTools
+				.absoluteToRelative(header_abs, m_outputDirectory);
+			m_output.write("#include \"" + header_rel + "\"\n");
 		}
 	}
 
