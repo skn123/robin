@@ -84,6 +84,7 @@ public class ProgramDatabase extends Entity {
 	public void enlistSourceFile(SourceFile source)
 	{
 		m_sources.add(source);
+		source.connectToContainer(this, source);
 	}
 	
 	/**

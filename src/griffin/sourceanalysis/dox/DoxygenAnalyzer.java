@@ -666,7 +666,6 @@ public class DoxygenAnalyzer {
 		}
 		else if (entityClass.equals("SourceFile")) {
 			SourceFile sf = new SourceFile();
-			m_db.enlistSourceFile(sf);
 			compound = sf;
 			/*
 			 * For source files - a phony scope is created to put members in
@@ -1468,7 +1467,8 @@ public class DoxygenAnalyzer {
 					if (name.indexOf("::") == -1 && !anonymous &&
 							locator.getKind().equals(Tags.COMPOUND)) {
 						Entity comp = followReference(locator);
-						comp.setExternal(isExternal);
+						if (!comp.hasContainer())
+							comp.setExternal(isExternal);
 						compounds.add(comp);
 					}
 				}
@@ -1496,6 +1496,9 @@ public class DoxygenAnalyzer {
 				}
 				else if (element instanceof Namespace) {
 					global.addMember((Namespace)element);
+				}
+				else if (element instanceof SourceFile) {
+					m_db.enlistSourceFile((SourceFile)element);
 				}
 			}
 		}
