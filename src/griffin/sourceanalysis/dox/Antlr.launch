@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<!-- Recommendation: copy this file to                                        -->
-<!--  ${workspace_loc:/}/.metadata/.plugins/org.eclipse.debug.core/.launches  -->
-<!--                                                                          -->
-<!-- To have an "Antlr" item in your "External Tools" section on Eclipse's    -->
-<!-- workbench (compatible with Eclipse-3.x).                                 -->
-<!-- Run this launch item in order to generate the parser and lexer using     -->
-<!-- antlr.Tool; without these files, Griffin will not build.                 -->
-
 <launchConfiguration type="org.eclipse.ui.externaltools.ProgramLaunchConfigurationType">
-<stringAttribute key="org.eclipse.ui.externaltools.ATTR_TOOL_ARGUMENTS" value="-cp antlr-2.7.2/antlrall.jar antlr.Tool TypeExpression.g"/>
-<stringAttribute key="org.eclipse.ui.externaltools.ATTR_WORKING_DIRECTORY" value="${workspace_loc:/Griffin/src/sourceanalysis/dox}"/>
-<stringAttribute key="org.eclipse.ui.externaltools.ATTR_LOCATION" value="/usr/local/bin/java"/>
 <booleanAttribute key="org.eclipse.debug.core.appendEnvironmentVariables" value="true"/>
+<mapAttribute key="org.eclipse.debug.core.environmentVariables">
+<mapEntry key="CLASSPATH" value="${resource_loc:/Griffin/premises/antlr-2.7.5.jar}"/>
+</mapAttribute>
+<stringAttribute key="org.eclipse.ui.externaltools.ATTR_LOCATION" value="/usr/bin/java"/>
+<stringAttribute key="org.eclipse.ui.externaltools.ATTR_TOOL_ARGUMENTS" value="antlr.Tool TypeExpression.g"/>
+<stringAttribute key="org.eclipse.ui.externaltools.ATTR_WORKING_DIRECTORY" value="${workspace_loc:/Griffin/src/griffin/sourceanalysis/dox}"/>
 </launchConfiguration>

@@ -41,6 +41,7 @@ COMMA: ',' ;
 
 ID:	(KEY) => KEY { $setType(antlr.Token.SKIP); }
 	 |  ('a'..'z' | 'A'..'Z' | '_') ('a'..'z' | 'A'..'Z' | '0'..'9' | '_')*
+	 | '@' ('0'..'9')+
 	;
 	
 INT: ( '-' | '+' )? ( '0'..'9' )+ ( 'l' | 'L' )?
@@ -49,6 +50,8 @@ INT: ( '-' | '+' )? ( '0'..'9' )+ ( 'l' | 'L' )?
 QUAD: ':' ':' ;
 
 ELLIPSIS: '.' '.' '.';
+
+INITIALIZER: '=' ( ( '0'..'9' )+ | ID ) { $setType(antlr.Token.SKIP); };
 
 
 {
@@ -139,6 +142,7 @@ options {
 		else {
 			Type.TypeNode pnode = new Type.TypeNode(pointer.nodeType);
 			pnode.add(base);
+			pnode.setCV(pointer.cv);
 			return pnode;
 		}
 	}
@@ -169,6 +173,7 @@ options {
 	class Pointer
 	{
 		public int nodeType;
+		public int cv;
 	}
 
 	private static Type.TypeNode errorType()
@@ -225,7 +230,8 @@ nonempty_direct_declarator[Type.TypeNode base] returns [Type.TypeNode decl=base]
  	;
  	
 direct_declarator[Type.TypeNode base] returns [Type.TypeNode decl=base]:
-	(decl=nonempty_direct_declarator[base])?
+	((nonempty_direct_declarator[base]) 
+	   => decl=nonempty_direct_declarator[base])?
 	;
 
 declarator[Type.TypeNode base] returns [Type.TypeNode decl=m_err]
@@ -236,18 +242,20 @@ declarator[Type.TypeNode base] returns [Type.TypeNode decl=m_err]
 		OPEN_PAREN parameter_list CLOSE_PAREN
 			{ decl = func(decl); }
 	 |	{ dimension = 0; }
-	 	OPEN_BRACKET (dim:INT { dimension = Integer.parseInt(dim.getText()); })?
+	 	OPEN_BRACKET (dim:INT { dimension = Integer.parseInt(dim.getText()); }
+	 	              | ID { dimension = 0; })?
 	 		CLOSE_BRACKET
 			{ decl = array(decl, dimension); }
 	)*
 	;
   
 ptr_operator returns [ Pointer p ]
-	{ p = new Pointer(); }
+	{ p = new Pointer(); p.cv = 0; int cvflags = 0; }
 	:
-	STAR (cv)*  { p.nodeType = Type.TypeNode.NODE_POINTER; }
+	STAR (cvflags=cv { p.cv |= cvflags; })* 
+	    { p.nodeType = Type.TypeNode.NODE_POINTER; }
   |	AMPERSAND { p.nodeType = Type.TypeNode.NODE_REFERENCE; }
-  | (QUAD)? nested_name_specifier STAR (cv)*
+  | (QUAD)? nested_name_specifier STAR (cvflags=cv { p.cv |= cvflags; })*
   		{ p.nodeType = Type.TypeNode.NODE_POINTER; }
 	;
 
