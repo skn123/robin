@@ -25,6 +25,9 @@ class FunctorImpl : public Functor
 public:
     virtual std::string operate(const std::string& arg0, int arg1) const
     { return arg0; }
+
+protected:
+	double z;
 };
 
 std::vector<std::string> mapper(std::vector<std::string> strings,
