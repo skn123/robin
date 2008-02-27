@@ -762,32 +762,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if(Filters.isArray(type)) {
 			return; // wrapping arrays is not supported
 		}
-		/*if(!m_subjects.contains(type) && 
-		   !m_subjects.contains(Filters.getOriginalType(type)))
-		{
-			if(type.getBaseType() instanceof Aggregate && !(type.getBaseType() instanceof Primitive)) {
-				if(type.getTemplateArguments() == null) {
-					return;
-				} else if(!templateInstances.containsKey(
-						   Utils.templateExpression((Aggregate)type.getBaseType(), type.getTemplateArguments()))) 
-				{
-					return;
-				}
-			} else {
-				return;
-			}
-		}*/
-
-		
 		
 		m_output.write("\t/* Wrapper for field " + originalField.getFullName() + "*/");
 		m_output.write("\n");
 		// add a typedef to make field type public
-		String newTypeName = Utils.getTypeHash(type);
-		
-		
-		
-		
+		String newTypeName = "" + uid(originalField);
 		
 		if(newTypes.containsKey(newTypeName) == false) {
 			Alias interceptedTypeBase = new Alias();
@@ -796,8 +775,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			result.getScope().addMember(interceptedTypeBase, Specifiers.Visibility.PUBLIC);
 			Type t = new Type(new Type.TypeNode(interceptedTypeBase));
 			newTypes.put(newTypeName, t);
-			m_output.write("\ttypedef " + Formatters.formatDeclaration(removeUnneededConstness(type), 
-					t.getBaseType().getName(), ElementKind.VARIABLE, false));					
+			m_output.write("\ttypedef " + 
+					removeUnneededConstness(type).formatCpp( 
+					t.getBaseType().getName()));					
 			m_output.write(";\n");
 		}
 		
