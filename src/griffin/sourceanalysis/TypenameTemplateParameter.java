@@ -120,7 +120,6 @@ public class TypenameTemplateParameter extends TemplateParameter {
 					return null;
 				}
 			};
-			System.out.println(deflt);
 			deflt = Type.transformType(deflt, transformer);
 		}
 		return new TypenameTemplateArgument(deflt);

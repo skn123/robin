@@ -29,6 +29,9 @@ public:
 	class Value { public: Value() : v(4) { } int v; };
 	Value v;
 
+	void setEl(const El& t) { e = t; }
+	void setEl(const El * const t) { e = *t; }
+
 private:
 	int hidden;
 };

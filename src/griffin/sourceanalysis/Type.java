@@ -270,10 +270,12 @@ public class Type extends DefaultTreeModel {
 		public String formatCpp(String declname, BaseTypeFormatter baseFormatter)
 		{
 			StringBuffer sb = new StringBuffer();
-			if (hasCV(Specifiers.CVQualifiers.CONST)) sb.append("const ");
-			if (hasCV(Specifiers.CVQualifiers.VOLATILE)) sb.append("volatile ");
+			StringBuffer cv = new StringBuffer();
+			if (hasCV(Specifiers.CVQualifiers.CONST)) cv.append("const ");
+			if (hasCV(Specifiers.CVQualifiers.VOLATILE)) cv.append("volatile ");
 			
 			if (getKind() == NODE_LEAF) {
+				sb.append(cv.toString());
 				sb.append(formatBaseUsing(m_base, baseFormatter));
 				if (declname.length() > 0) {
 					sb.append(" ");
@@ -282,12 +284,13 @@ public class Type extends DefaultTreeModel {
 			}
 			else if (getKind() == NODE_POINTER || getKind() == NODE_REFERENCE) {
 				char op = (getKind() == NODE_POINTER) ? '*' : '&';
+				String op_cv_declname = op + cv.toString() + declname;
 				TypeNode referencee = (TypeNode)getFirstChild();
 				if (referencee.getKind() == NODE_ARRAY)
-					sb.append(referencee.formatCpp("(" + op + declname + ")",
+					sb.append(referencee.formatCpp("(" + op_cv_declname + ")",
 						baseFormatter));
 				else
-					sb.append(referencee.formatCpp("" + op + declname,
+					sb.append(referencee.formatCpp(op_cv_declname,
 						baseFormatter));
 			}
 			else if (getKind() == NODE_ARRAY) {
@@ -296,6 +299,7 @@ public class Type extends DefaultTreeModel {
 					baseFormatter));
 			}
 			else if (getKind() == NODE_TEMPLATE_INSTANTIATION) {
+				sb.append(cv.toString());
 				// Show base
 				Enumeration cen = children();
 				TypeNode basenode = (TypeNode)cen.nextElement();
