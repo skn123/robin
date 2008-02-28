@@ -5,6 +5,7 @@ import backend.robin.Filters;
 import sourceanalysis.Alias;
 import sourceanalysis.Entity;
 import sourceanalysis.InappropriateKindException;
+import sourceanalysis.Specifiers;
 import sourceanalysis.Type;
 
 public class TypeToolbox {
@@ -82,6 +83,17 @@ public class TypeToolbox {
 	static public Type makePointer(Entity base) {
 		Type.TypeNode root = new Type.TypeNode(Type.TypeNode.NODE_POINTER);
 		root.add(new Type.TypeNode(base));
+		return new Type(root);
+	}
+	
+	/**
+	 * Create a constant type, e.g. const MyClass.
+	 * @param base the basic type entity (usually Aggregate or Primitive)
+	 * @return a Type representing const 'base'.
+	 */
+	static public Type makeConst(Entity base) { 
+		Type.TypeNode root = new Type.TypeNode(base);
+		root.setCV(Specifiers.CVQualifiers.CONST);
 		return new Type(root);
 	}
 

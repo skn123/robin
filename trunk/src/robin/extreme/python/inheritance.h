@@ -7,6 +7,8 @@
 #include <string>
 
 
+namespace B {
+
 /**
  * An abstract class that should be implemented in Python.
  */
@@ -17,10 +19,12 @@ public:
     virtual float factor() const { return 1.0; }
 };
 
+}
+
 /**
  * An implementation in C++ which can also be overridden in Python.
  */
-class FunctorImpl : public Functor
+class FunctorImpl : public B::Functor
 {
 public:
     virtual std::string operate(const std::string& arg0, int arg1) const
@@ -31,7 +35,7 @@ protected:
 };
 
 std::vector<std::string> mapper(std::vector<std::string> strings,
-								Functor *functor)
+								B::Functor *functor)
 {
 	std::vector<std::string> results;
 	for (size_t i = 0; i < strings.size(); ++i) {
@@ -40,7 +44,7 @@ std::vector<std::string> mapper(std::vector<std::string> strings,
 	return results;
 }							
 
-float mul(float num, Functor *functor)
+float mul(float num, B::Functor *functor)
 {
     return num * functor->factor();
 }

@@ -52,9 +52,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	    m_randomNamespace = generateNamespaceName();
 
 		// Register touchups for special types
-		Type voidptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
-		voidptr.getRootNode().add(new Type.TypeNode(Primitive.VOID));
-		voidptr.getRootNode().setCV(Specifiers.CVQualifiers.CONST);
+		Type voidptr =
+			TypeToolbox.makePointer(TypeToolbox.makeConst(Primitive.VOID));
 		Filters.getTouchupsMap().put(
 				new Type(new Type.TypeNode(Primitive.FLOAT)),
 				new Filters.Touchup(
@@ -66,9 +65,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"\treturn union_cast<float>(val);\n" +
 						"}\n"));
 
-		Type doubleptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
-		doubleptr.getRootNode().add(new Type.TypeNode(Primitive.DOUBLE));
-		doubleptr.getRootNode().setCV(Specifiers.CVQualifiers.CONST);
+		Type doubleptr =
+			TypeToolbox.makePointer(TypeToolbox.makeConst(Primitive.DOUBLE));
 		Filters.getTouchupsMap().put(
 				new Type(new Type.TypeNode(Primitive.DOUBLE)),
 				new Filters.Touchup(
@@ -79,8 +77,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"double touchdown(const double* val)\n{\n" +
 						"\treturn *std::auto_ptr<const double>(val);\n" +
 						"}\n"));
-		Type longlongptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
-		longlongptr.getRootNode().add(new Type.TypeNode(Primitive.LONGLONG));
+		Type longlongptr = TypeToolbox.makePointer(Primitive.LONGLONG);
 		Filters.getTouchupsMap().put(
 				new Type(new Type.TypeNode(Primitive.LONGLONG)),
 				new Filters.Touchup(
@@ -91,8 +88,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						"long long touchdown(long long* val)\n{\n" +
 						"\treturn *std::auto_ptr<long long>(val);\n" +
 						"}\n"));
-		Type ulonglongptr = new Type(new Type.TypeNode(Type.TypeNode.NODE_POINTER));
-		ulonglongptr.getRootNode().add(new Type.TypeNode(Primitive.ULONGLONG));
+		Type ulonglongptr = TypeToolbox.makePointer(Primitive.ULONGLONG);
 		Filters.getTouchupsMap().put(
 				new Type(new Type.TypeNode(Primitive.ULONGLONG)),
 				new Filters.Touchup(
@@ -502,7 +498,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             }
             // in case the child class routine shadows the other routines,
             // we need to write the name of the first class this routine appeared at
-            m_output.write(routine.getContainer().getName() + "::" + routine.getName() + "(");
+            m_output.write(routine.getContainer().getFullName() + "::" + routine.getName() + "(");
             int i = 0;
             for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
             		argIter.next(); // ignore the result, we just need to advance the iterator

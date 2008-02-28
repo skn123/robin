@@ -252,11 +252,12 @@ declarator[Type.TypeNode base] returns [Type.TypeNode decl=m_err]
 ptr_operator returns [ Pointer p ]
 	{ p = new Pointer(); p.cv = 0; int cvflags = 0; }
 	:
-	STAR (cvflags=cv { p.cv |= cvflags; })* 
-	    { p.nodeType = Type.TypeNode.NODE_POINTER; }
+  ( STAR     { p.nodeType = Type.TypeNode.NODE_POINTER; }
   |	AMPERSAND { p.nodeType = Type.TypeNode.NODE_REFERENCE; }
-  | (QUAD)? nested_name_specifier STAR (cvflags=cv { p.cv |= cvflags; })*
-  		{ p.nodeType = Type.TypeNode.NODE_POINTER; }
+  | (QUAD)? nested_name_specifier STAR 
+  	          { p.nodeType = Type.TypeNode.NODE_POINTER; } 
+  )
+    (cvflags=cv { p.cv |= cvflags; })*
 	;
 
 parameter_list:
