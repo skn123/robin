@@ -29,7 +29,7 @@ plat := ${shell $(python) -c "import griffin; print griffin.platspec"}
 py := ${shell $(python) -c "import griffin; print griffin.pyspec"}
 endif
 
-install = install -D
+install = install -d ${dir $2} && install $1 $2
 cp-r = cp -r
 sed = sed
 echo = echo
@@ -42,12 +42,15 @@ INSTALLABLE_FILES = \
 	$(jardir)/Griffin.jar \
 	$(pydir).pth \
 	$(pydir)/robin.py $(pydir)/griffin.py \
-	$(pydir)/stl.py $(pydir)/robinhelp.py $(pydir)/document.py \
-	$(pydir)/pickle_weakref.py \
-	$(pydir)/html/__init__.py $(pydir)/html/textformat.py \
-	$(pydir)/robinlib/__init__.py $(pydir)/robinlib/platform.py \
-	$(pydir)/robinlib/config.py \
-	$(pydir)/robinlib/argparse.py \
+	$(pydir)/stl.py \
+	${addprefix $(pydir)/robinlib/, \
+		__init__.py platform.py \
+		config.py \
+		robinhelp.py \
+		document.py \
+		pickle_weakref.py \
+		html/__init__.py html/textformat.py \
+		argparse.py} \
 	$(jardir)/stl.st.xml $(jardir)/stl.tag 
 
 INSTALLABLE_DIRS = $(jardir)/dox-xml $(jardir)/premises
@@ -58,37 +61,37 @@ default all:
 install: $(INSTALLABLE_FILES) $(INSTALLABLE_DIRS) ;
 
 $(pydir)/robin.py: robin.py
-	$(install) $< $@
+	$(call install, $<, $@)
 	$(sed) -i -e 's@libdir =.*@libdir = "$(libdir)"@' $@
 
 $(pydir)/griffin.py: griffin.py
-	$(install) $< $@
+	$(call install, $<, $@)
 
 $(pydir)/%.py: src/robin/modules/%.py
-	$(install) $< $@
+	$(call install, $<, $@)
 
 $(pydir).pth:
 	$(echo) robin > $@
 
 $(libdir)/$(vpath)%$(soext): %$(soext)
-	$(install) $< $@
+	$(call install, $<, $@)
 
 $(scriptdir)/griffin: griffin
-	$(install) $< $@
+	$(call install, $<, $@)
 	$(sed) -i -e 's@here =.*@here = os.path.expanduser("$(jardir)")@' $@
 	$(sed) -i -e 's@#!/usr/bin/env python@#!$(python-exe)@' $@
 
 $(jardir)/Griffin.jar: Griffin.jar
-	$(install) $< $@
+	$(call install, $<, $@)
 
 $(jardir)/premises: $(jardir)/Griffin.jar premises
 	$(cp-r) premises $@
 
 $(jardir)/stl.st.xml: src/griffin/modules/stl/stl.st.xml
-	$(install) $< $@
+	$(call install, $<, $@)
 
 $(jardir)/stl.tag: build/stl.tag
-	$(install) $< $@
+	$(call install, $<, $@)
 
 $(jardir)/dox-xml: build/dox-xml
 	$(cp-r) $< $(jardir)

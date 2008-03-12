@@ -95,54 +95,9 @@ PyTypeObject FunctionTypeObject = {
 	FunctionObject::__call__     /*tp_call*/
 };
 
-#if 0
-PyTypeObject ClassTypeObject = {
-	PyObject_HEAD_INIT(&PyType_Type)
-    0,
-    "Robin::Python::ClassObject",
-    sizeof(ClassObject),
-    0,
-    ClassObject::__dealloc__,    /*tp_dealloc*/
-    0,                           /*tp_print*/
-    ClassObject::__getattr__,    /*tp_getattr*/
-    ClassObject::__setattr__,    /*tp_setattr*/
-    0,                           /*tp_compare*/
-    ClassObject::__repr__,       /*tp_repr*/
-    0,                           /*tp_as_number*/
-    0,                           /*tp_as_sequence*/
-    0,                           /*tp_as_mapping*/
-    PyType_Type.tp_hash,         /*tp_hash */
-	ClassObject::__call__,       /*tp_call*/
-	0,                                    /*tp_str*/
-	0,                                    /*tp_getattro*/
-	0,                                    /*tp_setattro*/
-	0,                                    /*tp_as_buffer*/
-	Py_TPFLAGS_BASETYPE | 
-	Py_TPFLAGS_HAVE_CLASS,                /*tp_flags*/
-	"",                                   /*tp_doc*/
-	0,                                    /*tp_traverse*/
-	0,                                    /*tp_clear*/
-	0,                                    /*tp_richcompare*/
-	0, /* tp_weakoffset */
-	0, /* tp_iter */
-	0, /* tp_iternext */
-	0, /* tp_methods */
-	0, /* tp_members */
-	0, /* tp_getset */
-	&PyType_Type, /* tp_base */
-	0, /* tp_dict */
-	0, /* tp_descr_get */
-	0, /* tp_descr_set */
-	0, /* tp_dictoffset */
-	0, /* tp_init */ 
-	0, /* tp_alloc */
-	0, /* tp_new */
-	0, 0, 
-	0
-};
-#endif
-
 PyTypeObject *ClassTypeObject = 0;
+
+PyTypeObject *EnumeratedTypeTypeObject = 0;
 
 PyTypeObject AddressTypeObject = {
 	PyObject_HEAD_INIT(&PyType_Type)
@@ -178,51 +133,6 @@ PyTypeObject AddressTypeObject = {
 	0, /* tp_members */
 	0, /* tp_getset */
 	&PyBaseObject_Type, /* tp_base */
-	0, /* tp_dict */
-	0, /* tp_descr_get */
-	0, /* tp_descr_set */
-	0, /* tp_dictoffset */
-	0, /* tp_init */ 
-	0, /* tp_alloc */
-	0, /* tp_new */
-	0, 0, 
-	0
-};
-
-PyTypeObject EnumeratedTypeTypeObject = {
-	PyObject_HEAD_INIT(&PyType_Type)
-    0,
-    "Robin::Python::EnumeratedTypeObject",
-    sizeof(ClassObject),
-    0,
-    EnumeratedTypeObject::__dealloc__,    /*tp_dealloc*/
-    0,                                    /*tp_print*/
-    0,                                    /*tp_getattr*/
-    0,                                    /*tp_setattr*/
-    0,                                    /*tp_compare*/
-    EnumeratedTypeObject::__repr__,       /*tp_repr*/
-    0,                                    /*tp_as_number*/
-    0,                                    /*tp_as_sequence*/
-    0,                                    /*tp_as_mapping*/
-    PyType_Type.tp_hash,                  /*tp_hash */
-	EnumeratedTypeObject::__call__,       /*tp_call*/
-	0,                                    /*tp_str*/
-	0,                                    /*tp_getattro*/
-	0,                                    /*tp_setattro*/
-	0,                                    /*tp_as_buffer*/
-	Py_TPFLAGS_BASETYPE | 
-	Py_TPFLAGS_HAVE_CLASS,                /*tp_flags*/
-	"",                                   /*tp_doc*/
-	0,                                    /*tp_traverse*/
-	0,                                    /*tp_clear*/
-	0,                                    /*tp_richcompare*/
-	0, /* tp_weakoffset */
-	0, /* tp_iter */
-	0, /* tp_iternext */
-	0, /* tp_methods */
-	0, /* tp_members */
-	0, /* tp_getset */
-	&PyType_Type, /* tp_base */
 	0, /* tp_dict */
 	0, /* tp_descr_get */
 	0, /* tp_descr_set */
@@ -1296,7 +1206,7 @@ Handle<Address> AddressObject::getUnderlying() const
 EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 	: m_underlying(underlying)
 {
-	PyObject_Init((PyObject*)this, &EnumeratedTypeTypeObject);
+	PyObject_Init((PyObject*)this, EnumeratedTypeTypeObject);
 
 	ob_size = sizeof(EnumeratedTypeObject);
 
@@ -1461,7 +1371,7 @@ PyObject *EnumeratedConstantObject::__richcmp__(PyObject *self,
 
 	// - only compare if objects are of the same type (both enums)
 	if (PyObject_Type(PyObject_Type(other)) ==
-		(PyObject*)&EnumeratedTypeTypeObject) {
+		(PyObject*)EnumeratedTypeTypeObject) {
 		EnumeratedConstantObject *myself = (EnumeratedConstantObject*)self;
 		if (myself->__richcmp__((EnumeratedConstantObject*)other, opid))
 			decision = Py_True;
@@ -1736,7 +1646,7 @@ bool AddressObject_Check(PyObject *object)
 bool EnumeratedConstantObject_Check(PyObject *object)
 {
 	return PyObject_TypeCheck(PyObject_Type(object),
-							  &EnumeratedTypeTypeObject);
+							  EnumeratedTypeTypeObject);
 }
 
 /**
@@ -1802,6 +1712,14 @@ void initObjects()
     HybridTypeObject->tp_setattr = ClassObject::__setattr__;
     HybridTypeObject->tp_getattro = 0;
     HybridTypeObject->tp_setattro = 0;
+
+	// Initialize EnumeratedTypeTypeObject
+	EnumeratedTypeTypeObject = makeMetaclassType("Robin::Python::"
+												 "EnumeratedTypeObject",
+												 &PyType_Type);
+	EnumeratedTypeTypeObject->tp_dealloc = EnumeratedTypeObject::__dealloc__;
+	EnumeratedTypeTypeObject->tp_repr = EnumeratedTypeObject::__repr__;
+	EnumeratedTypeTypeObject->tp_call = EnumeratedTypeObject::__call__;
 }
 
 
