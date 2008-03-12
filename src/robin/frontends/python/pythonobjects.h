@@ -325,8 +325,8 @@ bool PyPascalString_Check(PyObject *object);
 extern PyTypeObject FunctionTypeObject;
 extern PyTypeObject *ClassTypeObject;
 extern PyTypeObject *HybridTypeObject;
+extern PyTypeObject *EnumeratedTypeTypeObject;
 extern PyTypeObject AddressTypeObject;
-extern PyTypeObject EnumeratedTypeTypeObject;
 
 extern void initObjects();
 
