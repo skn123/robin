@@ -132,6 +132,12 @@ protocols-test@%:
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
+templates-test@%:
+	$($*)/griffin $G --in $(extreme_python)/templates.h              \
+	        --out $(extreme_python)/libtemplates_robin.cc
+	$(cxx) $(shared) $(extreme_python)/libtemplates_robin.cc         \
+		-o $(extreme_python)/libtemplates.so
+
 inheritance-test@%:
 	$($*)/griffin $G --in $(extreme_python)/inheritance.h               \
 	        --out $(extreme_python)/libinheritance_robin.cc          \
@@ -162,7 +168,7 @@ memprof-test@%:
 
 
 TESTS = language-test protocols-test inheritance-test hints-test autocollect-test memprof-test
-TEST_SUITES = LanguageTest STLTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
+TEST_SUITES = LanguageTest STLTest TemplatesTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
 TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
 TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)
 TESTING_PYTHON_VG = cd $(extreme_python) && $(SELF) valgrind --tool=memcheck $(python)
