@@ -6,6 +6,7 @@ package sourceanalysis.view;
 import java.util.Iterator;
 
 import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.Field;
 import sourceanalysis.InheritanceConnection;
@@ -68,12 +69,19 @@ public class Traverse {
 			catch (MissingInformationException e) {
 				// - nahhh...
 			}
-		}		
+		}
+		// - traverse typedefs in scope
+		for (Iterator ai = starting.aliasIterator(); ai.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)ai.next();
+			Alias alias = (Alias)connection.getContained();
+			if (connection.getVisibility() >= minVisibility)
+				visitor.visit(alias.getAliasedType());
+		}
 	}
 
 	/**
 	 * Go through type leaves in all members of an aggregate, including 
-	 * information occuring in the header (inheritance declaration).
+	 * information occurring in the header (inheritance declaration).
 	 * @param starting parent scope
 	 * @param visitor an object which is invoked for every type found
 	 * @param intoTemplates whether or not to descend into template 
@@ -86,7 +94,7 @@ public class Traverse {
 		boolean intoTemplates, int minVisibility)
 	{
 		traverse(aggregate.getScope(), visitor, intoTemplates, minVisibility);
-		// Also trace types occuring in inheritance
+		// Also trace types occurring in inheritance
 		for (Iterator bi = aggregate.baseIterator(); bi.hasNext(); ) {
 			InheritanceConnection connection =
 				(InheritanceConnection)bi.next();
