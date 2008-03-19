@@ -3,8 +3,10 @@ package backend.robin.model;
 import backend.robin.Filters;
 
 import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
 import sourceanalysis.Entity;
 import sourceanalysis.InappropriateKindException;
+import sourceanalysis.Namespace;
 import sourceanalysis.Specifiers;
 import sourceanalysis.Type;
 
@@ -129,7 +131,9 @@ public class TypeToolbox {
 		try {
 			while (type.getRootNode().getKind() == Type.TypeNode.NODE_LEAF
 					&& (base = type.getRootNode().getBase()) instanceof Alias) {
-				type = ((Alias)base).getAliasedType();
+				Type aliased = ((Alias)base).getAliasedType();
+				if (!isVisible(aliased)) break;
+				type = aliased;
 			}
 			return type;
 		}
@@ -162,5 +166,53 @@ public class TypeToolbox {
 		}
 		original.getRootNode().setCV(root.getCV());
 		return original;
+	}
+	
+	/**
+	 * Verifies that a type can be accessed from any C++ scope.
+	 * This is done by checking the visibility of every entity that is
+	 * referenced by the type expression.
+	 * @param type a type to be checked
+	 * @return 'true' if type is visible. 'false' if there is at least
+	 *   one entity that is not declared public in the scope where it
+	 *   is declared.
+	 */
+	public static boolean isVisible(Type type)
+	{
+		class VisibilityCheck implements Type.Transformation {
+			public boolean visible;
+			public VisibilityCheck() { visible = true; }
+			public Type.TypeNode transform(Type.TypeNode original) 
+					throws InappropriateKindException 
+			{
+				if (original.getKind() == Type.TypeNode.NODE_LEAF) {
+					if (!isVisible(original.getBase()))
+						visible = false;
+				}
+				return null;
+			}
+		}
+		
+		VisibilityCheck checkVisible = new VisibilityCheck();
+		try {
+			Type.transformType(type, checkVisible);
+			return checkVisible.visible;
+		} catch (InappropriateKindException e) {
+			assert false; return false;
+		}
+	}
+	
+	/**
+	 * Verifies that an entity can be accessed from any C++ scope.
+	 * @param entity an entity to be checked
+	 * @return 'true' iff the entity and all its containers are public
+	 *   within the scope in which they are declared.
+	 */
+	public static boolean isVisible(Entity entity)
+	{
+		ContainedConnection uplink = entity.getContainerConnection();
+		return uplink == null
+				|| uplink.getContainer() instanceof Namespace
+				|| uplink.getVisibility() == Specifiers.Visibility.PUBLIC;
 	}
 }

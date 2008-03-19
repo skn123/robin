@@ -248,7 +248,7 @@ public class RoutineDeduction {
 			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base));
 		}
 		if (base.getName().equals("scripting_element") && forceBorrow) {
-			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base, null, "&"));
+			return new ParameterTransformer(returnType, ret(new NopExpression()), new SimpleType(base, null, "&"));
 		}
 		else if (base instanceof Primitive || base instanceof sourceanalysis.Enum) {
 			if (base == Primitive.FLOAT) {
