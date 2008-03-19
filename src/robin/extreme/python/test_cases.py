@@ -278,7 +278,7 @@ class ThreadingTest(TestCase):
 		
 
 
-class TemplateTest(TestCase):
+class TemplatesTest(TestCase):
 
 	def setUp(self):
 		global templates
@@ -298,7 +298,7 @@ class TemplateTest(TestCase):
 
 	def testSupervised(self):
 		carrier = templates.Carrier()
-		self.assertEquals( carrier.kints, [666] )
+		self.assertEquals( list(carrier.kints), [666] )
 
 	def testDerivedFromVector(self):
 		length = 12
@@ -330,10 +330,6 @@ class TemplateTest(TestCase):
 		t = TemplateObject()
 		robin.declareTemplate("Less::Yets", t)
 		self.assertEquals(t, {'Carrier':1})
-		
-	def testNestedTemplateArgs(self):
-		t = templates.NestedTemplate()
-		self.assertEquals(t.method(), 1)
 
 
 

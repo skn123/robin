@@ -96,12 +96,22 @@ public:
 	Barrier<Size> barrier() const { return Barrier<Size>(); }
 };	
 
+template < class HolderType >
+class Unholder
+{
+public:
+	typedef typename HolderType::held_type value;
+	value get(const HolderType& h) { return value(h); }
+};
+
 typedef Holder<int> Integer;
 typedef Multiplier<int> IntegerMult;
 typedef Barrier<4> Barrier4;
 
 typedef Listen<Carrier, 4> ListenCarrier4;
 typedef Listen<Carrier> ListenCarrier6;
+
+typedef Unholder<Integer> Uninteger;
 
 
 template < class E, class Traits >
@@ -122,7 +132,7 @@ public:
 		return value;
 	}
 
-protected:
+	//protected: TODO: BUGFIX
 	virtual void forward(typename Traits::value_type& val) = 0;
 
 private:
@@ -132,7 +142,7 @@ private:
 template < class E, class Traits >
 class IteratorInc : public IteratorPartialImpl<E,Traits>
 {
-protected:
+public: //protected: TODO: BUGFIX
 	virtual void forward(typename Traits::value_type& val) {
 		val.increment();
 	}
@@ -154,12 +164,12 @@ namespace More {
 
 
 namespace Less {
-
+  /*
 	using More::Real;
 	using More::SOUND;
-
-	typedef std::vector<Real> RealSeries;
-	class SoundBarrier : public Barrier<SOUND> { };
+  */
+	typedef std::vector<More::Real> RealSeries;
+	class SoundBarrier : public Barrier<More::SOUND> { };
 
 	template < class Traits >
 	class Yets {
@@ -204,7 +214,7 @@ Barrier4 barr()
 }
 
 
-class InnerDummy {{
+class InnerDummy {
 
 };
 
@@ -220,12 +230,11 @@ template<typename G>
 class TemplatedOuter {
 
 public:
-    void method(G::TemplatedInnerDummy param) {
+    void method(typename G::TemplatedInnerDummy param) {
         return 1;
     }
 
 };
 
-typedef Nest<Test<int> > NestedTemplate;
 
 #endif
