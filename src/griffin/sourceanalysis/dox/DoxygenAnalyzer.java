@@ -149,6 +149,7 @@ public class DoxygenAnalyzer {
 		public static final String REF = "ref";
 		public static final String REFID = "refid";
 		public static final String REFKIND = "kindref";
+		public static final String EXTERNAL = "external";
 		public static final String DEF = "def";
 		public static String def(String kind) { return kind + DEF; }
 		
@@ -731,8 +732,7 @@ public class DoxygenAnalyzer {
 				boolean hasPre = false;
 				if (mid != null && mkind != null) {
 					try {
-						pre = m_registry.locate(new	DocumentComponentRegistry
-							.EntityLocator(mkind, mid));
+						pre = m_registry.locate(makeLocatorFromNode(mbr));
 						hasPre = true;
 					}
 					catch (ElementNotFoundException e) {
@@ -806,7 +806,7 @@ public class DoxygenAnalyzer {
 			String vis = XML.attribute(basenode, Tags.PROT, Tags.PRIVATE);
 			// Follow reference to base
 			DocumentComponentRegistry.EntityLocator baseloc =
-				new DocumentComponentRegistry.EntityLocator("compound", bid);
+				makeLocatorFromNode(basenode, "compound");
 			try {
 				Entity base = followReference(baseloc);
 				// Create link to base
@@ -1002,12 +1002,11 @@ public class DoxygenAnalyzer {
 		Collection innerclasses = XML.subNodes(xmlnode, tag);
 		for (Iterator innerclassi = innerclasses.iterator(); innerclassi.hasNext();) {
 			Node innerclass = (Node) innerclassi.next();
-			String id = XML.attribute(innerclass, Tags.REFID, null);
-			if (id == null)
-				throw new XMLFormatException("no refid for "+tag, innerclass);
 			// Follow reference to aggregate
 			DocumentComponentRegistry.EntityLocator locator =
-				new DocumentComponentRegistry.EntityLocator("compound", id);
+				makeLocatorFromNode(innerclass, "compound");
+			String desc = "inner class " + locator.getComponentID()
+				+ " of compound " + compound.getName();
 			try {
 				Entity innerEntity = followReference(locator);
 				trimName(innerEntity, compound);
@@ -1024,21 +1023,18 @@ public class DoxygenAnalyzer {
 						scope.addMember((Namespace)innerEntity);
 					}
 					else {
-						System.err.println("*** WARNING: inner class " + id + 
-							" of compound " + compound.getName() +
+						System.err.println("*** WARNING: " + desc +
 							" has an unexpected class '" + 
 							innerEntity.getClass().getName() + "'; dropped.");
 					}
 				}
 			}
 			catch (XMLFormatException e) {
-				System.err.println("*** WARNING: inner class " + id + 
-					" of compound " + compound.getName() + 
+				System.err.println("*** WARNING: " + desc + 
 					" - analysis failed; reason: " + e);
 			}
 			catch (ElementNotFoundException e) {
-				System.err.println("*** WARNING: inner class " + id + 
-					" of compound " + compound.getName() + 
+				System.err.println("*** WARNING: " + desc + 
 					" - analysis failed; reason: " + e);
 			}
 		}
@@ -1564,7 +1560,7 @@ public class DoxygenAnalyzer {
 		catch (ElementNotFoundException e) {
 			// Open XML document
 			RequestedDocument document =
-				m_registry.locateDocument(locator.getDocumentName());
+				m_registry.locateDocument(locator.getDocumentName(), locator.getRealm());
 			// Scan all <...def> tags (with corresponding kind) to find that with
 			// the requested id
 			NodeList refs = document.getDocument()
@@ -1628,11 +1624,26 @@ public class DoxygenAnalyzer {
 		// Get referring attributes
 		String kind = XML.attribute(referrer, Tags.KIND, null);
 		String refkind = XML.attribute(referrer, Tags.REFKIND, null);
-		String id = XML.attribute(referrer, Tags.REFID, null);
 		if (kind == null)
 			kind = refkind;
 		if (kind == null)
 			throw new XMLFormatException("reference without kind", referrer);
+		return makeLocatorFromNode(referrer, kind);
+	}
+	
+	private DocumentComponentRegistry.EntityLocator
+		makeLocatorFromNode(Node referrer, String kind)
+		throws XMLFormatException
+	{
+		// Get referring attributes
+		String id = XML.attribute(referrer, Tags.ID, null);
+		String refid = XML.attribute(referrer, Tags.REFID, null);
+		String ext = XML.attribute(referrer, Tags.EXTERNAL, null);
+		DocumentComponentRegistry.Realm realm =
+			(ext == null) ? DocumentComponentRegistry.Realm.DONT_CARE
+					: DocumentComponentRegistry.Realm.EXTERNAL;
+		if (id == null)
+			id = refid;
 		if (id == null)
 			throw new XMLFormatException("reference without refid", referrer);
 		if (kind.equals(Tags.CLASS) 
@@ -1641,7 +1652,7 @@ public class DoxygenAnalyzer {
 			kind = Tags.COMPOUND;
 		// Create a locator object
 		return
-			new DocumentComponentRegistry.EntityLocator(kind, id);
+			new DocumentComponentRegistry.EntityLocator(kind, id, realm);
 	}
 
 	/**
@@ -1655,12 +1666,10 @@ public class DoxygenAnalyzer {
 	private void collectReferences(Node xmlnode, Map references)
 	{
 		if (xmlnode.getNodeName() == Tags.REF) {
-			String refid = XML.attribute(xmlnode, Tags.REFID, "");
-			String kindref = XML.attribute(xmlnode, Tags.REFKIND, "");
-			DocumentComponentRegistry.EntityLocator locator =
-				new DocumentComponentRegistry.EntityLocator(kindref, refid);
 			// Retrieve the reference
 			try {
+				DocumentComponentRegistry.EntityLocator locator =
+					makeLocatorFromNode(xmlnode);
 				Entity referenced = followReference(locator);
 				String name = XML.collectText(xmlnode);
 				// Make sure that the name is coherent. This is needed because
@@ -1674,7 +1683,7 @@ public class DoxygenAnalyzer {
 			}
 			catch (XMLFormatException e) {
 				System.err.println("*** WARNING: referenced entity " +
-					locator.getComponentID() + " is corrupted: " + e);
+					XML.repr(xmlnode) + " is corrupted: " + e);
 			}
 		}
 		else {
@@ -1760,12 +1769,14 @@ public class DoxygenAnalyzer {
 	 */
 	private void selfSubscribe(Node xmlnode, Entity entity)
 	{
-		String id = XML.attribute(xmlnode, Tags.ID, null);
-		if (id != null) {
+		try {
 			// Create a locator and subscribe entity
 			DocumentComponentRegistry.EntityLocator locator =
-				new DocumentComponentRegistry.EntityLocator("any", id);
+				makeLocatorFromNode(xmlnode, "any");
 			m_registry.subscribe(entity, locator);
+		}
+		catch (XMLFormatException e) {
+			/* skip it */
 		}
 	}
 

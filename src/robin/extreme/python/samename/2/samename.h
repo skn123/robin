@@ -1,0 +1,6 @@
+#ifndef ROBIN_EXTREME_PYTHON_SAMENAME_2_SAMENAME_H
+#define ROBIN_EXTREME_PYTHON_SAMENAME_2_SAMENAME_H
+
+/* see ../1/samename.h */
+
+#endif

@@ -18,6 +18,8 @@ import sourceanalysis.Entity;
  */
 public class DocumentComponentRegistry {
 
+	enum Realm { LOCAL, EXTERNAL, DONT_CARE };
+	
 	/**
 	 * Stores a pair of locators:
 	 * <ol>
@@ -33,12 +35,15 @@ public class DocumentComponentRegistry {
 		 * @param kind type of entity being referenced
 		 * @param document document name
 		 * @param component_id component ID (unique within document)
+		 * @param realm whether this is a local or external reference
 		 */
-		public EntityLocator(String kind, String document, String component_id)
+		public EntityLocator(String kind, String document, String component_id,
+				Realm realm)
 		{
 			m_kind = kind;
 			m_document = document;
 			m_component_id = component_id;
+			m_realm = realm;
 		}
 		
 		/**
@@ -48,12 +53,13 @@ public class DocumentComponentRegistry {
 		 * @param component_id a combination of the document name and the
 		 * component ID. Normally this is just the component ID alone, since
 		 * it contains the name of the document anyway.
+		 * @param realm whether this is a local or external reference
 		 */
-		public EntityLocator(String kind, String component_id)
+		public EntityLocator(String kind, String component_id, Realm realm)
 		{
 			m_kind = kind;
 			m_component_id = component_id;
-	
+			m_realm = realm;
 
             if(m_kind.equals("compound")  ||
                m_kind.equals("namespace") ||
@@ -93,6 +99,13 @@ public class DocumentComponentRegistry {
 		public String getComponentID() { return m_component_id; }
 		
 		/**
+		 * Returns the realm which this locator refers to.
+		 * @return Realm.LOCAL for local realm; Realm.EXTERNAL for external
+		 *   realm; Realm.DONT_CARE for either.
+		 */
+		public Realm getRealm() { return m_realm; }
+		
+		/**
 		 * Forms a string from the document name and component-id which is
 		 * unique database-wide.
 		 * @return String text of the form: <i>document</i><tt>_</tt><i>id</i>
@@ -107,8 +120,7 @@ public class DocumentComponentRegistry {
 		private String m_kind;		
 		private String m_document;
 		private String m_component_id;
-	
-		
+		private Realm m_realm;
 	}
 
 	/**
@@ -233,26 +245,29 @@ public class DocumentComponentRegistry {
 	 * Finds an XML document. If the document has been read and stored,
 	 * returns stored document, otherwise - it fetches the document anew.
 	 * @param documentname name of XML document
+	 * @param realm whether this is a local or external reference
 	 * @return RequestedDocument DOM document and the directory where it was
 	 *   found.
 	 * @throws ElementNotFoundException the document is not in the registry,
 	 * and also there exists no document by that name in the input directory.
 	 */
-	public RequestedDocument locateDocument(String documentname)
+	public RequestedDocument locateDocument(String documentname, Realm realm)
 		throws ElementNotFoundException
 	{
+		String documentkey =
+			(realm == Realm.EXTERNAL ? "external:" : "") + documentname;
 		// Check that object was not previously deferred
-		if (m_deferred.contains(documentname))
+		if (m_deferred.contains(documentkey))
 			throw new ElementNotFoundException("document", documentname);
 		// Try getting object from registry
-		Object document = m_docname2dom.get(documentname);
+		Object document = m_docname2dom.get(documentkey);
 		if (document != null) {
 			return (RequestedDocument)document;
 		}
 		else {
 			// Fetch from input directory (exception may occur here)
-			RequestedDocument anew = fetch(documentname);
-			m_docname2dom.put(documentname, anew);
+			RequestedDocument anew = fetch(documentname, realm);
+			m_docname2dom.put(documentkey, anew);
 			return anew;
 		}
 	}
@@ -278,13 +293,16 @@ public class DocumentComponentRegistry {
 
 	/**
 	 * Reads XML using a DOM parser.
+	 * @param documentname name of document to fetch
+	 * @param realm whether the document is located in the local or
+	 *   external realm
 	 * @return Document the XML document as a DOM tree
 	 */
-	private RequestedDocument fetch(String documentname) 
+	private RequestedDocument fetch(String documentname, Realm realm) 
 		throws ElementNotFoundException
 	{
 		// Find document in XML search path
-		File documentfile = searchInPath(documentname + ".xml");
+		File documentfile = searchInPath(documentname + ".xml", realm);
 		return new RequestedDocument(open(documentname, documentfile),
 				documentfile.getParentFile());
 	}
@@ -318,23 +336,29 @@ public class DocumentComponentRegistry {
 	 * from the system properties when the DocumentComponentRegistry is
 	 * first created.
 	 * @param filename the name of the file to be searched
+	 * @param realm where to look for the file: if Realm.LOCAL, the file
+	 *   will be searched for in the directory of the local program database;
+	 *   If Realm.EXTERNAL, it will be searched in the external directories
 	 * @return A File referring to an existing file with the requested
-	 * basename and which resides in one of the directories sought.
-	 * The m_xmldir is sought last, when previous search fails.
+	 *   name and which resides in one of the directories sought.
+	 * @throws ElementNotFoundException if the file was not found in the
+	 *   required path
 	 */
-	private File searchInPath(String filename)
+	private File searchInPath(String filename, Realm realm)
+			throws ElementNotFoundException
 	{
 		// - search for filename in all the directories in path
 		for (int i = 0; i < m_xmlpath.length; i++) {
 			File directory = new File(m_xmlpath[i]);
+			if (realm == Realm.LOCAL && isExternal(directory)) continue;
+			if (realm == Realm.EXTERNAL && !isExternal(directory)) continue;
 			if (directory.exists() && directory.isDirectory()) {
 				File file = new File(directory, filename);
 				if (file.exists() && file.isFile())
 					return file;
 			}
 		}
-		// - fallback to xmldir
-		return new File(new File(m_xmldir), filename);
+		throw new ElementNotFoundException("file", filename);
 	}
 	
 	/**

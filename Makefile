@@ -114,7 +114,8 @@ SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
 
 language-test@%:
 	$($*)/griffin $G -I --in $(extreme_python)/language.h            \
-                $(extreme_python)/kwargs.h                           \
+                $(extreme_python)/kwargs.h                               \
+                $(extreme_python)/samename/1/samename.h                  \
 	        --out $(extreme_python)/liblanguage_robin.cc             \
 	        El DataMembers PrimitiveTypedef EnumeratedValues Aliases \
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
@@ -126,8 +127,9 @@ language-test@%:
 
 protocols-test@%:
 	$($*)/griffin $G --in $(extreme_python)/protocols.h              \
+                $(extreme_python)/samename/2/samename.h                  \
 	        --out $(extreme_python)/libprotocols_robin.cc            \
-	        Times
+	        Times --import language
 	$(cxx) $(shared) $(extreme_python)/libprotocols_robin.cc           \
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so

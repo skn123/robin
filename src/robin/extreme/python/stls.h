@@ -80,6 +80,12 @@ namespace StandardLibrary
 	{
 	};
 
+	/* TODO
+	struct DerivedFromVectorOfClass : public std::vector<DerivedFromVector>
+	{
+	};
+	*/
+
 	class UsingPairs
 	{
 	public:
