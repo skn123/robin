@@ -1,6 +1,9 @@
 #ifndef ROBIN_TEST_PYTHON_KWARGS_H
 #define ROBIN_TEST_PYTHON_KWARGS_H
 
+#include "stls.h"
+
+
 class KwClass {
 
     public:
@@ -29,5 +32,12 @@ class KwClass {
                 m_b = b;
         }
 };
+
+/* TODO
+class ans {
+ public:
+  ans(const StandardLibrary::DerivedFromVectorOfClass& a) { }
+};
+*/
 
 #endif

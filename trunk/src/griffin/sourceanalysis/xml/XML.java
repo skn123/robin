@@ -182,4 +182,21 @@ public class XML {
 		return matching;
 	}
 
+	/**
+	 * Creates a textual representation of an XML element.
+	 * @param xmlnode a node
+	 * @return a simple textual representation in name=value format (comma
+	 *   delimited).
+	 */
+	public static String repr(Node xmlnode)
+	{
+		NamedNodeMap attrs = xmlnode.getAttributes();
+		StringBuffer s = new StringBuffer();
+		for (int i = 0; i < attrs.getLength(); ++i) {
+			Node attr = attrs.item(i);
+			if (s.length() > 0) s.append(',');
+			s.append(attr.getNodeName() + "=" + attr.getNodeValue());
+		}
+		return s.toString();
+	}
 }

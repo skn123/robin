@@ -1,7 +1,10 @@
-// -*- c++ -*-
+// -*- mode: c++; tab-width: 4; c-basic-offset: 4 -*-
 
 #ifndef ROBIN_TEST_PYTHON_PROTOCOLS_H
 #define ROBIN_TEST_PYTHON_PROTOCOLS_H
+
+#include "samename/1/samename.h"
+
 
 class Times
 {
@@ -26,6 +29,8 @@ public:
 	const char *classid() const { return "Times"; }
 
 	operator int() const { return x_factor; }
+	operator samename_t() const { return x_factor; }
+	samename_t operator~() const { return *this; }
 
 	const int& factoref() const { return x_factor; }
 	
