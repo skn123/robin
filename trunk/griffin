@@ -20,7 +20,7 @@ class Griffin:
 
     def __init__(self):
         self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
-        if not os.path.isdir(self.griffin_bin):
+        if not os.path.isfile(self.griffin_bin):
           self.griffin_bin = os.path.join(self.jardir, self.GRIFFIN_JAR)
         self.javacmd = "backend.Launcher robin"
         self.javaflags = ""
