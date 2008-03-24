@@ -406,30 +406,32 @@ libdir = "usr/lib/"
 bindir = "usr/bin/"
 jardir = "usr/share/java/"
 pycdir = "usr/lib/python2.4/site-packages/"
-pyldir = pycdir + "robinlib/"
+robindir = "usr/share/robin/"
+
+def getDebFilesListForDir(srcDir, destDir):
+  l = []
+  for (dirpath, dirnames, filenames) in os.walk(srcDir):
+    delta_dir = dirpath.split(srcDir)[1]
+    if ".svn" in dirpath:
+      continue
+    for fn in filenames:
+      l.append(("%s/%s/%s" % (destDir, delta_dir, fn), "%s/%s" % (dirpath, fn)))
+  return l
 
 DEBFILES = [
     (libdir + robin[0].name,        robin[0].path),
     (libdir + stl[0].name,          stl[0].path),
     (pycdir + pyfe[0].name,         pyfe[0].path),
     (jardir + jar[0].name,          jar[0].path),
-    (jardir + stl_dox[0].name,      stl_dox[0].path),
-    (jardir + "stl.st.xml",         "src/griffin/modules/stl/stl.st.xml"),
-    #(jardir + "dox-xml",           "build/dox-xml"),
+    (robindir + stl_dox[0].name,      stl_dox[0].path),
+    (robindir + "stl.st.xml",         "src/griffin/modules/stl/stl.st.xml"),
     (bindir + "griffin",            "griffin"),
     (pycdir + "robin.py",           "robin.py"),
     (pycdir + "griffin.py",         "griffin.py"),
     (pycdir + "stl.py",             "src/robin/modules/stl.py"),
-    (pyldir + "__init__.py",        "src/robin/modules/robinlib/__init__.py"),
-    (pyldir + "platform.py",        "src/robin/modules/robinlib/platform.py"),
-    (pyldir + "config.py",          "src/robin/modules/robinlib/config.py"),
-    (pyldir + "robinhelp.py",       "src/robin/modules/robinlib/robinhelp.py"),
-    (pyldir + "document.py",        "src/robin/modules/robinlib/document.py"),
-    (pyldir + "pickle_weakref.py",  "src/robin/modules/robinlib/pickle_weakref.py"),
-    (pyldir + "argparse.py",        "src/robin/modules/robinlib/argparse.py"),
-    (pyldir + "html/__init__.py",   "src/robin/modules/robinlib/html/__init__.py"),
-    (pyldir + "html/textformat.py", "src/robin/modules/robinlib/html/textformat.py"),
-]
+] + (
+  getDebFilesListForDir("build/dox-xml", robindir + "dox-xml/") +
+  getDebFilesListForDir("src/robin/modules/robinlib", pycdir + "robinlib/"))
 
 # This is the debian package we're going to create
 debpkg = '#%s_%s.deb' % (DEBNAME, fullver)
