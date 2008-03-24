@@ -382,7 +382,7 @@ Help(helpstring)
 
 DEBNAME = "robin"
 DEBMAINT = "Misha Seltzer [mishas@users.sourceforge.net]"
-DEBARCH = "any"
+DEBARCH = "i386"
 DEBDEPENDS = "doxygen (>= 1.3.8), java-runtime, antlr (>= 2.7.5), libxerces2-java"
 DEBDESC = """Robin is a framework that automatically generates Python bindings to C++ libraries.
   Robin is an Open-Source project providing quick, hands-free automated bindings
@@ -404,14 +404,14 @@ DEBDESC = """Robin is a framework that automatically generates Python bindings t
 
 libdir = "usr/lib/"
 bindir = "usr/bin/"
-jardir = libdir + "griffin/"
+jardir = "usr/share/java/"
 pycdir = "usr/lib/python2.4/site-packages/"
 pyldir = pycdir + "robinlib/"
 
 DEBFILES = [
     (libdir + robin[0].name,        robin[0].path),
-    (libdir + pyfe[0].name,         pyfe[0].path),
     (libdir + stl[0].name,          stl[0].path),
+    (pycdir + pyfe[0].name,         pyfe[0].path),
     (jardir + jar[0].name,          jar[0].path),
     (jardir + stl_dox[0].name,      stl_dox[0].path),
     (jardir + "stl.st.xml",         "src/griffin/modules/stl/stl.st.xml"),

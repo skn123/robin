@@ -3,12 +3,15 @@
 
 import os.path, sys, re, griffin as conf
 
+here = os.path.dirname(__file__)
 
 class Griffin:
 
-    premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", \
+    premises = ["jython.jar", "antlr.jar", "xercesImpl.jar", \
                 "junit.jar", "xmlParserAPIs.jar"]
     premisedir = "premises"
+    jardir = os.path.join(here, premisedir)
+    if not os.path.isdir(jardir): jardir = "/usr/share/java"
 
     DEFAULT_OUTFILE = "./4robin.cc"
     GRIFFIN_JAR = "Griffin.jar"
@@ -16,6 +19,8 @@ class Griffin:
 
     def __init__(self):
         self.griffin_bin = os.path.join(here, self.GRIFFIN_JAR)
+        if not os.path.isdir(self.griffin_bin):
+          self.griffin_bin = os.path.join(self.jardir, self.GRIFFIN_JAR)
         self.javacmd = "backend.Launcher robin"
         self.javaflags = ""
         self.module = "."
@@ -34,6 +39,7 @@ class Griffin:
         import os.path
         stltag = os.path.join(here, "build/stl.tag")
         if not os.path.isfile(stltag): stltag = os.path.join(here, "stl.tag")
+        if not os.path.isfile(stltag): stltag = os.path.join(self.jardir, "stl.tag")
         tagfiles = [stltag] + [os.path.join(x, "module.tag") for x in modules]
         tagfile = os.path.join(project, "module.tag")
         doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
@@ -49,7 +55,7 @@ class Griffin:
 
     def _command(self, modules):
         from os.path import join
-        classpath = [join(here, self.premisedir, x) for x in self.premises]
+        classpath = [join(self.jardir, x) for x in self.premises]
         classpath += [self.griffin_bin]
 
         doxpath = join(here, "build/dox-xml")
@@ -261,10 +267,6 @@ class Dots(CommandRunner):
             raise OSError, "failed to run " + command.split()[0]
         else:
             sys.stderr.write(" [  OK  ]\n")
-
-
-here = os.path.dirname(__file__)
-
 
 
 if __name__ == "__main__":
