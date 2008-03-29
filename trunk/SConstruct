@@ -69,8 +69,9 @@ build/robin/frontends/ruby/module.cc
 LIBPREFIX = "lib"
 
 import os
+import os.path, griffin as conf
 
-env = Environment(ENV = {'PATH': os.environ['PATH'], 'SystemRoot': r"C:\Windows"})
+env = Environment(ENV = {'PATH': os.environ['PATH'], 'LIB': os.environ["LIB"], 'SystemRoot': r"H:\Windows", 'INCLUDE': os.environ["INCLUDE"]})
 
 # Debug mode (for developers)
 robin_opts = Options()
@@ -82,7 +83,10 @@ robin_opts.Add(BoolOption('clsux',
 if ARGUMENTS.get('clsux', 0):
 	env = Environment()
 if ARGUMENTS.get('debug', 0):
-	env.Append(CXXFLAGS = "-g")
+	if conf.arch == "windows":
+		env.Append(CXXFLAGS = "/Zi")
+	else:
+		env.Append(CXXFLAGS = "-g")
 	env.Append(JAVACFLAGS = "-g")
 else:
 	env.Append(CXXFLAGS = "-O2")
@@ -90,7 +94,6 @@ else:
 env.Append(CPPPATH = ["src"])
 
 # Configure library prefix and auto-import flag for Cygwin
-import os.path, griffin as conf
 if conf.isCygwin:
 	env["SHLIBPREFIX"] = "lib"
 	env.Append(LINKFLAGS = "-Wl,--enable-auto-import")
@@ -301,7 +304,7 @@ import os.path
 
 #env = Environment()
 
-premises = ["jython.jar", "antlr-2.7.5.jar", "xercesImpl.jar", "junit.jar", 
+premises = ["jython.jar", "antlr.jar", "xercesImpl.jar", "junit.jar", 
             "xmlParserAPIs.jar", "swt.jar", "jface.jar"]
 premisedir = os.path.join(".", "premises")
 
@@ -309,7 +312,11 @@ classpath = [os.path.join(premisedir, x) for x in premises]
 if conf.is_gcj(env):
 	classpath.append("src/griffin")
 
-env.Append(JAVACFLAGS = '-classpath "%s"' % conf.java_pathsep.join(classpath))
+if conf.arch == "windows":
+	classpath_fmt = '-classpath %s'
+else:
+	classpath_fmt = '-classpath "%s"'
+env.Append(JAVACFLAGS = classpath_fmt % conf.java_pathsep.join(classpath))
 
 
 def jarme(source, target, env):
@@ -331,14 +338,23 @@ jar = env.Jar("Griffin.jar", griffin)
 typeexpr = env.Command("src/griffin/sourceanalysis/dox/" + 
 			"TypeExpressionLexerTokenTypes.txt",
 			"src/griffin/sourceanalysis/dox/TypeExpression.g",
-			"java -cp premises/antlr-2.7.5.jar antlr.Tool "
+			"java -cp premises/antlr.jar antlr.Tool "
                         "-o src/griffin/sourceanalysis/dox "
                         "src/griffin/sourceanalysis/dox/TypeExpression.g")
 
 Depends(griffin, typeexpr)
 
+def stl_dox(target=None, source=None, env=None):
+	wd = os.getcwd()
+	try:
+		os.chdir("src/griffin/modules/stl")
+		if os.system("doxygen") != 0:
+			raise RuntimeError, "doxygen failed"
+	finally:
+		os.chdir(wd)
+
 stl_dox = env.Command("build/stl.tag", "src/griffin/modules/stl", 
-                      "( cd src/griffin/modules/stl; doxygen )")
+                      stl_dox)
 
 Default(jar, stl_dox)
 

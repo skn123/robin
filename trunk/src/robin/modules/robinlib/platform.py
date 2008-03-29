@@ -50,7 +50,7 @@ else:
 	except AttributeError:
 		java_pathsep = os.pathsep # Python 2.2 and older
 	def classpath(elements):
-		return ":".join(elements)
+		return java_pathsep.join(elements)
 
 # Detect gcj
 def is_gcj(env):
