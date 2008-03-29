@@ -18,7 +18,10 @@
 
 #include "low_level.h"
 #include <cstring>
+
+#ifndef IS_ARGUMENT_LIMIT
 #include <alloca.h>
+#endif
 
 namespace Robin {
 

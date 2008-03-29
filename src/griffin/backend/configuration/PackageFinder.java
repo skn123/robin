@@ -28,8 +28,17 @@ public class PackageFinder {
     */
    public PackageFinder(String prefix) {
        // convert foo.bar.basepackage to foo/bar/basepackage/
-       this.prefix = prefix.replace(
-               ".", SEPARATOR) + SEPARATOR;
+       this.prefix = prefix;
+   }
+   
+   private String jarEntryPrefix()
+   {
+	   return prefix.replace(".", "/") + "/";
+   }
+   
+   private String classFilePrefix()
+   {
+	   return prefix.replace(".", SEPARATOR) + SEPARATOR;
    }
    
    /**
@@ -52,20 +61,20 @@ public class PackageFinder {
                // if entry starts with prefix, is not the prefix itself and is a directory
                // then it's a package we want
                String name = jfEntry.getName();
-               if(name.startsWith(prefix) && 
-                  name.equals(prefix) == false &&
-                  jfEntry.isDirectory() == true)
+               if(name.startsWith(jarEntryPrefix()) && 
+                  !name.equals(jarEntryPrefix()) &&
+                  jfEntry.isDirectory())
                {
                    // convert foo/bar/baz/ to foo.bar.baz
                    // and add
-                   packages.add(name.replace(SEPARATOR, ".").substring(0, name.length()-1));
+                   packages.add(name.replace("/", ".").substring(0, name.length()-1));
                }
            }
            return packages.toArray(new String[0]);
 
        } catch (IOException e) {
            // open the directory on filesystem
-           File prefixDirectory = new File(ownPath + SEPARATOR + prefix);
+           File prefixDirectory = new File(ownPath + SEPARATOR + classFilePrefix());
            
            String[] subDirectories =  prefixDirectory.list(new FilenameFilter() {
                public boolean accept(File dir, String name) {
@@ -75,8 +84,7 @@ public class PackageFinder {
            
            String[] packages = new String[subDirectories.length];
            for(int i=0; i<packages.length; i++) {
-               packages[i] = prefix.replace(SEPARATOR, ".") + subDirectories[i];
-               
+               packages[i] = prefix + "." + subDirectories[i];
            }
            
            return packages;
@@ -99,24 +107,20 @@ public class PackageFinder {
            // try to process as jar file
            try {
                JarFile jf = new JarFile(path);
-               
-               if(jf.getJarEntry(SELF) != null) {
+               if(jf.getJarEntry(JARENTRY) != null) {
                    return path;
                }
-               
-               
            } catch (IOException e) {
                // not a jar file
-               
-               if(new File(path + SEPARATOR + SELF).exists()) {
+               if(new File(path + SEPARATOR + CLASSFILE).exists()) {
                    return path;
                }
-               
            }
        }
        
        // impossible?!
-       throw new ConfigurationParseException("Couldn't find own class");
+       throw new ConfigurationParseException("Couldn't find PackageFinder " +
+    		   "class (" + CLASSFILE + ")");
    }
    
    /**
@@ -141,7 +145,8 @@ public class PackageFinder {
    /**
     * Own filename
     */
-   private final String SELF = PackageFinder.class.getCanonicalName().replace(
-                                   ".", System.getProperty("file.separator")) + ".class";
-   
+   private final String CLASSFILE = PackageFinder.class.getCanonicalName().replace(
+                                   ".", SEPARATOR) + ".class";
+   private final String JARENTRY = PackageFinder.class.getCanonicalName().replace(
+                                   ".", "/") + ".class";
 }

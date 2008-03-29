@@ -68,11 +68,12 @@ class Griffin:
         doxpath = [doxpath] + [os.path.join(x, "xml") for x in modules]
         stpath = [stpath]
 
-        cmd = "%s -Dgriffin.dox.path='%s' -Dgriffin.st.path='%s' " \
-                  "-classpath '%s' %s %s" % \
+        cmd = '%s -Dgriffin.dox.path="%s" -Dgriffin.st.path="%s" ' \
+                  '-classpath "%s" %s %s' % \
                   (conf.config.java, conf.classpath(doxpath), 
                    conf.classpath(stpath), conf.classpath(classpath),
                    self.javaflags, self.javacmd)
+	print cmd
         return cmd
 
     def run(self, args, modules):
