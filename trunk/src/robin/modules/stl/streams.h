@@ -9,15 +9,15 @@ public:
 
 protected:
     /* output stuff */
-    int xsputn(const char_type *s, std::streamsize n) {
-	write(std::string(s, n));
-	return n;
+    std::streamsize xsputn(const char_type *s, std::streamsize n) {
+    	write(std::string(s, n));
+    	return n;
     }
 
     int overflow(int_type c) { char v = c; write(std::string(&v,1)); return c; }
 
     /* input stuff */
-    int xsgetn(char_type *s, std::streamsize n) {
+    std::streamsize xsgetn(char_type *s, std::streamsize n) {
 	std::string data = read(n);
 	if (rd_valid) {
 	    s[0] = rd;
@@ -59,15 +59,3 @@ private:
 std::ostream *ogluestream(gluebuf *gb) { return new std::ostream(gb); }
 std::istream *igluestream(gluebuf *gb) { return new std::istream(gb); }
 
-void sample(std::ostream& o)
-{
-    o << "Hello, " << 345 << std::endl;
-}
-
-void sample(std::istream& i)
-{
-    std::string s;
-    int j;
-    i >> s >> j;
-    std::cerr << s << ", " << j << std::endl;
-}

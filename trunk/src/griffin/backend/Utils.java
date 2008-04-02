@@ -1108,8 +1108,8 @@ public class Utils {
 		final Map final_substitution = substitution;
 		final Map final_macros = macros;
 		
-		Type.ExtendedTransformation ttransform = 
-		new Type.ExtendedTransformation() {
+		Type.Transformation ttransform = 
+		new Type.Transformation() {
 			public TypeNode transform(TypeNode original)
 				throws InappropriateKindException {
 				// Transform all other leaf nodes according to substitution
@@ -1136,28 +1136,6 @@ public class Utils {
 				}
 				else
 					return null;
-			}
-			
-			/**
-			 * Replace the template argument "K" with an appropriate argument
-			 * from the macros map.
-			 */
-			public TemplateArgument transform(TemplateArgument original)
-			{
-				if (original instanceof TypenameTemplateArgument) {
-					TypenameTemplateArgument typenameArgument = 
-						(TypenameTemplateArgument)original;
-					Type value = typenameArgument.getValue();
-					if (value.isFlat()) {
-						Object replacement = final_macros.get(value.getBaseType()
-							.getName());
-						// Replace
-						if (replacement != null 
-							&& replacement instanceof TemplateArgument)
-							return (TemplateArgument)replacement;
-					}
-				}
-				return original;
 			}
 		};
 		return Type.transformType(type, ttransform); 
@@ -1323,6 +1301,13 @@ public class Utils {
 			if (agg.getName().equals(componentname))
 				return agg;
 		}
+		// Find namespaces
+		for (Iterator nsiter = scope.namespaceIterator(); nsiter.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)nsiter.next();
+			Namespace ns = (Namespace)connection.getContained();
+			if (ns.getName().equals(componentname))
+				return ns;
+		}
 		// Find enums
 		for (Iterator enumiter = scope.enumIterator(); enumiter.hasNext(); ) {
 			ContainedConnection connection = (ContainedConnection)enumiter.next();
@@ -1355,6 +1340,9 @@ public class Utils {
 	{
 		if (entity instanceof Aggregate) {
 			return lookup(((Aggregate)entity).getScope(), componentname);
+		}
+		else if (entity instanceof Namespace) {
+			return lookup(((Namespace)entity).getScope(), componentname);
 		}
 		else if (entity instanceof Alias) {
 			Entity unalias = naiveUnalias(entity);

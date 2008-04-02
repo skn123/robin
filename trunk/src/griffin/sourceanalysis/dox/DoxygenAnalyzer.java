@@ -743,6 +743,10 @@ public class DoxygenAnalyzer {
 					// Decide which entity is translated
 					if (mkind.equals(Tags.FUNCTION)) {    /* function member */
 						Routine emember = hasPre ? (Routine)pre : translateRoutine(mbr);
+						if (compound instanceof Aggregate && !emember.isTemplated()
+								&& XML.subNode(mbr, Tags.TEMPLATEPARAMLIST) != null) {
+							continue; // doxygen template specialization bug workaround
+						}
 						scope.addMember(emember, translateVisibility(access),
 							translateVirtuality(virt), translateStorage(stat));
 						if (group != null)
@@ -954,12 +958,10 @@ public class DoxygenAnalyzer {
 		if (kind.equals(Tags.USER_DEFINED)) {
 			// Read group's name
 			Node header = XML.subNode(xmlnode, Tags.HEADER);
-			if (header == null)
-				throw new XMLFormatException("user-defined section without a"+
-					" header", xmlnode);
-			// Look for group in scope
-			String headerstring = XML.collectText(header);
+			String headerstring = (header == null) ? 
+					"(anonymous)" : XML.collectText(header);
 			String[] headers = headerstring.split("!");
+			// Look for group in scope
 			Scope groupscope = compound;
 			Group group = null;
 			

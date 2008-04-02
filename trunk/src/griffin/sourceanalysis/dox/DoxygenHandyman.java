@@ -63,7 +63,7 @@ public class DoxygenHandyman {
                 return null;
 
             // Create a new type node with 'base'
-            Type.TypeNode transformed = new Type.TypeNode(original.getBase());
+            Type.TypeNode transformed = new Type.TypeNode(newBase);
             transformed.setCV(original.getCV());
             return transformed;
 		}
@@ -383,7 +383,7 @@ public class DoxygenHandyman {
 		else {
 			Entity context = startingFrom;
 			while (context != null && look == null) {
-				look = Utils.lookup(startingFrom, splitName[0]);
+				look = Utils.lookup(context, splitName[0]);
 				context = up(context);
 			}
 		}
