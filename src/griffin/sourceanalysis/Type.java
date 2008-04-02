@@ -790,6 +790,16 @@ public class Type extends DefaultTreeModel {
 			}
 			public TemplateArgument transform(TemplateArgument original)
 			{
+				if (original instanceof TypenameTemplateArgument) {
+					Type argType = ((TypenameTemplateArgument)original).getValue();
+					try {
+						Type xformed = transformType(argType, this);
+						if (xformed != argType)
+							return new TypenameTemplateArgument(xformed);
+					}
+					catch (InappropriateKindException e) {
+					}
+				}
 				return original;
 			}
 		};
@@ -833,13 +843,6 @@ public class Type extends DefaultTreeModel {
 					if (objectInNode instanceof TemplateArgument) {
 						objectInNode = transformation
 							.transform((TemplateArgument)objectInNode);
-					}
-					if (objectInNode instanceof TypenameTemplateArgument) {
-						// Fix type in template argument
-						Type argType =
-						  ((TypenameTemplateArgument)objectInNode).getValue();
-						objectInNode = new TypenameTemplateArgument(
-							transformType(argType, transformation));
 					}
 					transformed.add(new DefaultMutableTreeNode(objectInNode));
 				}
