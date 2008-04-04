@@ -373,6 +373,22 @@ public class DoxygenHandyman {
 	 */
 	Entity lookup(Entity startingFrom, String name)
 	{
+		Entity local = lookupLocal(startingFrom, name);
+		Entity extern = lookupExternal(startingFrom, name);
+		return (local == null) ? extern : local;
+	}
+	
+	/**
+	 * Attempts precise name lookup using information stored in the program
+	 * database starting with the global namespace.
+	 * 
+	 * @param startingFrom a starting point for lookup; names will be looked
+	 * up in the scope associated with startingPoint and in containing scopes.
+	 * @param name name to look up
+	 * @return
+	 */
+	Entity lookupLocal(Entity startingFrom, String name)
+	{
 		String[] splitName = name.split("::");
 		// Try to find the first name element
 		Entity look = null;
@@ -392,6 +408,40 @@ public class DoxygenHandyman {
 			look = Utils.lookup(look, splitName[i]);
 		}
 		return look;
+	}
+	
+	/**
+	 * Attempts lookup in the program database's external reference.
+	 * 
+	 * @param name name to look for
+	 * @return
+	 */
+	Entity lookupExternal(Entity origin, String name)
+	{
+		Scope context = lookupExternal(origin);
+		Entity look = Utils.lookup(context, name);
+		return look;
+	}
+	
+	Scope lookupExternal(Entity origin)
+	{
+		if (origin == m_program.getGlobalNamespace()) {
+			return m_program.getExternals();
+		}
+		else if (origin.hasContainer()) {
+			Scope container = lookupExternal(origin.getContainer());
+			if (container != null) {
+				Entity look = Utils.lookup(container, origin.getName());
+				if (look == null)
+					return container;
+				else if (look instanceof Namespace)
+					return ((Namespace)look).getScope();
+				else
+					return container;
+			}
+		}
+		// - fall back to global scope
+		return m_program.getExternals();
 	}
 	
 	private static Entity up(Entity e)

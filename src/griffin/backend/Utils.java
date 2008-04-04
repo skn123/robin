@@ -1108,8 +1108,8 @@ public class Utils {
 		final Map final_substitution = substitution;
 		final Map final_macros = macros;
 		
-		Type.Transformation ttransform = 
-		new Type.Transformation() {
+		Type.ExtendedTransformation ttransform = 
+		new Type.ExtendedTransformation() {
 			public TypeNode transform(TypeNode original)
 				throws InappropriateKindException {
 				// Transform all other leaf nodes according to substitution
@@ -1136,6 +1136,37 @@ public class Utils {
 				}
 				else
 					return null;
+			}
+
+			/**
+			 * Replace the template argument "K" with an appropriate argument
+			 * from the macros map, if such substitution is provided; otherwise,
+			 * transform argument as if it were a type.
+			 */
+			public TemplateArgument transform(TemplateArgument original) {
+				if (original instanceof TypenameTemplateArgument) {
+					// notice that it may be also be a data template argument
+					// that was not recognized by the source analyzer
+					Type type = ((TypenameTemplateArgument)original).getValue();
+					try {
+						// - attempt substitution from macros 
+						if (type.getRootNode().getKind() == Type.TypeNode.NODE_LEAF) {
+							Entity base = type.getRootNode().getBase();
+							Object substitution = final_macros.get(base.getName());
+							if (substitution != null && 
+									substitution instanceof TemplateArgument) {
+								return (TemplateArgument)substitution;
+							}
+						}
+						// - attempt type transformation
+						Type xformed = Type.transformType(type, this);
+						if (xformed != type)
+							return new TypenameTemplateArgument(xformed);
+					} catch (InappropriateKindException e) {
+						/* fail and fall back */
+					}
+				}
+				return original;
 			}
 		};
 		return Type.transformType(type, ttransform); 
@@ -1290,9 +1321,9 @@ public class Utils {
 	 * @param scope container scope
 	 * @param componentname name of component to look for
 	 * @return and Entity by the given name. If no such entity is found, 
-	 * <b>null</b> is returmed.
+	 * <b>null</b> is returned.
 	 */
-	private static Entity lookup(Scope scope, String componentname)
+	public static Entity lookup(Scope scope, String componentname)
 	{
 		// Find aggregates
 		for (Iterator aggiter = scope.aggregateIterator(); aggiter.hasNext(); ) {

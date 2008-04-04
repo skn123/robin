@@ -100,7 +100,7 @@ namespace StandardLibrary
 		std::pair<int, std::string> m_data;
 	};
 
-	void copy(UsingStrings& a, const UsingStrings& b) { }
+	inline void copy(UsingStrings& a, const UsingStrings& b) { }
 
 	typedef std::pair<long,long> LPair;
 
