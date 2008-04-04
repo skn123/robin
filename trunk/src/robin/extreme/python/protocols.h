@@ -4,6 +4,7 @@
 #define ROBIN_TEST_PYTHON_PROTOCOLS_H
 
 #include "samename/1/samename.h"
+#include "language.h"
 
 
 class Times
@@ -31,6 +32,7 @@ public:
 	operator int() const { return x_factor; }
 	operator samename_t() const { return x_factor; }
 	samename_t operator~() const { return *this; }
+	AliasedPtr create() const { return new Aliased; }
 
 	const int& factoref() const { return x_factor; }
 	

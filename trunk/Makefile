@@ -122,7 +122,8 @@ language-test@%:
 	        Conversions Exceptions Interface Abstract NonAbstract    \
 	        Primitives Pointers StandardLibrary Typedefs             \
 	        PublicDouble KwClass --module language
-	$(cxx) $(shared) $(extreme_python)/liblanguage_robin.cc            \
+	$(cxx) $(shared) $(extreme_python)/liblanguage_robin.cc          \
+                $(extreme_python)/language.cc                            \
 	        -o $(extreme_python)/liblanguage.so
 
 protocols-test@%:
@@ -169,7 +170,7 @@ memprof-test@%:
 	        -o $(extreme_python)/libmemprof.so
 
 
-TESTS = language-test protocols-test inheritance-test hints-test autocollect-test memprof-test
+TESTS = language-test templates-test protocols-test inheritance-test hints-test autocollect-test memprof-test
 TEST_SUITES = LanguageTest STLTest TemplatesTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
 TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
 TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)

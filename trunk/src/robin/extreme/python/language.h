@@ -36,8 +36,7 @@ private:
 	int hidden;
 };
 
-const int DataMembers::zero = 0;
-const DataMembers global_one(1.0);
+extern const DataMembers global_one;
 
 class PrimitiveTypedef
 {
@@ -88,12 +87,15 @@ class Aliases
 };
 
 typedef Aliases Aliased;
+typedef Aliases *AliasedPtr;
 
 class DerivedFromAlias : public Aliased
 {
+public:
+	AliasedPtr create() { return new DerivedFromAlias; }
 };
 
-std::ostream& operator<<(std::ostream& o, const Aliased& a)
+inline std::ostream& operator<<(std::ostream& o, const Aliased& a)
 {
 	return o << "Aliased";
 }

@@ -1723,16 +1723,19 @@ public class DoxygenAnalyzer {
 	 * whenever it occurs. As a result, the &lt;int,int&gt; tag cannot be 
 	 * recovered.
 	 * 
+	 * Another instance occurs with pointers-to types, like so:
+	 *   <code>typedef MyClass *Ptr;</code>
+	 * In which case Doxygen redirects <code>Ptr</code> references to
+	 * <code>MyClass</code>, losing the information that it is a pointer
+	 * type.
+	 * 
 	 * @param name the name via which an entity is referenced
 	 * @param referenced an entity which Doxygen redirects that name to
 	 * @return
 	 */
 	private static boolean canBeTrusted(String name, Entity referenced)
 	{
-		if (referenced.isTemplated())
-			return namesMatch(name, referenced.getName());
-		else
-			return true; // non-templates are always trusted
+		return namesMatch(name, referenced.getName());
 	}
 	
 	/**
