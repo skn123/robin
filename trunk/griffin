@@ -73,7 +73,6 @@ class Griffin:
                   (conf.config.java, conf.classpath(doxpath), 
                    conf.classpath(stpath), conf.classpath(classpath),
                    self.javaflags, self.javacmd)
-	print cmd
         return cmd
 
     def run(self, args, modules):

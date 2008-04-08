@@ -14,6 +14,13 @@ class TypeExpressionLexer extends Lexer;
 options {
     k = 3;
 }
+{
+    static void silenceWarnings() {
+        /* these statements thwart warnings about unused imports */
+        ANTLRException k; CharScanner l; CommonToken t;
+        MismatchedCharException mte; SemanticException se;
+    }
+}
 
  WS  :   (' '
     |   '\t'
@@ -193,6 +200,13 @@ options {
 		return new Type.TypeNode(Type.TypeNode.NODE_X_BLANK);
 	}
 	
+    static void silenceWarnings() {
+        /* these statements thwart warnings about unused imports */
+        ANTLRException k; LLkParser p;
+	    MismatchedTokenException mte; SemanticException se; 
+	    TokenStreamIOException tsioe;
+	}
+	
 	private StringBuffer m_error_msg;
 }
 
@@ -325,36 +339,38 @@ simple_type_specifier:
 */
 
 basic_type returns [ Type.TypeNode type=m_err ] 
-	{ Entity base = m_error_entity; }
+	{ String base = "int"; String sign = ""; }
 	:
-	(
-	"char"               { base = primitive("char"); }
-  |	"wchar"              { base = primitive("wchar"); }
-  |	"bool"               { base = primitive("bool"); }
-  | "short" ("int")?     { base = primitive("short"); }
-  | "int"                { base = primitive("int"); }
-  | "long"               { base = primitive("long"); }
-  	(  "int"
-  	 | "long"            { base = primitive("long long"); }
+  (
+	(   "signed"         { sign = "signed "; }
+	  | "unsigned"       { sign = "unsigned "; }
+	)
+	(   "char"               { base = "char"; }
+      | "short" ("int")?     { base = "short"; }
+      | "int"                { base = "int"; }
+      | "long"               { base = "long"; }
+  	    (  "int"
+  	     | "double"          { base = "long double"; }
+  	     | "long" ("int")?   { base = "long long"; }
+  	    )?
   	)?
-  | "signed"             { base = primitive("int"); }
-	(  "char"            { base = primitive("signed char"); }
-	 | "int"
-	 | "long"            { base = primitive("long"); }
-	 | "short"           { base = primitive("short"); }
-	)?
-  |	"unsigned"           { base = primitive("unsigned int"); }
-	( "char"             { base = primitive("unsigned char"); }
-	 | "int"
-	 | "long"            { base = primitive("unsigned long"); }
-	  ("long"            { base = primitive("unsigned long long"); })?
-	 | "short"           { base = primitive("unsigned short"); }
-	)?
-  |	"float"              { base = primitive("float"); }
-  | "double"             { base = primitive("double"); }
-  | "void"               { base = primitive("void"); }
-  	)
-  		{ type = new Type.TypeNode(base); }
+  |
+    (   "char"               { base = "char"; }
+      | "wchar"              { base = "wchar"; }
+      | "bool"               { base = "bool"; }
+      | "short" ("int")?     { base = "short"; }
+      | "int"                { base = "int"; }
+      | "long"               { base = "long"; }
+        (  "int"
+         | "double"          { base = "long double"; }
+         | "long" ("int")?   { base = "long long"; }
+        )?
+      | "float"              { base = "float"; }
+      | "double"             { base = "double"; }
+      | "void"               { base = "void"; }
+    )
+  )
+  		{ type = new Type.TypeNode(primitive(sign + base)); }
 
  |	ELLIPSIS { type = ellipsis(); }
 	;

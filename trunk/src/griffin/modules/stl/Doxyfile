@@ -1,4 +1,5 @@
-INPUT = tag_vector.h tag_pair.h tag_map.h tag_list.h tag_set.h tag_complex.h
+INPUT = tag_vector.h tag_pair.h tag_map.h tag_list.h tag_set.h tag_complex.h \
+        tag_stdint.h
 
 GENERATE_HTML = No
 GENERATE_LATEX = No
