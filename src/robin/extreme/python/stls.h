@@ -58,6 +58,13 @@ namespace StandardLibrary
 
 		int getVectorType() { return m_id; }
 
+		std::vector<size_t> getVectorDim()
+		{
+			std::vector<size_t> v;
+			v.push_back(m_data.size());
+			return v;
+		}
+
 		/**
 		 * @param v [output] result vector
 		 */

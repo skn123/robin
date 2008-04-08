@@ -171,7 +171,7 @@ namespace {
 			                  type.begin() + 6);
 		}
 
-        namespc->unalias(type);
+		namespc->unalias(type);
 
 		// identify the argument
 		if      (type == "int")      return (PyObject*)&PyInt_Type;
@@ -183,13 +183,13 @@ namespace {
 		else if (type == "unsigned int")    return pyunsigned_int;
 		else if (type == "unsigned long")   return pyunsigned_long;
 		else if (type == "unsigned long long")
-			                                       return pyunsigned_long_long;
+			                                return pyunsigned_long_long;
 		else if (type == "unsigned char")   return pyunsigned_char;
 		else if (type == "signed char")     return pysigned_char;
 		else if (type == "char *")    return (PyObject*)&PyString_Type;
         else
-                // not a primitive type
-                throw LookupFailureException();
+			// not a primitive type
+			throw LookupFailureException(type_name);
     }
 
     PyObject *getBuiltinType(Handle<Namespace> &namespc,
@@ -202,8 +202,6 @@ namespace {
 			type.erase(type.begin(),
 			                  type.begin() + 6);
 		}
-
-        namespc->unalias(type);
 
 		// identify the argument
 		if      (type == "int")      return (PyObject*)&PyInt_Type;
@@ -220,9 +218,7 @@ namespace {
 		else if (type == "signed char")     return (PyObject*)&PyString_Type;
 		else if (type == "char *")    return (PyObject*)&PyString_Type;
         else
-                throw LookupFailureException();
-
-
+			throw LookupFailureException(type_name);
     }
 
 
@@ -243,8 +239,13 @@ namespace {
         try {
             // see if it's a primitive type
             return getPrimitiveType(namespc, templatearg);
-        } catch(LookupFailureException &) {
-			return (PyObject*)fe.getClassObject(templatearg);
+        } catch (LookupFailureException &) {
+			try {
+				return (PyObject*)fe.getTypeObject(templatearg);
+			}
+			catch (LookupFailureException &) {
+				return NULL;
+			}
         }
 	}
 
@@ -696,16 +697,17 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		catch (LookupFailureException& ) {
             // this could be a primitive type
             try {
-                    std::string name = alias_iter->value();
-                    // FIXME: XXX:
-                    // if desired to use a python built-in type (type<'int'>, etc)
-                    // this call should be replaced by getBuiltinType
-                    PyObject *prim_type = getPrimitiveType(globals, name);
-                    insertIntoNamespace(newcomer.name(), module, name,
+				std::string name = alias_iter->value();
+				// FIXME: XXX:
+				// if desired to use a python built-in type (<type 'int'>, etc)
+				// this call should be replaced by getBuiltinType
+				PyObject *prim_type = getPrimitiveType(globals, name);
+				insertIntoNamespace(newcomer.name(), module, name,
                                     pyowned(prim_type));
-                    continue;
+				m_typesByName[name] = (PyTypeObject*)prim_type;
+				continue;
             } catch(LookupFailureException &) {
-                    // not a primitive, fallthrough to failure scenario
+				// not a primitive, fallthrough to failure scenario
             } 
 
 			// ignore this alias
@@ -955,6 +957,29 @@ const Interceptor& PythonFrontend::getInterceptor() const
 ErrorHandler& PythonFrontend::getErrorHandler()
 {
 	return *m_errorHandler;
+}
+
+/**
+ * Finds a corresponding Python type object for a C++ type.
+ *
+ * @param name fully-qualified type name
+ */
+PyTypeObject *PythonFrontend::getTypeObject(const std::string& name) const
+{
+	typenameassoc::const_iterator typefind = m_typesByName.find(name);
+	if (typefind == m_typesByName.end()) {
+		ClassObject *klass = getClassObject(name);
+		if (klass == NULL) {
+			throw LookupFailureException(name);
+		}
+		else {
+			return (PyTypeObject*)klass;
+		}
+	}
+	else {
+		assert(typefind->second != NULL);
+		return typefind->second;
+	}
 }
 
 /**

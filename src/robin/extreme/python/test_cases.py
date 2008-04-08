@@ -206,6 +206,11 @@ class STLTest(TestCase):
         for q in qubits: uc.append(*q)
         self.assertEquals(uc.tensor(), tensor)
 
+	def testVectorOfSizeT(self):
+		uv = language.StandardLibrary.UsingVectors([0.1,0.2,0.3])
+		vec = uv.getVectorDim()
+		self.assertEquals(vec, [3])
+
     def testVolatileVector(self):
         l = range(10)
         lorig = l[:]

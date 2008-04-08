@@ -1,3 +1,4 @@
+// -*- mode: c++; c-basic-offset: 4; tab-width: 4 -*-
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -322,6 +323,15 @@ extern "C"
 __declspec(dllexport)
 #endif
 RegData entry[] = {
+	{ "size_t", "=unsigned int", 0, 0 },
+	{ "int8_t", "=char", 0, 0 },
+	{ "int16_t", "=short", 0, 0 },
+	{ "int32_t", "=long", 0, 0 },
+	{ "int64_t", "=long long", 0, 0 },
+	{ "uint8_t", "=unsigned char", 0, 0 },
+	{ "uint16_t", "=unsigned short", 0, 0 },
+	{ "uint32_t", "=unsigned long", 0, 0 },
+	{ "uint64_t", "=unsigned long long", 0, 0 },
 	{ "std::string", "class", stdstring_proto, 0 },
 	{ "std::ostream", "class", stdostream_proto, 0 },
 	{ "std::ostringstream", "class", stdostringstream_proto, 0 },

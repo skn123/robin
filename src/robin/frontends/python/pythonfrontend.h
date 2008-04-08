@@ -140,6 +140,7 @@ public:
 	 * @name Auxiliary
 	 */
 	//@{
+	PyTypeObject   *getTypeObject(const std::string& name) const;
 	ClassObject    *getClassObject(Handle<Robin::Class> clas) const;
 	ClassObject    *getClassObject(const std::string& name) const;
 	EnumeratedTypeObject    
@@ -164,6 +165,7 @@ protected:
 								   std::string& templatename);
 	void *getRegisteredObject(TemplateKind kind, const std::string& name);
 
+	typedef std::map<std::string, PyTypeObject*> typenameassoc;
 	typedef std::map<const Robin::Class*, Robin::Python::ClassObject*> 
 	    classassoc;
 	typedef std::map<std::string, Robin::Python::ClassObject*> 
@@ -178,6 +180,7 @@ protected:
 	typedef std::list<Handle<UserDefinedTranslator> >
 		userdefinedtypelist;
 
+	typenameassoc             m_typesByName;
 	mutable classassoc        m_classes;
 	mutable classnameassoc    m_classesByName;
 	mutable enumassoc         m_enums;
