@@ -46,8 +46,10 @@ class Griffin:
         doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
                    "OUTPUT_DIRECTORY = %s\nTAGFILES = %s\n" \
                    "GENERATE_TAGFILE = %s\n" \
-                   "GENERATE_HTML=No\nGENERATE_LATEX=No\n" % \
-                     (" ".join(sources), project, " ".join(tagfiles), tagfile)
+                   "GENERATE_HTML=No\nGENERATE_LATEX=No\n" \
+                   "ENABLE_PREPROCESSING=Yes\nMACRO_EXPANSION=Yes\n" \
+                   "SEARCH_INCLUDES=Yes" % \
+                   (" ".join(sources), project, " ".join(tagfiles), tagfile)
         if self.verbose: print ".griffin-doxyfile:\n" + doxyfile
         open(".griffin-doxyfile", "w").write(doxyfile)
         Dots(self.verbose).run("doxygen .griffin-doxyfile")
