@@ -48,8 +48,9 @@ class Griffin:
                    "GENERATE_TAGFILE = %s\n" \
                    "GENERATE_HTML=No\nGENERATE_LATEX=No\n" \
                    "ENABLE_PREPROCESSING=Yes\nMACRO_EXPANSION=Yes\n" \
-                   "SEARCH_INCLUDES=Yes" % \
+                   "SEARCH_INCLUDES=Yes\nINCLUDE_PATH=/usr/include" % \
                    (" ".join(sources), project, " ".join(tagfiles), tagfile)
+
         if self.verbose: print ".griffin-doxyfile:\n" + doxyfile
         open(".griffin-doxyfile", "w").write(doxyfile)
         Dots(self.verbose).run("doxygen .griffin-doxyfile")
