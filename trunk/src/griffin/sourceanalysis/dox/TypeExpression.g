@@ -320,6 +320,7 @@ template_argument returns [ TemplateArgument arg=null ]
 
 cv returns [ int flag=0 ]:
 	"const" { flag = Specifiers.CVQualifiers.CONST; }
+  | "__const" { flag = Specifiers.CVQualifiers.CONST; }
   |	"volatile" { flag = Specifiers.CVQualifiers.VOLATILE; }
 	;
 
