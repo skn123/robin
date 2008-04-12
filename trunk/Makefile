@@ -177,6 +177,7 @@ TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)
 TESTING_PYTHON_VG = cd $(extreme_python) && $(SELF) valgrind --tool=memcheck $(python)
 
 test: ${addsuffix @., $(TESTS)}
+	-rm -f module.tag
 	( $(TESTING_PYTHON) test_cases.py $(TEST_SUITES) )
 
 justtest:

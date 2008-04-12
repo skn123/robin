@@ -5,7 +5,6 @@
 package backend.robin;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import backend.GenericFilters;
@@ -162,8 +161,6 @@ public class Filters extends GenericFilters {
 		Type type = alias.getAliasedType();
 		return isDirectPrimitive(type);
 	}
-
-	
 
 	/**
 	 * Checks whether a field should be wrapped. A field is included in the

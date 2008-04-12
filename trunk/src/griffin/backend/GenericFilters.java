@@ -51,6 +51,7 @@ public class GenericFilters {
 		if (decl != null) {
 			String filename = decl.getSourceFilename(); 
 			return filename.endsWith(".h") || filename.endsWith(".hh") 
+				|| filename.endsWith(".hpp")
 				|| filename.endsWith(".inl");
 		}
 		else
@@ -70,7 +71,8 @@ public class GenericFilters {
 	{
 		if (decl != null) {
 			String filename = decl.getSourceFilename(); 
-			return filename.endsWith(".h") || filename.endsWith(".hh");
+			return filename.endsWith(".h") || filename.endsWith(".hh")
+				|| filename.endsWith(".hpp");
 		}
 		else
 			return false;

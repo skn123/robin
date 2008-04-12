@@ -65,6 +65,10 @@ namespace StandardLibrary
 			return v;
 		}
 
+		std::vector<double>::iterator getIter() { return m_data.begin(); }
+		std::vector<double>::const_iterator getConstIter()
+		{ return m_data.begin(); }
+
 		/**
 		 * @param v [output] result vector
 		 */
