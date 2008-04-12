@@ -548,6 +548,7 @@ public class Type extends DefaultTreeModel {
 	public boolean isFlat()
 	{
 		TypeNode ptr = getRootNode();
+		if (ptr == null) return false;
 		// Arrays must come first
 		while (ptr.getKind() == TypeNode.NODE_ARRAY) {
 			ptr = (TypeNode)ptr.getFirstChild();

@@ -229,6 +229,7 @@ basename returns [ sourceanalysis.Type.TypeNode node=m_err ]
 	 (QUAD)=>(QUAD namestring=nested_name { node = new Type.TypeNode(peek(node.formatCpp() + "::" + namestring)); })
 	 |
 	)
+    (flag=cv { cvflags |= flag; })*
 	{ if (node == m_err) node = errorType(); node.setCV(cvflags); }
 	;
 

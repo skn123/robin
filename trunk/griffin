@@ -23,7 +23,8 @@ class Griffin:
         if not os.path.isfile(self.griffin_bin):
           self.griffin_bin = os.path.join(self.jardir, self.GRIFFIN_JAR)
         self.javacmd = "backend.Launcher robin"
-        self.javaflags = ""
+        self.javaflags = "-Xmx496M"
+        self.compiler = {'-D': [], '-I': []}
         self.module = "."
         self.verbose = False
 
@@ -36,23 +37,39 @@ class Griffin:
         self.doxygen(self.module, sources, modules)
         self.xmldir = os.path.join(self.module, "xml")
 
+    def locate(self, filename):
+        for path in [here, os.path.join(here, "build"), self.robindir]:
+            full = os.path.join(path, filename)
+            if os.path.isfile(full):
+                return full
+        return None
+
     def doxygen(self, project, sources, modules):
         import os.path
-        stltag = os.path.join(here, "build/stl.tag")
-        if not os.path.isfile(stltag): stltag = os.path.join(here, "stl.tag")
-        if not os.path.isfile(stltag): stltag = os.path.join(self.robindir, "stl.tag")
+        stltag = self.locate("stl.tag") or ""
         tagfiles = [stltag] + [os.path.join(x, "module.tag") for x in modules]
         tagfile = os.path.join(project, "module.tag")
-        doxyfile = "INPUT = %s\nGENERATE_XML=Yes\nEXTRACT_ALL=Yes\n" \
-                   "OUTPUT_DIRECTORY = %s\nTAGFILES = %s\n" \
-                   "GENERATE_TAGFILE = %s\n" \
-                   "GENERATE_HTML=No\nGENERATE_LATEX=No\n" \
-                   "ENABLE_PREPROCESSING=Yes\nMACRO_EXPANSION=Yes\n" \
-                   "SEARCH_INCLUDES=Yes\nINCLUDE_PATH=/usr/include" % \
-                   (" ".join(sources), project, " ".join(tagfiles), tagfile)
+        stdmacros = ["STDC", "__doxygen", "__cplusplus"]
 
-        if self.verbose: print ".griffin-doxyfile:\n" + doxyfile
-        open(".griffin-doxyfile", "w").write(doxyfile)
+        doxyfile = {
+            "INPUT": " ".join(sources),
+            "OUTPUT_DIRECTORY": project,
+            "TAGFILES": " ".join(tagfiles),
+            "PREDEFINED": " ".join(stdmacros + self.compiler["-D"]),
+            "INCLUDE_PATH": " ".join(["/usr/include"] + self.compiler["-I"]),
+            "MACRO_EXPANSION": "Yes",
+            "SEARCH_INCLUDES": "Yes",
+            "GENERATE_XML": "Yes",
+            "XML_PROGRAMLISTING": "No",
+            "GENERATE_HTML": "No", "GENERATE_LATEX": "No",
+            "EXTRACT_ALL": "Yes"
+            }
+
+        fmtd_doxyfile = "\n".join("%s = %s" % item
+                                  for item in doxyfile.iteritems())
+
+        if self.verbose: print ".griffin-doxyfile:\n" + fmtd_doxyfile
+        open(".griffin-doxyfile", "w").write(fmtd_doxyfile)
         Dots(self.verbose).run("doxygen .griffin-doxyfile")
         if self.verbose: print "unlink .griffin-doxyfile"
         os.unlink(".griffin-doxyfile")
@@ -115,8 +132,14 @@ class Griffin:
             "--import", metavar="path", type=str, nargs="+", default=[],
             help="doxygen output directory of external modules to refer to")
         parser.add_argument(
-            "-I", action='store_true', default=False,
+            "--include", action='store_true', default=False,
             help="process #included header files recursively")
+        parser.add_argument(
+            "-I", action='append', type=str, metavar="macro", default=[],
+            help="search path for header files in #include directives")
+        parser.add_argument(
+            "-D", action='append', type=str, metavar="macro", default=[],
+            help="preprocessor directives to predefine (name or name=value)")
         parser.add_argument(
             "--interceptors", action='store_true', default=False,
             help="also generate interceptor classes for wrapped interfaces")
@@ -137,7 +160,7 @@ class Griffin:
         if not args: args = ["-h"]
 
         values = parser.parse_args(args)
-        FLAGS = ["I", "v", "debug", "interceptors", "module"]
+        FLAGS = ["include", "v", "debug", "interceptors", "module"]
         OPTS = ["hints", "import"]
         arg_in = values.__dict__['in']
         arg_out = values.out
@@ -150,6 +173,8 @@ class Griffin:
             arg_classes += [x for x in values.inputs if "." not in x]
         if values.eclipse:
             self._opt_eclipse()
+        self.compiler["-D"].extend(values.D)
+        self.compiler["-I"].extend(values.I)
         return arg_in, [arg_out], arg_opts, arg_classes
 
     def jarg(self, name, value):
@@ -189,7 +214,7 @@ class Griffin:
 
         # Set input source
         if input_type == "sources":
-            if "I" in arg_opts:
+            if "include" in arg_opts:
                 arg_in = Preprocessor().extractAllIncluded(arg_in)
             self.setSources(arg_in, imported)
         elif input_type == "xml" or wizard:
@@ -206,7 +231,7 @@ class Griffin:
                      if x in JOPTS]
 
         if "debug" in arg_opts:
-            self.javaflags = "-Xrunjdwp:transport=dt_socket,address=%d,server=y,suspend=y" % arg_opts["debug"]
+            self.javaflags += " -Xrunjdwp:transport=dt_socket,address=%d,server=y,suspend=y" % arg_opts["debug"]
 
         if wizard:
             self.javacmd = "wizard.Main"

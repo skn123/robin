@@ -113,7 +113,7 @@ SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
 . = .
 
 language-test@%:
-	$($*)/griffin $G -I --in $(extreme_python)/language.h            \
+	$($*)/griffin $G --include --in $(extreme_python)/language.h     \
                 $(extreme_python)/kwargs.h                               \
                 $(extreme_python)/samename/1/samename.h                  \
 	        --out $(extreme_python)/liblanguage_robin.cc             \
@@ -131,7 +131,7 @@ protocols-test@%:
                 $(extreme_python)/samename/2/samename.h                  \
 	        --out $(extreme_python)/libprotocols_robin.cc            \
 	        Times --import language
-	$(cxx) $(shared) $(extreme_python)/libprotocols_robin.cc           \
+	$(cxx) $(shared) $(extreme_python)/libprotocols_robin.cc         \
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
@@ -142,24 +142,24 @@ templates-test@%:
 		-o $(extreme_python)/libtemplates.so
 
 inheritance-test@%:
-	$($*)/griffin $G --in $(extreme_python)/inheritance.h               \
+	$($*)/griffin $G --in $(extreme_python)/inheritance.h            \
 	        --out $(extreme_python)/libinheritance_robin.cc          \
 	        --interceptors Functor FunctorImpl mapper mul TaintedVirtual
-	$(cxx) $(shared) $(extreme_python)/libinheritance_robin.cc         \
+	$(cxx) $(shared) $(extreme_python)/libinheritance_robin.cc       \
 		-o $(extreme_python)/libinheritance.so
 
 hints-test@%:
-	$($*)/griffin $G --in $(extreme_python)/hinted.h -I              \
+	$($*)/griffin $G --in $(extreme_python)/hinted.h --include       \
 	        --out $(extreme_python)/libhints_robin.cc                \
 		--import language                                        \
 	        --hints=$(extreme_python)/hint.py Clue Templates
-	$(cxx) $(shared) $(extreme_python)/libhints_robin.cc         \
+	$(cxx) $(shared) $(extreme_python)/libhints_robin.cc             \
 		-o $(extreme_python)/libhints.so -I$(extreme_python)
 
 autocollect-test@%:
-	$($*)/griffin $G --in $(extreme_python)/autocollect.h             \
+	$($*)/griffin $G --in $(extreme_python)/autocollect.h            \
 	        --out $(extreme_python)/libautocollect_robin.cc
-	$(cxx) $(shared) $(extreme_python)/libautocollect_robin.cc   \
+	$(cxx) $(shared) $(extreme_python)/libautocollect_robin.cc       \
 		-o $(extreme_python)/libautocollect.so
 
 
