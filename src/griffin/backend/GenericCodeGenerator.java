@@ -565,6 +565,9 @@ public class GenericCodeGenerator
 		for (Iterator subjectIter = m_subjects.iterator();
 			subjectIter.hasNext(); ) {
 			Aggregate subject = (Aggregate)subjectIter.next();
+			if(!GenericFilters.isDeclared(subject)) {
+				continue;
+			}
 			for (Iterator baseIter = subject.baseIterator();
 				baseIter.hasNext(); ) {
 				// Get bases
@@ -588,6 +591,11 @@ public class GenericCodeGenerator
 		for (Iterator subjectIter = m_globalFuncs.iterator();
 			subjectIter.hasNext(); ) {
 			Routine subject = (Routine)subjectIter.next();
+			// don't instantiate templates in functions
+			// that weren't declared in headers
+			if(!GenericFilters.isDeclared(subject)) {
+				continue;
+			}
 			// Observe function
 			if (!subject.isTemplated()) {
 				Traverse t = new Traverse();
@@ -599,6 +607,13 @@ public class GenericCodeGenerator
 		for (Iterator typedefIter = m_typedefs.iterator();
 			typedefIter.hasNext(); ) {
 			Alias typedef = (Alias)typedefIter.next();
+			// This disables instantiation of templates
+			// in typedefs not declared in headers.
+			// One could argue that it's useful, but it brings its
+			// own share of issues
+			if(!GenericFilters.isDeclared(typedef)) {
+				continue;
+			}
 			try {
 				findTemplatesToInstantiate(
 					typedef.getAliasedType().getRootNode(),
