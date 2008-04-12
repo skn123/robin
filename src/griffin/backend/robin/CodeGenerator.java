@@ -2027,7 +2027,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private String m_randomNamespace;
 	
 	// Code skeletons
-	private static final String END_OF_LIST = "\t{ 0 }\n};\n\n";
+	private static final String END_OF_LIST = "\t{ 0,0,0,0 }\n};\n\n";
 
 	
 }

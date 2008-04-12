@@ -218,6 +218,17 @@ class STLTest(TestCase):
         for i in xrange(len(l)):
             self.failUnless(l[i] == lorig[i] * 2)
     
+	def testVectorIter(self):
+		uv = language.StandardLibrary.UsingVectors([0.1,0.2,0.3])
+		iter1 = uv.getIter()
+		iter2 = uv.getConstIter()
+		for iter in [iter1, iter2]:
+			first = getattr(iter, 'operator*')()
+			self.assertEquals(first, 0.1)
+			getattr(iter, 'operator++')()
+			second = getattr(iter, 'operator*')()
+			self.assertEquals(second, 0.2)
+
     def testStreams(self):
     	import StringIO, stl
     	o = language.StandardLibrary.UsingStreams()

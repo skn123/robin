@@ -817,7 +817,8 @@ public class Utils {
 		throws MissingInformationException, InappropriateKindException
 	{
 		// Don't instantiate the same template twice
-		String existingExpression = templateExpression(template, arguments);
+		String existingExpression =
+			templateExpression((d==null) ? template : d, arguments);
 		if(existingInstancesMap.containsKey(existingExpression)) {
 			return (Aggregate)existingInstancesMap.get(existingExpression);
 		}
