@@ -65,7 +65,7 @@ public class DocumentComponentRegistry {
                m_kind.equals("namespace") ||
                m_kind.equals("any") || 
                m_kind.equals("dir") ||
-               m_kind.equals("page")) {
+               m_kind.equals("page") || m_kind.equals("group")) {
 
                 m_document = component_id;
             } else {

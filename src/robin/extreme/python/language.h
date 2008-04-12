@@ -31,6 +31,7 @@ public:
 
 	void setEl(const El& t) { e = t; }
 	void setEl(const El * const t) { e = *t; }
+	void unsetEl(El const * t) { e = *t; }
 
 private:
 	int hidden;
