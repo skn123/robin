@@ -1052,6 +1052,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// - enter typedefs
 		for (Iterator typedefIter = m_typedefs.iterator(); typedefIter.hasNext();) {
 			Alias subject = (Alias)typedefIter.next();
+			// do not generate prototypes for typedefs that weren't
+			// declared in headers
+			if(!Filters.isDeclared(subject)) {
+				continue;
+			}
 			Type aliased = subject.getAliasedType();
 			if (aliased.isFlat()) {
 				m_output.write("\t{\"");
