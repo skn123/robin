@@ -40,15 +40,15 @@ scripting_element IntToFloatConversion::apply(scripting_element value) const
 
 
 /**
- * This conversion is possible iff the Python Long can fit inside an 
- * unsigned long in C.
+ * This conversion is possible iff the Python Long can fit inside the
+ * integral C type bounded by min_bits and max_bits.
  *
  * @return the normal weight of this conversion if the conversion is
  *    possible, otherwise Weight::INFINITE.
  */
-Conversion::Weight LongLongTruncate::weight(Insight insight) const
+Conversion::Weight IntegralTruncate::weight(Insight insight) const
 {
-	if (insight.i_long == sizeof(long)) {
+	if (insight.i_long >= m_min_bits && insight.i_long <= m_max_bits) {
 		return Conversion::weight();
 	}
 	else {
@@ -59,11 +59,11 @@ Conversion::Weight LongLongTruncate::weight(Insight insight) const
 /**
  * Truncates long long to long.
  */
-scripting_element LongLongTruncate::apply(scripting_element value) const
+scripting_element IntegralTruncate::apply(scripting_element value) const
 {
 	PyObject *pyvalue = (PyObject *)value;
-	long long cvalue = PyLong_AsLongLong(pyvalue);
-	return PyInt_FromLong((long)cvalue);
+	Py_INCREF(pyvalue);
+	return pyvalue;
 }
 
 
