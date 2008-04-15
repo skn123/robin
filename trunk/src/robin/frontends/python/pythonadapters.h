@@ -34,17 +34,38 @@ class EnumeratedTypeObject;
 
 //@{
 
-class PyIntTraits { 
+template < typename N >
+class PySignedNumTraits {
 public:
-	static long as(PyObject *pyobj) { return PyInt_AsLong(pyobj); }
-	static PyObject *from(long val) { return PyInt_FromLong(val); }
+	static N as(PyObject *pyobj)
+	{
+		return PyLong_Check(pyobj) ? PyLong_AsLongLong(pyobj) 
+		                           : PyInt_AsLong(pyobj);
+	}
+	static PyObject *from(N val)
+	{
+		return (val <= std::numeric_limits<long>::max()) ? PyInt_FromLong(val)
+			: PyLong_FromLongLong(val);
+	}
+	static N *asref(PyObject *pyobj)
+	{ return new N(as(pyobj)); }
 };
 
-class PyLongTraits {
+template < typename N >
+class PyUnsignedNumTraits {
 public:
-	static long long as(PyObject *pyobj)     { return PyLong_AsLongLong(pyobj); }
-	static PyObject *from(long long val)     { return PyLong_FromLongLong(val); }
-	static long long *asref(PyObject *pyobj) { return new long long(as(pyobj)); }
+	static N as(PyObject *pyobj)
+	{
+		return PyLong_Check(pyobj) ? PyLong_AsUnsignedLongLongMask(pyobj) 
+		                           : PyInt_AsLong(pyobj);
+	}
+	static PyObject *from(N val)
+	{
+		return (val <= std::numeric_limits<long>::max()) ? PyInt_FromLong(val)
+			: PyLong_FromUnsignedLongLong(val);
+	}
+	static N *asref(PyObject *pyobj)
+	{ return new N(as(pyobj)); }
 };
 
 class PyBoolTraits {

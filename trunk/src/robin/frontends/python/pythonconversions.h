@@ -65,14 +65,16 @@ public:
 
 };
 
-class LongLongTruncate : public Conversion
+class IntegralTruncate : public Conversion
 {
 public:
 	/**
 	 * @name Constructors
 	 */
 	//@{
-	LongLongTruncate() { setWeight(Conversion::Weight(0,1,0,0)); }
+	IntegralTruncate(int min_bits, int max_bits)
+		: m_min_bits(min_bits), m_max_bits(max_bits)
+	{ setWeight(Conversion::Weight(0,1,0,0)); }
 	//@}
 
 	/**
@@ -89,6 +91,9 @@ public:
 	scripting_element apply(scripting_element value) const;
 	//@}
 
+private:
+	int m_min_bits;
+	int m_max_bits;
 };
 
 

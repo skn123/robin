@@ -30,7 +30,6 @@ namespace Robin {
 
 namespace Python {
 
-template class SmallPrimitivePythonAdapter<int, PyIntTraits>;
 
 
 Handle<TypeOfArgument> ArgumentPythonList
@@ -51,7 +50,7 @@ bool PyBoolTraits::as(PyObject *pyobj)
 	else if (pyobj == Py_False)
 		return false;
 	else
-		return PyIntTraits::as(pyobj);
+		return PyInt_AsLong(pyobj);
 }
 
 PyObject *PyBoolTraits::from(bool val)

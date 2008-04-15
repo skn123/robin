@@ -68,10 +68,20 @@ class LanguageTest(TestCase):
 	def testLongAndLongLong(self):
 		prim = language.Primitives()
 		self.assertEquals(prim.setLong(6), 2)
+		self.assertEquals(prim.setLong(-6), 2)
 		self.assertEquals(prim.setLong(1l << 40), 1)
 		self.assertEquals(prim.setLong(6l), 1)
+		self.assertEquals(prim.setLong(-6l), 1)
 		self.assertEquals(prim.setLong(6l, True), 3)
-		self.assertEquals(prim.setLong(0xffffffff, True), 3)
+		self.assertEquals(prim.setLong(0xffffffff, True), 4)
+		self.assertEquals(prim.setLong(0x1ffffffff, True), 5)
+		self.assertEquals(prim.setLong(6, ""), 6)
+		try:
+			prim.setLong(-6, "")
+			self.fail("should have thrown "\
+			          "RuntimeError: no overloaded member matches arguments")
+		except RuntimeError:
+			pass # ok
 
 	def testPrivateDataMembers(self):
 		try:

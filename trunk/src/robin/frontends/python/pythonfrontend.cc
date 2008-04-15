@@ -271,6 +271,18 @@ namespace {
 
 		return Handle<TypeOfArgument>();
 	}
+
+	/* Integer bit sizes */
+	const int L = std::numeric_limits<long>::digits;
+	const int LL = std::numeric_limits<long long>::digits;
+	const int UL = std::numeric_limits<unsigned long>::digits;
+	const int ULL = std::numeric_limits<unsigned long long>::digits;
+
+	typedef unsigned long long um;
+	const um MAX_LONG= std::numeric_limits<long>::max();
+	const um MAX_LONGLONG = std::numeric_limits<long long>::max();
+	const um MAX_ULONG= std::numeric_limits<unsigned long>::max();
+	//const um MAX_ULONGLONG = std::numeric_limits<unsigned long long>::max();
 }
 
 
@@ -299,15 +311,13 @@ void PythonFrontend::initialize() const
 {
 	// Create some primitive conversions
 	Handle<Conversion> hlong2int(new TrivialConversion);
-	Handle<Conversion> hlong2uint(new TrivialConversion);
+	Handle<Conversion> hlong2uint(new IntegralTruncate(0, UL));
 	Handle<Conversion> hlong2short(new TrivialConversion);
 	Handle<Conversion> hlong2ushort(new TrivialConversion);
-	Handle<Conversion> hlong2ulong(new TrivialConversion);
+	Handle<Conversion> hlong2ulong(new IntegralTruncate(0, UL));
 	Handle<Conversion> hlong2bool(new TrivialConversion);
 	Handle<Conversion> hint2longlong(new TrivialConversion);
 	Handle<Conversion> hint2ulonglong(new TrivialConversion);
-	Handle<Conversion> hpylong2longlong(new TrivialConversion);
-	Handle<Conversion> hpylong2ulonglong(new TrivialConversion);
 	Handle<Conversion> hbool2long(new TrivialConversion);
 	Handle<Conversion> hdouble2float(new TrivialConversion);
 	Handle<Conversion> hlong2double(new IntToFloatConversion);
@@ -315,7 +325,10 @@ void PythonFrontend::initialize() const
 	Handle<Conversion> hchar2string(new TrivialConversion);
 	Handle<Conversion> hpascal2cstring(new PascalStringToCStringConversion);
 	Handle<Conversion> hlist2element(new TrivialConversion);
-	Handle<Conversion> hlongtruncate(new LongLongTruncate);
+	Handle<Conversion> hpylong2longlong(new IntegralTruncate(-LL, LL));
+	Handle<Conversion> hpylong2ulonglong(new IntegralTruncate(0, ULL));
+	Handle<Conversion> hpylong2long(new IntegralTruncate(-L, L));
+	Handle<Conversion> hpylong2ulong(new IntegralTruncate(0, UL));
 
 	hlong2int        ->setSourceType(ArgumentLong);
 	hlong2int        ->setTargetType(ArgumentInt);
@@ -351,8 +364,10 @@ void PythonFrontend::initialize() const
 	hpascal2cstring  ->setTargetType(ArgumentCString);
 	hlist2element    ->setSourceType(ArgumentPythonList);
 	hlist2element    ->setTargetType(ArgumentScriptingElementNewRef);
-	hlongtruncate    ->setSourceType(ArgumentPythonLong);
-	hlongtruncate    ->setTargetType(ArgumentLong);
+	hpylong2long     ->setSourceType(ArgumentPythonLong);
+	hpylong2long     ->setTargetType(ArgumentLong);
+	hpylong2ulong    ->setSourceType(ArgumentPythonLong);
+	hpylong2ulong    ->setTargetType(ArgumentULong);
 
 	hint2longlong->setWeight(Conversion::Weight(0,1,0,0));
 	hint2ulonglong->setWeight(Conversion::Weight(0,1,0,0));
@@ -365,8 +380,6 @@ void PythonFrontend::initialize() const
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2ulong);
 	ConversionTableSingleton::getInstance()->registerConversion(hint2longlong);
 	ConversionTableSingleton::getInstance()->registerConversion(hint2ulonglong);
-	ConversionTableSingleton::getInstance()->registerConversion(hpylong2longlong);
-	ConversionTableSingleton::getInstance()->registerConversion(hpylong2ulonglong);
 	ConversionTableSingleton::getInstance()->registerConversion(hlong2bool);
 	ConversionTableSingleton::getInstance()->registerConversion(hbool2long);
 	ConversionTableSingleton::getInstance()->registerConversion(hdouble2float);
@@ -377,7 +390,12 @@ void PythonFrontend::initialize() const
 		->registerConversion(hpascal2cstring);
 	ConversionTableSingleton::getInstance()
 		->registerConversion(hlist2element);
-	ConversionTableSingleton::getInstance()->registerConversion(hlongtruncate);
+	ConversionTableSingleton::getInstance()
+		->registerConversion(hpylong2longlong);
+	ConversionTableSingleton::getInstance()
+		->registerConversion(hpylong2ulonglong);
+	ConversionTableSingleton::getInstance()->registerConversion(hpylong2long);
+	ConversionTableSingleton::getInstance()->registerConversion(hpylong2ulong);
 }
 
 /**
@@ -445,7 +463,11 @@ Insight PythonFrontend::detectInsight(scripting_element element) const
 	PyObject *object = reinterpret_cast<PyObject*>(element);
 	Insight insight;
 
-	if (PyList_Check(object) && PyList_Size(object) > 0) {
+	if (PyInt_Check(object)) {
+		long value = PyInt_AsLong(object);
+		insight.i_long =  (value < 0) ? -L : L;
+	}
+	else if (PyList_Check(object) && PyList_Size(object) > 0) {
 		PyObject *first = PyList_GetItem(object, 0);
 		//insight.i_ptr = PyObject_Type(first);
         Py_XINCREF(first);
@@ -461,11 +483,22 @@ Insight PythonFrontend::detectInsight(scripting_element element) const
 		insight.i_ptr = types;
 	}
 	else if (PyLong_Check(object)) {
-		long long value = PyLong_AsLongLong(object);
-		if (value < 1ll << (sizeof(long)*8))
-			insight.i_long = sizeof(long);
+		unsigned long long value = PyLong_AsUnsignedLongLong(object);
+		if (PyErr_Occurred()) {
+			if (PyErr_ExceptionMatches(PyExc_TypeError)) // negative
+				insight.i_long = -L; /* TODO */
+			else
+				insight.i_long = MAX_LONG; // impossible
+			PyErr_Clear();
+		}
+		else if (value <= MAX_LONG)
+			insight.i_long = L;
+		else if (value <= MAX_ULONG)
+			insight.i_long = UL;
+		else if (value <= MAX_LONGLONG)
+			insight.i_long = LL;
 		else
-			insight.i_long = sizeof(long long);
+			insight.i_long = ULL;
 	}
 	else {
 		insight.i_ptr = 0;
@@ -513,34 +546,39 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 			throw UnsupportedInterfaceException();
 	}
 	if (basetype.category == TYPE_CATEGORY_INTRINSIC) {
+		typedef PySignedNumTraits<short> t_short;
+		typedef PySignedNumTraits<int> t_int;
+		typedef PySignedNumTraits<long> t_long;
+		typedef PySignedNumTraits<long long> t_longlong;
+		typedef PyUnsignedNumTraits<unsigned short> t_ushort;
+		typedef PyUnsignedNumTraits<unsigned int> t_uint;
+		typedef PyUnsignedNumTraits<unsigned long> t_ulong;
+		typedef PyUnsignedNumTraits<unsigned long long> t_ulonglong;
 		if (basetype.spec == TYPE_INTRINSIC_INT)
 			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<int, PyIntTraits>());
+				(new SmallPrimitivePythonAdapter<int,  t_int>());
 		else if (basetype.spec == TYPE_INTRINSIC_UINT)
 			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<unsigned int, PyIntTraits>());
+				(new SmallPrimitivePythonAdapter<unsigned int, t_uint>());
 		else if (basetype.spec == TYPE_INTRINSIC_LONG)
 			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<long, PyIntTraits>());
+				(new SmallPrimitivePythonAdapter<long, t_long>());
 		else if (basetype.spec == TYPE_INTRINSIC_LONG_LONG)
 			return Handle<Adapter>
-				(new AllocatedPrimitivePythonAdapter<long long,
-				                                   PyLongTraits>());
+				(new AllocatedPrimitivePythonAdapter<long long, t_longlong>());
 		else if (basetype.spec == TYPE_INTRINSIC_ULONG)
 			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<unsigned long, 
-			                                       PyIntTraits>());
+				(new SmallPrimitivePythonAdapter<unsigned long, t_ulong>());
 		else if (basetype.spec == TYPE_INTRINSIC_ULONG_LONG)
 			return Handle<Adapter>
 				(new AllocatedPrimitivePythonAdapter<unsigned long long,
-				                                   PyLongTraits>());
+				                                     t_ulonglong>());
 		else if (basetype.spec == TYPE_INTRINSIC_SHORT)
 			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<short, PyIntTraits>());
+				(new SmallPrimitivePythonAdapter<short, t_short>());
 		else if (basetype.spec == TYPE_INTRINSIC_USHORT)
 			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<unsigned short, 
-			                                       PyIntTraits>());
+				(new SmallPrimitivePythonAdapter<unsigned short, t_ushort>());
 		else if (basetype.spec == TYPE_INTRINSIC_CHAR)
 			return Handle<Adapter>
 				(new SmallPrimitivePythonAdapter<char, Py1CharStringTraits>());

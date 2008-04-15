@@ -242,6 +242,9 @@ public:
 	int setLong(long long v) { m_long = v; return 1; }
 	int setLong(long v) { m_long = v; return 2; }
 	int setLong(long v, bool flag) { m_long = v; return 3; }
+	int setLong(unsigned long v, bool flag) { m_long = v; return 4; }
+	int setLong(unsigned long long v, bool flag) { m_long = v; return 5; }
+	int setLong(unsigned long v, char *flags) { m_long = v; return 6; }
 
 private:
 
