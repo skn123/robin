@@ -204,6 +204,7 @@ public class Filters extends GenericFilters {
 	{
 		try {
 			return (up.getVisibility() == Specifiers.Visibility.PUBLIC
+                                        && isDeclared(field)
 					&& (up.getContainer() instanceof Aggregate 
 							&& up.getStorage() == Specifiers.Storage.STATIC
 						|| up.getContainer() instanceof Namespace
