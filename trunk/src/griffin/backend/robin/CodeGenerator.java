@@ -229,7 +229,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("#ifdef _WINDLL\n" +
 				"# define EXPORT __declspec(dllexport)\n" +
 				"#else\n# define EXPORT\n#endif\n\n");
-        m_output.write("#ifdef __GNUC__\n" +
+        m_output.write("#if defined(__GNUC__) && defined(__i386__)\n" +
                        "# define __CDECL __attribute__((cdecl))\n" +
                        "#elif defined(_WIN32)\n" +
                        "# define __CDECL __cdecl\n" +
@@ -842,6 +842,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Generate routine wrappers for class methods
 		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
+                        if (!Filters.isAvailable(subject)) {
+                          continue;
+                        }
 			
 			RoutineDeduction.ParameterTransformer thisParam = 
 				new RoutineDeduction.ParameterTransformer(
@@ -895,6 +898,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Generate routine wrappers for class methods
 		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
+                        if (!Filters.isAvailable(subject)) {
+                          continue;
+                        }
 			boolean isAbstractClass = Utils.isAbstract(subject, m_instanceMap);
 			boolean mustHaveCtor = Utils.hasDefaultConstructor(subject);
 			boolean ctors = false;
@@ -1021,6 +1027,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		for (Iterator subjectIter = m_subjects.iterator();
 			 subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
+                        if (!Filters.isAvailable(subject)) {
+                          continue;
+                        }
 			// Generate the interface for the class
 			generateRegistrationPrototype(subject.getScope(),
 				Utils.cleanFullName(subject),
@@ -1076,6 +1085,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		for (Iterator subjectIter = sorted_subjects.iterator();
 			 subjectIter.hasNext();) {
 			Aggregate subject = (Aggregate) subjectIter.next();
+                        if (!Filters.isAvailable(subject)) {
+                          continue;
+                        }
 			m_output.write("\t{\"");
 			m_output.write(Utils.cleanFullName(subject));
 			m_output.write("\", \"class\", ");

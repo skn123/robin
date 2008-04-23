@@ -105,10 +105,20 @@ public class Filters extends GenericFilters {
 			 && !Utils.hasAnyArrays(routine)
 			 && !routine.isTemplated() 
 			 && ((routine.hasContainer() 
-					 && routine.getContainer() instanceof Aggregate) 
+					 && routine.getContainer() instanceof Aggregate)
 			 	 || isDeclared(routine))
 			 && !isExplicitlyExcluded(routine));
 	}
+
+        /**
+         * Determines weather an Aggregate should or not should be wrapped.
+         *
+         * @param aggregate
+         */
+        static boolean isAvailable(Aggregate aggregate) {
+          return !isExplicitlyExcluded(aggregate) &&
+                 isDeclared(aggregate);
+        }
 
 	/**
 	 * Determines whether a routine should or should not be wrapped as a
