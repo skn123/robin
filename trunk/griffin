@@ -248,6 +248,8 @@ class Preprocessor(object):
     INCLUDE_DIRECTIVE = re.compile(r'^\s*#\s*include\s*"(.*)"')
 
     def findHeader(self, included_in, included):
+        if os.path.isfile(included):
+            return included
         rel = os.path.join(included_in, os.path.pardir, included)
         return os.path.normpath(rel)
 
