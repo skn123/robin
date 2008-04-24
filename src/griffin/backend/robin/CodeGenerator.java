@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.Set;
 
 import sourceanalysis.*;
+import sourceanalysis.hints.Artificial;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
 import backend.robin.model.ConstructCopy;
@@ -626,6 +627,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         int funcCounter = 0;
         // Add the interceptor class to the subjects to wrap
         Aggregate result = new Aggregate();
+        result.addHint(new Artificial());
         // TODO Change the name to "I + uid(subject)" and the regdata name to I + name
         result.setName("I" + subject.getName());
         // Add the inheritance from the original interface
@@ -1377,6 +1379,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		String fors = with ? "f" : "s";
 		m_output.write(tabs + "/*\n" + tabs +" * var ");
 		m_output.write(field.getFullName());
+		m_output.write("\n" + tabs + " * of type " + field.getType());
 		m_output.write("\n" + tabs +" * " + Formatters.formatLocation(field));
 		m_output.write("\n " + tabs + "*/\n");
 		// Get some information about the type
@@ -1390,10 +1393,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		
 		Type type = field.getType();
 		boolean wrappingInterceptorGetter = (fieldType == Field.FieldType.WRAPPED && !forInterceptor);
-		
-		if(!wrappingInterceptorGetter) {
-			type = removeUnneededConstness(TypeToolbox.getOriginalType(type));
-		}
 		Entity base = type.getBaseType();
 		
 		String thisArg;
@@ -1766,14 +1765,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateRegistrationLine(Field field, boolean with)
 		throws IOException, MissingInformationException
 	{
+		RoutineDeduction.ParameterTransformer retf =
+			RoutineDeduction.deduceReturnTransformer(field.getType(), ElementKind.VARIABLE);
+
 		String fors = with ? "f" : "s";
 		String identifier =
 			(field.getContainer() instanceof Aggregate && with) ?
 			field.getName() : Utils.cleanFullName(field);
 		// - data_get
 		m_output.write("{ \".data_" + identifier);
-		m_output.write("\", ");
-		writeTypeSimply(field.getType(), '&', '&', '&');
+		m_output.write("\", \"" + Formatters.formatSimpleType(retf.getRegDataType()) + "\"");
 		m_output.write(", 0, (void*)&data_get_" + uid(field) + fors);
 		m_output.write(" },\n");
 		// - data_set
@@ -1894,35 +1895,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		return decl;
 	}
 	
-	/**
-	 * Writes a type in as a simple string for a registration item.
-	 * @param type
-	 * @param refOperator may be either '*' or '&amp;', and is prepended
-	 * to the type in case it is a reference
-	 * @param ptrOperator may be either '*' or '&amp;', and is prepended 
-	 * to the type in case it is a pointer
-	 * @param extraOperator may be either '*' or '&amp;', and is prepended
-	 * to the type in case it needs extra referencing (see the
-	 * method needsExtraReferencing()).
-	 */
-	private void writeTypeSimply(Type type, 
-		char refOperator, char ptrOperator, char extraOperator) 
-		throws IOException
-	{
-		m_output.write("\"");
-		if (type.isReference() && !Filters.isSmallPrimitive(type.getBaseType()))
-			m_output.write(refOperator);
-		else if (type.getPointerDegree() > 0)
-			m_output.write(type.getBaseType() instanceof Primitive 
-					? '*' : ptrOperator);
-		else if (Filters.needsExtraReferencing(type)
-			&& !(TypeToolbox.getOriginalType(type).getBaseType() instanceof Primitive))
-			m_output.write(extraOperator);
-		if (type.getRoot() != null)
-			writeDecoratedFlatBase(type);
-		m_output.write("\"");
-	}
-
 	/**
 	 * Generates invocation of a conversion operator.
 	 * @param op conversion operator routine
