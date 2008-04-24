@@ -236,9 +236,12 @@ public class RoutineDeduction {
 	{
 		if (returnType.getRootNode() == null)
 			return new ParameterTransformer(returnType, new NopExpression(), null);
+
+		assert returnType.isFlat();
 		
 		Type realType = TypeToolbox.getOriginalTypeDeep(returnType);
-		assert returnType.isFlat();
+		if (!realType.isFlat()) realType = returnType;
+		
 		Entity base = realType.getBaseType();
 		TemplateArgument[] targs = realType.getTemplateArguments();
 		int pointers = realType.getPointerDegree();

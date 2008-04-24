@@ -11,6 +11,7 @@ import backend.GenericFilters;
 import backend.Utils;
 import backend.robin.model.TypeToolbox;
 import sourceanalysis.*;
+import sourceanalysis.hints.Artificial;
 
 /**
  * This is an auxiliary class for CodeGenerator; it contains some functions
@@ -110,15 +111,15 @@ public class Filters extends GenericFilters {
 			 && !isExplicitlyExcluded(routine));
 	}
 
-        /**
-         * Determines weather an Aggregate should or not should be wrapped.
-         *
-         * @param aggregate
-         */
-        static boolean isAvailable(Aggregate aggregate) {
-          return !isExplicitlyExcluded(aggregate) &&
-                 isDeclared(aggregate);
-        }
+    /**
+     * Determines weather an Aggregate should or not should be wrapped.
+     *
+     * @param aggregate
+     */
+    static boolean isAvailable(Aggregate aggregate) {
+      return (isDeclared(aggregate) || aggregate.hasHint(Artificial.class))
+      		&& !isExplicitlyExcluded(aggregate);
+    }
 
 	/**
 	 * Determines whether a routine should or should not be wrapped as a

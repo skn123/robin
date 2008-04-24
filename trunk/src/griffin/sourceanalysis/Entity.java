@@ -333,6 +333,20 @@ public abstract class Entity {
 	}
 	
 	/**
+	 * Checks whether a specific kind of hint is applied to this entity.
+	 * @param kind the Hint subclass to look for
+	 * @return true if a hint of this type was found. 
+	 */
+	public boolean hasHint(Class kind)
+	{
+		for (Iterator hi = hintIterator(); hi.hasNext();) {
+			Hint hint = (Hint) hi.next();
+			if (kind.isInstance(hint)) return true;
+		}
+		return false;
+	}
+	
+	/**
 	 * Tries to find a hint belonging to the given hint class. 
 	 * @param hintClass a class implementing Hint
 	 * @return a Hint object which is an instance of hintClass if
