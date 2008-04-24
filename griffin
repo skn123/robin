@@ -135,6 +135,9 @@ class Griffin:
             "--include", action='store_true', default=False,
             help="process #included header files recursively")
         parser.add_argument(
+            "--checksources", action='store_true', default=False,
+            help="check sources for existance, and warn on unexisting ones")
+        parser.add_argument(
             "-I", action='append', type=str, metavar="macro", default=[],
             help="search path for header files in #include directives")
         parser.add_argument(
@@ -160,7 +163,7 @@ class Griffin:
         if not args: args = ["-h"]
 
         values = parser.parse_args(args)
-        FLAGS = ["include", "v", "debug", "interceptors", "module"]
+        FLAGS = ["include", "checksources", "v", "debug", "interceptors", "module"]
         OPTS = ["hints", "import"]
         arg_in = values.__dict__['in']
         arg_out = values.out
@@ -216,6 +219,8 @@ class Griffin:
         if input_type == "sources":
             if "include" in arg_opts:
                 arg_in = Preprocessor().extractAllIncluded(arg_in)
+            if "checksources" in arg_opts:
+                arg_in = Preprocessor().checkSources(arg_in)
             self.setSources(arg_in, imported)
         elif input_type == "xml" or wizard:
             if len(arg_in) == 0:
@@ -274,6 +279,15 @@ class Preprocessor(object):
                     filenames.append(included)
             i += 1
         return filenames
+
+    def checkSources(self, filenames):
+        l = []
+        for filename in filenames:
+            if os.path.isfile(filename):
+                l.append(filename)
+            else:
+                print "Griffin: warning: file %s wasn't found" % filename
+        return l
 
 
 class CommandRunner(object):
