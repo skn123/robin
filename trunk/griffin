@@ -49,7 +49,7 @@ class Griffin:
         stltag = self.locate("stl.tag") or ""
         tagfiles = [stltag] + [os.path.join(x, "module.tag") for x in modules]
         tagfile = os.path.join(project, "module.tag")
-        stdmacros = ["STDC", "__doxygen", "__cplusplus"]
+        stdmacros = ["__STDC__", "STDC", "__doxygen", "__cplusplus"]
 
         doxyfile = {
             "INPUT": " ".join(sources),
