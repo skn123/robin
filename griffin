@@ -59,6 +59,7 @@ class Griffin:
             "INCLUDE_PATH": " ".join(["/usr/include"] + self.compiler["-I"]),
             "MACRO_EXPANSION": "Yes",
             "SEARCH_INCLUDES": "Yes",
+            "GENERATE_TAGFILE": tagfile,
             "GENERATE_XML": "Yes",
             "XML_PROGRAMLISTING": "No",
             "GENERATE_HTML": "No", "GENERATE_LATEX": "No",

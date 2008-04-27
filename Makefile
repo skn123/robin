@@ -30,7 +30,7 @@ py := ${shell $(python) -c "import griffin; print griffin.pyspec"}
 endif
 
 install = install -d ${dir $2} && install $1 $2
-cp-r = cp -r
+cp-r = cp -fr
 sed = sed
 echo = echo
 
