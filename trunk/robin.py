@@ -1,4 +1,6 @@
 import imp, string, sys, os.path, __builtin__
+from griffin import uname, arch, soext, sopre, platspec, pyspec, vpath
+
 
 def here(file):
 	import os
@@ -8,7 +10,7 @@ def here(file):
 
 def locate(thisfile, target):
 	libpath = [here(thisfile)] + sys.path
-	if libdir: libpath[:0] = [libdir]
+	if libdir: libpath[:0] = [os.path.join(libdir, vpath)]
 	for ldir in libpath:
 		libfile = os.path.join(ldir, target)
 		if os.path.isfile(libfile):
@@ -17,10 +19,7 @@ def locate(thisfile, target):
 		raise ImportError, "%s could not be found" % target
 
 libdir = None
-model = ["RELEASE", "DEBUG"][os.environ.has_key("ROBIN_DEBUG")]
 ver = "1.0"
-
-from griffin import uname, arch, soext, sopre, platspec, pyspec
 
 target = "%(sopre)srobin_pyfe%(platspec)s-%(ver)s%(pyspec)s%(soext)s" % vars()
 libfile = locate(__file__, target)
@@ -47,4 +46,4 @@ def implement(tp):
 	return tp
 
 # Cleanup
-del imp, os, libdir, target, __builtin__
+del imp, os, target, __builtin__

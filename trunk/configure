@@ -67,6 +67,10 @@ class Configure:
 			  "installation"
 		sys.exit(1)
 
+	def _cleanup(self, filename):
+		if os.path.isfile(filename):
+			os.unlink(filename)
+
 	def configure(self):
 		options, remainder = self._parse_args()
 		print "configure: Creating config.mak and config.py"
@@ -109,6 +113,10 @@ class Configure:
 		# Multi-platform support
 		if options.multi:
 			self._set_var("multi-platform", 1)
+
+		# seems like a bug in Python's module system requires this
+		self._cleanup("src/robin/modules/robinlib/config.pyc")
+
 
 
 if __name__ == "__main__":

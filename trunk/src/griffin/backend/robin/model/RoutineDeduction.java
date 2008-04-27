@@ -247,6 +247,13 @@ public class RoutineDeduction {
 		int pointers = realType.getPointerDegree();
 		boolean reference = realType.isReference();
 		
+		Type derefType = null;
+		if (reference && !returnType.isReference()
+				|| (pointers > 0 && returnType.getPointerDegree() == 0))
+			derefType = realType;
+		else
+			derefType = returnType;
+		
 		if (!reference && pointers == 0 && base == Primitive.VOID) { /* void */
 			return new ParameterTransformer(returnType, new NopExpression(), new SimpleType(base));
 		}
@@ -268,10 +275,10 @@ public class RoutineDeduction {
 			else if (Filters.isSmallPrimitive(base) || base instanceof sourceanalysis.Enum) {
 				if (pointers > 0 && base != Primitive.CHAR && base != Primitive.VOID) {
 					assert pointers == 1 && !returnType.isReference();
-					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(returnType),
+					return new ParameterTransformer(TypeToolbox.dereferencePtrOne(derefType),
 							ret(new Dereference()), new SimpleType(base));
 				} else {
-					return new ParameterTransformer(TypeToolbox.dereference(returnType),
+					return new ParameterTransformer(TypeToolbox.dereference(derefType),
 							ret(new NopExpression()), new SimpleType(base));
 				}				
 			} else {
@@ -281,10 +288,11 @@ public class RoutineDeduction {
 							returnType,
 							ret(new NopExpression()), new SimpleType(base));
 				} else if (reference) {
-					return new ParameterTransformer(TypeToolbox.makePointer(base), ret(new ConstructCopy(base)), new SimpleType(base));
+					Type deref = TypeToolbox.dereference(derefType);
+					return new ParameterTransformer(TypeToolbox.makePointer(deref), ret(new ConstructCopy(deref)), new SimpleType(base));
 				} else {
 					return new ParameterTransformer(TypeToolbox.makePointer(returnType), 
-							ret(new ConstructCopy(base)), new SimpleType(base));
+							ret(new ConstructCopy(returnType)), new SimpleType(base));
 				}
 			}
 		} else {
