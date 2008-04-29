@@ -66,6 +66,7 @@ class LanguageTest(TestCase):
 			self.assertEquals(s, drs)
 
 	def testLongAndLongLong(self):
+		from robinlib.platform import wordsize
 		prim = language.Primitives()
 		self.assertEquals(prim.setLong(6), 2)
 		self.assertEquals(prim.setLong(-6), 2)
@@ -78,6 +79,12 @@ class LanguageTest(TestCase):
 		self.assertEquals(prim.setLong(6, ""), 6)
 		try:
 			prim.setLong(-6, "")
+			self.fail("should have thrown "\
+			          "RuntimeError: no overloaded member matches arguments")
+		except RuntimeError:
+			pass # ok
+		try:
+			prim.setLong(-6 * (1<<wordsize), "")
 			self.fail("should have thrown "\
 			          "RuntimeError: no overloaded member matches arguments")
 		except RuntimeError:
@@ -130,7 +137,11 @@ class LanguageTest(TestCase):
 	def testEnums(self):
 		self.failUnless(type(language.EM) is language.Em);
 		self.assertEquals(type(language.EM), language.Em);
-		language.Em(1)
+		d = language.DataMembers(1)
+		d.setEm(language.EM)
+		self.assertEquals(d.m, language.EM)
+		d.setEm(language.Em(1))
+		self.assertEquals(d.m, language.Em(1))
 
 	def testDynamicCast(self):
 		ii = language.NonAbstract.factorize()

@@ -279,10 +279,11 @@ namespace {
 	const int ULL = std::numeric_limits<unsigned long long>::digits;
 
 	typedef unsigned long long um;
-	const um MAX_LONG= std::numeric_limits<long>::max();
+	const um MAX_LONG = std::numeric_limits<long>::max();
 	const um MAX_LONGLONG = std::numeric_limits<long long>::max();
-	const um MAX_ULONG= std::numeric_limits<unsigned long>::max();
+	const um MAX_ULONG = std::numeric_limits<unsigned long>::max();
 	//const um MAX_ULONGLONG = std::numeric_limits<unsigned long long>::max();
+	const um MIN_LONG = std::numeric_limits<long>::min();
 }
 
 
@@ -429,7 +430,7 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 		Handle<Class> clas = ((ClassObject*)obtype)->getUnderlying();
 		return clas->getRefArg();
 	}
-	else if (PyObject_Type(obtype) == (PyObject*)&EnumeratedTypeTypeObject) {
+	else if (PyObject_Type(obtype) == (PyObject*)EnumeratedTypeTypeObject) {
 		// - enumerated constant object
 		Handle<EnumeratedConstant> enumconst = 
 			((EnumeratedConstantObject*)object)->getUnderlying();
@@ -485,8 +486,16 @@ Insight PythonFrontend::detectInsight(scripting_element element) const
 	else if (PyLong_Check(object)) {
 		unsigned long long value = PyLong_AsUnsignedLongLong(object);
 		if (PyErr_Occurred()) {
-			if (PyErr_ExceptionMatches(PyExc_TypeError)) // negative
-				insight.i_long = -L; /* TODO */
+			if (PyErr_ExceptionMatches(PyExc_TypeError)) { // negative
+				PyErr_Clear();
+				long long svalue = PyLong_AsLongLong(object);
+				if (PyErr_Occurred())
+					insight.i_long = -MAX_LONG; // impossible
+				else if (svalue >= MIN_LONG)
+					insight.i_long = -L;
+				else
+					insight.i_long = -LL;
+			}
 			else
 				insight.i_long = MAX_LONG; // impossible
 			PyErr_Clear();
