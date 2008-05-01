@@ -9,6 +9,7 @@ def here(file):
 	return os.path.dirname(os.path.realpath(file)) 
 
 def locate(thisfile, target):
+	import os
 	libpath = [here(thisfile)] + sys.path
 	if libdir: libpath[:0] = [os.path.join(libdir, vpath)]
 	for ldir in libpath:

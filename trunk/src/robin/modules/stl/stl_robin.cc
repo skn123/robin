@@ -90,6 +90,16 @@ RegData ctor_stdistream_proto[] = {
 	{ 0 }
 };
 
+unsigned long stdistream_tellg(std::istream *self)
+{
+	return self->tellg();
+}
+
+void dtor_stdistream(std::istream *self)
+{
+	delete self;
+}
+
 /*
  * std::ostream
  */
@@ -102,6 +112,16 @@ RegData ctor_stdostream_proto[] = {
 	{ "buf", "*Igluebuf", 0, 0 },
 	{ 0 }
 };
+
+unsigned long stdostream_tellp(std::ostream *self)
+{
+	return self->tellp();
+}
+
+void dtor_stdostream(std::ostream *self)
+{
+	delete self;
+}
 
 /*
  * std::ostringstream
@@ -270,6 +290,8 @@ RegData stdstring_proto[] = {
 
 RegData stdostream_proto[] = {
 	{ "*", "constructor", ctor_stdostream_proto, F ctor_stdostream },
+	{ "tellp", "unsigned long", 0, F stdostream_tellp },
+	{ ".", "destructor", 0, F dtor_stdostream },
 	{ 0 }
 };
 
@@ -291,6 +313,8 @@ RegData stdofstream_proto[] = {
 
 RegData stdistream_proto[] = {
 	{ "*", "constructor", ctor_stdistream_proto, F ctor_stdistream },
+	{ "tellg", "unsigned long", 0, F stdistream_tellg },
+	{ ".", "destructor", 0, F dtor_stdistream },
 	{ 0 }
 };
 
