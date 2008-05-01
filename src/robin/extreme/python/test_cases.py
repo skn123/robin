@@ -250,7 +250,28 @@ class STLTest(TestCase):
 			second = getattr(iter, 'operator*')()
 			self.assertEquals(second, 0.2)
 
-    def testStreams(self):
+	def testStringStream(self):
+		import stl
+		o = language.StandardLibrary.UsingStreams()
+        d = language.StandardLibrary.UsingStreams.Datum()
+        d.setText("robin"); d.num = 9038
+		expected = "%s, %i" % (d.text, d.num)
+		# Using ostringstream
+		go = stl.ostringstream()
+		o.write(go, d)
+		self.assertEquals(go.str(), expected)
+		self.assertEquals(go.tellp(), len(expected))
+		o.read_or_write(go, d)
+		self.assertEquals(go.str(), expected * 2)
+		self.assertEquals(go.tellp(), len(expected) * 2)
+		# Using istringstream
+		expected = ("kimiko", 30094); inp = "%s %i" % expected
+		gi = stl.istringstream(inp)
+		o.read(gi, d)
+		self.assertEquals((d.text, d.num), expected)
+		self.assertEquals(gi.tellg(), len(inp))
+
+    def testPythonStreams(self):
     	import StringIO, stl
     	o = language.StandardLibrary.UsingStreams()
     	def samples():
