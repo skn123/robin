@@ -360,6 +360,8 @@ public class DoxygenAnalyzer {
 	 */
 	public String translateName(Node xmlnode) throws XMLFormatException
 	{
+		String name;
+		
 		if (xmlnode.getNodeType() == Node.ELEMENT_NODE) {
 			// Get Element node
 			Element xmlelement = (Element)xmlnode;
@@ -369,16 +371,36 @@ public class DoxygenAnalyzer {
 			Node def = XML.subNode(xmlelement, Tags.DEFNAME);
 			// Fetch the first of all the three
 			if (plain != null)
-				return XML.collectText(plain);
+				name = XML.collectText(plain);
 			else if (decl != null)
-				return XML.collectText(decl);
+				name = XML.collectText(decl);
 			else if (def != null)
-				return XML.collectText(def);
+				name = XML.collectText(def);
 			else
 				throw new XMLFormatException("name node missing", xmlnode);
 		}
 		else
 			throw new XMLFormatException("node is not an element", xmlnode);
+		
+		return normalizeName(name);
+	}
+	
+	/**
+	 * Removes redundant space after 'operator' keyword, so that
+	 * "operator *" becomes "operator*" but "operator int" remains
+	 * unchanged.
+	 * @param name original name as it appears in the XML input
+	 * @return normal-formed name.
+	 */
+	private String normalizeName(String name)
+	{
+		String optor = "operator ";
+		if (name.startsWith(optor) && name.length() > optor.length()) {
+			char l = name.charAt(optor.length());
+			if (l == '_' || Character.isLetter(l))
+				name = name.replace(" ", "");
+		}
+		return name;
 	}
 	
 	/**
