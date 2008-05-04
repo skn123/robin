@@ -92,6 +92,7 @@ protected:
 	Handle<EnumeratedType> touchEnum (const std::string& name,
 									  Namespace &container);
 	Handle<TypeOfArgument> interpretType(const char *type, Namespace&);
+	void normalizeName(RegData *reg) const;
 
 	Robin::Namespace m_ns_common;
 };

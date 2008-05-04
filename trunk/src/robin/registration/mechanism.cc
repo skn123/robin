@@ -115,6 +115,8 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 
 	for (RegData *pdata = rbase; 
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
+		
+		normalizeName(pdata);
 
 		if (strcmp(pdata->type, "enum") == 0) {             /* type = enum */
 			Handle<EnumeratedType> ne = touchEnum(pdata->name, container);
@@ -477,6 +479,15 @@ Handle<EnumeratedType> RegistrationMechanism::touchEnum(const std::string&
 
 	return kenum;
 }
+
+void RegistrationMechanism::normalizeName(RegData *reg) const
+{
+	// TODO this is a hack for backward compatibility and should be
+	// removed in version 1.1.
+	if (strcmp(reg->name, "operator *") == 0) reg->name = "operator*";
+	if (strcmp(reg->name, "operator &") == 0) reg->name = "operator&";
+}
+
 
 #if defined(_WIN32)
 #include <windows.h>
