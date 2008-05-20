@@ -273,7 +273,7 @@ robin.familiarize(__builtin__.complex)
 def gen(container):
 	iter = container.begin()
 	while not iter == container.end():
-		yield getattr(iter, "operator *")()
+		yield getattr(iter, "operator*")()
 		getattr(iter, "operator++")()
 
 # backward compatibility

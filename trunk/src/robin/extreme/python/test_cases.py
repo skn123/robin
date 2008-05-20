@@ -239,16 +239,23 @@ class STLTest(TestCase):
         for i in xrange(len(l)):
             self.failUnless(l[i] == lorig[i] * 2)
     
-	def testVectorIter(self):
-		uv = language.StandardLibrary.UsingVectors([0.1,0.2,0.3])
+	def testVectorIter1(self):
+		values = [0.1,0.2,0.3]
+		uv = language.StandardLibrary.UsingVectors(values)
 		iter1 = uv.getIter()
 		iter2 = uv.getConstIter()
 		for iter in [iter1, iter2]:
 			first = getattr(iter, 'operator*')()
-			self.assertEquals(first, 0.1)
+			self.assertEquals(first, values[0])
 			getattr(iter, 'operator++')()
 			second = getattr(iter, 'operator*')()
-			self.assertEquals(second, 0.2)
+			self.assertEquals(second, values[1])
+
+	def testVectorIter2(self):
+		import robin, stl
+		values = [0.1,0.2,0.3]
+		v = stl.vector[robin.double](values)
+		self.assertEquals(list(stl.gen(v)), values)
 
 	def testStringStream(self):
 		import stl
@@ -422,18 +429,29 @@ class ProtocolsTest(TestCase):
 
 	def testArithmetics(self):
 		"""testArithmetics - checks arithmetic operators"""
+		arg0, arg1 = 19, 6
+		times0 = protocols.Times(19)
+		times1 = protocols.Times(6)
+		self.assertEquals(times0 + times1, protocols.Times(arg0 + arg1))
+		self.assertEquals(times0 - times1, protocols.Times(arg0 - arg1))
+		self.assertEquals(times0 * times1, protocols.Times(arg0 * arg1))
+
+	def testCustomArithmetics(self):
+		"""testCustomArithmetics - checks user-defined operators"""
 		Times = protocols.Times
 		arg0, arg1 = 19, 6
 
-		Times.__mul__ = "combine"
-		Times.__rmul__ = "mul"
+		Times.__or__ = "combine"
+		Times.__ror__ = "mul"
+		Times.__not__ = "operator*"
 		times0, times1 = Times(arg0), Times(arg1)
-		prod_times_int = times0 * arg1
-		prod_int_times = arg0 * times1
+		prod_times_int = times0 | arg1
+		prod_int_times = arg0 | times1
 		self.failUnless(isinstance(prod_int_times, int))
 		self.failUnless(isinstance(prod_times_int, Times))
 		self.assertEquals(int(prod_times_int), arg0 * arg1)
 		self.assertEquals(int(prod_int_times), arg0 * arg1)
+		self.assertEquals(~times0, arg0)
 
 
 class InheritanceTest(TestCase):

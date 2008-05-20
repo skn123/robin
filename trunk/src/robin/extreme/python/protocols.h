@@ -21,6 +21,9 @@ public:
 		{ return Times(x_factor + other.x_factor); }
 	Times operator-(const Times& other) const 
 		{ return Times(x_factor - other.x_factor); }
+	Times operator*(const Times& other) const
+		{ return Times(x_factor * other.x_factor); }
+	int operator*() const { return x_factor; }
 	Times combine(const Times& other) const 
 		{ return Times(x_factor * other.x_factor); }
 	Times neg_combine(const Times& other) const
