@@ -640,13 +640,17 @@ PyObject *ClassObject::__getattr__(const char *name)
 		static PyMethodDef method = {
 			"__init__", 
 			__init_ex__, 
+#if PY_VERSION_HEX >= 0x02030000
 			METH_VARARGS | METH_CLASS, 
+#else
+			METH_VARARGS,
+#endif
 			"initializes C instance" 
 		};
 		return PyMethod_New(PyCFunction_New(&method,0), NULL, (PyObject*)this);
 	}
 	else if (strcmp(name, "__bases__") == 0) {
-		return Py_BuildValue("(O)", &PyType_Type);
+		return Py_BuildValue("(O)", &PyBaseObject_Type);
 	}
 	else {
 
@@ -1240,6 +1244,7 @@ EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 	tp_base = &PyBaseObject_Type;
 
 	tp_new = &EnumeratedTypeObject::__new__;
+	tp_mro = NULL;
 }
 
 EnumeratedTypeObject::~EnumeratedTypeObject()
@@ -1712,6 +1717,9 @@ void initObjects()
     HybridTypeObject->tp_setattr = ClassObject::__setattr__;
     HybridTypeObject->tp_getattro = 0;
     HybridTypeObject->tp_setattro = 0;
+#if PY_VERSION_HEX < 0x02030000
+	HybridTypeObject->tp_new = HybridObject::__new_hybrid__;
+#endif
 
 	// Initialize EnumeratedTypeTypeObject
 	EnumeratedTypeTypeObject = makeMetaclassType("Robin::Python::"

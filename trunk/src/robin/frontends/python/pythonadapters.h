@@ -54,6 +54,11 @@ public:
 template < typename N >
 class PyUnsignedNumTraits {
 public:
+#if PY_VERSION_HEX < 0x02030000
+	/* a more efficient version is achieved without this #define, but this
+	 * requires Python >= 2.3 */
+#  define PyLong_AsUnsignedLongLongMask PyLong_AsUnsignedLongLong
+#endif
 	static N as(PyObject *pyobj)
 	{
 		return PyLong_Check(pyobj) ? PyLong_AsUnsignedLongLongMask(pyobj) 

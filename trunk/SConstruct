@@ -71,9 +71,9 @@ LIBPREFIX = "lib"
 import os
 import os.path, griffin as conf
 
-env = Environment(ENV = dict((key, os.environ[key]) for key in ["PATH", "INCLIDE", "LIB", "SystemRoot"]
-                             if key in os.environ)) 
-#{'PATH': os.environ['PATH'], 'LIB': os.environ["LIB"], 'SystemRoot': r"H:\Windows", 'INCLUDE': os.environ["INCLUDE"]})
+env = Environment(ENV = dict([(key, os.environ[key])
+                              for key in ["PATH", "INCLIDE", "LIB", "SystemRoot"]
+                              if key in os.environ])) 
 
 # Debug mode (for developers)
 robin_opts = Options()
@@ -428,6 +428,10 @@ robindir = "usr/share/robin/"
 
 def getDebFilesListForDir(srcDir, destDir):
   l = []
+  if not hasattr(os, 'walk'): 
+    import warnings
+    warnings.warn("no debian package for python < 2.3")
+    return l
   for (dirpath, dirnames, filenames) in os.walk(srcDir):
     delta_dir = dirpath.split(srcDir)[1]
     if ".svn" in dirpath:

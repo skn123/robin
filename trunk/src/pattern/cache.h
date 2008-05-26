@@ -42,7 +42,7 @@ private:
 	typedef typename HashTraits::KeyIdentityFunctor KeyIdentityFunctor;
 	typedef typename HashTraits::KeyCompareFunctor KeyCompareFunctor;
 
-#ifdef WITH_EXT_HASHMAP
+#if defined(WITH_STD_HASHMAP) || defined(WITH_EXT_HASHMAP)
 	typedef std::hash_map<Key, Result, 
 					 KeyHashFunctor, KeyIdentityFunctor> cache_map;
 #else
