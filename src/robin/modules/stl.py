@@ -276,9 +276,10 @@ def gen(container):
 		yield getattr(iter, "operator*")()
 		getattr(iter, "operator++")()
 
-# backward compatibility
+# backward compatibility (remove in 1.1)
 Vector = STLContainer
 Vector.VectorOwner = Vector.STLOwner
+make_container_weigher = _make_container_weigher
 make_vector_weigher = _make_container_weigher
 guess_vector_type = guess_container_type
 

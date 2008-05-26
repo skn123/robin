@@ -74,7 +74,7 @@ class LanguageTest(TestCase):
 		self.assertEquals(prim.setLong(6l), 1)
 		self.assertEquals(prim.setLong(-6l), 1)
 		self.assertEquals(prim.setLong(6l, True), 3)
-		self.assertEquals(prim.setLong(0xffffffff, True), 4)
+		self.assertEquals(prim.setLong(0xffffffffl, True), 4)
 		self.assertEquals(prim.setLong(0x1ffffffff, True), 5)
 		self.assertEquals(prim.setLong(6, ""), 6)
 		try:
@@ -84,7 +84,7 @@ class LanguageTest(TestCase):
 		except RuntimeError:
 			pass # ok
 		try:
-			prim.setLong(-6 * (1<<wordsize), "")
+			prim.setLong(-6 * (1l<<wordsize), "")
 			self.fail("should have thrown "\
 			          "RuntimeError: no overloaded member matches arguments")
 		except RuntimeError:
