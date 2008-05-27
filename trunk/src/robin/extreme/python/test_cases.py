@@ -74,8 +74,11 @@ class LanguageTest(TestCase):
 		self.assertEquals(prim.setLong(6l), 1)
 		self.assertEquals(prim.setLong(-6l), 1)
 		self.assertEquals(prim.setLong(6l, True), 3)
-		self.assertEquals(prim.setLong(0xffffffffl, True), 4)
-		self.assertEquals(prim.setLong(0x1ffffffff, True), 5)
+		if wordsize == 32:
+			self.assertEquals(prim.setLong(0xffffffffl, True), 4)
+			self.assertEquals(prim.setLong(0x1ffffffff, True), 5)
+		elif wordsize == 64:
+			self.assertEquals(prim.setLong(0xffffffffffffffffl, True), 4)
 		self.assertEquals(prim.setLong(6, ""), 6)
 		try:
 			prim.setLong(-6, "")
