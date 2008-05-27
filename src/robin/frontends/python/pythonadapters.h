@@ -16,6 +16,7 @@
 #ifndef ROBIN_PYTHON_ADAPTERS_H
 #define ROBIN_PYTHON_ADAPTERS_H
 
+#include <limits>
 #include <Python.h>
 #include <robin/frontends/adapter.h>
 #include <robin/reflection/low_level.h>
