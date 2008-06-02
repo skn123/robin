@@ -72,7 +72,7 @@ import os
 import os.path, griffin as conf
 
 env = Environment(ENV = dict([(key, os.environ[key])
-                              for key in ["PATH", "INCLIDE", "LIB", "SystemRoot"]
+                              for key in ["PATH", "INCLUDE", "LIB", "SystemRoot"]
                               if key in os.environ])) 
 
 # Debug mode (for developers)
