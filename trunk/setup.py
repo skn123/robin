@@ -14,9 +14,13 @@ setup(name='robin',
       url='robin.python-hosting.com',
       author='corwin',
       author_email='corwin.amber@gmail.com',
-      scripts=['griffin'],
+      scripts=['griffin', 'Griffin.jar'],
       py_modules=['robin', 'griffin', 'stl'],
       packages=['robinlib', 'robinlib.html'],
       package_dir={'': 'src/robin/modules'},
-      data_files=[('DLLs', ['robin_pyfe-1.0.dll', 'robin_stl-1.0.dll'])]
+      data_files=[('DLLs', ['robin_pyfe-1.0.dll', 'robin_stl-1.0.dll']),
+	          ('Scripts/premises', ['premises/antlr.jar',
+			  'premises/xmlParserAPIs.jar',
+			  'premises/xercesImpl.jar',
+			  'premises/jython.jar'])]
       )
