@@ -275,7 +275,7 @@ basic_block CFunction::call(const ArgumentsBuffer& args) const
 scripting_element CFunction::call(const ActualArgumentList& args,
                                   scripting_element owner) const
 {
-	return call(args.size(), &*args.begin(), owner);
+	return call(args.size(), (args.size()==0)?0:&*args.begin(), owner);
 }
 
 /**

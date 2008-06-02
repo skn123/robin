@@ -664,8 +664,8 @@ scripting_element OverloadedSet::call(const ActualArgumentList& args,
     //   Look in the cache first, and if this call is not there, perform
     //   a complete overload resolution.
     const Cache::Value& cached_entry = 
-        cache->recall(this, nargs, &actual_types[0], 
-                      &actual_insights[0]);
+        cache->recall(this, nargs, (nargs==0)?0:&actual_types[0], 
+                      (nargs==0)?0:&actual_insights[0]);
     if (kwargs.size() == 0 && &cached_entry != &Cache::MISSED) {
         // Found cached alternative, use it (optimization)
         dbg::trace << "Got value from cache, running alternative #" 
@@ -749,7 +749,8 @@ scripting_element OverloadedSet::call(const ActualArgumentList& args,
         }
         else {
             if(kwargs.size() == 0) {
-               cache->remember(this, nargs, &actual_types[0], &actual_insights[0],
+               cache->remember(this, nargs, (nargs==0)?0:&actual_types[0], 
+			       (nargs==0)?0:&actual_insights[0],
                                cached_alt, lightroutes);
             }
             match = lightest;
