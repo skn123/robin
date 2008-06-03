@@ -482,7 +482,7 @@ Handle<EnumeratedType> RegistrationMechanism::touchEnum(const std::string&
 
 void RegistrationMechanism::normalizeName(RegData *reg) const
 {
-	// TODO this is a hack for backward compatibility and should be
+	// @deprecated this is a hack for backward compatibility and should be
 	// removed in version 1.1.
 	if (strcmp(reg->name, "operator *") == 0) reg->name = "operator*";
 	if (strcmp(reg->name, "operator &") == 0) reg->name = "operator&";
