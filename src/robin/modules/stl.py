@@ -276,12 +276,13 @@ def gen(container):
 		yield getattr(iter, "operator*")()
 		getattr(iter, "operator++")()
 
-# backward compatibility (remove in 1.1)
+# @deprecated backward compatibility (remove in 1.1)
 Vector = STLContainer
 Vector.VectorOwner = Vector.STLOwner
 make_container_weigher = _make_container_weigher
 make_vector_weigher = _make_container_weigher
 guess_vector_type = guess_container_type
+sum_tuples = _sum_tuples
 
 
 # std::streambuf
