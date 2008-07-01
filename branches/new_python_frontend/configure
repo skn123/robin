@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+
+import os, sys
+import griffin as conf
+
+class Configure:
+
+	def _parse_args(self):		
+		import optparse
+		formatter = optparse.TitledHelpFormatter(max_help_position=30)
+		usage = "configure [options]"
+		p = optparse.OptionParser(usage=usage, formatter=formatter)
+		p.add_option("-p", "--prefix", dest = "prefix", default = "/usr/local",
+					 help = "Installation prefix directory")
+		p.add_option("-e", "--exec_prefix", dest = "exec_prefix",
+					 default = "same as prefix",
+					 help = "Installation prefix directory for platform-" \
+					        "dependant files")
+		p.add_option("-f", "--py_prefix", dest = "py_prefix",
+					 default = "your Python's site-packages dir",
+					 help = "Installation directory for .py modules")
+		p.add_option("-y", "--with-python", dest = "python",
+					 default = "python",
+					 help = "Determines which Python interpreter to use")
+		p.add_option("--with-jython", dest = "jython",
+					 default = "jython",
+					 help = "Determines which Jython interpreter to use")
+		p.add_option("-x", "--with-cxx", dest = "cxx",
+					 default = "",
+					 help = "Determines which C++ compiler to use")
+		p.add_option("-j", "--with-java", dest = "java",
+					 default = "java",
+					 help = "Determines which Java VM to use")
+		p.add_option("--with-javac", dest = "javac",
+					 default = "",
+					 help = "Determines which Java compiler to use")
+		p.add_option("", "--without-libiberty", dest = "liberty",
+		             action = "store_false",
+		             default = True,
+		             help = "indicates that -liberty is not available")
+
+		p.add_option("-m", "--multi-platform", dest = "multi", 
+		             action = "store_true",
+		             default = False,
+		             help = "extend library names with Python version and "\
+		                    "platform information")
+		o = p.parse_args()
+		if o[0].exec_prefix == "same as prefix":
+			o[0].exec_prefix = o[0].prefix
+		if o[0].py_prefix == "your Python's site-packages dir":
+			o[0].py_prefix = None
+		return o
+
+	def _set_var(self, varname, value):
+		print >> self.config_mak, "%(varname)s = %(value)s" % locals()
+		print >> self.config_py, "%s = %r" % \
+			(varname.replace("-", "_"), value)
+
+	def _site_packages_dir(self):
+		syspath = sys.path
+		syspath.reverse()
+		for element in syspath:
+			if element.endswith("/site-packages"):
+				return element
+		# Failed to find site-packages directory
+		print "** Error: couldn't locate 'site-packages' in your Python " \
+			  "installation"
+		sys.exit(1)
+
+	def _cleanup(self, filename):
+		if os.path.isfile(filename):
+			os.unlink(filename)
+
+	def configure(self):
+		options, remainder = self._parse_args()
+		print "configure: Creating config.mak and config.py"
+		self.config_mak = open("config.mak", "w")
+		self.config_py = open("src/robin/modules/robinlib/config.py", "w")
+		self._set_var("prefix", options.prefix)
+		self._set_var("exec_prefix", options.exec_prefix)
+		self._set_var("python", options.python)
+		self._set_var("jython", options.jython)
+		if options.python.startswith("/"):
+			options.python_exe = options.python
+		elif options.python.startswith("~"):
+			options.python_exe = os.path.expanduser(options.python)
+		else:
+			options.python_exe = "/usr/bin/env " + options.python
+		self._set_var("python-exe", options.python_exe)
+		if options.py_prefix is None:
+			if options.python == "python":
+				options.py_prefix = self._site_packages_dir()
+			else:
+				import commands
+				cmdline = options.python + \
+				  """ -c 'import imp; print imp.load_source("configure", """ \
+				  """ "configure").Configure()._site_packages_dir()'"""
+				rc, options.py_prefix = commands.getstatusoutput(cmdline)
+				if rc != 0:
+					print "configure: warning: failed to execute Python "\
+						  "interpreter, command line was: ", cmdline
+		self._set_var("site-packages", options.py_prefix)
+		# C++ and Java
+		if options.cxx != "":
+			self._set_var("cxx", options.cxx)
+		if options.javac != "":
+			self._set_var("javac", options.javac)
+		if conf.arch == "darwin":
+			self._set_var("shared", "-dynamiclib")
+		self._set_var("java", options.java)
+		# Liberty
+		self._set_var("has-liberty", options.liberty)
+		# Multi-platform support
+		if options.multi:
+			self._set_var("multi-platform", 1)
+
+		# seems like a bug in Python's module system requires this
+		self._cleanup("src/robin/modules/robinlib/config.pyc")
+
+
+
+if __name__ == "__main__":
+	c = Configure()
+	c.configure()
+
+
