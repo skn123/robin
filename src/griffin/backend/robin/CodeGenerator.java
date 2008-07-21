@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 
 import sourceanalysis.*;
 import sourceanalysis.hints.Artificial;
@@ -51,6 +52,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_entry = new LinkedList<RegData>();
 
 	    m_randomNamespace = generateNamespaceName();
+	    
+	    m_included_snippets = new TreeSet<String>();
 
 		// Register touchups for special types
 		Type voidptr =
@@ -1617,14 +1620,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateSpecialOutputOperator(Aggregate subject)
 		throws IOException
 	{
-		m_output.write("#ifndef IOSTREAM_INCLUDED\n");
-		m_output.write("#define IOSTREAM_INCLUDED\n");
-		m_output.write("#include <iostream>\n");
-		m_output.write("#endif\n");
-		m_output.write("void __CDECL output_" + uid(subject.getScope()));
-		m_output.write("(");
-		m_output.write(Utils.cleanFullName(subject));
-		m_output.write(" *self) { std::cerr << *self; }\n\n");
+		if (!m_included_snippets.contains("iostream")) {
+			m_output.write("}\n\n"
+			             + "#include <iostream>\n\n"
+			             + "namespace " + m_randomNamespace + " {\n\n");
+			m_included_snippets.add("iostream");
+		}
+        m_output.write("void __CDECL output_" + uid(subject.getScope())
+		             + "("
+		             + Utils.cleanFullName(subject)
+		             + " *self) { std::cerr << *self; }\n\n");
 	}
 	
 	/**
@@ -1637,28 +1642,29 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException
 	{
 		// Include STL's stringstream
-		m_output.write("#ifndef SSTREAM_INCLUDED\n");
-		m_output.write("#define SSTREAM_INCLUDED\n");
-		m_output.write("#include <sstream>\n");
-		m_output.write("#endif\n");
+		if (!m_included_snippets.contains("sstream")) {
+			m_output.write("}\n\n"
+		                 + "#include <sstream>\n\n"
+		                 + "namespace " + m_randomNamespace + " {\n\n");
+			m_included_snippets.add("sstream");
+		}
 		// Define conversion to Pascal string
-		m_output.write("#ifndef PASCALSTRING_CTOR_INCLUDED\n");
-		m_output.write("#define PASCALSTRING_CTOR_INCLUDED\n");
-		m_output.write("inline struct PascalString *toPascal(const std::string& cpp)\n");
-		m_output.write("{ unsigned long size = (unsigned long)cpp.size();\n");
-		m_output.write("  PascalString *pascal_string = (PascalString*)\n");
-		m_output.write("    malloc(sizeof(PascalString) + size);\n");
-		m_output.write("  pascal_string->size = size; pascal_string->chars = pascal_string->buffer;\n");
-		m_output.write("  memcpy(pascal_string->buffer, cpp.c_str(), size);\n");
-		m_output.write("  return pascal_string;\n}\n");
-		m_output.write("#endif\n");
+		if (!m_included_snippets.contains("pascalstring_ctor")) {
+			m_output.write("inline struct PascalString *toPascal(const std::string& cpp)\n"
+		                 + "{ unsigned long size = (unsigned long)cpp.size();\n"
+		                 + "  PascalString *pascal_string = (PascalString*)\n"
+	                     + "    malloc(sizeof(PascalString) + size);\n"
+		                 + "  pascal_string->size = size; pascal_string->chars = pascal_string->buffer;\n"
+		                 + "  memcpy(pascal_string->buffer, cpp.c_str(), size);\n"
+		                 + "  return pascal_string;\n}\n");
+			m_included_snippets.add("pascalstring_ctor");
+		}
 		// Write operator
 		m_output.write("struct PascalString *toString_" 
 						+ uid(subject.getScope()));
-		m_output.write("(");
-		m_output.write(Utils.cleanFullName(subject));
-		m_output.write(" *self) { std::stringstream ss; ss << *self;\n");
-		m_output.write(" return toPascal(ss.str()); }\n\n");
+		m_output.write("(" + Utils.cleanFullName(subject) + " *self)"
+                     + " { std::stringstream ss; ss << *self;\n"
+                     + " return toPascal(ss.str()); }\n\n");
 	}
 	
 	/**
@@ -2009,6 +2015,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 
     // random namespace name
     private String m_randomNamespace;
+    
+    // some code snippets are only allowed to appear once
+    private Set<String> m_included_snippets;
 	
 	// Code skeletons
 	private static final String END_OF_LIST = "\t{ 0,0,0,0 }\n};\n\n";
