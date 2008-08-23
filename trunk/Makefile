@@ -206,9 +206,9 @@ memcheck:
 ###
 manifest:
 	$(MAKE) -n install prefix=/demo exec_prefix=/demo site-packages=/demo \
-	  install=install cp-r=install \
+	  install='install $$1' cp-r=install \
 	   | grep '^install' | awk '{ print $$2; }' \
-	   | xargs -J {} find {} -type f -o -name .svn -prune -type f \
+	   | xargs -I {} find {} -type f -o -name .svn -prune -type f \
 	   > manifest
 	echo Makefile >> manifest
 	echo configure >> manifest

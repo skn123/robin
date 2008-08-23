@@ -30,7 +30,7 @@ public:
 
 	iterator find(const T &element);
 	
-	~vector();
+	~set();
 };
 
 }
