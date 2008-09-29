@@ -920,13 +920,20 @@ public class DoxygenAnalyzer {
 	private TemplateParameter translateTemplateParameter(Node xmlnode,
 		Scope scope) throws XMLFormatException
 	{
-		// Translate name
-		String name = translateName(xmlnode);
-		// Branch according to type
+		// Get Type
 		Node typenode = XML.subNode(xmlnode, Tags.TYPE);
 		if (typenode == null)
 			throw new XMLFormatException("parameter without type", xmlnode);
 		String typeText = XML.collectText(typenode);
+		// Translate name
+		String name;
+		if ((name = wordWithPrefix(typeText, Tags.CLASSTYPE)) != null)
+			typeText = Tags.CLASSTYPE;
+		else if ((name = wordWithPrefix(typeText, Tags.TYPENAMETYPE)) != null)
+			typeText = Tags.TYPENAMETYPE;
+		else
+			name = translateName(xmlnode);
+		// Branch according to type
 		if (typeText.equals(Tags.CLASSTYPE) || typeText.equals(Tags.TYPENAMETYPE)) {
 			// Translate as typename template argument
 			Aggregate nested = new Aggregate();
@@ -1787,6 +1794,23 @@ public class DoxygenAnalyzer {
 			next = name.indexOf("::", start);
 		}
 		return name.substring(start);
+	}
+	
+	/**
+	 * Auxiliary function; if text starts with prefix word, return the
+	 * rest of the text.
+	 * A space must follow the prefix string in the main text for it to be
+	 * considered an occurrance.
+	 * @param text the text
+	 * @param prefix the prefix to be sought
+	 * @return Text following prefix if it was matched, null otherwise.
+	 */
+	private static String wordWithPrefix(String text, String prefix)
+	{
+		if (text.startsWith(prefix + " "))
+			return text.substring(prefix.length() + 1);
+		else
+			return null;
 	}
 	
 	/**
