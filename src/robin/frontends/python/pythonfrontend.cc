@@ -912,10 +912,11 @@ TemplateObject *PythonFrontend::exposeTemplate(Handle<Namespace> &namespc,
 		}
 
 		if (pyarguments) {
+			PyObject *regobj = (PyObject*)getRegisteredObject(kind, elemname);
 			// Update the dictionary with the current element
-			PyObject_SetItem((PyObject*)pytemplate,
-							 pyarguments,
-							 (PyObject*)getRegisteredObject(kind, elemname));
+			if (regobj != NULL)
+				PyObject_SetItem((PyObject*)pytemplate,
+								 pyarguments, regobj);
 			Py_XDECREF(pyarguments);
 		}
 
@@ -932,6 +933,7 @@ void *PythonFrontend::getRegisteredObject(TemplateKind kind,
 	switch (kind) {
 	case T_CLASS:    return getClassObject(name);
 	case T_FUNCTION: return getFunctionObject(name);
+	default:         return NULL;
 	};
 }
 
