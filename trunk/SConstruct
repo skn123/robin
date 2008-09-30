@@ -396,7 +396,7 @@ Help(helpstring)
 #
 ##################################################
 
-if os.uname()[0] == "Linux":
+if hasattr(os, 'uname') and os.uname()[0] == "Linux":
     import robinlib.pkg.debian
     robinlib.pkg.debian.debian_package(env, robin, stl, pyfe, jar, stl_dox,
                                        fullver, Copy)
