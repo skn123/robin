@@ -1400,8 +1400,6 @@ public class DoxygenAnalyzer {
 	{
 		if (expr.length() == 0) return new Type(null);
 		if (expr.equals("virtual")) return new Type(null); /* bug workaround */
-		// This is most probably a function typedef
-		if (expr.endsWith("()")) return new Type(new TypeNode(TypeNode.NODE_FUNCTION));
 		
 		// Build the parser
 		Reader in = new StringReader(expr);
@@ -1448,6 +1446,10 @@ public class DoxygenAnalyzer {
 			String arrtext = XML.collectText(arrnode);
 			if (arrtext.startsWith("[") || arrtext.startsWith(")"))
 				exprtext += arrtext;
+			// This is most probably a function typedef
+			if (arrtext.startsWith("(") && arrtext.endsWith(")") && !exprtext.endsWith("*")) {
+				return new Type(new TypeNode(TypeNode.NODE_FUNCTION));
+			}
 		}
 		return parseType(exprtext, reference_map);
 	}
