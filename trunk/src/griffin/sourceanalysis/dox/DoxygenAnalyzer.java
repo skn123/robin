@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -24,6 +26,7 @@ import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.Entity;
 import sourceanalysis.Field;
 import sourceanalysis.Group;
+import sourceanalysis.InappropriateKindException;
 import sourceanalysis.InheritanceConnection;
 import sourceanalysis.Macro;
 import sourceanalysis.MissingInformationException;
@@ -40,6 +43,7 @@ import sourceanalysis.TemplateEnabledEntity;
 import sourceanalysis.TemplateParameter;
 import sourceanalysis.Type;
 import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.Type.TypeNode;
 import sourceanalysis.dox.DocumentComponentRegistry.RequestedDocument;
 import sourceanalysis.xml.XML;
 import sourceanalysis.xml.XMLFormatException;
@@ -218,7 +222,7 @@ public class DoxygenAnalyzer {
 					else {
 						// Nothing else to do - create new aggregate
 						Aggregate a = new Aggregate();
-						a.setName(name);
+						a.setName(name);  
 						m_global_byname.put(name, a);
 						return a;
 					}
@@ -587,6 +591,23 @@ public class DoxygenAnalyzer {
 		return routine;
 	}
 	
+    public boolean dataMemberIsFunction(Node xmlnode) throws XMLFormatException {
+        Node typenode = XML.subNode(xmlnode, Tags.TYPE);
+        Node arrnode = XML.subNode(xmlnode, Tags.ARGSSTRING);
+        if (typenode == null) {
+            return false;
+        }
+        Type type = parseType(typenode, arrnode);
+        if (!(type.getBaseType() instanceof Alias)) {
+            return false;
+        }
+        Alias alias = (Alias)type.getBaseType();
+        if (alias.getAliasedType().getRootNode().getKind() == TypeNode.NODE_FUNCTION) {
+            return true;
+        }
+        return false;
+    }
+	
 	/**
 	 * Translates a data member node into a Field entity.
 	 * @param xmlnode root of variable sub-tree
@@ -776,6 +797,11 @@ public class DoxygenAnalyzer {
 								translateVirtuality(virt), translateStorage(stat));
 					}
 					else if (mkind.equals(Tags.VARIABLE)) {	/* data member */
+					    // This code here, discards functions that look to doxygen (and/or griffin) as they
+					    // were variables. In the future, we want to wrap this ones as functions.
+					    if (dataMemberIsFunction(mbr)) {
+					        continue;
+					    }
 						Field emember = hasPre ? (Field)pre : translateDataMember(mbr);
 						scope.addMember(emember, translateVisibility(access),
 							translateStorage(stat));
@@ -1374,6 +1400,8 @@ public class DoxygenAnalyzer {
 	{
 		if (expr.length() == 0) return new Type(null);
 		if (expr.equals("virtual")) return new Type(null); /* bug workaround */
+		// This is most probably a function typedef
+		if (expr.endsWith("()")) return new Type(new TypeNode(TypeNode.NODE_FUNCTION));
 		
 		// Build the parser
 		Reader in = new StringReader(expr);
