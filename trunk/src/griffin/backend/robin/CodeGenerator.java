@@ -1489,7 +1489,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("\"");
 			if (!(base instanceof Primitive)) {
 				// - write references
-				if (output) m_output.write(">");
+				if (output) {
+					m_output.write(">");
+					// One pointer is for the ouput parameters.
+					pointers--;
+				}
 				else if (reference) m_output.write("&");
 				// - write pointers
 				for (int ptr = 0; ptr < pointers; ++ptr) m_output.write("*");

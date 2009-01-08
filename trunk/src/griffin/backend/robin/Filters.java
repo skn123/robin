@@ -244,10 +244,14 @@ public class Filters extends GenericFilters {
 	 */
 	static boolean isOutputParameter(Parameter parameter)
 	{
-		// check if this is a non const reference
+		// check if this is a non const reference or pointer
 		try {
 			Type type = parameter.getType();
-			if ( type.isFlat() && type.isReference() &&
+			// We're doing output parameters for references or 1 pointer exactly.
+			// Reason is, that if it's a pointer to pointer, it most likely not an
+			// output parameter, but it makes lots of other problems like that.
+			// TODO: Should see if we want to fix it sometime later.
+			if ( type.isFlat() && (type.isReference() || (type.getPointerDegree() == 1)) &&
 			    !type.isConst() && !(type.getBaseType() instanceof Primitive)) {
 				return true;
 			}
