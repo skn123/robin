@@ -33,7 +33,7 @@ def _make_vector_functor(vectype, volatile = False):
 		for item in lst:
 			vec.push_back(item)
 		if volatile:
-			vec.__owner__ = STLContainer.STLOwner(lst, vec)
+			vec.__owner__ = STLContainer.STLListOwner(lst, vec)
 		return vec
 
 	return make_any_vector
@@ -44,7 +44,7 @@ def _make_list_functor(listtype, volatile = False):
 		for item in lst:
 			l.push_back(item)
 		if volatile:
-			l.__owner__ = STLContainer.STLOwner(lst, l)
+			l.__owner__ = STLContainer.STLListOwner(lst, l)
 		return l
 
 	return make_any_list
@@ -55,7 +55,7 @@ def _make_set_functor(settype, volatile = False):
 		for item in lst:
 			set.insert(item)
 		if volatile:
-			set.__owner__ = STLContainer.STLOwner(lst, set)
+			set.__owner__ = STLContainer.STLListOwner(lst, set)
 		return set
 
 	return make_any_set
@@ -66,7 +66,7 @@ def _make_map_functor(maptype, volatile = False):
 		for item in dic.keys():
 			map.insert((item,dic[item]))
 		if volatile:
-			map.__owner__ = STLContainer.STLOwner(dic, map)
+			map.__owner__ = STLContainer.STLDictOwner(dic, map)
 		return map
 
 	return make_any_map
@@ -223,15 +223,21 @@ def couple(stltype, prefix = None, element = None):
 
 # STL container template dictionary
 class STLContainer(dict):
-	class STLOwner:
-		def __init__(self, l, c):
+	class STLOwner(object):
+		def __init__(self, py_container, c_container):
 			import weakref
-			self.l = l
-			self.c = weakref.ref(c)
-			
+			self.py_container = py_container
+			self.c = weakref.ref(c_container)
+	
+	class STLListOwner(STLOwner):
 		def __del__(self):
-			del self.l[:]
-			self.l.extend(__builtin__.list(self.c()))
+			del self.py_container[:]
+			self.py_container.extend(__builtin__.list(self.c()))
+	
+	class STLDictOwner(STLOwner):
+		def __del__(self):
+			self.py_container.clear()
+			self.py_container.update(gen(self.c()))
 	
 	def __setitem__(self, key, value):
 		try:
@@ -278,7 +284,7 @@ def gen(container):
 
 # @deprecated backward compatibility (remove in 1.1)
 Vector = STLContainer
-Vector.VectorOwner = Vector.STLOwner
+Vector.VectorOwner = Vector.STLListOwner
 make_container_weigher = _make_container_weigher
 make_vector_weigher = _make_container_weigher
 guess_vector_type = guess_container_type
