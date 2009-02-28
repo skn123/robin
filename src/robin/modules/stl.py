@@ -93,7 +93,7 @@ def _make_map_weigher(el):
 				w = (0, 1, 0, 0)
 			else:
 				w = robin.weighConversion(
-						insight,
+						insight[i],
 						truetype.get(el[i], el[i]))
 				w = _sum_tuples( [w, (0, 1, 0, 0)] )
 			total_weight = _sum_tuples( [total_weight, w] )
