@@ -13,7 +13,7 @@ jython = jython
 -include config.mak
 
 cxx ?= g++
-shared ?= -shared
+shared ?= -shared -fPIC
 
 pydir = $(site-packages)/robin
 libdir = $(exec_prefix)/lib
