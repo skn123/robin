@@ -16,4 +16,8 @@
     <template-parameter name="KEY"/>
     <template-parameter name="VALUE"/>
   </class>
+  <class name="__gnu_cxx::hash_map">
+    <template-parameter name="KEY"/>
+    <template-parameter name="VALUE"/>
+  </class>
 </program>
