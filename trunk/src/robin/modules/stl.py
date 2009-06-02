@@ -217,6 +217,9 @@ def couple(stltype, prefix = None, element = None):
   elif prefix == "std::map":
     _map_from_dict(stltype, element)
     stltype.__to__ = _map_to_dict
+  elif prefix == "__gnu_cxx::hash_map":
+    _map_from_dict(stltype, element)
+    stltype.__to__ = _map_to_dict
   else:
     raise TypeError, "invalid STL prefix: " + prefix
 
@@ -269,6 +272,10 @@ robin.declareTemplate("std::pair", pair)
 # std::map
 map = STLContainer()
 robin.declareTemplate("std::map", map)
+
+# __gnu_cxx::hash_map
+hash_map = STLContainer()
+robin.declareTemplate("__gnu_cxx::hash_map", hash_map)
 
 # std::complex
 complex = STLContainer()
