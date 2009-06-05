@@ -1,8 +1,6 @@
 #summary Comparison page for Robin vs. Swig
 #labels Featured
 
-= Robin vs. SWIG =
-
 [http://www.swig.org SWIG] is a popular tool for creating C++/Python bindings. SWIG specializes in bindings for C code, but C++ works just as well.
 
 Below is a summary of several properties of SWIG compared to those of Robin.
