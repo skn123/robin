@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -26,7 +24,6 @@ import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.Entity;
 import sourceanalysis.Field;
 import sourceanalysis.Group;
-import sourceanalysis.InappropriateKindException;
 import sourceanalysis.InheritanceConnection;
 import sourceanalysis.Macro;
 import sourceanalysis.MissingInformationException;
