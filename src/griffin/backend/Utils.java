@@ -168,10 +168,10 @@ public class Utils {
 		if (root.getKind() == Type.TypeNode.NODE_TEMPLATE_INSTANTIATION) {
 			// Get the template arguments
 			try {
-				List arguments = extractTemplateArguments(root);
+				List<TemplateArgument> arguments = extractTemplateArguments(root);
 				// Make sure that all the template arguments are accessible
-				for (Iterator tai = arguments.iterator(); tai.hasNext(); ) {
-					if (!isAccessible((TemplateArgument)tai.next()))
+				for (TemplateArgument ta: arguments) {
+					if (!isAccessible(ta))
 						return false;
 				}
 				return true;
@@ -950,7 +950,7 @@ public class Utils {
 		// ------------------------------------
 		// Instantiate inner class declarations
 		// ------------------------------------
-		List inners = new LinkedList();
+		List<Aggregate[]> inners = new LinkedList<Aggregate[]>();
 		for (Iterator ci = template.getScope().aggregateIterator(); 
 		      ci.hasNext(); ) {
 			ContainedConnection connection = 
@@ -966,7 +966,7 @@ public class Utils {
 				// - register inner class for substitution
 				substitution.put(
 						innerClass, new Type(new Type.TypeNode(instance)));
-				inners.add(new Object[] { innerClass, instance });
+				inners.add(new Aggregate[] { innerClass, instance });
 			}
 		}
 		// --------------------------
@@ -1078,8 +1078,7 @@ public class Utils {
 		// -------------------------------
 		// Fill inner class instantiations
 		// -------------------------------
-		for (Iterator ci = inners.iterator(); ci.hasNext(); ) {
-			Object[] element = (Object[])ci.next();
+		for (Aggregate[] element: inners) {
 			Aggregate innerClass = (Aggregate)element[0];
 			Aggregate instance = (Aggregate)element[1];
 			instantiateTemplate(innerClass, new TemplateArgument[0],
@@ -1628,11 +1627,8 @@ public class Utils {
 				continue;
 			}
 			
-			Collection baseVisibleFields = accessibleFields(base, instanceMap, baseMinimumAllowedVisibility);
-			for (Iterator baseFieldIter = baseVisibleFields.iterator(); 
-			baseFieldIter.hasNext(); ) {
-                Field baseField = (Field)baseFieldIter.next();
-
+			Collection<Field> baseVisibleFields = accessibleFields(base, instanceMap, baseMinimumAllowedVisibility);
+			for (Field baseField: baseVisibleFields) {
                 // - ensure that a compatible method has not previously 
                 //  occurred
 				boolean found = false;
@@ -1753,10 +1749,8 @@ public class Utils {
 			}
 			if (base == null) continue;
 			// - recursively fetch the unimplemented methods in the base class
-			Collection baseUnimplemented = unimplementedMethods(base, instanceMap);
-			for (Iterator unimpIter = baseUnimplemented.iterator();
-				 unimpIter.hasNext(); ) {
-				Routine baseMethod = (Routine)unimpIter.next();
+			Collection<Routine> baseUnimplemented = unimplementedMethods(base, instanceMap);
+			for (Routine baseMethod: baseUnimplemented) {
 				// - search this method in subject to check that the method is
 				//   still unimplemented in derived class
 				boolean found = false;
