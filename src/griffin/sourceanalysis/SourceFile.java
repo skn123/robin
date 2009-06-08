@@ -170,10 +170,10 @@ public class SourceFile extends Entity {
 	public SourceFile() {
 		super();
 		// Initialize all relations to empty
-		m_declarations = new LinkedList();
-		m_definitions = new LinkedList();
-		m_includes = new LinkedList();
-		m_includedIn = new LinkedList();
+		m_declarations = new LinkedList<DeclDefConnection>();
+		m_definitions = new LinkedList<DeclDefConnection>();
+		m_includes = new LinkedList<SourceFile>();
+		m_includedIn = new LinkedList<SourceFile>();
 		m_fullPath = null;
 	}
 
@@ -258,7 +258,7 @@ public class SourceFile extends Entity {
 	 * Access files included by this file.
 	 * @return Iterator iterates over files which this file includes
 	 */
-	public Iterator includesIterator()
+	public Iterator<SourceFile> includesIterator()
 	{
 		return m_includes.iterator();
 	}
@@ -267,7 +267,7 @@ public class SourceFile extends Entity {
 	 * Access files including this file.
 	 * @return Iterator iterates over files which include this file
 	 */
-	public Iterator includedInIterator()
+	public Iterator<SourceFile> includedInIterator()
 	{
 		return m_includedIn.iterator();
 	}
@@ -276,7 +276,7 @@ public class SourceFile extends Entity {
 	 * Access the declarations in this file.
 	 * @return Iterator iterates over DeclDefConnection
 	 */
-	public Iterator declarationIterator()
+	public Iterator<DeclDefConnection> declarationIterator()
 	{
 		return m_declarations.iterator();
 	}
@@ -285,7 +285,7 @@ public class SourceFile extends Entity {
 	 * Access the definitions in this file.
 	 * @return Iterator iterates over DeclDefConnection
 	 */
-	public Iterator definitionIterator()
+	public Iterator<DeclDefConnection> definitionIterator()
 	{
 		return m_definitions.iterator();
 	}
@@ -305,11 +305,11 @@ public class SourceFile extends Entity {
 	
 
 	// Private members
-	private List m_declarations;
-	private List m_definitions;
+	private List<DeclDefConnection> m_declarations;
+	private List<DeclDefConnection> m_definitions;
 	
-	private List m_includes;
-	private List m_includedIn;
+	private List<SourceFile> m_includes;
+	private List<SourceFile> m_includedIn;
 	
 	private String m_fullPath;
 }

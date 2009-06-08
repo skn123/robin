@@ -23,7 +23,7 @@ public class Aggregate extends TemplateEnabledEntity
 	 */
 	public Aggregate() {
 		super();
-		m_agScope = new Scope(this);
+		m_agScope = new Scope<Aggregate>(this);
 		m_bases = new LinkedList<InheritanceConnection>();
 	}
 	
@@ -103,7 +103,7 @@ public class Aggregate extends TemplateEnabledEntity
 	 * @return Scope a Scope object which belongs to the Aggregate. Use
 	 * Push/Pull API of Scope to fill or retrieve members.
 	 */
-	public Scope getScope()
+	public Scope<Aggregate> getScope()
 	{
 		return m_agScope;
 	}
@@ -111,7 +111,7 @@ public class Aggregate extends TemplateEnabledEntity
 	/*@}*/
 
 	// Scoping
-	private Scope m_agScope;
+	private Scope<Aggregate> m_agScope;
 	// Inheritance
 	private List<InheritanceConnection> m_bases;
 }
