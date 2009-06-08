@@ -60,7 +60,7 @@ public class GenericCodeGenerator
 		m_enums = new HashSet();
 		m_typedefs = new HashSet();
 		m_globalFuncs = new HashSet();
-		m_namespaces = new HashSet();
+		m_namespaces = new HashSet<Namespace>();
 		m_templates = templates;
 		m_separateClassTemplates = false; // if set to true, classes are put
 					// in 'subjects' while class templates are put in 
@@ -232,9 +232,9 @@ public class GenericCodeGenerator
 	 * @param entity
 	 * @return a Collection of Strings
 	 */
-	protected static Collection allPossibleNames(Entity entity)
+	protected static Collection<String> allPossibleNames(Entity entity)
 	{
-		List names = new ArrayList();
+		List<String> names = new ArrayList<String>();
 		// add the trivial names
 		names.add(entity.getName());
 		names.add(Utils.cleanFullName(entity));
@@ -247,9 +247,9 @@ public class GenericCodeGenerator
 	
 	protected boolean nameMatches(Entity entity, String name)
 	{
-		Collection names = allPossibleNames(entity);
-		for (Iterator nameIter = names.iterator(); nameIter.hasNext(); ) {
-			if (nameIter.next().equals(name))
+		Collection<String> names = allPossibleNames(entity);
+		for (String one_name: names) {
+			if (one_name.equals(name))
 				return true;
 		}
 		return false;
@@ -284,7 +284,7 @@ public class GenericCodeGenerator
 					m_subjects.add((Aggregate)base); 
 				}
 				else if (base instanceof sourceanalysis.Enum) {
-					m_enums.add(base);
+					m_enums.add((sourceanalysis.Enum)base);
 				}
 			}
 		}
@@ -312,7 +312,7 @@ public class GenericCodeGenerator
 		for (Iterator ei = scope.enumIterator(); ei.hasNext();) {
 			ContainedConnection connection = (ContainedConnection)ei.next();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
-				m_enums.add(connection.getContained());
+				m_enums.add((sourceanalysis.Enum)connection.getContained());
 			}
 		}
 		// Add public typedefs
@@ -477,13 +477,11 @@ public class GenericCodeGenerator
 	 * @param elementTemplate the template to invoke upon every element
 	 * @throws IOException
 	 */
-	protected void refillFromContainer(Collection collection,
+	protected void refillFromContainer(Collection<? extends Entity> collection,
 			String elementKind, String elementTemplate)
 		throws IOException
 	{
-		for (Iterator subjectiter = collection.iterator(); 
-		     subjectiter.hasNext();) {
-			Entity element = (Entity) subjectiter.next();
+		for (Entity element: collection) {
 			// Create scope with current class
 			sourceanalysis.view.Scope scope = new sourceanalysis.view.Scope();
 			scope.declareMember(elementKind, element, true);
@@ -600,9 +598,7 @@ public class GenericCodeGenerator
 		}
 		
 		// Find templates to instantiate in global functions
-		for (Iterator subjectIter = m_globalFuncs.iterator();
-			subjectIter.hasNext(); ) {
-			Routine subject = (Routine)subjectIter.next();
+		for (Routine subject: m_globalFuncs) {
 			// don't instantiate templates in functions
 			// that weren't declared in headers
 			if(!GenericFilters.isDeclared(subject)) {
@@ -616,9 +612,7 @@ public class GenericCodeGenerator
 		}
 
 		// Find template instances which are the targets of typedefs
-		for (Iterator typedefIter = m_typedefs.iterator();
-			typedefIter.hasNext(); ) {
-			Alias typedef = (Alias)typedefIter.next();
+		for (Alias typedef: m_typedefs) {
 			// This disables instantiation of templates
 			// in typedefs not declared in headers.
 			// One could argue that it's useful, but it brings its
@@ -829,10 +823,10 @@ public class GenericCodeGenerator
 	protected Writer m_output;
 	protected Set<Aggregate> m_subjects;
 	protected Set m_subjectTemplates;
-	protected Set m_enums;
+	protected Set<sourceanalysis.Enum> m_enums;
 	protected Set<Alias> m_typedefs;
 	protected Set<Routine> m_globalFuncs;
-	protected Set m_namespaces;
+	protected Set<Namespace> m_namespaces;
 	protected TemplateBank m_templates;
 	protected boolean m_separateClassTemplates;
 

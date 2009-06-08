@@ -1885,9 +1885,7 @@ public class DoxygenAnalyzer {
 	 */
 	private void fulfillSourceConnections()
 	{
-		for (Iterator iter = m_unfulfilled_declarations.iterator(); iter.hasNext();) {
-			SourceFile.DeclDefConnection unfulfilled =
-				(SourceFile.DeclDefConnection) iter.next();
+		for (SourceFile.DeclDefConnection unfulfilled: m_unfulfilled_declarations) {
 			// Look for filename in map
 			String filename = unfulfilled.getSourceFilename();
 			SourceFile source = (SourceFile)m_files_byname.get(filename);
@@ -1929,10 +1927,7 @@ public class DoxygenAnalyzer {
 			handy.repair(field);
 		}
 		// Run on compound classes involved in inheritance
-		for (Iterator inheriter = m_inheritanceForRepair.iterator();
-			inheriter.hasNext(); ) {
-			InheritanceConnection inheritance = 
-				(InheritanceConnection)inheriter.next();
+		for (InheritanceConnection inheritance: m_inheritanceForRepair) {
 			handy.repair(inheritance);
 		}
 	}
@@ -1966,12 +1961,12 @@ public class DoxygenAnalyzer {
 	private Map m_local_byname;
 	
 	private Map m_files_byname;
-	private List m_unfulfilled_declarations;
+	private List<SourceFile.DeclDefConnection> m_unfulfilled_declarations;
 	
 	private List<Routine> m_routinesForRepair;
 	private List<Alias> m_aliasesForRepair;
 	private List<Field> m_fieldsForRepair;
-	private List m_inheritanceForRepair;
+	private List<InheritanceConnection> m_inheritanceForRepair;
 	private Map m_globalFields_byname;
 
 	public Logger logger;

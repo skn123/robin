@@ -47,7 +47,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_uidNext = 0;
 		m_globalDataMembers = new LinkedList();
 		m_interceptorMethods = new HashSet();
-		m_downCasters = new LinkedList();
+		m_downCasters = new LinkedList<String>();
 		m_interceptors = new LinkedList();
 		m_entry = new LinkedList<RegData>();
 
@@ -273,8 +273,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateIncludeDirectives()
 		throws IOException
 	{
-		List decldefs = new LinkedList();
-		Set headers = new HashSet();
+		List<SourceFile.DeclDefConnection> decldefs = new LinkedList<SourceFile.DeclDefConnection>();
+		Set<String> headers = new HashSet<String>();
 		
 		// Collect class declarations
 		for (Aggregate subject: m_subjects) {
@@ -298,10 +298,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Collect the header files that should be included
-		for (Iterator declIter = decldefs.iterator(); declIter.hasNext(); ) {			
+		for (SourceFile.DeclDefConnection decl: decldefs) {
 			// Try to get location of the declaration
-			SourceFile.DeclDefConnection decl = 
-				(SourceFile.DeclDefConnection)declIter.next();
 			if (decl != null && Filters.isAllowedToInclude(decl)) {
 				// Try to get the SourceFile entity for the declaration
 				try {
@@ -323,9 +321,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}		
 
 		// Generate #include directives
-		for (Iterator headerIterator = headers.iterator(); 
-			headerIterator.hasNext();) {
-			String header_abs = (String)headerIterator.next();
+		for (String header_abs: headers) {
 			String header_rel = Utils.FileTools
 				.absoluteToRelative(header_abs, m_outputDirectory);
 			m_output.write("#include \"" + header_rel + "\"\n");
@@ -959,9 +955,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Generate wrappers for encapsulated aliases
-		for (Iterator aliasIter = m_typedefs.iterator(); aliasIter.hasNext();)
-		{
-			Alias alias = (Alias)aliasIter.next();
+		for (Alias alias: m_typedefs) {
 			if (Filters.needsEncapsulation(alias)) {
 				generateFlatWrapper(alias);
 				generateRegistrationPrototype(alias);
@@ -969,9 +963,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Generated global function wrappers
-		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext() ;)
-		{
-			Routine func = (Routine)funcIter.next();
+		for (Routine func: m_globalFuncs) {
 			if (Filters.isAvailable(func)) {
 				// - align the number of arguments
 				int minArgs = Utils.minimalArgumentCount(func),
@@ -1004,8 +996,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateEnumeratedTypeWrappers()
 		throws IOException
 	{
-		for (Iterator enumIter = m_enums.iterator(); enumIter.hasNext();) {
-			sourceanalysis.Enum subject = (sourceanalysis.Enum) enumIter.next();
+		for (sourceanalysis.Enum subject: m_enums) {
 			// Generate a fine prototype here
 			generateFlatWrapper(subject);
 			generateRegistrationPrototype(subject);
@@ -1015,7 +1006,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateEntry()
 		throws IOException, MissingInformationException
 	{
-		List sorted_subjects = topologicallySortSubjects(true);
+		List<Aggregate> sorted_subjects = topologicallySortSubjects(true);
 		
 		for (Aggregate subject: m_subjects) {
                         if (!Filters.isAvailable(subject)) {
@@ -1041,8 +1032,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("extern \"C\" EXPORT RegData entry[];\n\n");
 		m_output.write("RegData entry[] = {\n");
 		// - enter enumerated types (these should all appear BEFORE function protos)
-		for (Iterator enumIter = m_enums.iterator(); enumIter.hasNext();) {
-			sourceanalysis.Enum subject = (sourceanalysis.Enum) enumIter.next();
+		for (sourceanalysis.Enum subject: m_enums) {
 			m_output.write("\t{\"");
 			m_output.write(Utils.cleanFullName(subject));
 			m_output.write("\", \"enum\", ");
@@ -1072,9 +1062,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 		}
 		// - enter classes
-		for (Iterator subjectIter = sorted_subjects.iterator();
-			 subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate) subjectIter.next();
+		for (Aggregate subject: sorted_subjects) {
                         if (!Filters.isAvailable(subject)) {
                           continue;
                         }
@@ -1094,17 +1082,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(Formatters.formatRegData(iter.next()) + "\n");
 		}
 		// - enter global data members
-		for (Iterator fieldIter = m_globalDataMembers.iterator();
-			fieldIter.hasNext(); ) {
+		for (Field field: m_globalDataMembers) {
 			// Create an entry for each public data member
-			Field field = (Field)fieldIter.next();
 			if (Filters.isAvailable(field, field.getContainerConnection()))
 				generateRegistrationLine(field, false);
 		}
 		// - enter downcast functions
-		for (Iterator downIter = m_downCasters.iterator(); 
-		     downIter.hasNext(); ) {
-			m_output.write("{ " + downIter.next() + " },\n");
+		for (String downCaster: m_downCasters) {
+			m_output.write("{ " + downCaster + " },\n");
 		}
 		m_output.write(END_OF_LIST);
 		m_output.flush();
@@ -1939,7 +1924,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * registered.
 	 */
 	public void report(String[] classnames) {
-		Set requested = new HashSet();
+		Set<String> requested = new HashSet<String>();
 		for (int i = 0; i < classnames.length; ++i)
 			if (!classnames[i].equals("*"))
 				requested.add(classnames[i]);
@@ -1972,9 +1957,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Print those classes that were not found
 		if (!requested.isEmpty())
 			System.out.println("| Missed classes:");
-		for (Iterator missedIter = requested.iterator();
-		     missedIter.hasNext(); ) {
-			System.out.println("|   " + missedIter.next());
+		for (String missed: requested) {
+			System.out.println("|   " + missed);
 		}
 		// Print footer
 		System.out.println("=================================");
@@ -2002,7 +1986,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private Map m_uidMap;
 	private int m_uidNext;
 	private List<Field> m_globalDataMembers;
-	private List m_downCasters;
+	private List<String> m_downCasters;
 	private List<RegData> m_entry;
 
 	private List<Aggregate> m_interceptors;
