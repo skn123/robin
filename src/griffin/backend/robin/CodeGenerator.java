@@ -1972,6 +1972,19 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			System.out.println("|   " + subject.getFullName());
 			requested.removeAll(allPossibleNames(subject));
 		}
+		if (!m_globalFuncs.isEmpty()) 
+			System.out.println("| Registered functions:");
+		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext(); ) {
+			Entity func = (Entity)funcIter.next();
+			System.out.println("|   " + func.getFullName());
+		}
+		// Print header for global variables
+		if (!m_globalDataMembers.isEmpty())
+			System.out.println("| Registered variables:");
+		for (Iterator varIter = m_globalDataMembers.iterator(); varIter.hasNext(); ) {
+			Entity var = (Entity)varIter.next();
+			System.out.println("|   " + var.getFullName());
+		}
 		// Functions
 		unmiss(requested, m_globalFuncs);
 		unmiss(requested, m_namespaces);
