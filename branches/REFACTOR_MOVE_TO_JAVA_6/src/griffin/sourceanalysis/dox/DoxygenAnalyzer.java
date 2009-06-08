@@ -40,6 +40,7 @@ import sourceanalysis.TemplateEnabledEntity;
 import sourceanalysis.TemplateParameter;
 import sourceanalysis.Type;
 import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.SourceFile.DeclDefConnection;
 import sourceanalysis.Type.TypeNode;
 import sourceanalysis.dox.DocumentComponentRegistry.RequestedDocument;
 import sourceanalysis.xml.XML;
@@ -187,7 +188,7 @@ public class DoxygenAnalyzer {
 	 */
 	class ScopefulResolution implements EntityNameResolving
 	{
-		ScopefulResolution(Map hints)
+		ScopefulResolution(Map<String, Entity> hints)
 		{
 			m_known = hints;
 		}
@@ -255,7 +256,7 @@ public class DoxygenAnalyzer {
 			}
 		}
 		
-		private Map m_known;
+		private Map<String, Entity> m_known;
 	}
 	
 	/**
@@ -263,11 +264,11 @@ public class DoxygenAnalyzer {
 	 * of their own, when translating the members.
 	 * @see DoxygenAnalyzer.translateCompound().
 	 */
-	private class GlobalScope extends Scope
+	private class GlobalScope<Owner extends Entity> extends Scope<Owner>
 	{
         private Scope globals;
 
-		GlobalScope(Entity owner, Scope globals) {
+		GlobalScope(Owner owner, Scope globals) {
             super(owner);
             this.globals = globals;
         }
@@ -313,15 +314,15 @@ public class DoxygenAnalyzer {
 	{
 		m_db = null;
 		m_registry = new DocumentComponentRegistry();
-		m_global_byname = new HashMap();
-		m_local_byname = new HashMap();
-		m_unfulfilled_declarations = new LinkedList();
-		m_files_byname = new HashMap();
-		m_routinesForRepair = new LinkedList();
-		m_aliasesForRepair = new LinkedList();
-		m_fieldsForRepair = new LinkedList();
-		m_inheritanceForRepair = new LinkedList();
-		m_globalFields_byname = new HashMap();
+		m_global_byname = new HashMap<String, Entity>();
+		m_local_byname = new HashMap<String, Aggregate>();
+		m_unfulfilled_declarations = new LinkedList<DeclDefConnection>();
+		m_files_byname = new HashMap<String, SourceFile>();
+		m_routinesForRepair = new LinkedList<Routine>();
+		m_aliasesForRepair = new LinkedList<Alias>();
+		m_fieldsForRepair = new LinkedList<Field>();
+		m_inheritanceForRepair = new LinkedList<InheritanceConnection>();
+		m_globalFields_byname = new HashMap<String, ContainedConnection>();
 		logger = Logger.getLogger("sourceanalysis.dox");
 	}
 	
@@ -731,8 +732,8 @@ public class DoxygenAnalyzer {
 		logger.log(Level.INFO, "translating compound " + compound.getName());
 		
 		// Translate template information
-		Map previous_locals = m_local_byname;
-		(m_local_byname = new HashMap()).putAll(previous_locals);
+		Map<String, Aggregate> previous_locals = m_local_byname;
+		(m_local_byname = new HashMap<String, Aggregate>()).putAll(previous_locals);
 		if (compound instanceof TemplateEnabledEntity) {
 			TemplateEnabledEntity enabled = (TemplateEnabledEntity)compound;
 			translateTemplated(xmlnode, enabled,scope);
@@ -1307,7 +1308,7 @@ public class DoxygenAnalyzer {
 			// Store information
 			if (entity instanceof SourceFile) {
 				// Insert file to map by-name
-				m_files_byname.put(file, entity);
+				m_files_byname.put(file, (SourceFile)entity);
 				((SourceFile)entity).setFullPath(file);
 			}
 			else {
@@ -1382,7 +1383,7 @@ public class DoxygenAnalyzer {
 	 * is empty, the returned value is Type(<b>null</b>).
 	 * @throws XMLFormatException if the string is malformed.
 	 */
-	public Type parseType(String expr, Map names) throws XMLFormatException
+	public Type parseType(String expr, Map<String, Entity> names) throws XMLFormatException
 	{
 		if (expr.length() == 0) return new Type(null);
 		if (expr.equals("virtual")) return new Type(null); /* bug workaround */
@@ -1424,7 +1425,7 @@ public class DoxygenAnalyzer {
 	public Type parseType(Node xmlnode, Node arrnode) throws XMLFormatException
 	{
 		// Step 1. Collect references from node
-		Map reference_map = new HashMap();
+		Map<String, Entity> reference_map = new HashMap<String, Entity>();
 		collectReferences(xmlnode, reference_map);
 		// Step 2. Actually parse text in node
 		String exprtext = XML.collectText(xmlnode);
@@ -1467,7 +1468,7 @@ public class DoxygenAnalyzer {
 			Character.isLetter(operatorDef.charAt(typeIndex))) {
 			// Parse type name after prefix
 			String typename = operatorDef.substring(typeIndex);
-			return parseType(typename, new HashMap());
+			return parseType(typename, new HashMap<String, Entity>());
 		}
 		else
 			return null;
@@ -1490,7 +1491,7 @@ public class DoxygenAnalyzer {
 	 * @throws ElementNotFoundException if the index document is
 	 * unavailable.
 	 */
-	public void processIndex(Scope global, Document index, boolean isExternal)
+	public void processIndex(Scope<Namespace> global, Document index, boolean isExternal)
 			throws ElementNotFoundException
 	{
 		Node indexRoot = index.getFirstChild();
@@ -1561,12 +1562,12 @@ public class DoxygenAnalyzer {
 	{
 		ProgramDatabase program = new ProgramDatabase();
 		m_db = program;
-		Scope globals = program.getGlobalNamespace().getScope();
+		Scope<Namespace> globals = program.getGlobalNamespace().getScope();
 		List<RequestedDocument> indices =
 				m_registry.locateAllDocuments("index");
 		for (RequestedDocument index : indices) {
 			boolean isExternal = m_registry.isExternal(index); 
-			Scope scope =  isExternal ? program.getExternals() : globals;
+			Scope<Namespace> scope =  isExternal ? program.getExternals() : globals;
 			processIndex(scope, index.getDocument(), isExternal);
 		}
 		return program;
@@ -1708,7 +1709,7 @@ public class DoxygenAnalyzer {
 	 * @param xmlnode root of XML subtree
 	 * @param references a map which is filled with visited ref information
 	 */
-	private void collectReferences(Node xmlnode, Map references)
+	private void collectReferences(Node xmlnode, Map<String, Entity> references)
 	{
 		if (xmlnode.getNodeName() == Tags.REF) {
 			// Retrieve the reference
@@ -1957,17 +1958,17 @@ public class DoxygenAnalyzer {
 	// Private members
 	private ProgramDatabase m_db;
 	private DocumentComponentRegistry m_registry;
-	private Map m_global_byname;
-	private Map m_local_byname;
+	private Map<String, Entity> m_global_byname;
+	private Map<String, Aggregate> m_local_byname;
 	
-	private Map m_files_byname;
+	private Map<String, SourceFile> m_files_byname;
 	private List<SourceFile.DeclDefConnection> m_unfulfilled_declarations;
 	
 	private List<Routine> m_routinesForRepair;
 	private List<Alias> m_aliasesForRepair;
 	private List<Field> m_fieldsForRepair;
 	private List<InheritanceConnection> m_inheritanceForRepair;
-	private Map m_globalFields_byname;
+	private Map<String, ContainedConnection> m_globalFields_byname;
 
 	public Logger logger;
 }

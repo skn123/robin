@@ -329,7 +329,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 	public void generateGlobalVariableInterface()
 		throws IOException, ElementNotFoundException, MissingInformationException
 	{
-		Scope global =  m_program.getGlobalNamespace().getScope();
+		Scope<Namespace> global =  m_program.getGlobalNamespace().getScope();
 		for (Iterator gfi = global.fieldIterator(); gfi.hasNext(); ) {
 			// Get field
 			ContainedConnection connection =

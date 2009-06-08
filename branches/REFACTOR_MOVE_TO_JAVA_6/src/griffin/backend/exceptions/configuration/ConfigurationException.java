@@ -9,6 +9,10 @@ package backend.exceptions.configuration;
  *
  */
 public abstract class ConfigurationException extends Exception {
+   /**
+	 * 
+	 */
+	private static final long serialVersionUID = 5272220766512108607L;
 
    /**
     * 
@@ -37,5 +41,4 @@ public abstract class ConfigurationException extends Exception {
    public ConfigurationException(String message, Throwable cause) {
        super(message, cause);
    }
-
 }

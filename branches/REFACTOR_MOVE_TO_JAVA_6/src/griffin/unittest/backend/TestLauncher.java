@@ -80,7 +80,7 @@ public class TestLauncher extends TestCase {
    public void testNotEnoughArgs() throws ConfigurationParseException, BackendException, BackendNotFoundException, InvalidCommandLineException {
        LauncherTest lc = new LauncherTest();
        try {
-           PropertyPage pp = lc.parseCommandLine("Test --barProperty foo".split(" "));
+           lc.parseCommandLine("Test --barProperty foo".split(" "));
        } catch(InvalidCommandLineException e) {
            // good boy
            return;
@@ -98,7 +98,7 @@ public class TestLauncher extends TestCase {
    public void testTooManyArgs() throws ConfigurationParseException, BackendException, BackendNotFoundException {
        LauncherTest lc = new LauncherTest();
        try {
-           PropertyPage pp = lc.parseCommandLine("Test --input '.' --fooProperty foo bar".split(" "));
+           lc.parseCommandLine("Test --input '.' --fooProperty foo bar".split(" "));
        } catch(InvalidCommandLineException e) {
            // good boy
            return;
@@ -117,7 +117,7 @@ public class TestLauncher extends TestCase {
    public void testLauncherUnknownArgs() throws ConfigurationParseException, BackendException, BackendNotFoundException, InvalidCommandLineException {
        LauncherTest lc = new LauncherTest();
        try {
-           PropertyPage pp = lc.parseCommandLine("Test --input '.' --blah foo --fooProperty A --barProperty foo".split(" "));
+           lc.parseCommandLine("Test --input '.' --blah foo --fooProperty A --barProperty foo".split(" "));
        } catch(InvalidCommandLineException e) {
            // good boy
            return;
@@ -134,8 +134,7 @@ public class TestLauncher extends TestCase {
     */
    public void testAnyNumberOfArguments() throws ConfigurationParseException, BackendException, BackendNotFoundException, InvalidCommandLineException {
        LauncherTest lc = new LauncherTest();
-       PropertyPage pp = lc.parseCommandLine("Test --input '.' --barProperty foo bar".split(" "));
-       
+       lc.parseCommandLine("Test --input '.' --barProperty foo bar".split(" "));   
    }
 
 }

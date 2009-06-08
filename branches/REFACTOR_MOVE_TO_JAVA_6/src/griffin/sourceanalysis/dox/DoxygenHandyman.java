@@ -91,8 +91,8 @@ public class DoxygenHandyman {
 	public DoxygenHandyman(ProgramDatabase p) {
 		super();
 		m_program = p;
-		m_entitiesByName = new HashMap();
-		m_entitiesByFullName = new HashMap();
+		m_entitiesByName = new HashMap<String, Entity>();
+		m_entitiesByFullName = new HashMap<String, Entity>();
 		collectEntitiesByName(p.getGlobalNamespace().getScope());
 	}
 
@@ -333,7 +333,7 @@ public class DoxygenHandyman {
 	 * @param fields a map of String->ContainedConnection. The
 	 * ContainedConnection
 	 */
-	public static void transferFields(Scope target, Map fields)
+	public static void transferFields(Scope target, Map<String, ContainedConnection> fields)
 	{
 		Collection<ContainedConnection> fieldSet = fields.values();
 		// Go over fields in the set, insert each of them to the target
@@ -465,6 +465,6 @@ public class DoxygenHandyman {
 	
 	// Private members
 	private ProgramDatabase m_program;
-	private Map m_entitiesByName;
-	private Map m_entitiesByFullName;
+	private Map<String, Entity> m_entitiesByName;
+	private Map<String, Entity> m_entitiesByFullName;
 }

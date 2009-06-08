@@ -101,10 +101,10 @@ public class Utils {
 	 * @throws InappropriateKindException if the given type-node is
 	 * not a NODE_TEMPLATE_INSTANTIATION node.
 	 */
-	public static List extractTemplateArguments(Type.TypeNode root)
+	public static List<TemplateArgument> extractTemplateArguments(Type.TypeNode root)
 	throws InappropriateKindException
 	{
-		List targs = new ArrayList();
+		List<TemplateArgument> targs = new ArrayList<TemplateArgument>();
 		
 		if (root.getKind() == Type.TypeNode.NODE_TEMPLATE_INSTANTIATION) {
 			// Get the template
@@ -504,7 +504,7 @@ public class Utils {
      */
     public static boolean hasOnlyPrivateConstructors(Aggregate entity)
     {
-        Scope scope = entity.getScope();
+        Scope<Aggregate> scope = entity.getScope();
         boolean hasNoPrivateConstructors = false;
 
         for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
@@ -530,7 +530,7 @@ public class Utils {
 	public static boolean hasDefaultConstructor(Aggregate entity)
 		throws MissingInformationException
 	{
-		Scope scope = entity.getScope();
+		Scope<Aggregate> scope = entity.getScope();
 		boolean anyConstructor = false;
 	
 		if (entity instanceof Primitive) return true;
@@ -635,12 +635,12 @@ public class Utils {
 	 * @throws MissingInformationException if information contained in the
 	 * program database is insufficient for carrying out this operation.
 	 */
-	public static List findGloballyScopedOperators(Entity with, 
+	public static List<Routine> findGloballyScopedOperators(Entity with, 
 											ProgramDatabase program)
 		throws MissingInformationException
 	{
 		// Scan each and every routine in the global namespace
-		List matches = new LinkedList();
+		List<Routine> matches = new LinkedList<Routine>();
 		if (with.isTemplated()) return matches;
 		
 		for (Iterator globalri = program.getGlobalNamespace()
@@ -681,7 +681,7 @@ public class Utils {
 	 * @return <b>true</b> if at least one method here is pure virtual;
 	 * <b>false</b> if none are.
 	 */
-	public static boolean isAbstract(Aggregate entity, Map instanceMap)
+	public static boolean isAbstract(Aggregate entity, Map<String, Aggregate> instanceMap)
 		throws MissingInformationException
 	{
 		return ! unimplementedMethods(entity, instanceMap).isEmpty();
@@ -744,7 +744,7 @@ public class Utils {
 	 * @throws InappropriateKindException 
 	 * @throws MissingInformationException 
 	 */
-	public static Entity instantiateTemplate(Type templateType, Map existingInstancesMap) 
+	public static Entity instantiateTemplate(Type templateType, Map<String, Aggregate> existingInstancesMap) 
 		throws MissingInformationException, InappropriateKindException 
 	{
 		
@@ -762,8 +762,6 @@ public class Utils {
 		
 		
 		return instantiateTemplate(typeAggregate, typeTemplateArguments, existingInstancesMap);
-		
-		
 	}
 	
 	
@@ -785,7 +783,7 @@ public class Utils {
 	 * is encountered
 	 */
 	public static Aggregate instantiateTemplate(Aggregate template,
-		TemplateArgument[] arguments, Map existingInstancesMap)
+		TemplateArgument[] arguments, Map<String, Aggregate> existingInstancesMap)
 		throws MissingInformationException, InappropriateKindException
 	{
 		return instantiateTemplate(template, arguments, null, null, existingInstancesMap);
@@ -813,7 +811,7 @@ public class Utils {
 	 * is encountered
 	 */
 	public static Aggregate instantiateTemplate(Aggregate template,
-		TemplateArgument[] arguments, Map institute, Aggregate d, Map existingInstancesMap)
+		TemplateArgument[] arguments, Map<Entity, Type> institute, Aggregate d, Map<String, Aggregate> existingInstancesMap)
 		throws MissingInformationException, InappropriateKindException
 	{
 		// Don't instantiate the same template twice
@@ -824,14 +822,14 @@ public class Utils {
 		}
 		
 		
-		Map substitution = (institute != null) ? institute : new HashMap();
-		Map macros = new HashMap();
+		Map<Entity, Type> substitution = (institute != null) ? institute : new HashMap<Entity, Type>();
+		Map<String, TemplateArgument> macros = new HashMap<String, TemplateArgument>();
 	    //System.err.println("Started instantiation for " + template + " with arguments " + java.util.Arrays.toString(arguments));
 		// - these final variables are for use inside anonymous classes
 		final Aggregate fin_template = template;
-		final Map fin_substitution = substitution;
-		final List fin_targs = new ArrayList();
-		final Map fin_existingInstancesMap = existingInstancesMap;
+		final Map<Entity, Type> fin_substitution = substitution;
+		final List<TemplateArgument> fin_targs = new ArrayList<TemplateArgument>();
+		final Map<String, Aggregate> fin_existingInstancesMap = existingInstancesMap;
 		
 		// ---------------------------
 		// Create instantiations for template arguments
@@ -1232,13 +1230,13 @@ public class Utils {
 	 * @param substitution accumulates the inner entities collected
 	 */
 	private static void collectInnersOfTemplateParameter(Type type, 
-		Aggregate template, List arguments, Map substitution, Map existingInstancesMap)
+		Aggregate template, List arguments, Map<Entity, Type> substitution, Map<String, Aggregate> existingInstancesMap)
 	{
 		final Aggregate fin_template = template;
-		final Map fin_substitution = substitution;
+		final Map<Entity, Type> fin_substitution = substitution;
 		final TemplateArgument[] fin_targs =
 			(TemplateArgument[])arguments.toArray(new TemplateArgument[] { });
-		final Map fin_existingInstancesMap = existingInstancesMap;
+		final Map<String, Aggregate> fin_existingInstancesMap = existingInstancesMap;
 		
 		Type.Transformation collect = new Type.Transformation() {
 			public TypeNode transform(TypeNode typeNode) 
@@ -1282,7 +1280,7 @@ public class Utils {
 		}
 	}
 
-	private static Entity trait(TemplateArgument traitsHolder, String field, Map existingInstancesMap)
+	private static Entity trait(TemplateArgument traitsHolder, String field, Map<String, Aggregate> existingInstancesMap)
 	{
 		if (traitsHolder instanceof TypenameTemplateArgument) {
 			Type val = ((TypenameTemplateArgument)traitsHolder).getValue();
@@ -1660,8 +1658,8 @@ public class Utils {
 	 * the subject, or in any of it's ancestors
 	 * @throws MissingInformationException
 	 */
-	public static Collection virtualMethods(Aggregate subject,
-			Map instanceMap, boolean withDestructors) throws MissingInformationException
+	public static Collection<Routine> virtualMethods(Aggregate subject,
+			Map<String, Aggregate> instanceMap, boolean withDestructors) throws MissingInformationException
 	{
 		List<Routine> virtual = new LinkedList<Routine>();
 		
@@ -2011,7 +2009,7 @@ public class Utils {
 			public String formatBase(Entity e) { return cleanFullNameBase(e); }
 		};
 		
-	static public Map defaultInstanceMap = null;
+	static public Map<String, Aggregate> defaultInstanceMap = null;
 
 	public static String getTypeHash(Type type) {
 		return Integer.toHexString(type.formatCpp().hashCode());
