@@ -149,7 +149,6 @@ public class TypeToolbox {
 	
 	private static Type getOriginalTypeDeep(Type.TypeNode root)
 	{
-		Type child = null;
 		Type original = null;
 		
 		switch (root.getKind()) {

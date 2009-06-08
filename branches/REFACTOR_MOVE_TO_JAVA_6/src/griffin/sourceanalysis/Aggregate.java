@@ -24,7 +24,7 @@ public class Aggregate extends TemplateEnabledEntity
 	public Aggregate() {
 		super();
 		m_agScope = new Scope(this);
-		m_bases = new LinkedList();
+		m_bases = new LinkedList<InheritanceConnection>();
 	}
 	
 	/** @name Push API
@@ -85,7 +85,7 @@ public class Aggregate extends TemplateEnabledEntity
 	 *  of the connection to reveal both the base class and the visibility of the
 	 *  inheritance.
 	 */
-	public Iterator baseIterator()
+	public Iterator<InheritanceConnection> baseIterator()
 	{
 		return m_bases.iterator();
 	}
@@ -113,5 +113,5 @@ public class Aggregate extends TemplateEnabledEntity
 	// Scoping
 	private Scope m_agScope;
 	// Inheritance
-	private List m_bases;
+	private List<InheritanceConnection> m_bases;
 }

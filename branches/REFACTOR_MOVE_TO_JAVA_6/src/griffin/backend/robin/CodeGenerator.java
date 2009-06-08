@@ -14,7 +14,25 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.InappropriateKindException;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.SourceFile;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateArgument;
 import sourceanalysis.hints.Artificial;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
@@ -45,10 +63,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_separateClassTemplates = true;
 		m_uidMap = new HashMap();
 		m_uidNext = 0;
-		m_globalDataMembers = new LinkedList();
-		m_interceptorMethods = new HashSet();
+		m_globalDataMembers = new LinkedList<Field>();
+		m_interceptorMethods = new HashSet<Routine>();
 		m_downCasters = new LinkedList<String>();
-		m_interceptors = new LinkedList();
+		m_interceptors = new LinkedList<Aggregate>();
 		m_entry = new LinkedList<RegData>();
 
 	    m_randomNamespace = generateNamespaceName();
@@ -721,20 +739,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         Map wrappedTypes = new HashMap();
         
-        for(Iterator fieldIter = Utils.accessibleFields(subject, m_instanceMap, Specifiers.Visibility.PROTECTED).iterator();
-        				 fieldIter.hasNext();)
-        {
-        	
-        		Field f = (Field)fieldIter.next();
-        		
-        		
-        		
+        for (Field f: Utils.accessibleFields(subject, m_instanceMap, Specifiers.Visibility.PROTECTED)) {
         		writeInterceptorFieldWrapper(subject, result, f, funcCounter, m_instanceMap, wrappedTypes);
-        		
-        		
         }
-        
-        
         
         // Write private sections of class
         m_output.write("private:\n");
@@ -1966,7 +1973,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			System.err.println("griffin: WARNING - Some components could not be found.");
 	}
 	
-	private static void unmiss(Collection requested, Collection<? extends Entity> found)
+	private static void unmiss(Collection<String> requested, Collection<? extends Entity> found)
 	{
 		for (Entity entity: found) {
 			requested.removeAll(allPossibleNames(entity));
@@ -1990,7 +1997,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private List<RegData> m_entry;
 
 	private List<Aggregate> m_interceptors;
-	private Set m_interceptorMethods;
+	private Set<Routine> m_interceptorMethods;
 
     // random namespace name
     private String m_randomNamespace;

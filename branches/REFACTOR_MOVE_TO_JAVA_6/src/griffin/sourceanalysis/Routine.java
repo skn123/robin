@@ -29,9 +29,9 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	public Routine()
 	{
 		super();
-		m_formalArguments = new Vector();
+		m_formalArguments = new Vector<Parameter>();
 		m_hasThrows = false;
-		m_throws = new LinkedList();
+		m_throws = new LinkedList<Aggregate>();
 		m_routineType = RoutineType.REGULAR;
 	}
 
@@ -263,13 +263,13 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 * @return Iterator an iterator over Parameter. Parameters do not have
 	 *  extra attributes in this connection.
 	 */
-	public Iterator parameterIterator()
+	public Iterator<Parameter> parameterIterator()
 	{
 		return m_formalArguments.iterator();
 	}
 	
 	public void removeParameters() {
-		m_formalArguments = new Vector();
+		m_formalArguments = new Vector<Parameter>();
 	}
 	
 	/**
@@ -278,7 +278,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 * @return an iterator over Aggregate. Thrown exceptions do not have
 	 * extra attributes in this connection. 
 	 */
-	public Iterator throwsIterator()
+	public Iterator<Aggregate> throwsIterator()
 	{
 		return m_throws.iterator();
 	}
@@ -289,7 +289,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
         if (!getName().equals(other.getName())) return false;
         if (isConst() != other.isConst()) return false;
 
-        Iterator my, his;
+        Iterator<Parameter> my, his;
         for (my = parameterIterator(), his = other.parameterIterator();
                 my.hasNext() && his.hasNext(); ) {
         	
@@ -321,8 +321,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	private boolean m_isExplicit;      ///< refers to constructors
 	private boolean m_hasThrows;
 	private Type m_returnType;
-	private Vector m_formalArguments;
-	private List m_throws;
+	private Vector<Parameter> m_formalArguments;
+	private List<Aggregate> m_throws;
 	
 	private RoutineType m_routineType; // real / static wrapper
 

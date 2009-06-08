@@ -65,12 +65,12 @@ public abstract class Entity {
 	{
 		super();
 		m_name = "anonymous";
-		m_properties = new Vector();
-		m_hints = new LinkedList();
+		m_properties = new Vector<Property>();
+		m_hints = new LinkedList<Hint>();
 		m_uplink = null;
 		m_group = null;
-		m_affiliates = new LinkedList();
-		m_templateParameters = new Vector();
+		m_affiliates = new LinkedList<FriendConnection>();
+		m_templateParameters = new Vector<TemplateParameter>();
 		m_external = false;
 	}
 
@@ -338,8 +338,7 @@ public abstract class Entity {
 	 */
 	public boolean hasHint(Class kind)
 	{
-		for (Iterator hi = hintIterator(); hi.hasNext();) {
-			Hint hint = (Hint) hi.next();
+		for (Hint hint: m_hints) {
 			if (kind.isInstance(hint)) return true;
 		}
 		return false;
@@ -501,13 +500,13 @@ public abstract class Entity {
 	// Private members
 	private String m_name;
 	private Vector<Property> m_properties;
-	private Collection m_hints;
+	private Collection<Hint> m_hints;
 	
 	private ContainedConnection m_uplink;
 	private Group m_group;
-	private List m_affiliates;
+	private List<FriendConnection> m_affiliates;
 	
-	private Vector m_templateParameters;
+	private Vector<TemplateParameter> m_templateParameters;
 	
 	private SourceFile.DeclDefConnection m_declarationAt;
 	private SourceFile.DeclDefConnection m_definitionAt;
