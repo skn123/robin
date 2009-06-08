@@ -12,7 +12,7 @@ package sourceanalysis;
  * <li>storage specification</li>
  * </ul>
  */
-public class ContainedConnection {
+public class ContainedConnection<Container extends Entity, Contained extends Entity> {
 
 	/**
 	 * Constructor for ContainedConnection. The connection must be
@@ -25,7 +25,8 @@ public class ContainedConnection {
 	 * @param storage storage specifier, taken from Specifiers.Storage
 	 * @param contained the contained (member) Entity
 	 */
-	public ContainedConnection(Entity container, int visibility, int virtuality, int storage, Entity contained) {
+	public ContainedConnection(Container container, int visibility, int virtuality,
+							   int storage, Contained contained) {
 		super();
 		m_container = container;
 		m_visibility = visibility;
@@ -38,7 +39,7 @@ public class ContainedConnection {
 	 * Returns the contained.
 	 * @return Entity
 	 */
-	public Entity getContained() {
+	public Contained getContained() {
 		return m_contained;
 	}
 
@@ -46,7 +47,7 @@ public class ContainedConnection {
 	 * Returns the container.
 	 * @return Entity
 	 */
-	public Entity getContainer() {
+	public Container getContainer() {
 		return m_container;
 	}
 
@@ -101,7 +102,7 @@ public class ContainedConnection {
 	 * Sets the contained.
 	 * @param contained The contained to set
 	 */
-	public void setContained(Entity contained) {
+	public void setContained(Contained contained) {
 		m_contained = contained;
 	}
 
@@ -109,7 +110,7 @@ public class ContainedConnection {
 	 * Sets the container.
 	 * @param container The container to set
 	 */
-	public void setContainer(Entity container) {
+	public void setContainer(Container container) {
 		m_container = container;
 	}
 
@@ -138,9 +139,9 @@ public class ContainedConnection {
 	}
 
 	/* Connection tuple: (container, visibility, virtuality, storage, contained) */
-	Entity m_container;
+	Container m_container;
 	int m_visibility;
 	int m_virtuality;
 	int m_storage;
-	Entity m_contained;
+	Contained m_contained;
 }
