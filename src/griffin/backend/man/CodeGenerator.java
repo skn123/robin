@@ -43,7 +43,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 	
 	public void generateClassesDocumentation() {
 		Namespace globalNS = m_program.getGlobalNamespace();
-		Scope globalScope = globalNS.getScope();	
+		Scope<Namespace> globalScope = globalNS.getScope();	
 		Iterator i = globalScope.aggregateIterator();
 		while (i.hasNext()) {
 			ContainedConnection con = (ContainedConnection) i.next();
@@ -96,7 +96,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 	private void writeGroup(Group g, Writer w) throws IOException {
 		w.write(".SH "+g.getName()+"\n"+
 				".BR\n");
-		Scope s = g.getScope();
+		Scope<Group> s = g.getScope();
 		writeMethods(s, w);				
 	}
 

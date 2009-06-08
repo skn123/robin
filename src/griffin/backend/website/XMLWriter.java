@@ -582,10 +582,10 @@ public class XMLWriter {
 	/**
 	 * 
 	 */
-	public static Set getSources(Aggregate aggr) 
+	public static Set<SourceFile> getSources(Aggregate aggr) 
 		throws MissingInformationException {
 		
-		Set sources = new HashSet();
+		Set<SourceFile> sources = new HashSet<SourceFile>();
 		for (Iterator iter = aggr.getScope().routineIterator(); iter.hasNext();) {
 			ContainedConnection cc = (ContainedConnection)iter.next();
 			Routine routine = (Routine)cc.getContained();
@@ -1533,8 +1533,8 @@ public class XMLWriter {
 		}
 		
 		// Create two lists to log the created documents.
-		List createdDocs = new ArrayList();
-		List nonCreatedDocs = new ArrayList();
+		List<String> createdDocs = new ArrayList<String>();
+		List<String> nonCreatedDocs = new ArrayList<String>();
 		
 		// Go over all the classes.
 		for(int i = 0; i < m_classes.length; ++i) {
@@ -1730,14 +1730,13 @@ public class XMLWriter {
 		public Module(String name) {
 			
 			m_name = name;
-			m_sources = new LinkedList();
+			m_sources = new LinkedList<String>();
 		}	
 		
 		/**
 		 * 
 		 */
 		public void addSource(String sourceName) {
-			
 			m_sources.add(sourceName);	
 		}
 		
@@ -1747,7 +1746,7 @@ public class XMLWriter {
 		private String m_name;
 		
 		/** The list of source files */
-		private List m_sources;
+		private List<String> m_sources;
 	}
 }
 

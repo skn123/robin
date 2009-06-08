@@ -27,7 +27,7 @@ public class BackendData {
     * @param properties backend properties
     * @throws InvalidBackendException 
     */
-   public BackendData(Class implementingClass) throws InvalidBackendException 
+   public BackendData(Class<? extends Backend> implementingClass) throws InvalidBackendException 
    {
        this.implementingClassName = implementingClass.getCanonicalName();
        
@@ -120,7 +120,7 @@ public class BackendData {
     * @param implementingClass class that implements a backend
     * @throws InvalidBackendException Backend does not have a BackendDescription
     */
-   private void parseClassAnnotations(Class implementingClass) throws InvalidBackendException {
+   private void parseClassAnnotations(Class<? extends Backend> implementingClass) throws InvalidBackendException {
        // load class
        try {
            Class.forName(implementingClass.getCanonicalName());
