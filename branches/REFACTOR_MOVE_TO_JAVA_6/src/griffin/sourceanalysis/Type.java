@@ -2,7 +2,6 @@ package sourceanalysis;
 
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
@@ -52,7 +51,7 @@ public class Type extends DefaultTreeModel {
 				SpecializationConnection specz = 
 					enabled.getGeneralTemplateForSpecialization();
 				sb.append(baseFormatter.formatBase(specz.getGeneral()));
-				Vector args = specz.getSpecificArguments();
+				Vector<TemplateArgument> args = specz.getSpecificArguments();
 				formatTemplateArguments(args, sb, baseFormatter);
 			}
 			else
@@ -71,25 +70,24 @@ public class Type extends DefaultTreeModel {
 	 * @param baseFormatter formatter to apply to each template argument
 	 * (it is only applied to TypeNameTemplateArgument-s, of course).
 	 */
-	private static void formatTemplateArguments(Collection templateArgs,
+	private static void formatTemplateArguments(Collection<TemplateArgument> templateArgs,
 		StringBuffer destination, BaseTypeFormatter baseFormatter)
 	{
 		// Open angle brackets
 		destination.append("< ");
 		// Add arguments
 		boolean first = true;
-		for (Iterator iter = templateArgs.iterator(); iter.hasNext(); ) {
-			Object object = iter.next();
+		for (TemplateArgument ta: templateArgs) {
 			// add separating comma
 			if (!first) destination.append(",");
 			first = false;
 			// format base types using the base formatter; other objects
 			// are merely converted to text
-			if (object instanceof TypenameTemplateArgument) 
-				destination.append(((TypenameTemplateArgument)object)
+			if (ta instanceof TypenameTemplateArgument) 
+				destination.append(((TypenameTemplateArgument)ta)
 					.getValue().formatCpp("", baseFormatter));
 			else
-				destination.append(object.toString());
+				destination.append(ta.toString());
 		}
 		// Close angle brackets
 		destination.append(" >");
@@ -102,7 +100,7 @@ public class Type extends DefaultTreeModel {
 	 * @param baseFormatter formatter to apply to each template argument
 	 * (it is only applied to TypeNameTemplateArgument-s, of course).
 	 */
-	public static String formatTemplateArguments(Collection templateArgs,
+	public static String formatTemplateArguments(Collection<TemplateArgument> templateArgs,
 		BaseTypeFormatter baseFormatter)
 	{
 		// Create a StringBuffer and use formatTemplateUsingArguments to

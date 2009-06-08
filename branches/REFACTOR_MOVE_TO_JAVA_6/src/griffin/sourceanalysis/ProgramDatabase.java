@@ -119,7 +119,7 @@ public class ProgramDatabase extends Entity {
 	 * as libraries. 
 	 * @return a Scope which can be enumerated to access external entities
 	 */
-	public Scope getExternals()
+	public Scope<Namespace> getExternals()
 	{
 		return m_externalsNamespace.getScope();
 	}

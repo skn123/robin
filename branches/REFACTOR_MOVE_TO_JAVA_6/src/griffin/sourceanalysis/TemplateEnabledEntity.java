@@ -74,7 +74,7 @@ public abstract class TemplateEnabledEntity extends Entity {
 	public String getName()
 	{
 		if (isSpecialized()) {
-			Vector specArgs = getGeneralTemplateForSpecialization().getSpecificArguments();
+			Vector<TemplateArgument> specArgs = getGeneralTemplateForSpecialization().getSpecificArguments();
 			// Add args to string buffer
 			String specArgsString =
 				Type.formatTemplateArguments(specArgs, 
