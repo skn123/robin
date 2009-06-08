@@ -274,8 +274,7 @@ public class GenericCodeGenerator
 	 */
 	public void grabTypedefedClasses()
 	{
-		for (Iterator typedefIter = m_typedefs.iterator(); typedefIter.hasNext();) {
-			Alias typedef = (Alias)typedefIter.next();
+		for (Alias typedef: m_typedefs) {
 			Type type = typedef.getAliasedType();
 			// Get the base type of flat types as the target of the typedef
 			if (type.isFlat()) {
@@ -320,7 +319,7 @@ public class GenericCodeGenerator
 		for (Iterator ai = scope.aliasIterator(); ai.hasNext();) {
 			ContainedConnection connection = (ContainedConnection)ai.next();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
-				m_typedefs.add(connection.getContained());
+				m_typedefs.add((Alias)connection.getContained());
 			}
 		}
 		// Add public static methods
@@ -328,7 +327,7 @@ public class GenericCodeGenerator
 			ContainedConnection connection = (ContainedConnection)ri.next();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 				 && connection.getStorage() == Specifiers.Storage.STATIC) {
-				m_globalFuncs.add(connection.getContained());
+				m_globalFuncs.add((Routine)connection.getContained());
 			}
 		}
 		// Add public inner classes
@@ -831,8 +830,8 @@ public class GenericCodeGenerator
 	protected Set<Aggregate> m_subjects;
 	protected Set m_subjectTemplates;
 	protected Set m_enums;
-	protected Set m_typedefs;
-	protected Set m_globalFuncs;
+	protected Set<Alias> m_typedefs;
+	protected Set<Routine> m_globalFuncs;
 	protected Set m_namespaces;
 	protected TemplateBank m_templates;
 	protected boolean m_separateClassTemplates;
