@@ -1266,11 +1266,10 @@ public class XMLWriter {
 			
 		// Get all the source files related to the aggregate
 		// in order to look for the global functions there.
-		Set sources = getSources(aggr);
+		Set<SourceFile> sources = getSources(aggr);
 		
 		// Look for global functions in the sources.
-		for (Iterator iter = sources.iterator(); iter.hasNext();) {
-			SourceFile source = (SourceFile)iter.next();
+		for (SourceFile source: sources) {
 			
 			for(Iterator riter = source.declarationIterator(); riter.hasNext();) {
 				SourceFile.DeclDefConnection ddc = 

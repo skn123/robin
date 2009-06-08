@@ -306,8 +306,7 @@ public abstract class Entity {
 	 */
 	public Property findProperty(String name) throws ElementNotFoundException
 	{
-		for (Iterator i = m_properties.iterator(); i.hasNext(); ) {
-			Property property = (Property)i.next();
+		for (Property property: m_properties) {
 			if (property.getName().equals(name)) return property;
 		}
 		throw new ElementNotFoundException();
@@ -501,7 +500,7 @@ public abstract class Entity {
 
 	// Private members
 	private String m_name;
-	private Vector m_properties;
+	private Vector<Property> m_properties;
 	private Collection m_hints;
 	
 	private ContainedConnection m_uplink;

@@ -1562,7 +1562,7 @@ public class Utils {
 		throws MissingInformationException
 	{
 		
-		List accessible = new LinkedList();
+		List<Field> accessible = new LinkedList<Field>();
 		
 		for(Iterator subjectFieldIter = subject.getScope().fieldIterator(); 
 			subjectFieldIter.hasNext();) 
@@ -1637,8 +1637,7 @@ public class Utils {
                 //  occurred
 				boolean found = false;
 				
-				for (Iterator accessIter = accessible.iterator(); accessIter.hasNext(); ) {
-					Field childField = (Field)accessIter.next();
+				for (Field childField: accessible) {
 					if (childField.getName().equals(baseField.getName())) {
 						found = true;
 						break;
@@ -1668,7 +1667,7 @@ public class Utils {
 	public static Collection virtualMethods(Aggregate subject,
 			Map instanceMap, boolean withDestructors) throws MissingInformationException
 	{
-		List virtual = new LinkedList();
+		List<Routine> virtual = new LinkedList<Routine>();
 		
 		// Add virtual methods declared in this class
 		for (Iterator subjectMethodIter = subject.getScope().routineIterator();
@@ -1699,17 +1698,14 @@ public class Utils {
 			}
 			if (base == null) continue;
 			// - recursively fetch the virtual methods in the base class
-			Collection baseVirtual = virtualMethods(base, instanceMap, withDestructors);
-			for (Iterator baseVirtIter = baseVirtual.iterator(); 
-                 baseVirtIter.hasNext(); ) {
-                Routine baseMethod = (Routine)baseVirtIter.next();
+			Collection<Routine> baseVirtual = virtualMethods(base, instanceMap, withDestructors);
+			for (Routine baseMethod: baseVirtual) {
 
                 // - ensure that a compatible method has not previously 
                 //  occurred
 				boolean found = false;
 				
-				for (Iterator virtIter = virtual.iterator(); virtIter.hasNext(); ) {
-					Routine virtMethod = (Routine)virtIter.next();
+				for (Routine virtMethod: virtual) {
 					if (virtMethod.isCompatible(baseMethod)) {
 						found = true;
 						break;

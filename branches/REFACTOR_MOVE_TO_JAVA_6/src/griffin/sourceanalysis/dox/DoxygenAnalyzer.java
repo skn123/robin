@@ -563,9 +563,8 @@ public class DoxygenAnalyzer {
 			routine.setReturnType(opConversion);
 		}
 		// Translate parameters
-		Collection parameters = XML.subNodes(xmlnode, Tags.PARAM);
-		for (Iterator paramiter = parameters.iterator(); paramiter.hasNext();) {
-			Node pnode = (Node) paramiter.next();
+		Collection<Node> parameters = XML.subNodes(xmlnode, Tags.PARAM);
+		for (Node pnode: parameters) {
 			Parameter parameter = translateParameter(pnode);
 			try {
 				Type type = parameter.getType();
@@ -627,14 +626,13 @@ public class DoxygenAnalyzer {
 		data.setType(parseType(typenode, arrnode));
 		// Translate initializer
 		Node init = XML.subNode(xmlnode, Tags.INITIALIZER);
-		Collection ctor = XML.subNodes(xmlnode, Tags.PARAM);
+		Collection<Node> ctor = XML.subNodes(xmlnode, Tags.PARAM);
 		if (init != null)
 			data.setInitializer("=" + XML.collectText(init));
 		else {
 			// Add constructor arguments, comma-delimited
 			StringBuffer construction = new StringBuffer();
-			for (Iterator iter = ctor.iterator(); iter.hasNext();) {
-				Node element = (Node) iter.next();
+			for (Node element: ctor) {
 				if (construction.length() > 0) construction.append(",");
 				construction.append(XML.collectText(element));
 			}
@@ -745,14 +743,12 @@ public class DoxygenAnalyzer {
 		translateInnerCompounds(xmlnode, compound, scope, Tags.INNERNAMESPACE);
 		
 		// Go through sections in the declaration
-		Collection sections = XML.subNodes(xmlnode, Tags.def(Tags.SECTION));
-		for (Iterator iter = sections.iterator(); iter.hasNext();) {
-			Node section = (Node) iter.next();
+		Collection<Node> sections = XML.subNodes(xmlnode, Tags.def(Tags.SECTION));
+		for (Node section: sections) {
 			Group group = translateGroup(section, scope);
 			// Go through members defined in this section
-			Collection members = XML.subNodes(section, Tags.def(Tags.MEMBER));
-			for (Iterator mbriter = members.iterator(); mbriter.hasNext();) {
-				Node mbr = (Node) mbriter.next();
+			Collection<Node> members = XML.subNodes(section, Tags.def(Tags.MEMBER));
+			for (Node mbr: members) {
 				// Get the attributes
 				String mid = XML.attribute(mbr, Tags.ID, null);		// member ID
 				String mkind = XML.attribute(mbr, Tags.KIND, null);
@@ -845,9 +841,8 @@ public class DoxygenAnalyzer {
 		}
 		
 		// Translate inheritance information
-		Collection basenodes = XML.subNodes(xmlnode, Tags.BASECOMPOUNDREF);
-		for (Iterator baseiter = basenodes.iterator(); baseiter.hasNext();) {
-			Node basenode = (Node) baseiter.next();
+		Collection<Node> basenodes = XML.subNodes(xmlnode, Tags.BASECOMPOUNDREF);
+		for (Node basenode: basenodes) {
 			// Get the ID of the base compound
 			String bid = XML.attribute(basenode, Tags.REFID, null);
 			if (bid == null)
@@ -919,9 +914,8 @@ public class DoxygenAnalyzer {
 			if (scope == null) {
 				scope = new Scope(entity);
 			}
-			Collection params = XML.subNodes(list, Tags.PARAM);
-			for (Iterator paramiter = params.iterator(); paramiter.hasNext();) {
-				Node paramnode = (Node) paramiter.next();
+			Collection<Node> params = XML.subNodes(list, Tags.PARAM);
+			for (Node paramnode: params) {
 				// Translate param
 				TemplateParameter param =
 					translateTemplateParameter(paramnode, scope);
@@ -1053,9 +1047,8 @@ public class DoxygenAnalyzer {
 	private void translateInnerCompounds(Node xmlnode, Entity compound,
 		Scope scope, String tag) throws XMLFormatException
 	{
-		Collection innerclasses = XML.subNodes(xmlnode, tag);
-		for (Iterator innerclassi = innerclasses.iterator(); innerclassi.hasNext();) {
-			Node innerclass = (Node) innerclassi.next();
+		Collection<Node> innerclasses = XML.subNodes(xmlnode, tag);
+		for (Node innerclass: innerclasses) {
 			// Follow reference to aggregate
 			DocumentComponentRegistry.EntityLocator locator =
 				makeLocatorFromNode(innerclass, "compound");
@@ -1108,9 +1101,8 @@ public class DoxygenAnalyzer {
 		if (exceptions != null) {
 			routine.setThrows(true);
 			// - collect 'ref' nodes
-			Collection refs = XML.subNodes(exceptions, Tags.REF);
-			for (Iterator excit = refs.iterator(); excit.hasNext();) {
-				Node element = (Node) excit.next();
+			Collection<Node> refs = XML.subNodes(exceptions, Tags.REF);
+			for (Node element: refs) {
 				try {
 					Entity exctype = followReference(element);
 					if (exctype instanceof Aggregate)
@@ -1149,10 +1141,9 @@ public class DoxygenAnalyzer {
 		rememberByName(enume);
 		
 		// Read constants
-		Collection valueNodes = XML.subNodes(xmlnode, Tags.ENUMVALUE);
+		Collection<Node> valueNodes = XML.subNodes(xmlnode, Tags.ENUMVALUE);
 		int valueCandidate = 0;
-		for (Iterator valueIter = valueNodes.iterator(); valueIter.hasNext();) {
-			Node valueNode = (Node) valueIter.next();			
+		for (Node valueNode: valueNodes) {			
 			// - look for an initializer
 			Node initializerNode = XML.subNode(valueNode, Tags.INITIALIZER);
 			if (initializerNode != null) {
@@ -1187,9 +1178,8 @@ public class DoxygenAnalyzer {
 		// Translate documentation
 		translateDescription(xmlnode, macro);
 		// Translate preprocessing parameters
-		Collection paramnodes = XML.subNodes(xmlnode, Tags.PARAM);
-		for (Iterator paramiter = paramnodes.iterator(); paramiter.hasNext();) {
-			Node paramnode = (Node) paramiter.next();
+		Collection<Node> paramnodes = XML.subNodes(xmlnode, Tags.PARAM);
+		for (Node paramnode: paramnodes) {
 			// Create the preprocessing parameter
 			String prepParamName = translateName(paramnode);
 			macro.addPreprocessingParameter(prepParamName);
@@ -1217,11 +1207,10 @@ public class DoxygenAnalyzer {
 		// Get the detailed description
 		Node detailednode = XML.subNode(xmlnode, Tags.DETAILEDDESC);
 		if (detailednode != null) {
-			Collection pars = XML.subNodes(detailednode, Tags.PARA);
+			Collection<Node> pars = XML.subNodes(detailednode, Tags.PARA);
 			// Collect text from all <para> nodes
 			StringBuffer paragraph = new StringBuffer();
-			for (Iterator pariter = pars.iterator(); pariter.hasNext();) {
-				Node par = (Node) pariter.next();
+			for (Node par: pars) {
 				// Try to retrieve section
 				NodeList descnodes = par.getChildNodes();
 				for (int si = 0; si < descnodes.getLength(); ++si) {
@@ -1506,10 +1495,9 @@ public class DoxygenAnalyzer {
 	{
 		Node indexRoot = index.getFirstChild();
 		// Translate compounds
-		Collection compoundnodes = XML.subNodes(indexRoot, Tags.COMPOUND);
-		List compounds = new LinkedList();
-		for (Iterator citer = compoundnodes.iterator(); citer.hasNext();) {
-			Node element = (Node) citer.next();
+		Collection<Node> compoundnodes = XML.subNodes(indexRoot, Tags.COMPOUND);
+		List<Entity> compounds = new LinkedList<Entity>();
+		for (Node element: compoundnodes) {
 			String name = XML.collectText(XML.subNode(element, Tags.NAME));
 			// - filter out entities that have a name starting with "@"
 			boolean anonymous = (name.charAt(0) == '@');
@@ -1541,8 +1529,7 @@ public class DoxygenAnalyzer {
 			}
 		}
 		// Add compounds to global namespace
-		for (Iterator compiter = compounds.iterator(); compiter.hasNext();) {
-			Entity element = (Entity) compiter.next();
+		for (Entity element: compounds) {
 			// - check whether element is class or namespace
 			if (!element.hasContainer()) {
 				if (element instanceof Aggregate) {
@@ -1930,18 +1917,15 @@ public class DoxygenAnalyzer {
 	{
 		DoxygenHandyman handy = new DoxygenHandyman(m_db);
 		// Run on all routines
-		for (Iterator routineiter = m_routinesForRepair.iterator(); routineiter.hasNext();) {
-			Routine routine = (Routine) routineiter.next();
+		for (Routine routine: m_routinesForRepair) {
 			handy.repair(routine);
 		}
 		// Run on aliases
-		for (Iterator aliasiter = m_aliasesForRepair.iterator(); aliasiter.hasNext(); ) {
-			Alias alias = (Alias) aliasiter.next();
+		for (Alias alias: m_aliasesForRepair) {
 			handy.repair(alias);
 		}
 		// Run on fields
-		for (Iterator fielditer = m_fieldsForRepair.iterator(); fielditer.hasNext(); ) {
-			Field field = (Field) fielditer.next();
+		for (Field field: m_fieldsForRepair) {
 			handy.repair(field);
 		}
 		// Run on compound classes involved in inheritance
@@ -1984,9 +1968,9 @@ public class DoxygenAnalyzer {
 	private Map m_files_byname;
 	private List m_unfulfilled_declarations;
 	
-	private List m_routinesForRepair;
-	private List m_aliasesForRepair;
-	private List m_fieldsForRepair;
+	private List<Routine> m_routinesForRepair;
+	private List<Alias> m_aliasesForRepair;
+	private List<Field> m_fieldsForRepair;
 	private List m_inheritanceForRepair;
 	private Map m_globalFields_byname;
 
