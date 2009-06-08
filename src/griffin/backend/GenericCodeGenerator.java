@@ -17,7 +17,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.InappropriateKindException;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.TemplateEnabledEntity;
+import sourceanalysis.Type;
 import sourceanalysis.assist.SupervisedTemplates;
 import sourceanalysis.view.TemplateBank;
 import sourceanalysis.view.Traverse;
@@ -39,7 +55,7 @@ public class GenericCodeGenerator
 		super();
 		m_program = program;
 		m_output = output;
-		m_subjects = new HashSet();
+		m_subjects = new HashSet<Aggregate>();
 		m_subjectTemplates = new HashSet();
 		m_enums = new HashSet();
 		m_typedefs = new HashSet();
@@ -266,7 +282,7 @@ public class GenericCodeGenerator
 				Entity base = type.getBaseType();
 				if (base instanceof Aggregate && !(base instanceof Primitive) &&
 						(type.getTemplateArguments() == null)) {
-					m_subjects.add(base); 
+					m_subjects.add((Aggregate)base); 
 				}
 				else if (base instanceof sourceanalysis.Enum) {
 					m_enums.add(base);
@@ -281,10 +297,9 @@ public class GenericCodeGenerator
 	 */
 	public void grabInnersAsWell()
 	{
-		List innerClasses = new LinkedList();
+		List<Aggregate> innerClasses = new LinkedList<Aggregate>();
 		
-		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate)subjectIter.next();
+		for (Aggregate subject: m_subjects) {
 			grabInnersOf(subject, innerClasses);
 		}
 		
@@ -543,7 +558,7 @@ public class GenericCodeGenerator
 	 */
 	public void investImplicitInstantiations()
 	{
-		final List instanceList = new LinkedList();		
+		final List<Aggregate> instanceList = new LinkedList<Aggregate>();		
 
 		Traverse.TypeInformationVisitor instantiateVisitor =
 			new Traverse.TypeInformationVisitor() {
@@ -562,9 +577,7 @@ public class GenericCodeGenerator
 			};
 		
 		// Find templates to instantiate in classes
-		for (Iterator subjectIter = m_subjects.iterator();
-			subjectIter.hasNext(); ) {
-			Aggregate subject = (Aggregate)subjectIter.next();
+		for (Aggregate subject: m_subjects) {
 			if(!GenericFilters.isDeclared(subject)) {
 				continue;
 			}
@@ -712,9 +725,7 @@ public class GenericCodeGenerator
 	 */
 	public void investImpliedEnums()
 	{
-		for (Iterator subjectIter = m_subjects.iterator();
-			subjectIter.hasNext(); ) {
-			Aggregate subject = (Aggregate)subjectIter.next();
+		for (Aggregate subject: m_subjects) {
 			Traverse tr = new Traverse();
 			tr.traverse(subject.getScope(), new Traverse.TypeInformationVisitor()
 			 { public void visit(Type typei) { findEnumsToAccomodate(typei); }
@@ -756,14 +767,12 @@ public class GenericCodeGenerator
 		};
 		
 		// Translate the inheritance information into a graph
-		Map bases = new HashMap();
+		Map<Aggregate, TopologicalNode> bases = new HashMap<Aggregate, TopologicalNode>();
 		
-		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext(); ) {
-			Aggregate subject = (Aggregate)subjectIter.next();
+		for (Aggregate subject: m_subjects) {
 			bases.put(subject, new TopologicalNode());
 		}
-		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext(); ) {
-			Aggregate subject = (Aggregate)subjectIter.next();
+		for (Aggregate subject: m_subjects) {
 			for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext();) {
 				InheritanceConnection connection =
 					(InheritanceConnection)baseIter.next();
@@ -819,7 +828,7 @@ public class GenericCodeGenerator
 	protected ProgramDatabase m_program;
 	protected File m_outputDirectory;
 	protected Writer m_output;
-	protected Set m_subjects;
+	protected Set<Aggregate> m_subjects;
 	protected Set m_subjectTemplates;
 	protected Set m_enums;
 	protected Set m_typedefs;
