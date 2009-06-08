@@ -1556,7 +1556,7 @@ public class Utils {
 	/**
 	 * Collects all of the public inheritance-accessible fields in the given class
 	 */
-	public static Collection accessibleFields(Aggregate subject, Map instanceMap, 
+	public static Collection<Field> accessibleFields(Aggregate subject, Map instanceMap, 
 			int minimumAllowedVisibility)
 		throws MissingInformationException
 	{

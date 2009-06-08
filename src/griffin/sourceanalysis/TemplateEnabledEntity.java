@@ -36,7 +36,7 @@ public abstract class TemplateEnabledEntity extends Entity {
 	 * @param specArgs actual arguments for this concrete specialization
 	 */
 	public void setGeneralTemplateForSpecialization(TemplateEnabledEntity general, 
-		Vector specArgs)
+		Vector<TemplateArgument> specArgs)
 	{
 		// Build a specialization connection
 		SpecializationConnection conn = 

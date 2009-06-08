@@ -52,7 +52,7 @@ public class Enum extends Entity {
 	 */
 	public Enum() {
 		super();
-		m_constants = new LinkedList(); // create empty list
+		m_constants = new LinkedList<Constant>(); // create empty list
 	}
 
 	/**
@@ -90,8 +90,7 @@ public class Enum extends Entity {
 		replica.setName(getName());
 		// Replicate constants. Don't need to actually create new
 		// Constant instances since they are immutable anyway.
-		for (Iterator iter = constantIterator(); iter.hasNext();) {
-			Constant constant = (Constant)iter.next();
+		for (Constant constant: m_constants) {
 			replica.introduceConstant(constant);
 		}
 		return replica;
@@ -110,7 +109,7 @@ public class Enum extends Entity {
 	 * order in which they were introduced.
 	 * @return Iterator an iteration over Enum.Constant
 	 */
-	public Iterator constantIterator()
+	public Iterator<Constant> constantIterator()
 	{
 		return m_constants.iterator();
 	}
@@ -118,5 +117,5 @@ public class Enum extends Entity {
 	/*@}*/
 
 	// Private representation
-	List m_constants;
+	List<Constant> m_constants;
 }

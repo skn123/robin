@@ -22,7 +22,7 @@ public class SpecializationConnection {
 	 * @param specific the specific implementation with reference to these
 	 * arguments
 	 */
-	public SpecializationConnection(TemplateEnabledEntity general, Vector specArgs, 
+	public SpecializationConnection(TemplateEnabledEntity general, Vector<TemplateArgument> specArgs, 
 		TemplateEnabledEntity specific) 
 	{
 		super();
@@ -45,7 +45,7 @@ public class SpecializationConnection {
 	 * Returns the specific arguments in this specialization.
 	 * @return Vector of TemplateArgument
 	 */
-	public Vector getSpecificArguments()
+	public Vector<TemplateArgument> getSpecificArguments()
 	{
 		return m_specArgs;
 	}
@@ -63,5 +63,5 @@ public class SpecializationConnection {
 	// Private members - connection attributes
 	private TemplateEnabledEntity m_general;
 	private TemplateEnabledEntity m_specific;
-	private Vector m_specArgs;
+	private Vector<TemplateArgument> m_specArgs;
 }

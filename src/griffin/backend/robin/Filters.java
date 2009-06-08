@@ -304,7 +304,7 @@ public class Filters extends GenericFilters {
 		return null;
 	}
 	
-	static Map getTouchupsMap() {
+	static Map<Type, Filters.Touchup> getTouchupsMap() {
 		return m_touchups;
 	}
 	
@@ -349,7 +349,7 @@ public class Filters extends GenericFilters {
 		public String m_touchupCode;
 	}
 	// The map from function return type to the new type and the touchup code
-	private static Map m_touchups = new HashMap();
+	private static Map<Type, Filters.Touchup> m_touchups = new HashMap<Type, Filters.Touchup>();
 
 	// TODO: should be package protected?
 	public static boolean isPrimitive(Entity base)
