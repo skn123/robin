@@ -1,0 +1,14 @@
+INPUT = src/pattern src/robin/debug src/robin/reflection \
+   src/robin/registration src/robin/frontends src/robin/frontends/simple \
+   src/robin/frontends/python
+FILE_PATTERNS = *.h *.inl *.imp *.c *.cc *.doc
+
+EXTRACT_ALL = YES
+EXTRACT_PRIVATE = YES
+
+PREDEFINED = __doxygen
+
+GENERATE_HTML = YES
+GENERATE_LATEX = NO
+
+SOURCE_BROWSER = YES
