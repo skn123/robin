@@ -3,13 +3,13 @@
  */
 package unittest.backend;
 
+import junit.framework.TestCase;
+import unittest.backend.testlauncher.LauncherTest;
 import backend.PropertyPage;
 import backend.exceptions.BackendException;
 import backend.exceptions.InvalidCommandLineException;
 import backend.exceptions.configuration.BackendNotFoundException;
 import backend.exceptions.configuration.ConfigurationParseException;
-import unittest.backend.testlauncher.LauncherTest;
-import junit.framework.TestCase;
 
 /**
  * @author Alex Shapira

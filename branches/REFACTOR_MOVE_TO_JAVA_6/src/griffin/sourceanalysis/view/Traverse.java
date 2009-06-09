@@ -12,8 +12,8 @@ import sourceanalysis.Field;
 import sourceanalysis.InheritanceConnection;
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.Namespace;
-import sourceanalysis.Routine;
 import sourceanalysis.Parameter;
+import sourceanalysis.Routine;
 import sourceanalysis.Scope;
 import sourceanalysis.Type;
 

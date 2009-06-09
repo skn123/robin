@@ -12,7 +12,24 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.DataTemplateParameter;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateParameter;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateArgument;
+import sourceanalysis.TypenameTemplateParameter;
 import sourceanalysis.xml.XML;
 import sourceanalysis.xml.XMLFormatException;
 

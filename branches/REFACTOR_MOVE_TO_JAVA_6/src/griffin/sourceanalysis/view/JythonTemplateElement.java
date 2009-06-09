@@ -2,13 +2,13 @@ package sourceanalysis.view;
 
 import java.util.Iterator;
 
+import org.python.core.PyObject;
+import org.python.core.PySequence;
 import org.python.util.PythonInterpreter;
 
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.Entity;
-import org.python.core.PyObject;
-import org.python.core.PySequence;
 
 /**
  * enclosing_type - undocumented.

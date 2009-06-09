@@ -1,8 +1,8 @@
 package sourceanalysis;
 
-import java.util.List;
-import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * <p>Saves a bunch of classes and other types in an acessible structure.</p>

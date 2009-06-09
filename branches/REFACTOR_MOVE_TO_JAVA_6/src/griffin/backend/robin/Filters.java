@@ -7,11 +7,23 @@ package backend.robin;
 import java.util.HashMap;
 import java.util.Map;
 
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.Routine;
+import sourceanalysis.Specifiers;
+import sourceanalysis.Type;
+import sourceanalysis.hints.Artificial;
 import backend.GenericFilters;
 import backend.Utils;
 import backend.robin.model.TypeToolbox;
-import sourceanalysis.*;
-import sourceanalysis.hints.Artificial;
 
 /**
  * This is an auxiliary class for CodeGenerator; it contains some functions

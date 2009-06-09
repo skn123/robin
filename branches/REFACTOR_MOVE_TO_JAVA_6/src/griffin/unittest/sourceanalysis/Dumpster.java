@@ -7,7 +7,27 @@ import java.util.NoSuchElementException;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.DataTemplateParameter;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.Group;
+import sourceanalysis.InappropriateKindException;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.SourceFile;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.TemplateParameter;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateArgument;
+import sourceanalysis.TypenameTemplateParameter;
 
 /**
  * The Dumpster knows to create textual dumps of the program database.

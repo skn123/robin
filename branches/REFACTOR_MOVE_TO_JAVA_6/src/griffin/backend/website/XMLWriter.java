@@ -49,6 +49,7 @@ import sourceanalysis.Scope;
 import sourceanalysis.SourceFile;
 import sourceanalysis.Specifiers;
 import sourceanalysis.TemplateParameter;
+import sourceanalysis.Entity.Property;
 import sourceanalysis.dox.DoxygenAnalyzer;
 import backend.Utils;
 
@@ -1094,7 +1095,7 @@ public class XMLWriter {
 	 * complete.
 	 */
 	private void documentInheritedRoutines(Aggregate aggr, 
-		Document doc, List routines, Element classElm) throws MissingInformationException {
+		Document doc, List<Routine> routines, Element classElm) throws MissingInformationException {
 		
 		// Add all the aggregate's routines in order to avoid 
 		// documenting reimplemented routines.
@@ -1128,7 +1129,7 @@ public class XMLWriter {
 					// Check if the routine isn't reimplemented.
 					boolean reimplemented = false;
 					for(int i = 0; i < routines.size(); ++i) {
-						if(overidesRoutine(routine, (Routine)routines.get(i))) {
+						if(overidesRoutine(routine, routines.get(i))) {
 							reimplemented = true;
 						}
 					}

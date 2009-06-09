@@ -61,7 +61,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public CodeGenerator(ProgramDatabase program, Writer output) {
 		super(program, output);
 		m_separateClassTemplates = true;
-		m_uidMap = new HashMap();
+		m_uidMap = new HashMap<Object, Integer>();
 		m_uidNext = 0;
 		m_globalDataMembers = new LinkedList<Field>();
 		m_interceptorMethods = new HashSet<Routine>();
@@ -737,7 +737,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // now, we want to add bogus members with public visibility
         // that expose all the members up to 'protected' of parent classes
         
-        Map wrappedTypes = new HashMap();
+        Map<String, Type> wrappedTypes = new HashMap<String, Type>();
         
         for (Field f: Utils.accessibleFields(subject, m_instanceMap, Specifiers.Visibility.PROTECTED)) {
         		writeInterceptorFieldWrapper(subject, result, f, funcCounter, m_instanceMap, wrappedTypes);
@@ -752,7 +752,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 	
 	private void writeInterceptorFieldWrapper(Aggregate subject,
-			Aggregate result, Field originalField, int funcCounter, Map templateInstances, Map newTypes) 
+			Aggregate result, Field originalField, int funcCounter, Map templateInstances, Map<String, Type> newTypes) 
 	throws IOException, MissingInformationException {
 		
 		Type type = originalField.getType();
@@ -778,7 +778,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(";\n");
 		}
 		
-		Type interceptedType = (Type)newTypes.get(newTypeName);
+		Type interceptedType = newTypes.get(newTypeName);
 		
 		Field interceptorF = (Field)originalField.clone();
 		interceptorF.setFieldType(Field.FieldType.WRAPPED);	
@@ -1990,7 +1990,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 
 	// Private members
-	private Map m_uidMap;
+	private Map<Object, Integer> m_uidMap;
 	private int m_uidNext;
 	private List<Field> m_globalDataMembers;
 	private List<String> m_downCasters;
