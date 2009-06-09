@@ -18,8 +18,19 @@ import java.util.Random;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import junit.framework.TestCase;
-
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateParameter;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateParameter;
 import sourceanalysis.dox.DoxygenAnalyzer;
 
 /**
@@ -73,7 +84,7 @@ public class AnalyzerTest extends TestCase {
 	public void testRoutines() throws Exception
 	{
 		// Prepare a file containing function headers
-		List routines = new LinkedList();
+		List<Routine> routines = new LinkedList<Routine>();
 		int nroutines = 5;
 		PrintStream fout = new PrintStream(new FileOutputStream("check/idl.h"));
 		ProgramSkeleton skel = new ProgramSkeleton();

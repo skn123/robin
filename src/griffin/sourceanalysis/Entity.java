@@ -1,10 +1,13 @@
 package sourceanalysis;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
-import java.util.Iterator;
+
+import sourceanalysis.hints.Artificial;
+import sourceanalysis.hints.IncludedViaHeader;
 
 /**
  * <p>Base class for all source-analysis components.</p>
@@ -137,7 +140,7 @@ public abstract class Entity {
 	 * @throws InappropriateKindException one or more of the elements in
 	 * 'parameters' is not a TemplateParameter.
 	 */
-	public void setTemplateParameters(Vector parameters) 
+	public void setTemplateParameters(Vector<TemplateParameter> parameters) 
 		throws InappropriateKindException
 	{
 		m_templateParameters = parameters;
@@ -317,7 +320,7 @@ public abstract class Entity {
 	 * which iterates over Entity.Property items.
 	 * @return Iterator
 	 */
-	public Iterator propertyIterator()
+	public Iterator<Property> propertyIterator()
 	{
 		return m_properties.iterator();
 	}
@@ -326,7 +329,7 @@ public abstract class Entity {
 	 * Access to all of the Entity's attached hints. 
 	 * @return a java.util.Iterator which iterates over Hint items.
 	 */
-	public Iterator hintIterator()
+	public Iterator<Hint> hintIterator()
 	{
 		return m_hints.iterator();
 	}
@@ -440,7 +443,7 @@ public abstract class Entity {
 	 * Access all the template parameters.
 	 * @return Iterator iterates over TemplateParameters
 	 */
-	public Iterator templateParameterIterator()
+	public Iterator<TemplateParameter> templateParameterIterator()
 	{
 		return m_templateParameters.iterator();
 	}
@@ -458,7 +461,7 @@ public abstract class Entity {
 	 * Get entities which declare this entity as a friend.
 	 * @return an Iterator over FriendConnection.
 	 */
-	public Iterator affiliatesIterator()
+	public Iterator<FriendConnection> affiliatesIterator()
 	{
 		return m_affiliates.iterator();
 	}

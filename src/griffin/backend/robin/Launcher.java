@@ -5,14 +5,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.ProgramDatabase;
 import backend.Backend;
 import backend.PropertyPage;
 import backend.annotations.BackendDescription;
 import backend.annotations.PropertyDescription;
 import backend.configuration.PropertyData;
-
-import sourceanalysis.MissingInformationException;
-import sourceanalysis.ProgramDatabase;
 
 /**
  * Runs the Robin code generator to create wrapping & registration code for

@@ -13,7 +13,7 @@ public class Template {
 	 */
 	public Template() {
 		super();
-		m_elements = new java.util.Vector();
+		m_elements = new java.util.Vector<TemplateElement>();
 	}
 
 	public void addElement(TemplateElement element)
@@ -21,7 +21,7 @@ public class Template {
 		m_elements.add(element);
 	}
 	
-	public java.util.Iterator getElementIterator()
+	public java.util.Iterator<TemplateElement> getElementIterator()
 	{
 		return m_elements.iterator();
 	}
@@ -46,5 +46,5 @@ public class Template {
 	}
 
 	// Elements
-	private java.util.Vector m_elements;
+	private java.util.Vector<TemplateElement> m_elements;
 }

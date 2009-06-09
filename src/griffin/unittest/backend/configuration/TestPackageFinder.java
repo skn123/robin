@@ -1,8 +1,8 @@
 package unittest.backend.configuration;
 
+import junit.framework.TestCase;
 import backend.configuration.PackageFinder;
 import backend.exceptions.configuration.ConfigurationParseException;
-import junit.framework.TestCase;
 /**
  * Tests package finder
  * **NOTE**: Assumes that backend.configuration.testfinder is available

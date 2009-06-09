@@ -1,7 +1,5 @@
 package backend.robin.model;
 
-import backend.robin.Filters;
-
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.Entity;
@@ -9,6 +7,7 @@ import sourceanalysis.InappropriateKindException;
 import sourceanalysis.Namespace;
 import sourceanalysis.Specifiers;
 import sourceanalysis.Type;
+import backend.robin.Filters;
 
 public class TypeToolbox {
 

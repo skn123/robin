@@ -1,13 +1,26 @@
 package backend.man;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Iterator;
+import java.util.StringTokenizer;
 
-
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.Group;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
 import sourceanalysis.Scope;
-import sourceanalysis.view.*;
-import backend.*;
+import sourceanalysis.view.TemplateBank;
+import backend.GenericCodeGenerator;
+import backend.Utils;
 
 public class CodeGenerator extends GenericCodeGenerator {
 	String m_dir;

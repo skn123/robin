@@ -42,6 +42,7 @@ import sourceanalysis.TemplateParameter;
 import sourceanalysis.Type;
 import sourceanalysis.TypenameTemplateArgument;
 import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.Entity.Property;
 import sourceanalysis.Type.TypeNode;
 import sourceanalysis.view.Traverse;
 
@@ -289,12 +290,12 @@ public class Utils {
         if (!entity.getContainer().isTemplated())
             return false;
 
-        for (Iterator tpi = entity.getContainer().templateParameterIterator();
+        for (Iterator<TemplateParameter> tpi = entity.getContainer().templateParameterIterator();
             tpi.hasNext(); ) {
             // Check if this is a typename argument, and if this
             // argument's delegate entity is 'entity'
             TemplateParameter templateParameter =
-                (TemplateParameter)tpi.next();
+                tpi.next();
             if (templateParameter instanceof TypenameTemplateParameter) {
                 // Exploit TypenameTemplateParameter's interface
                 TypenameTemplateParameter typename =
@@ -845,10 +846,10 @@ public class Utils {
 		// ---------------------------
 		// 1. Collect template parameters and their actual agruments
 		int argIndex = 0;
-		for (Iterator tpi = template.templateParameterIterator(); 
+		for (Iterator<TemplateParameter> tpi = template.templateParameterIterator(); 
 			 tpi.hasNext(); ++argIndex) {
 			// - get current parameter and argument (use default if needed)
-			TemplateParameter templateParameter = (TemplateParameter)tpi.next();
+			TemplateParameter templateParameter = tpi.next();
 			TemplateArgument templateArgument = argIndex < arguments.length ? 
 				arguments[argIndex] : templateParameter
 					.getDefaultValue(template.templateParameterIterator(),
@@ -910,9 +911,9 @@ public class Utils {
 			}
 		}
 		// - copy properties
-		for (Iterator propi = template.propertyIterator(); propi.hasNext();)
+		for (Iterator<Property> propi = template.propertyIterator(); propi.hasNext();)
 		{
-			Entity.Property property = (Entity.Property)propi.next();
+			Entity.Property property = propi.next();
 			templateInstance.addProperty(property);
 		}
 		// - insert entity to the same namespace where the template lives
@@ -1007,24 +1008,24 @@ public class Utils {
 			methodinst.setName(method.getName());
 			methodinst.setConst(method.isConst());
 			// - copy properties
-			for (Iterator propi = method.propertyIterator(); propi.hasNext();)
+			for (Iterator<Property> propi = method.propertyIterator(); propi.hasNext();)
 			{
-				Entity.Property property = (Entity.Property)propi.next();
+				Entity.Property property = propi.next();
 				methodinst.addProperty(property);
 			}
 			// - copy template arguments if any
 			if (method.isTemplated()) {
-				for (Iterator templi = method.templateParameterIterator(); 
+				for (Iterator<TemplateParameter> templi = method.templateParameterIterator(); 
 					templi.hasNext(); ) {
 					TemplateParameter tparameter = 
-						(TemplateParameter)templi.next();
+						templi.next();
 					methodinst.addTemplateParameter(
 						(TemplateParameter)tparameter.clone());
 				}
 			}
-			for (Iterator propi = method.propertyIterator(); propi.hasNext();)
+			for (Iterator<Property> propi = method.propertyIterator(); propi.hasNext();)
 			{
-				Entity.Property property = (Entity.Property)propi.next();
+				Entity.Property property = propi.next();
 				methodinst.addProperty(property);
 			}
 			// - substitute in return type of method
@@ -1061,9 +1062,9 @@ public class Utils {
 			Field instance = new Field();
 			instance.setName(field.getName());
 			// - copy properties
-			for (Iterator propi = field.propertyIterator(); propi.hasNext();)
+			for (Iterator<Property> propi = field.propertyIterator(); propi.hasNext();)
 			{
-				Entity.Property property = (Entity.Property)propi.next();
+				Entity.Property property = propi.next();
 				instance.addProperty(property);
 			}
 			// - substitute in variable type
@@ -1249,11 +1250,11 @@ public class Utils {
 					// - check whether 'name' begins with one of the template
 					//   parameters of 'template'
 					int index = 0;
-					for (Iterator tpi = fin_template.templateParameterIterator();
+					for (Iterator<TemplateParameter> tpi = fin_template.templateParameterIterator();
 						 tpi.hasNext(); ++index) {
 						// - get names of template parameter and argument
 						TemplateParameter parameter = 
-							(TemplateParameter)tpi.next();
+							tpi.next();
 						String parameterName = parameter.getName();
 						TemplateArgument argument = fin_targs[index];
 						// - check criteria
@@ -1935,9 +1936,9 @@ public class Utils {
 		 * @param file a file
 		 * @return a List of File objects
 		 */
-		public static List pathElements(File file)
+		public static List<File> pathElements(File file)
 		{
-			List elements = new LinkedList();
+			List<File> elements = new LinkedList<File>();
 			// Scan the tree towards the top
 			File fileRef = null;
 			
@@ -1965,15 +1966,15 @@ public class Utils {
 		 */
 		public static File absoluteToRelative(File target, File directory)
 		{
-			List targetPathElements = pathElements(target);
-			List directoryPathElements = pathElements(directory);
+			List<File> targetPathElements = pathElements(target);
+			List<File> directoryPathElements = pathElements(directory);
 			directoryPathElements.add(new File("."));
 			// Find the longest common prefix of the two paths
-			Iterator targetIter = targetPathElements.iterator();
-			Iterator directoryIter = directoryPathElements.iterator();
+			Iterator<File> targetIter = targetPathElements.iterator();
+			Iterator<File> directoryIter = directoryPathElements.iterator();
 			File last = new File("/");
 			while (targetIter.hasNext() && directoryIter.hasNext()
-					&& (last = (File)targetIter.next()).equals(directoryIter.next())) ;
+					&& (last = targetIter.next()).equals(directoryIter.next())) ;
 			// Write ".." elements for the rest of directoryIter
 			StringBuffer relative = new StringBuffer();
 			while (directoryIter.hasNext()) {
@@ -1983,7 +1984,7 @@ public class Utils {
 			// Return the rest of the elements in targetIter
 			relative.append(last.getName());
 			while (targetIter.hasNext()) {
-				File element = (File)targetIter.next();
+				File element = targetIter.next();
 				relative.append("/" + element.getName());
 			}
 			return new File(relative.toString());

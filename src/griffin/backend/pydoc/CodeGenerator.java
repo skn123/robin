@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Iterator;
 
-import backend.GenericCodeGenerator;
-
-import sourceanalysis.*;
+import sourceanalysis.Entity;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
 import sourceanalysis.view.TemplateBank;
+import backend.GenericCodeGenerator;
 
 /**
  * Generates a documentation index for use in the Python interpreter.
