@@ -78,7 +78,7 @@ public class BackendConfiguration {
     * - checks if p.MAIN_BACKEND_CLASS_NAME exist and implements Backend
     * @param s package name to scan for existence of backend
     */
-   private void processPackage(String s) {
+private void processPackage(String s) {
        
        // try loading Launcher class
        try {

@@ -504,7 +504,7 @@ public class InteriorAnalyzer {
 	private Entity lookupContainer(String[] name, int level, boolean force)
 	{
 		Entity container = m_program.getGlobalNamespace();
-		Scope containerScope = m_program.getGlobalNamespace().getScope();
+		Scope<? extends Entity> containerScope = m_program.getGlobalNamespace().getScope();
 		
 		for (int i = 0; i < level; ++i) {
 			if (name[i].equals("")) continue;
@@ -554,21 +554,17 @@ public class InteriorAnalyzer {
 	 * @param name expected (short) name of container
 	 * @return requested container, if found, <b>null</b> otherwise.
 	 */
-	private static Entity findContainer(Scope inside, String name)
+	private static Entity findContainer(Scope<? extends Entity> inside, String name)
 	{
 		// Search for classes
-		for (Iterator ai = inside.aggregateIterator(); ai.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ai.next();
+		for (ContainedConnection<? extends Entity, Aggregate> connection: inside.getAggregates()) {
 			Aggregate aggregate = (Aggregate)connection.getContained();
 			if (aggregate.getName().equals(name)) {
 				return aggregate;
 			}
 		}
 		// Search for namespaces
-		for (Iterator ni = inside.namespaceIterator(); ni.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ni.next();
+		for (ContainedConnection<? extends Entity, Namespace> connection: inside.getNamespaces()) {
 			Namespace ns = (Namespace)connection.getContained();
 			if (ns.getName().equals(name)) {
 				return ns;

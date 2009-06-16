@@ -1,6 +1,5 @@
 package sourceanalysis;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -85,9 +84,8 @@ public class Aggregate extends TemplateEnabledEntity
 	 *  of the connection to reveal both the base class and the visibility of the
 	 *  inheritance.
 	 */
-	public Iterator<InheritanceConnection> baseIterator()
-	{
-		return m_bases.iterator();
+	public ConstCollection<InheritanceConnection> getBases() {
+		return new ConstCollection<InheritanceConnection>(m_bases);
 	}
 	
 	/*@}*/	

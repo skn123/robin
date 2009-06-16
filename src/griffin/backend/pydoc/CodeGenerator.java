@@ -2,7 +2,6 @@ package backend.pydoc;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Iterator;
 
 import sourceanalysis.Entity;
 import sourceanalysis.MissingInformationException;
@@ -37,8 +36,7 @@ public class CodeGenerator extends GenericCodeGenerator
 	{
 		m_output.write("general = document.Document(\"General\")\n");
 		// Go over the properties of this entity
-		for (Iterator pi = entity.propertyIterator(); pi.hasNext(); ) {
-			Entity.Property property = (Entity.Property)pi.next();
+		for (Entity.Property property: entity.getProperties()) {
 			m_output.write("general.newSection(\"");
 			m_output.write(property.getName());
 			m_output.write("\", [\"\"\"");

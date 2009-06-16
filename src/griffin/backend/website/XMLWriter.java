@@ -37,6 +37,7 @@ import sourceanalysis.Aggregate;
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
 import sourceanalysis.Field;
 import sourceanalysis.Group;
 import sourceanalysis.InheritanceConnection;
@@ -49,7 +50,6 @@ import sourceanalysis.Scope;
 import sourceanalysis.SourceFile;
 import sourceanalysis.Specifiers;
 import sourceanalysis.TemplateParameter;
-import sourceanalysis.Entity.Property;
 import sourceanalysis.dox.DoxygenAnalyzer;
 import backend.Utils;
 
@@ -250,7 +250,7 @@ public class XMLWriter {
 		}
 		
 		// Get the global namespace.
-		Scope location = pdb.getGlobalNamespace().getScope();
+		Scope<? extends Entity> location = pdb.getGlobalNamespace().getScope();
 		name = name.substring(2);
 		
 		while( name.indexOf("::") != -1 ) {
@@ -267,9 +267,7 @@ public class XMLWriter {
 			boolean found = false;
 			
 			// Look for the parent as a namespace.
-			for (Iterator iter = location.namespaceIterator(); iter.hasNext();) {
-				
-				ContainedConnection cc = (ContainedConnection)iter.next();
+			for (ContainedConnection<? extends Entity, Namespace> cc: location.getNamespaces()) {
 				Namespace ns = (Namespace)cc.getContained();
 				if(ns.getName().equals(parent)) {
 					found = true;
@@ -279,9 +277,7 @@ public class XMLWriter {
 
 			// Look for the parent as an aggregate.
 			if( ! found ) {
-				for (Iterator iter = location.aggregateIterator(); iter.hasNext();) {
-				
-					ContainedConnection cc = (ContainedConnection)iter.next();
+				for (ContainedConnection<? extends Entity, Aggregate> cc: location.getAggregates()) {
 					Aggregate agg = (Aggregate)cc.getContained();
 					if(agg.getName().equals(parent)) {
 						found = true;
@@ -298,9 +294,7 @@ public class XMLWriter {
 		}
 		
 		// Find the entity in the current loction.
-		for (Iterator iter = location.aggregateIterator(); iter.hasNext();) {
-				
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<? extends Entity, Aggregate> cc: location.getAggregates()) {
 			Aggregate agg = (Aggregate)cc.getContained();
 			if(agg.getName().equals(name)) {
 				return agg;
@@ -420,8 +414,7 @@ public class XMLWriter {
 		throws MissingInformationException {
 		
 		// Compare to all the routine in the aggregate.
-		for (Iterator iter = aggr.getScope().routineIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Aggregate, Routine> cc: aggr.getScope().getRoutines()) {
 			Routine compare = (Routine)cc.getContained();	
 			
 			if( equalRoutines(routine, compare) ) {
@@ -474,8 +467,7 @@ public class XMLWriter {
 		throws MissingInformationException {
 		
 		// Compare to all the field in the aggregate.
-		for (Iterator iter = aggr.getScope().fieldIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Aggregate, Field> cc: aggr.getScope().getFields()) {
 			Field compare = (Field)cc.getContained();	
 			
 			if( equalFields(field, compare) ) {
@@ -587,8 +579,7 @@ public class XMLWriter {
 		throws MissingInformationException {
 		
 		Set<SourceFile> sources = new HashSet<SourceFile>();
-		for (Iterator iter = aggr.getScope().routineIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Aggregate, Routine> cc: aggr.getScope().getRoutines()) {
 			Routine routine = (Routine)cc.getContained();
 			if(routine.getDeclaration() != null) {
 				sources.add(routine.getDeclaration().getSource());
@@ -736,8 +727,7 @@ public class XMLWriter {
 		// Aliases.
 		Element aliasesElm = doc.createElement("aliases");
 		Namespace namespace = (Namespace)aggr.getContainer();
-		for(Iterator iter = namespace.getScope().aliasIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Namespace, Alias> cc: namespace.getScope().getAliass()) {
 			Alias alias = (Alias)cc.getContained();
 			
 			// Add the typedef as an alias if it is a
@@ -777,8 +767,7 @@ public class XMLWriter {
 		classElm.appendChild(paragraphElm);
 		
 		// Create the reference to all the groups and routines inside them.
-		for (Iterator iter = aggr.getScope().groupIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Aggregate, Group> cc: aggr.getScope().getGroups()) {
 			Group group = (Group)cc.getContained();	
 			
 			// Send the older version of the aggregate to the 
@@ -791,8 +780,7 @@ public class XMLWriter {
 		
 		// Create the reference to all routines that don't relate to any
 		// group.
-		for (Iterator iter = aggr.getScope().routineIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Aggregate, Routine> cc: aggr.getScope().getRoutines()) {
 			Routine routine = (Routine)cc.getContained();	
 			
 			// Document the routine only if it's public.
@@ -830,8 +818,7 @@ public class XMLWriter {
 		// old version.
 		if(oldAggr != null && newAggr != null) {
 				
-			for (Iterator iter = oldAggr.getScope().routineIterator(); iter.hasNext();) {
-				ContainedConnection cc = (ContainedConnection)iter.next();
+			for (ContainedConnection<Aggregate, Routine> cc: oldAggr.getScope().getRoutines()) {
 				Routine routine = (Routine)cc.getContained();
 			
 				if( ! containsRoutine(newAggr, routine) && 
@@ -846,13 +833,12 @@ public class XMLWriter {
 		
 		// Document all inherited routines.
 		//Element inheritedElm = doc.createElement("inherited");
-		documentInheritedRoutines(aggr, doc, new ArrayList(), classElm);
+		documentInheritedRoutines(aggr, doc, new ArrayList<Routine>(), classElm);
 		//classElm.appendChild(inheritedElm);		
 		
 		// Create the reference to all fields regardless to their 
 		// grouping. 
-		for (Iterator iter = aggr.getScope().fieldIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Aggregate, Field> cc: aggr.getScope().getFields()) {
 			Field field = (Field)cc.getContained();	
 
 			// Document the field only if it's public.
@@ -889,8 +875,7 @@ public class XMLWriter {
 		// old version.
 		if(oldAggr != null && newAggr != null) {
 				
-			for (Iterator iter = oldAggr.getScope().fieldIterator(); iter.hasNext();) {
-				ContainedConnection cc = (ContainedConnection)iter.next();
+			for (ContainedConnection<Aggregate, Field> cc: oldAggr.getScope().getFields()) {
 				Field field = (Field)cc.getContained();
 			
 				if( ! containsField(newAggr, field) && 
@@ -943,9 +928,8 @@ public class XMLWriter {
 		propertiesDocumentation(group, doc, groupElm);
 		
 		// Group's routines.
-		List documentedRoutines = new LinkedList(); 
-		for (Iterator iter = group.getScope().routineIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		List<Routine> documentedRoutines = new LinkedList<Routine>(); 
+		for (ContainedConnection<Group, Routine> cc: group.getScope().getRoutines()) {
 			Routine routine = (Routine)cc.getContained();		
 			
 			// - don't document an already documented routine.
@@ -990,8 +974,7 @@ public class XMLWriter {
 		// MEMBERS  ALIASES... ?????????????????????????????????????????
 		
 		// Sub-Groups.
-		for (Iterator iter = group.getScope().groupIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Group, Group> cc: group.getScope().getGroups()) {
 			Group subGroup = (Group)cc.getContained();
 			
 			documentGroup(subGroup, otherAggr, doc, groupElm);
@@ -1099,17 +1082,14 @@ public class XMLWriter {
 		
 		// Add all the aggregate's routines in order to avoid 
 		// documenting reimplemented routines.
-		for (Iterator iter = aggr.getScope().routineIterator(); iter.hasNext();) {
-			ContainedConnection cc = (ContainedConnection)iter.next();
+		for (ContainedConnection<Aggregate, Routine> cc: aggr.getScope().getRoutines()) {
 			Routine routine = (Routine)cc.getContained();
 			
 			routines.add(routine);
 		}
 			
 		// Go over all the class' base classes.
-		for (Iterator iter = aggr.baseIterator(); iter.hasNext();) {
-			InheritanceConnection ic = (InheritanceConnection)iter.next();
-			
+		for (InheritanceConnection ic: aggr.getBases()) {
 			// Check if the inheritence is public.
 			if(ic.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				Aggregate base = ic.getBase();
@@ -1120,10 +1100,7 @@ public class XMLWriter {
 				//parent.appendChild(baseElm); 
 				
 				// Document the routines from the class.
-				for (Iterator iterator = base.getScope().routineIterator();
-					iterator.hasNext(); ) {
-					
-					ContainedConnection cc = (ContainedConnection)iterator.next();
+				for (ContainedConnection<Aggregate, Routine> cc: base.getScope().getRoutines()) {
 					Routine routine = (Routine)cc.getContained();
 					
 					// Check if the routine isn't reimplemented.
@@ -1354,9 +1331,7 @@ public class XMLWriter {
 		Element parent) {
 	
 		Element extendsElm = doc.createElement("extends");
-		for (Iterator iter = aggr.baseIterator(); iter.hasNext();) {
-			InheritanceConnection ic = (InheritanceConnection)iter.next();
-			
+		for (InheritanceConnection ic: aggr.getBases()) {
 			if(ic.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				
 				Aggregate base = ic.getBase();
@@ -1459,10 +1434,7 @@ public class XMLWriter {
 		org.apache.xerces.parsers.DOMParser parser = 
 			new org.apache.xerces.parsers.DOMParser();
 		
-		for (Iterator iter = entity.propertyIterator(); iter.hasNext();) {
-			sourceanalysis.Entity.Property prop = 
-				(sourceanalysis.Entity.Property)iter.next();
-			
+		for (Entity.Property prop: entity.getProperties()) {
 			if (prop.isConcealed()) continue; // skip reserved properties
 			
 			// The content of the property may be an element by
