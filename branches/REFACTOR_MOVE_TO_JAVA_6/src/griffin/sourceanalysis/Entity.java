@@ -6,9 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
-import sourceanalysis.hints.Artificial;
-import sourceanalysis.hints.IncludedViaHeader;
-
 /**
  * <p>Base class for all source-analysis components.</p>
  * <p>The common thing about such components is that they hold <i>properties</i>, which
@@ -146,17 +143,9 @@ public abstract class Entity {
 		m_templateParameters = parameters;
 		// Connect all members of the parameters' vector to the Entity
 		// as "contained"
-		Iterator pi = parameters.iterator();
-		while (pi.hasNext()) {
-			Object pvalue = pi.next();
-			// Check that element really is a template parameter
-			if (pvalue instanceof TemplateParameter) {
-				TemplateParameter parameter = (TemplateParameter)pvalue;
-				// - carry out connection
-				parameter.connectToContainer(this, parameter);
-			}
-			else
-				throw new InappropriateKindException("expected: TemplateParameter");
+		for (TemplateParameter parameter: parameters) {
+			// - carry out connection
+			parameter.connectToContainer(this, parameter);
 		}
 	}
 	
@@ -320,18 +309,16 @@ public abstract class Entity {
 	 * which iterates over Entity.Property items.
 	 * @return Iterator
 	 */
-	public Iterator<Property> propertyIterator()
-	{
-		return m_properties.iterator();
+	public ConstCollection<Property> getProperties() {
+		return new ConstCollection<Property>(m_properties);
 	}
 	
 	/**
 	 * Access to all of the Entity's attached hints. 
 	 * @return a java.util.Iterator which iterates over Hint items.
 	 */
-	public Iterator<Hint> hintIterator()
-	{
-		return m_hints.iterator();
+	public ConstCollection<Hint> getHints() {
+		return new ConstCollection<Hint>(m_hints);
 	}
 	
 	/**
@@ -355,8 +342,7 @@ public abstract class Entity {
 	 */
 	public Hint lookForHint(Class hintClass)
 	{
-		for (Iterator hintIter = hintIterator(); hintIter.hasNext(); ) {
-			Hint hint = (Hint)hintIter.next();
+		for (Hint hint: m_hints) {
 			if (hintClass.isInstance(hint))
 				return hint;
 		}

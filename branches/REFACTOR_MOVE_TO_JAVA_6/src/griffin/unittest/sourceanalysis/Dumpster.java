@@ -291,8 +291,7 @@ public class Dumpster {
 		out.write("\n"); out.flush();
 		dumpLocations(aggregate, out);
 		// Dump base classes
-		for (Iterator bi = aggregate.baseIterator(); bi.hasNext(); ) {
-			InheritanceConnection connection = (InheritanceConnection)bi.next();
+		for (InheritanceConnection connection: aggregate.getBases()) {
 			out.write("[info] ");
 			dumpNameOf(aggregate, out);
 			out.write(" extends ");
@@ -321,37 +320,31 @@ public class Dumpster {
 	 * @param scope contained scope to be dumped
 	 * @param out output stream
 	 */
-	public void dump(Scope scope, Writer out)
+	public void dump(Scope<? extends Entity> scope, Writer out)
 		throws IOException, MissingInformationException
 	{
 		// - dump routines
-		for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)ri.next();
+		for (ContainedConnection<? extends Entity, Routine> connection: scope.getRoutines()) {
 			dump((Routine)connection.getContained(), out);
 		}
 		// - dump classes
-		for (Iterator ci = scope.aggregateIterator(); ci.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)ci.next();
+		for (ContainedConnection<? extends Entity, Aggregate> connection: scope.getAggregates()) {
 			dump((Aggregate)connection.getContained(), out);
 		}
 		// - dump namespaces
-		for (Iterator ni = scope.namespaceIterator(); ni.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)ni.next();
+		for (ContainedConnection<? extends Entity, Namespace> connection: scope.getNamespaces()) {
 			dump((Namespace)connection.getContained(), out);
 		}
 		// - dump field members
-		for (Iterator fi = scope.fieldIterator(); fi.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)fi.next();
+		for (ContainedConnection<? extends Entity, Field> connection: scope.getFields()) {
 			dump((Field)connection.getContained(), out);
 		}
 		// - dump contained aliases
-		for (Iterator ai = scope.aliasIterator(); ai.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)ai.next();
+		for (ContainedConnection<? extends Entity, Alias> connection: scope.getAliass()) {
 			dump((Alias)connection.getContained(), out);
 		}
 		// - dump enumerated types
-		for (Iterator ei = scope.enumIterator(); ei.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)ei.next();
+		for (ContainedConnection<? extends Entity, sourceanalysis.Enum> connection: scope.getEnums()) {
 			dump((sourceanalysis.Enum)connection.getContained(), out);
 		}
 		out.flush();
@@ -361,11 +354,10 @@ public class Dumpster {
 	 * @param scope group scope
 	 * @param out output stream
 	 */
-	public void dumpGroups(Scope scope, Writer out) throws IOException
+	public void dumpGroups(Scope<? extends Entity> scope, Writer out) throws IOException
 	{
 		// - dump contained groups
-		for (Iterator gi = scope.groupIterator(); gi.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)gi.next();
+		for (ContainedConnection<? extends Entity, Group> connection: scope.getGroups()) {
 			dump((Group)connection.getContained(), out);
 		}
 	}	

@@ -1,6 +1,5 @@
 package sourceanalysis;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -215,9 +214,8 @@ public class Scope<Owner extends Entity> {
 	 * @return Iterator an iterator over ContainedConnection, referring to
 	 * each member routine in turn.
 	 */
-	public Iterator<ContainedConnection<Owner, Routine>> routineIterator()
-	{
-		return m_routines.iterator();
+	public ConstCollection<ContainedConnection<Owner, Routine>> getRoutines() {
+		return new ConstCollection<ContainedConnection<Owner, Routine>>(m_routines);
 	}
 
 	/**
@@ -225,9 +223,8 @@ public class Scope<Owner extends Entity> {
 	 * @return Iterator and iterator over ContainedConnection, referring to
 	 * each member field in turn.
 	 */
-	public Iterator<ContainedConnection<Owner, Field>> fieldIterator()
-	{
-		return m_fields.iterator();
+	public ConstCollection<ContainedConnection<Owner, Field>> getFields() {
+		return new ConstCollection<ContainedConnection<Owner, Field>>(m_fields);
 	}
 	
 	/**
@@ -235,27 +232,24 @@ public class Scope<Owner extends Entity> {
 	 * @return Iterator an iterator over ContainedConnection, referring to
 	 * each inner construct in turn.
 	 */
-	public Iterator<ContainedConnection<Owner, Aggregate>> aggregateIterator()
-	{
-		return m_aggregates.iterator();
+	public ConstCollection<ContainedConnection<Owner, Aggregate>> getAggregates() {
+		return new ConstCollection<ContainedConnection<Owner, Aggregate>>(m_aggregates);
 	}
 
 	/**
 	 * Access enumerated types in this Scope.
 	 * @return Iterator an iterator over ContainedConnection.
 	 */
-	public Iterator<ContainedConnection<Owner, sourceanalysis.Enum>> enumIterator()
-	{
-		return m_enums.iterator();
+	public ConstCollection<ContainedConnection<Owner, sourceanalysis.Enum>> getEnums() {
+		return new ConstCollection<ContainedConnection<Owner, sourceanalysis.Enum>>(m_enums);
 	}
 
 	/**
 	 * Access alias objects in this Scope.
 	 * @return Iterator an iterator over ContainedConnection.
 	 */
-	public Iterator<ContainedConnection<Owner, Alias>> aliasIterator()
-	{
-		return m_aliases.iterator();
+	public ConstCollection<ContainedConnection<Owner, Alias>> getAliass() {
+		return new ConstCollection<ContainedConnection<Owner, Alias>>(m_aliases);
 	}
 
 	/**
@@ -265,9 +259,8 @@ public class Scope<Owner extends Entity> {
 	 * @return Iterator an iterator over ContainedConnection, referring to
 	 * each inner namespace in turn.
 	 */
-	public Iterator<ContainedConnection<Owner, Namespace>> namespaceIterator()
-	{
-		return m_namespaces.iterator();
+	public ConstCollection<ContainedConnection<Owner, Namespace>> getNamespaces() {
+		return new ConstCollection<ContainedConnection<Owner, Namespace>>(m_namespaces);
 	}
 	
 	/**
@@ -278,18 +271,16 @@ public class Scope<Owner extends Entity> {
 	 * each inner Group in turn, but only those directly under this scope, not
 	 * nested groups.
 	 */
-	public Iterator<ContainedConnection<Owner, Group>> groupIterator()
-	{
-		return m_groups.iterator();
+	public ConstCollection<ContainedConnection<Owner, Group>> getGroups() {
+		return new ConstCollection<ContainedConnection<Owner, Group>>(m_groups);
 	}
 	
 	/**
 	 * 
 	 * 
 	 */
-	public Iterator<FriendConnection> friendIterator()
-	{
-		return m_friends.iterator();
+	public ConstCollection<FriendConnection> getFriends() {
+		return new ConstCollection<FriendConnection>(m_friends);
 	}
 	
 	/**

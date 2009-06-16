@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Iterator;
 import java.util.StringTokenizer;
 
 import sourceanalysis.Aggregate;
@@ -56,10 +55,8 @@ public class CodeGenerator extends GenericCodeGenerator {
 	
 	public void generateClassesDocumentation() {
 		Namespace globalNS = m_program.getGlobalNamespace();
-		Scope<Namespace> globalScope = globalNS.getScope();	
-		Iterator i = globalScope.aggregateIterator();
-		while (i.hasNext()) {
-			ContainedConnection con = (ContainedConnection) i.next();
+		Scope<Namespace> globalScope = globalNS.getScope();
+		for (ContainedConnection<Namespace, Aggregate> con: globalScope.getAggregates()) {
 			try {
 				generateSingleClassDocumentation((Aggregate)con.getContained());
 			} catch (IOException e) {
@@ -93,9 +90,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 	 * @param w
 	 */
 	private void writeGroups(Aggregate agg, Writer w) throws IOException {
-		Iterator i = agg.getScope().groupIterator();
-		while (i.hasNext()) {
-			ContainedConnection c = (ContainedConnection)i.next();
+		for (ContainedConnection<Aggregate, Group> c: agg.getScope().getGroups()) {
 			Group g = (Group)c.getContained();
 			writeGroup(g, w);
 		}
@@ -117,11 +112,8 @@ public class CodeGenerator extends GenericCodeGenerator {
 	 * @param entity
 	 * @param w
 	 */
-	private void writeMethods(Scope scope, Writer w) throws IOException  {		
-		Iterator i = scope.routineIterator();			
-		while(i.hasNext()) {
-	
-			ContainedConnection c = (ContainedConnection)i.next();
+	private void writeMethods(Scope<Group> scope, Writer w) throws IOException  {	
+		for (ContainedConnection<Group, Routine> c: scope.getRoutines()) {
 			Routine r = (Routine)c.getContained();						
 			try {
 				writeMethod(r, w);

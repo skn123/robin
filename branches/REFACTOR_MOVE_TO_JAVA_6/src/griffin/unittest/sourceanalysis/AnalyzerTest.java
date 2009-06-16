@@ -106,7 +106,7 @@ public class AnalyzerTest extends TestCase {
 		// Compared routines from extracted database to originally generated
 		// ones
 		Iterator originaliter = routines.iterator();
-		Iterator processediter = p.getGlobalNamespace().getScope().routineIterator();
+		Iterator processediter = p.getGlobalNamespace().getScope().getRoutines().iterator();
 		
 		while (originaliter.hasNext() && processediter.hasNext()) {
 			// Extract both routines
@@ -131,10 +131,8 @@ public class AnalyzerTest extends TestCase {
 	{
 		ProgramSkeleton skel = new ProgramSkeleton();
 		// Fill skeleton with some methods
-		for (Iterator aggiter = skel.nsGlobal.getScope().aggregateIterator();
-			aggiter.hasNext(); )	{
-			Aggregate agg = (Aggregate)
-				((ContainedConnection)aggiter.next()).getContained();
+		for (ContainedConnection<Namespace, Aggregate> cc: skel.nsGlobal.getScope().getAggregates()) {
+			Aggregate agg = (Aggregate)cc.getContained();
 			// Add methods to this aggregate
 			for (int count = 0; count < 5; count++) {
 				Routine ro = skel.randomRoutine(false);
@@ -154,19 +152,11 @@ public class AnalyzerTest extends TestCase {
 			"src/unittest/sourceanalysis/Doxyfile.testCode");
 		
 		// Compare analyzed aggregates to original ones	
-		for (Iterator originaliter = skel.nsGlobal.getScope().aggregateIterator();
-			originaliter.hasNext(); ) {
-			// Get originally generated aggregate
-			ContainedConnection connection =
-				(ContainedConnection)originaliter.next();
+		for (ContainedConnection<Namespace, Aggregate> connection: skel.nsGlobal.getScope().getAggregates()) {
 			Aggregate original = (Aggregate)connection.getContained();
 			Aggregate analyzed = null;
 			// Find other aggregate
-			for (Iterator aggiter = p.getGlobalNamespace().getScope()
-				.aggregateIterator(); aggiter.hasNext(); ) {
-				// Get analyzed aggregate
-				ContainedConnection aconnection =
-					(ContainedConnection)aggiter.next();
+			for (ContainedConnection<Namespace, Aggregate> aconnection: p.getGlobalNamespace().getScope().getAggregates()) {
 				// Check full name of aggregate
 				analyzed = (Aggregate)aconnection.getContained();
 				if (analyzed.getFullName().equals(original.getFullName()))
@@ -271,10 +261,7 @@ public class AnalyzerTest extends TestCase {
 		throws MissingInformationException, IOException
 	{
 		out.write(agg.getName()) ; out.write(":\n");
-		for (Iterator rouiter = agg.getScope().routineIterator();
-			rouiter.hasNext(); ) {
-			// Get the routines and print them
-			ContainedConnection connection = (ContainedConnection)rouiter.next();
+		for (ContainedConnection<Aggregate, Routine> connection: agg.getScope().getRoutines()) {
 			Routine routine = (Routine)connection.getContained();
 			verboseRoutine(routine, out);
 		}
@@ -327,11 +314,7 @@ public class AnalyzerTest extends TestCase {
 		out.write(klass.getName());
 		out.write("\n{\n");
 		
-		for (Iterator rouiter = klass.getScope().routineIterator();
-			rouiter.hasNext(); ) {
-			// Print all routines
-			ContainedConnection connection =
-				(ContainedConnection)rouiter.next();
+		for (ContainedConnection<Aggregate, Routine> connection: klass.getScope().getRoutines()) {
 			Routine method = (Routine)connection.getContained();
 			// - express visibility
 			int vis = connection.getVisibility();
@@ -356,10 +339,8 @@ public class AnalyzerTest extends TestCase {
 	private void printHeaderCpp(ProgramSkeleton skel, Writer out)
 		throws MissingInformationException, IOException
 	{
-		for (Iterator aggiter = skel.nsGlobal.getScope().aggregateIterator();
-			aggiter.hasNext(); )	{
-			Aggregate agg = (Aggregate)
-				((ContainedConnection)aggiter.next()).getContained();
+		for (ContainedConnection<Namespace, Aggregate> cc: skel.nsGlobal.getScope().getAggregates()) {
+			Aggregate agg = (Aggregate)cc.getContained();
 			printClassCpp(agg, out);
 		}
 	}

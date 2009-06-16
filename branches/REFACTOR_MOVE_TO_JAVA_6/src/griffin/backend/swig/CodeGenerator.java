@@ -216,9 +216,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		boolean first = true;
 		
 		// Go over base classes
-		for (Iterator bi = clas.baseIterator(); bi.hasNext(); ) {
-			InheritanceConnection connection =
-				(InheritanceConnection)bi.next();
+		for (InheritanceConnection connection: clas.getBases()) {
 			// Print delimiter
 			if (first) sb.append(": "); else sb.append(", ");
 			// Print the visibility
@@ -259,10 +257,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		StringBuffer sb = new StringBuffer();
 		
 		// Go over base classes
-		for (Iterator bi = clas.baseIterator(); bi.hasNext(); ) {
-			InheritanceConnection connection =
-				(InheritanceConnection)bi.next();
-				
+		for (InheritanceConnection connection: clas.getBases()) {
 			Aggregate baseClass = connection.getBase();
 			if (baseClass.isTemplated()) {
 				sb.append("%template(ti_"
@@ -349,10 +344,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		throws IOException, ElementNotFoundException, MissingInformationException
 	{
 		Scope<Namespace> global =  m_program.getGlobalNamespace().getScope();
-		for (Iterator gfi = global.fieldIterator(); gfi.hasNext(); ) {
-			// Get field
-			ContainedConnection connection =
-				(ContainedConnection)gfi.next();
+		for (ContainedConnection<Namespace, Field> connection: global.getFields()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 				&& connection.getStorage() != Specifiers.Storage.STATIC) {
 				Entity field = connection.getContained();

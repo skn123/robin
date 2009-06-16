@@ -101,29 +101,25 @@ public class DoxygenHandyman {
 	 * entities.
 	 * @param anchor a scope to start scanning from
 	 */
-	private void collectEntitiesByName(Scope anchor)
+	private void collectEntitiesByName(Scope<? extends Entity> anchor)
 	{
 		// Go through the aggregates
-		for (Iterator aggiter = anchor.aggregateIterator(); aggiter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)aggiter.next();
+		for (ContainedConnection<? extends Entity, Aggregate> connection: anchor.getAggregates()) {
 			collectContained(connection);
 			// - descend
 			Aggregate aggregate = (Aggregate)connection.getContained();
 			collectEntitiesByName(aggregate.getScope());
 		}
 		// Go through aliases
-		for (Iterator aliasiter = anchor.aliasIterator(); aliasiter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)aliasiter.next();
+		for (ContainedConnection<? extends Entity, Alias> connection: anchor.getAliass()) {
 			collectContained(connection);
 		}
 		// Go through enumerated types
-		for (Iterator enumiter = anchor.enumIterator(); enumiter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)enumiter.next();
+		for (ContainedConnection<? extends Entity, sourceanalysis.Enum> connection: anchor.getEnums()) {
 			collectContained(connection);
 		}
 		// Even go through constant data members
-		for (Iterator fielditer = anchor.fieldIterator(); fielditer.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)fielditer.next();
+		for (ContainedConnection<? extends Entity, Field> connection: anchor.getFields()) {
 			Field field = (Field)connection.getContained();
 			try {
 				Type type = field.getType();
@@ -136,8 +132,7 @@ public class DoxygenHandyman {
 			}
 		}
 		// Look in inner namespace scopes
-		for (Iterator nsiter = anchor.namespaceIterator(); nsiter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)nsiter.next();
+		for (ContainedConnection<? extends Entity, Namespace> connection: anchor.getNamespaces()) {
 			// - descend
 			Namespace namespace = (Namespace)connection.getContained();
 			collectEntitiesByName(namespace.getScope());
@@ -431,18 +426,18 @@ public class DoxygenHandyman {
 	 */
 	Entity lookupExternal(Entity origin, String name)
 	{
-		Scope context = lookupExternal(origin);
+		Scope<Namespace> context = lookupExternal(origin);
 		Entity look = Utils.lookup(context, name);
 		return look;
 	}
 	
-	Scope lookupExternal(Entity origin)
+	Scope<Namespace> lookupExternal(Entity origin)
 	{
 		if (origin == m_program.getGlobalNamespace()) {
 			return m_program.getExternals();
 		}
 		else if (origin.hasContainer()) {
-			Scope container = lookupExternal(origin.getContainer());
+			Scope<Namespace> container = lookupExternal(origin.getContainer());
 			if (container != null) {
 				Entity look = Utils.lookup(container, origin.getName());
 				if (look == null)

@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -130,21 +129,15 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	 *            name to look for - this name is recursively searched in all
 	 *            scopes.
 	 */
-	public void collect(Scope scope, String componentname) {
+	public void collect(Scope<Namespace> scope, String componentname) {
 		// Find aggregates
-		for (Iterator aggiter = scope.aggregateIterator(); aggiter.hasNext();) {
-			// Find class
-			ContainedConnection connection = (ContainedConnection) aggiter
-					.next();
+		for (ContainedConnection<Namespace, Aggregate> connection: scope.getAggregates()) {
 			Aggregate agg = (Aggregate) connection.getContained();
 			if (nameMatches(agg, componentname))
 				consume(agg);
 		}
 		// Find enums
-		for (Iterator enumiter = scope.enumIterator(); enumiter.hasNext();) {
-			// Find class
-			ContainedConnection connection = (ContainedConnection) enumiter
-					.next();
+		for (ContainedConnection<Namespace, sourceanalysis.Enum> connection: scope.getEnums()) {
 			sourceanalysis.Enum enume = (sourceanalysis.Enum) connection
 					.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
@@ -153,9 +146,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 			}
 		}
 		// Find typedefs
-		for (Iterator aliter = scope.aliasIterator(); aliter.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) aliter
-					.next();
+		for (ContainedConnection<Namespace, Alias> connection: scope.getAliass()) {
 			Alias alias = (Alias) connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& nameMatches(alias, componentname)) {
@@ -163,19 +154,15 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 			}
 		}
 		// Find global functions
-		for (Iterator funciter = scope.routineIterator(); funciter.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) funciter
-					.next();
+		for (ContainedConnection<Namespace, Routine> connection: scope.getRoutines()) {
 			Routine routine = (Routine) connection.getContained();
-			if (!(connection.getContainer() instanceof Aggregate)
-					&& nameMatches(routine, componentname)) {
+			if (/*!(connection.getContainer() instanceof Aggregate) &&*/ // TODO(misha): is this if important?
+					nameMatches(routine, componentname)) {
 				m_globalFuncs.add(routine);
 			}
 		}
 		// Find namespaces and look in inner namespace scopes
-		for (Iterator nsiter = scope.namespaceIterator(); nsiter.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) nsiter
-					.next();
+		for (ContainedConnection<Namespace, Namespace> connection: scope.getNamespaces()) {
 			Namespace namespace = (Namespace) connection.getContained();
 			if (nameMatches(namespace, componentname)) {
 				m_namespaces.add(namespace);
@@ -200,37 +187,25 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	 * @param scope
 	 *            start scope
 	 */
-	private void autocollect(Scope scope) {
+	private void autocollect(Scope<Namespace> scope) {
 		// Find aggregates
-		for (Iterator aggiter = scope.aggregateIterator(); aggiter.hasNext();) {
-			// Find class
-			ContainedConnection connection = (ContainedConnection) aggiter
-					.next();
+		for (ContainedConnection<Namespace, Aggregate> connection: scope.getAggregates()) {
 			Aggregate agg = (Aggregate) connection.getContained();
 			consume(agg);
 		}
 		// Find global functions
-		for (Iterator funciter = scope.routineIterator(); funciter.hasNext();) {
-			// Find function
-			ContainedConnection connection = (ContainedConnection) funciter
-					.next();
+		for (ContainedConnection<Namespace, Routine> connection: scope.getRoutines()) {
 			Routine routine = (Routine) connection.getContained();
 			m_globalFuncs.add(routine);
 		}
 		// Find typedefs
-		for (Iterator typedefiter = scope.aliasIterator(); typedefiter
-				.hasNext();) {
-			// Find typedef
-			ContainedConnection connection = (ContainedConnection) typedefiter
-					.next();
+		for (ContainedConnection<Namespace, Alias> connection: scope.getAliass()) {
 			Alias alias = (Alias) connection.getContained();
 			// Add the typedef
 			m_typedefs.add(alias);
 		}
 		// Look in inner namespace scopes
-		for (Iterator nsiter = scope.namespaceIterator(); nsiter.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) nsiter
-					.next();
+		for (ContainedConnection<Namespace, Namespace> connection: scope.getNamespaces()) {
 			Namespace namespace = (Namespace) connection.getContained();
 			autocollect(namespace.getScope());
 		}
@@ -318,30 +293,26 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	private void grabInnersOf(Aggregate subject, List<Aggregate> innerClasses) {
 		Scope<Aggregate> scope = subject.getScope();
 		// Add public enums
-		for (Iterator ei = scope.enumIterator(); ei.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) ei.next();
+		for (ContainedConnection<Aggregate, sourceanalysis.Enum> connection: scope.getEnums()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				m_enums.add((sourceanalysis.Enum) connection.getContained());
 			}
 		}
 		// Add public typedefs
-		for (Iterator ai = scope.aliasIterator(); ai.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) ai.next();
+		for (ContainedConnection<Aggregate, Alias> connection: scope.getAliass()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				m_typedefs.add((Alias) connection.getContained());
 			}
 		}
 		// Add public static methods
-		for (Iterator ri = scope.routineIterator(); ri.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) ri.next();
+		for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& connection.getStorage() == Specifiers.Storage.STATIC) {
 				m_globalFuncs.add((Routine) connection.getContained());
 			}
 		}
 		// Add public inner classes
-		for (Iterator ci = scope.aggregateIterator(); ci.hasNext();) {
-			ContainedConnection connection = (ContainedConnection) ci.next();
+		for (ContainedConnection<Aggregate, Aggregate> connection: scope.getAggregates()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				Aggregate inner = (Aggregate) connection.getContained();
 				innerClasses.add(inner);
@@ -379,8 +350,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 			throws ElementNotFoundException {
 		StringBuffer sb = new StringBuffer();
 
-		for (Iterator pi = entity.propertyIterator(); pi.hasNext();) {
-			Entity.Property property = (Entity.Property) pi.next();
+		for (Entity.Property property: entity.getProperties()) {
 			Entity proxy = new Entity() {
 			};
 			proxy.addProperty(new Entity.Property("name", property.getName()));
@@ -414,14 +384,12 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	 * @throws ElementNotFoundException
 	 *             if the template referred to by templateName does not exist.
 	 */
+	//TODO(misha): Does anyone call this method?
 	protected String refillMethods(String templateName, String elementName,
-			Scope scope, int crit) throws ElementNotFoundException {
+			Scope<? extends Entity> scope, int crit) throws ElementNotFoundException {
 		StringBuffer sb = new StringBuffer();
 
-		for (Iterator ri = scope.routineIterator(); ri.hasNext();) {
-			// Acquire the connection. This connection lets the loop
-			// filter methods by visibility.
-			ContainedConnection connection = (ContainedConnection) ri.next();
+		for (ContainedConnection<? extends Entity, Routine> connection: scope.getRoutines()) {
 			int visibility = connection.getVisibility();
 			Entity routine = connection.getContained();
 			// Fill the given template if visibility is PUBLIC.
@@ -453,8 +421,9 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	 * @throws ElementNotFoundException
 	 *             if the template referred to by templateName does not exist.
 	 */
+	//TODO(misha): Does anyone call this method?
 	public String refillPublicMethods(String templateName, String elementName,
-			Scope scope) throws ElementNotFoundException {
+			Scope<? extends Entity> scope) throws ElementNotFoundException {
 		return refillMethods(templateName, elementName, scope,
 				Specifiers.Visibility.PUBLIC);
 	}
@@ -474,8 +443,9 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	 * @throws ElementNotFoundException
 	 *             if the template referred to by templateName does not exist.
 	 */
+	//TODO(misha): Does anyone call this method?
 	public String refillPrivateMethods(String templateName, String elementName,
-			Scope scope) throws ElementNotFoundException {
+			Scope<? extends Entity> scope) throws ElementNotFoundException {
 		return refillMethods(templateName, elementName, scope,
 				Specifiers.Visibility.PRIVATE);
 	}
@@ -585,10 +555,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 			if (!GenericFilters.isDeclared(subject)) {
 				continue;
 			}
-			for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext();) {
-				// Get bases
-				InheritanceConnection connection = (InheritanceConnection) baseIter
-						.next();
+			for (InheritanceConnection connection: subject.getBases()) {
 				Aggregate base = connection.getBase();
 				// Specialize templates
 				if (base.isTemplated()) {
@@ -781,9 +748,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 			bases.put(subject, new TopologicalNode());
 		}
 		for (Aggregate subject : m_subjects) {
-			for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext();) {
-				InheritanceConnection connection = (InheritanceConnection) baseIter
-						.next();
+			for (InheritanceConnection connection: subject.getBases()) {
 				Aggregate base = (Aggregate) connection.getBase();
 				// Find the specialization if one was generated
 				if (base.isTemplated() && considerInstantiations) {

@@ -16,6 +16,7 @@ import java.util.TreeSet;
 
 import sourceanalysis.Aggregate;
 import sourceanalysis.Alias;
+import sourceanalysis.ConstCollection;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.Entity;
 import sourceanalysis.Field;
@@ -193,13 +194,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * @param scope program scope inside of which to search for constant.
 	 * Search will descend to inner scopes of this one as well.
 	 */
-	protected void collectConstants(Scope scope)
+	protected void collectConstants(Scope<? extends Entity> scope)
 		throws IOException, MissingInformationException
 	{
 		// Collect fields in current scope
-		for (Iterator fi = scope.fieldIterator(); fi.hasNext();) {
-			ContainedConnection connection =
-				(ContainedConnection)fi.next();
+		for (ContainedConnection<? extends Entity, Field> connection: scope.getFields()) {
 			Field field = (Field)connection.getContained();
 
 			if (Filters.isAvailableStatic(field, connection)) {
@@ -207,9 +206,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 		}
 		// Trace constants in innermore namespaces
-		for (Iterator ni = scope.namespaceIterator(); ni.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ni.next();
+		for (ContainedConnection<? extends Entity, Namespace> connection: scope.getNamespaces()) {
 			Namespace namespace = (Namespace)connection.getContained();
 			// - go to recursion
 			collectConstants(namespace.getScope());
@@ -661,8 +658,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         // get the dtor
         Routine dtor = null;
-        for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
-            ContainedConnection connection = (ContainedConnection) ctorIter.next();
+        for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
             final Routine possibleDtor = (Routine) connection.getContained();
 
             if (possibleDtor.isDestructor()) {
@@ -677,8 +673,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         // Create base constructor calls
         boolean anyCtors = false;
-        for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
-            ContainedConnection connection = (ContainedConnection) ctorIter.next();
+        for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
             final Routine ctor = (Routine) connection.getContained();
 
             if (ctor.isConstructor() &&
@@ -752,7 +747,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 	
 	private void writeInterceptorFieldWrapper(Aggregate subject,
-			Aggregate result, Field originalField, int funcCounter, Map templateInstances, Map<String, Type> newTypes) 
+			Aggregate result, Field originalField, int funcCounter, Map<String, Aggregate> templateInstances, Map<String, Type> newTypes) 
 	throws IOException, MissingInformationException {
 		
 		Type type = originalField.getType();
@@ -851,10 +846,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						new NopExpression(), new SimpleType(subject, null, "&"));
 
 			// Grab all the routines from subject aggregate
-			for (Iterator routineIter = subject.getScope().routineIterator();
-				routineIter.hasNext(); ) {
-				// Generate wrapper for routine
-				ContainedConnection connection = (ContainedConnection)routineIter.next();
+			for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
 				Routine routine = (Routine)connection.getContained();
 
 				if (Filters.isAvailableStatic(routine)) {
@@ -909,10 +901,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			// Create upcasts
 			generateUpDownCastFlatWrappers(subject);
 			// Grab all the routines from subject aggregate
-			for (Iterator routineIter = subject.getScope().routineIterator();
-				routineIter.hasNext(); ) {
-				// Generate wrapper for routine
-				ContainedConnection connection = (ContainedConnection)routineIter.next();
+			for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
 				Routine routine = (Routine)connection.getContained();
 				if (routine.isConstructor() && isAbstractClass) continue;
 				if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
@@ -931,10 +920,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				}
 			}
 			// Grab members from subject aggregate
-			for (Iterator fieldIter = subject.getScope().fieldIterator();
-				fieldIter.hasNext(); ) {
-				// Generate wrapper for field
-				ContainedConnection connection = (ContainedConnection)fieldIter.next();
+			for (ContainedConnection<Aggregate, Field> connection: subject.getScope().getFields()) {
 				Field field = (Field)connection.getContained();
 				if (Filters.isAvailable(field, connection))
 					generateFlatWrapper(field, true, false);
@@ -1022,7 +1008,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			// Generate the interface for the class
 			generateRegistrationPrototype(subject.getScope(),
 				Utils.cleanFullName(subject),
-				subject.baseIterator(), 
+				subject.getBases(), 
 				Utils.isAbstract(subject, m_instanceMap),
 				Utils.hasDefaultConstructor(subject),
 				Filters.isAssignmentSupportive(subject),
@@ -1189,7 +1175,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		Type returnType = routine.getReturnType();
-		Type touchupReturnType = null;
 		String wrapperName = "routine_" + uid(routine) 
 			+ (with ? "r" : "s") + nArguments;
 		
@@ -1204,7 +1189,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Construct parameters fitting for the flat purpose
-		int paramCount = 0;
 		boolean first = true;
 		boolean staticParam = false;
 		m_output.write("(");
@@ -1264,7 +1248,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		// - generate call parameters
 		if (!routine.isConversionOperator()) {
-			paramCount = 0;
 			first = true;
 			staticParam = false;
 			
@@ -1657,9 +1640,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateUpDownCastFlatWrappers(Aggregate subject)
 		throws IOException, MissingInformationException
 	{
-		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext();) {
-			InheritanceConnection connection =
-				(InheritanceConnection)baseIter.next();
+		for (InheritanceConnection connection: subject.getBases()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				 Aggregate base = (Aggregate)connection.getBase();
 				 String basename = "";
@@ -1778,14 +1759,15 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * @param scope scope containing routines
 	 * @throws IOException if output operation fails 
 	 */
-	public void generateRegistrationPrototype(Scope scope, String classname,
-		Iterator basesIterator, boolean isAbstractClass,
+	public void generateRegistrationPrototype(Scope<Aggregate> scope, String classname,
+		ConstCollection<InheritanceConnection> bases, boolean isAbstractClass,
 		boolean mustHaveCtor, boolean hasAssign, boolean hasClone,
 		boolean hasOutput, boolean hasDtor, boolean with, List<Routine> additional)
 		throws IOException, MissingInformationException
 	{
 		m_output.write("RegData scope_" + scope.hashCode() + "[] = {\n");
 		// Go through bases
+		Iterator basesIterator = bases.iterator();
 		if (basesIterator != null) {
 			for (; basesIterator.hasNext(); ) {
 				InheritanceConnection connection =
@@ -1802,10 +1784,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		// Go through routines in this scope
 		boolean ctors = false;
-		for (Iterator routineIter = scope.routineIterator(); 
-				routineIter.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)routineIter.next();
+		for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
 			// Create an entry for each public routine
 			Routine routine = (Routine)connection.getContained();
 			if (routine.isConstructor() && isAbstractClass) continue;
@@ -1817,10 +1796,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 		}
 		// Go through data members in this scope
-		for (Iterator fieldIter = scope.fieldIterator();
-				fieldIter.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)fieldIter.next();
+		for (ContainedConnection<Aggregate, Field> connection: scope.getFields()) {
 			// Create an entry for public data members
 			Field field = (Field)connection.getContained();
 			if (Filters.isAvailable(field, connection)) 
