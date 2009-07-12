@@ -262,10 +262,7 @@ public class DoxygenHandyman {
 			// sit idle
 		}
 		
-		for (Iterator paramiter = routine.parameterIterator();
-			paramiter.hasNext(); ) {
-			// Get next parameter
-			Parameter parameter = (Parameter)paramiter.next();
+		for (Parameter parameter: routine.getParameters()) {
 			try {
 				Type parameterType = parameter.getType();
 				if (isSuspicious(parameterType))

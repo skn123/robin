@@ -165,8 +165,8 @@ public class Dumpster {
 		}
 		out.write("\n"); out.flush();
 		// Dump parameters
-		for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
-			dump((Parameter)pi.next(), out);
+		for (Parameter param: routine.getParameters()) {
+			dump(param, out);
 		}
 		// Dump grouping
 		dumpGroupingOf(routine, out);

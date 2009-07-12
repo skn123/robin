@@ -244,10 +244,9 @@ public class AnalyzerTest extends TestCase {
 		out.write("(");
 		// Verbose parameters
 		boolean first = true;
-		for (Iterator paramiter = routine.parameterIterator();
-				paramiter.hasNext(); first = false) {
-			Parameter param = (Parameter)paramiter.next();
+		for (Parameter param: routine.getParameters()) {
 			if (!first) out.write(" , ");
+			first = false;
 			out.write(param.getType().toString());
 		}
 		out.write(")\n");
@@ -280,10 +279,9 @@ public class AnalyzerTest extends TestCase {
 		out.write("(");
 		// Verbose parameters
 		boolean first = true;
-		for (Iterator paramiter = routine.parameterIterator();
-				paramiter.hasNext(); first = false) {
-			Parameter param = (Parameter)paramiter.next();
+		for (Parameter param: routine.getParameters()) {
 			if (!first) out.write(" , ");
+			first = false;
 			out.write(param.getType().formatCpp(param.getName()));
 		}
 		out.write(")\n");

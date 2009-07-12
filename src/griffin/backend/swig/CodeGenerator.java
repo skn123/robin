@@ -69,8 +69,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		
 		// Count the number of parameters, esp. the number of parameters with
 		// default arguments
-		for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
-			Parameter parameter = (Parameter)pi.next();
+		for (Parameter parameter: routine.getParameters()) {
 			// If parameter has a default value, it is added to max and not
 			// to min; otherwise, it is added to both
 			maxParams++;
@@ -136,7 +135,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		int paramCount = 0;
 		sb.append("(");
 		
-		for (Iterator pi = routine.parameterIterator();
+		for (Iterator<Parameter> pi = routine.getParameters().iterator();
 					pi.hasNext() && paramCount < nParams; ) {
 			Parameter parameter = (Parameter)pi.next();	
 			// Obtain parameter information		

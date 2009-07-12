@@ -263,9 +263,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 * @return Iterator an iterator over Parameter. Parameters do not have
 	 *  extra attributes in this connection.
 	 */
-	public Iterator<Parameter> parameterIterator()
-	{
-		return m_formalArguments.iterator();
+	public ConstCollection<Parameter> getParameters() {
+		return new ConstCollection<Parameter>(m_formalArguments);
 	}
 	
 	public void removeParameters() {
@@ -290,7 +289,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
         if (isConst() != other.isConst()) return false;
 
         Iterator<Parameter> my, his;
-        for (my = parameterIterator(), his = other.parameterIterator();
+        for (my = getParameters().iterator(), his = other.getParameters().iterator();
                 my.hasNext() && his.hasNext(); ) {
         	
         		final Type myType = ((Parameter)my.next()).getType();
