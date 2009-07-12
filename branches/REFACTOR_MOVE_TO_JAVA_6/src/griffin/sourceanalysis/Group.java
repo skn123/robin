@@ -31,6 +31,7 @@ public class Group extends Entity {
 		 * @see sourceanalysis.Scope#mirrorRelationToMember(Entity, ContainedConnection)
 		 * @see sourceanalysis.Entity#connectToGroup()
 		 */
+		@Override
 		protected void mirrorRelationToMember(Entity contained,
 			ContainedConnection<Group, ? extends Entity> connection) {
 			// Connect to group

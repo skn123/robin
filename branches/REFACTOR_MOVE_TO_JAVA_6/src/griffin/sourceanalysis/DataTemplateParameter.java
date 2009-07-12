@@ -70,6 +70,7 @@ public class DataTemplateParameter extends TemplateParameter{
 	 * @return boolean
 	 * @see sourceanalysis.TemplateParameter#hasDefault()
 	 */
+	@Override
 	public boolean hasDefault() {
 		return (m_default != null);
 	}
@@ -90,6 +91,7 @@ public class DataTemplateParameter extends TemplateParameter{
 	 * type for this parameter.
 	 * @return an instance of DataTemplateArgument holding the default string.
 	 */
+	@Override
 	public TemplateArgument getDefaultValue()
 	{
 		if (hasDefault())
@@ -101,6 +103,7 @@ public class DataTemplateParameter extends TemplateParameter{
 	/**
 	 * @see sourceanalysis.TemplateParameter#getDefaultValue(java.util.Iterator, java.util.Iterator)
 	 */
+	@Override
 	public TemplateArgument getDefaultValue(
 		Iterator<TemplateParameter> parameterIterator,
 		Iterator<TemplateArgument> argumentIterator) 
@@ -110,8 +113,8 @@ public class DataTemplateParameter extends TemplateParameter{
 		String defaultString = getDefaultString();
 		// Replace occurances in default string as if they were macros
 		while (parameterIterator.hasNext() && argumentIterator.hasNext()) {
-			TemplateParameter parameter = (TemplateParameter)parameterIterator.next();
-			TemplateArgument argument = (TemplateArgument)argumentIterator.next();
+			TemplateParameter parameter = parameterIterator.next();
+			TemplateArgument argument = argumentIterator.next();
 			
 			if (defaultString.startsWith(parameter.getName())) {
 				defaultString = argument.toCpp() 
@@ -129,6 +132,7 @@ public class DataTemplateParameter extends TemplateParameter{
 	 * @name Utilities
 	 */
 	/*@{*/
+	@Override
 	public Object clone()
 	{
 		DataTemplateParameter duplica = new DataTemplateParameter();

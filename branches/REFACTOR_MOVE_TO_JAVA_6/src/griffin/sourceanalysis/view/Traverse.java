@@ -49,14 +49,14 @@ public class Traverse {
 	{
 		// - traverse routines of scope
 		for (ContainedConnection<Aggregate, Routine> connection: starting.getRoutines()) {
-			Routine routine = (Routine)connection.getContained();
+			Routine routine = connection.getContained();
 			if (connection.getVisibility() >= minVisibility && 
 					(intoTemplates || !routine.isTemplated()))
 				traverse(routine, visitor);
 		}
 		// - traverse fields of scope
 		for (ContainedConnection<Aggregate, Field> connection: starting.getFields()) {
-			Field field = (Field)connection.getContained();
+			Field field = connection.getContained();
 			try {
 				if (connection.getVisibility() >= minVisibility)
 					visitor.visit(field.getType());
@@ -67,7 +67,7 @@ public class Traverse {
 		}
 		// - traverse typedefs in scope
 		for (ContainedConnection<Aggregate, Alias> connection: starting.getAliass()) {
-			Alias alias = (Alias)connection.getContained();
+			Alias alias = connection.getContained();
 			if (connection.getVisibility() >= minVisibility)
 				visitor.visit(alias.getAliasedType());
 		}
@@ -130,15 +130,15 @@ public class Traverse {
 	public void traverse(Scope<? extends Entity> starting, RoutineVisitor visitor)
 	{
 		for (ContainedConnection<? extends Entity, Routine> connection: starting.getRoutines()) {
-			Routine routine = (Routine)connection.getContained();
+			Routine routine = connection.getContained();
 			visitor.visit(routine);
 		}
 		for (ContainedConnection<? extends Entity, Aggregate> connection: starting.getAggregates()) {
-			Aggregate aggregate = (Aggregate)connection.getContained();
+			Aggregate aggregate = connection.getContained();
 			traverse(aggregate.getScope(), visitor);
 		}
 		for (ContainedConnection<? extends Entity, Namespace> connection: starting.getNamespaces()) {
-			Namespace ns = (Namespace)connection.getContained();
+			Namespace ns = connection.getContained();
 			traverse(ns.getScope(), visitor);
 		}
 	}
@@ -151,12 +151,12 @@ public class Traverse {
 	public void traverse(Scope<? extends Entity> starting, AggregateVisitor visitor)
 	{
 		for (ContainedConnection<? extends Entity, Aggregate> connection: starting.getAggregates()) {
-			Aggregate aggregate = (Aggregate)connection.getContained();
+			Aggregate aggregate = connection.getContained();
 			visitor.visit(aggregate);
 			traverse(aggregate.getScope(), visitor);
 		}
 		for (ContainedConnection<? extends Entity, Namespace> connection: starting.getNamespaces()) {
-			Namespace ns = (Namespace)connection.getContained();
+			Namespace ns = connection.getContained();
 			traverse(ns.getScope(), visitor);
 		}
 	}

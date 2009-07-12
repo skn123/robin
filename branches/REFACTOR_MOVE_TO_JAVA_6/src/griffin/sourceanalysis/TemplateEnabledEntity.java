@@ -71,6 +71,7 @@ public abstract class TemplateEnabledEntity extends Entity {
 	 * name as the general template which they specialize.
 	 * @see sourceanalysis.Entity#getName()
 	 */
+	@Override
 	public String getName()
 	{
 		if (isSpecialized()) {

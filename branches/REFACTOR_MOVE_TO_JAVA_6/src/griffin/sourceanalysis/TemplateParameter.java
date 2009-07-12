@@ -42,5 +42,6 @@ public abstract class TemplateParameter extends Entity {
 	/**
 	 * Creates an identical duplicate of the template parameter.
 	 */
+	@Override
 	public abstract Object clone();
 }

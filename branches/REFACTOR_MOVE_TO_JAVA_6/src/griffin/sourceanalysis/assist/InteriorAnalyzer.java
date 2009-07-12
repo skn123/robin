@@ -510,7 +510,7 @@ public class InteriorAnalyzer {
 			// - find a container in current scope
 			Entity subcontainer = findContainer(containerScope, name[i]);
 			if (subcontainer == null && container instanceof Aggregate)
-				subcontainer = findTypenameTemplateParameter((Aggregate)container, name[i]);
+				subcontainer = findTypenameTemplateParameter(container, name[i]);
 			// - check if container exists, if not, create one
 			if (subcontainer != null) {
 				// - The entity found must be an aggregate or a namespace
@@ -557,14 +557,14 @@ public class InteriorAnalyzer {
 	{
 		// Search for classes
 		for (ContainedConnection<? extends Entity, Aggregate> connection: inside.getAggregates()) {
-			Aggregate aggregate = (Aggregate)connection.getContained();
+			Aggregate aggregate = connection.getContained();
 			if (aggregate.getName().equals(name)) {
 				return aggregate;
 			}
 		}
 		// Search for namespaces
 		for (ContainedConnection<? extends Entity, Namespace> connection: inside.getNamespaces()) {
-			Namespace ns = (Namespace)connection.getContained();
+			Namespace ns = connection.getContained();
 			if (ns.getName().equals(name)) {
 				return ns;
 			}

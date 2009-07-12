@@ -89,8 +89,8 @@ public class JythonTemplateElement extends ScriptingTemplateElement {
 		// Add members of the scope as variables to the interpreter environment
 		for (java.util.Map.Entry<String, Entity> entry: context.getDecls()) {
 			try {
-				String varname = (String)entry.getKey();
-				Entity varobj = (Entity)entry.getValue();
+				String varname = entry.getKey();
+				Entity varobj = entry.getValue();
 				// Set variable
 				m_interp.set(varname, varobj);
 			}

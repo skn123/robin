@@ -65,7 +65,7 @@ public class BackendData {
    /**
     * @return the backend interface class
     */
-   public Class<Backend> getBackendInterface() {
+   public Class<? extends Backend> getBackendInterface() {
        return backendInterface;
    }
    
@@ -96,7 +96,7 @@ public class BackendData {
     * @throws InvalidBackendException implementingClass does not implement Backend
     */
    @SuppressWarnings("unchecked")
-   private Class<Backend> getBackendClass(Class implementingClass) throws InvalidBackendException {
+   private Class<? extends Backend> getBackendClass(Class<? extends Backend> implementingClass) throws InvalidBackendException {
                    
        Class[] cInterfaces = implementingClass.getInterfaces();
        
@@ -231,7 +231,7 @@ public class BackendData {
    /**
     * Backend interface
     */
-   private Class<Backend> backendInterface;
+   private Class<? extends Backend> backendInterface;
    
    
    /**

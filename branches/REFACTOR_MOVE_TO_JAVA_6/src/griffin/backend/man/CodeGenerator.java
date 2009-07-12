@@ -58,7 +58,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		Scope<Namespace> globalScope = globalNS.getScope();
 		for (ContainedConnection<Namespace, Aggregate> con: globalScope.getAggregates()) {
 			try {
-				generateSingleClassDocumentation((Aggregate)con.getContained());
+				generateSingleClassDocumentation(con.getContained());
 			} catch (IOException e) {
 				System.err.println("*** ERROR: failed to create man: " + e);
 				e.printStackTrace();
@@ -91,7 +91,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 	 */
 	private void writeGroups(Aggregate agg, Writer w) throws IOException {
 		for (ContainedConnection<Aggregate, Group> c: agg.getScope().getGroups()) {
-			Group g = (Group)c.getContained();
+			Group g = c.getContained();
 			writeGroup(g, w);
 		}
 		
@@ -114,7 +114,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 	 */
 	private void writeMethods(Scope<Group> scope, Writer w) throws IOException  {	
 		for (ContainedConnection<Group, Routine> c: scope.getRoutines()) {
-			Routine r = (Routine)c.getContained();						
+			Routine r = c.getContained();						
 			try {
 				writeMethod(r, w);
 			

@@ -367,14 +367,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	        m_output.write("\t" + interceptor.getName() + "(");
 	        int paramIndex = 0;
 	        for (Iterator<Parameter> argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
-	            Parameter param = (Parameter) argIter.next();
+	            Parameter param = argIter.next();
 	            m_output.write(param.getType().formatCpp(param.getName()));
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
 	        }
 	        m_output.write(") : " + subject.getName() + "(");
 	        paramIndex = 0;
 	        for (Iterator<Parameter> argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
-	            Parameter param = (Parameter) argIter.next();
+	            Parameter param = argIter.next();
 	            m_output.write(param.getName());
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
 	        }
@@ -405,7 +405,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(" " + routine.getName() + "(");
         int i = 0;
         for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
-            Parameter param = (Parameter) argIter.next();
+            Parameter param = argIter.next();
             // write a generic name, in order to avoid name clashes with our own parameters
             m_output.write(param.getType().formatCpp("interceptor_arg" + i));
             m_output.write(" /* " + param.getName() + " */");
@@ -430,7 +430,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             int i = 0;
             for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
                 writeInterceptorFunctionBasicBlockArgument(
-                        (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
+                        argIter.next(), i, argIter.hasNext() && i < nArgs - 1
                     );
             }
             m_output.write("\t\t};\n");
@@ -1426,7 +1426,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		int argCount = 0;
 		for (Iterator<Parameter> pi = routine.getParameters().iterator(); 
 				argCount < nArguments && pi.hasNext(); ++argCount) {
-			Parameter parameter = (Parameter)pi.next();
+			Parameter parameter = pi.next();
 			// Write name
 			m_output.write("\t{\"");
 			m_output.write(parameter.getName());
@@ -1764,7 +1764,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (basesIterator != null) {
 			for (; basesIterator.hasNext(); ) {
 				InheritanceConnection connection =
-					(InheritanceConnection)basesIterator.next();
+					basesIterator.next();
 				if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 					Aggregate base = connection.getBase();
 					m_output.write("{\"");

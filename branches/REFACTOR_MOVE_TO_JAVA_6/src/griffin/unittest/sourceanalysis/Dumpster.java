@@ -322,27 +322,27 @@ public class Dumpster {
 	{
 		// - dump routines
 		for (ContainedConnection<? extends Entity, Routine> connection: scope.getRoutines()) {
-			dump((Routine)connection.getContained(), out);
+			dump(connection.getContained(), out);
 		}
 		// - dump classes
 		for (ContainedConnection<? extends Entity, Aggregate> connection: scope.getAggregates()) {
-			dump((Aggregate)connection.getContained(), out);
+			dump(connection.getContained(), out);
 		}
 		// - dump namespaces
 		for (ContainedConnection<? extends Entity, Namespace> connection: scope.getNamespaces()) {
-			dump((Namespace)connection.getContained(), out);
+			dump(connection.getContained(), out);
 		}
 		// - dump field members
 		for (ContainedConnection<? extends Entity, Field> connection: scope.getFields()) {
-			dump((Field)connection.getContained(), out);
+			dump(connection.getContained(), out);
 		}
 		// - dump contained aliases
 		for (ContainedConnection<? extends Entity, Alias> connection: scope.getAliass()) {
-			dump((Alias)connection.getContained(), out);
+			dump(connection.getContained(), out);
 		}
 		// - dump enumerated types
 		for (ContainedConnection<? extends Entity, sourceanalysis.Enum> connection: scope.getEnums()) {
-			dump((sourceanalysis.Enum)connection.getContained(), out);
+			dump(connection.getContained(), out);
 		}
 		out.flush();
 	}
@@ -355,7 +355,7 @@ public class Dumpster {
 	{
 		// - dump contained groups
 		for (ContainedConnection<? extends Entity, Group> connection: scope.getGroups()) {
-			dump((Group)connection.getContained(), out);
+			dump(connection.getContained(), out);
 		}
 	}	
 

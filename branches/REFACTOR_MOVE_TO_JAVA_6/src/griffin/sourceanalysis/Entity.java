@@ -356,6 +356,7 @@ public abstract class Entity {
 	 * contains Entity kind and name.
 	 * @return String
 	 */
+	@Override
 	public String toString()
 	{
 		return getClass().getName() + "(" + getName() + ")";
