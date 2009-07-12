@@ -215,8 +215,7 @@ public class Utils {
 				if (!rtype.isFlat()) return false;
 			}
 			// Iterate parameters and check the flatness of each
-			for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
-				Parameter param = (Parameter)pi.next(); 
+			for (Parameter param: routine.getParameters()) {
 				if (!param.getType().isFlat()) return false;
 			}
 			return true;
@@ -237,8 +236,7 @@ public class Utils {
 	public static boolean hasAnyArrays(Routine routine)
 	{
 		// Iterate parameters and check the flatness of each
-		for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
-			Parameter param = (Parameter)pi.next();
+		for (Parameter param: routine.getParameters()) {
 			try {
 				if (hasAnyArrays(param.getType())) return true;
 			}
@@ -407,8 +405,7 @@ public class Utils {
 	{
 		int counter = 0;
 		// Iterate through parameters and increment counter
-		for (Iterator iter = routine.parameterIterator(); iter.hasNext(); ) {
-			iter.next();
+		for (@SuppressWarnings("unused") Parameter param: routine.getParameters()) {
 			++counter;
 		}		
 		return counter;
@@ -424,8 +421,7 @@ public class Utils {
 		int counter = 0;
 		// Iterate through parameters and increment counter only if
 		// parameter does not have a default value
-		for (Iterator iter = routine.parameterIterator(); iter.hasNext(); ) {
-			Parameter parameter = (Parameter)iter.next();
+		for (Parameter parameter: routine.getParameters()) {
 			if (!parameter.hasDefault()) ++counter;
 		}		
 		return counter;
@@ -455,17 +451,17 @@ public class Utils {
 		}
 
 		proto += "(";	
-		for (Iterator iter = routine.parameterIterator(); iter.hasNext();) {
-			Parameter param = (Parameter)iter.next();
-			
+		boolean first = true;
+		for (Parameter param: routine.getParameters()) {
+			if (!first) {
+				proto += ", ";
+			}
+			first = false;
 			proto += Utils.cleanFormatCpp(param.getType(), 
 				 param.getName());
 			if(param.hasDefault()) {
 				proto += " = " + param.getDefaultString();
 			}
-			if(iter.hasNext()) {
-				proto += ", ";
-			} 
 		}
 		
 		proto += ")";
@@ -540,7 +536,7 @@ public class Utils {
 			Routine routine = (Routine)connection.getContained();
 			
 			if (routine.isConstructor()
-				&& !routine.parameterIterator().hasNext()) {
+				&& !routine.getParameters().iterator().hasNext()) {
 				// This is a default constructor.
 				// Return true if it's public, false otherwise
 				return connection.getVisibility() == Specifiers.Visibility.PUBLIC;
@@ -595,7 +591,7 @@ public class Utils {
 			
 			// Filter "operator<<"
 			if (fcn.getName().equals("operator<<")) {
-				Iterator pi = fcn.parameterIterator();
+				Iterator<Parameter> pi = fcn.getParameters().iterator();
 				if (pi.hasNext()) {
 					// Obtain left operand type
 					Parameter left = (Parameter)pi.next();
@@ -641,7 +637,7 @@ public class Utils {
 			
 			// Filter operators
 			if (fcn.isOperator() && !fcn.isTemplated()) {
-				Iterator pi = fcn.parameterIterator();
+				Iterator<Parameter> pi = fcn.getParameters().iterator();
 				if (pi.hasNext()) {
 					// Obtain left operand type
 					Parameter left = (Parameter)pi.next();
@@ -878,7 +874,7 @@ public class Utils {
 		templateInstance.setName(template.getName());
 		if (arguments.length > 0) {
 			templateInstance.setGeneralTemplateForSpecialization(template, 
-					new Vector(Arrays.asList(arguments)));
+					new Vector<TemplateArgument>(Arrays.asList(arguments)));
 		}
 		if (template.getDeclaration() != null) {
 			// - copy declaration locator
@@ -996,8 +992,7 @@ public class Utils {
 					cleanFormatCpp(methodinst.getReturnType(), ""));
 			}
 			// - substitute in parameter types 
-			for (Iterator pi = method.parameterIterator(); pi.hasNext();) {
-				Parameter parameter = (Parameter)pi.next();
+			for (Parameter parameter: method.getParameters()) {
 				Parameter parameterinst = new Parameter();
 				parameterinst.setName(parameter.getName());
 				parameterinst.setType(instantiateTemplate(parameter.getType(), substitution,macros));
@@ -1439,8 +1434,8 @@ public class Utils {
 			return false;
 
 		// Compare all arguments types
-		Iterator fiter = first.parameterIterator();
-		Iterator siter = second.parameterIterator();
+		Iterator<Parameter> fiter = first.getParameters().iterator();
+		Iterator<Parameter> siter = second.getParameters().iterator();
 		while( fiter.hasNext() || siter.hasNext() ) {
 			
 			if( ! fiter.hasNext() || ! siter.hasNext() ) {

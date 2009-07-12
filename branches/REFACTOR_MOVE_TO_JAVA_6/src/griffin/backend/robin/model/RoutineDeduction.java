@@ -149,11 +149,11 @@ public class RoutineDeduction {
 	 * @return
 	 * @throws MissingInformationException
 	 */
-	public static List<ParameterTransformer> deduceParameterTransformers(Iterator formal, int count) throws MissingInformationException
+	public static List<ParameterTransformer> deduceParameterTransformers(Iterator<Parameter> formal, int count) throws MissingInformationException
 	{
 		ArrayList<ParameterTransformer> qual = new ArrayList<ParameterTransformer>();
 		for (int n = 0; formal.hasNext() && n < count; ++n) {
-			qual.add(deduceParameterTransformer((Parameter)formal.next()));
+			qual.add(deduceParameterTransformer(formal.next()));
 		}
 		return qual;
 	}

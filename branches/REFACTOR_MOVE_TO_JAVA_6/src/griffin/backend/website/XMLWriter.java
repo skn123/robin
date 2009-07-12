@@ -331,8 +331,8 @@ public class XMLWriter {
 		}
 			
 		// Compare all arguments.
-		Iterator fiter = first.parameterIterator();
-		Iterator siter = second.parameterIterator();
+		Iterator<Parameter> fiter = first.getParameters().iterator();
+		Iterator<Parameter> siter = second.getParameters().iterator();
 		while( fiter.hasNext() || siter.hasNext() ) {
 			
 			if( ! fiter.hasNext() || ! siter.hasNext() ) {
@@ -377,8 +377,8 @@ public class XMLWriter {
 		}
 			
 		// Compare all arguments.
-		Iterator fiter = first.parameterIterator();
-		Iterator siter = second.parameterIterator();
+		Iterator<Parameter> fiter = first.getParameters().iterator();
+		Iterator<Parameter> siter = second.getParameters().iterator();
 		while( fiter.hasNext() || siter.hasNext() ) {
 			
 			if( ! fiter.hasNext() || ! siter.hasNext() ) {
@@ -502,17 +502,17 @@ public class XMLWriter {
 		}
 
 		proto += "(";	
-		for (Iterator iter = routine.parameterIterator(); iter.hasNext();) {
-			Parameter param = (Parameter)iter.next();
-			
+		boolean first = true;
+		for (Parameter param: routine.getParameters()) {
+			if (!first) {
+				proto += ", ";
+			}
+			first = false;
 			proto += Utils.cleanFormatCpp(param.getType(), 
 				 param.getName());
 			if(param.hasDefault()) {
 				proto += " = " + param.getDefaultString();
 			}
-			if(iter.hasNext()) {
-				proto += ", ";
-			} 
 		}
 		
 		proto += ")";

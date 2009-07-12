@@ -113,8 +113,7 @@ public class Traverse {
 			/* This type is corrupted and it's ignored */
 		}
 		// Visit parameters
-		for (Iterator pi = starting.parameterIterator(); pi.hasNext(); ) {
-			Parameter param = (Parameter)pi.next();
+		for (Parameter param: starting.getParameters()) {
 				
 			try {
 				visitor.visit(param.getType());

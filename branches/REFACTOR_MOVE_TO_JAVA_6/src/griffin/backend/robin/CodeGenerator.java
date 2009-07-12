@@ -367,14 +367,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         		m_output.write("\n");
 	        m_output.write("\t" + interceptor.getName() + "(");
 	        int paramIndex = 0;
-	        for (Iterator argIter = newCtor.parameterIterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	        for (Iterator argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
 	            Parameter param = (Parameter) argIter.next();
 	            m_output.write(param.getType().formatCpp(param.getName()));
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
 	        }
 	        m_output.write(") : " + subject.getName() + "(");
 	        paramIndex = 0;
-	        for (Iterator argIter = newCtor.parameterIterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	        for (Iterator argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
 	            Parameter param = (Parameter) argIter.next();
 	            m_output.write(param.getName());
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
@@ -404,7 +404,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(routine.getReturnType().formatCpp());
         m_output.write(" " + routine.getName() + "(");
         int i = 0;
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
+        for (Iterator argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
             Parameter param = (Parameter) argIter.next();
             // write a generic name, in order to avoid name clashes with our own parameters
             m_output.write(param.getType().formatCpp("interceptor_arg" + i));
@@ -428,7 +428,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         } else {
             m_output.write("\t\tbasic_block args[] = {\n");
             int i = 0;
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
+            for (Iterator argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
                 writeInterceptorFunctionBasicBlockArgument(
                         (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
                     );
@@ -508,7 +508,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             // we need to write the name of the first class this routine appeared at
             m_output.write(routine.getContainer().getFullName() + "::" + routine.getName() + "(");
             int i = 0;
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
+            for (Iterator argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
             		argIter.next(); // ignore the result, we just need to advance the iterator
             		// write the generated name instead of a real one
                 m_output.write("interceptor_arg" + i + 
@@ -857,7 +857,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 							++nArguments) {
 						try {
 							List<RoutineDeduction.ParameterTransformer> paramf =
-								RoutineDeduction.deduceParameterTransformers(routine.parameterIterator(), nArguments);
+								RoutineDeduction.deduceParameterTransformers(routine.getParameters().iterator(), nArguments);
 							RoutineDeduction.ParameterTransformer retf =
 								RoutineDeduction.deduceReturnTransformer(routine);
 							String name = "static_" + uid(routine) + "r" + nArguments;
@@ -1213,7 +1213,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		List<ParameterTransformer> paramf = RoutineDeduction
-			.deduceParameterTransformers(routine.parameterIterator(), nArguments);
+			.deduceParameterTransformers(routine.getParameters().iterator(), nArguments);
 		ParameterTransformer retf = RoutineDeduction.deduceReturnTransformer(routine);
 		m_output.write(Formatters.formatParameters(paramf));
 		m_output.write(")\n");
@@ -1430,7 +1430,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			+ (with ? "r": "s") + nArguments + "_proto[] = {\n");
 		// Go through arguments but not more than nArguments entries
 		int argCount = 0;
-		for (Iterator pi = routine.parameterIterator(); 
+		for (Iterator pi = routine.getParameters().iterator(); 
 				argCount < nArguments && pi.hasNext(); ++argCount) {
 			Parameter parameter = (Parameter)pi.next();
 			// Write name

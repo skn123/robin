@@ -1271,9 +1271,7 @@ public class DoxygenAnalyzer {
 					String desc = XML.collectText(paramnode);
 					// - find a parameter baring the name 'current' and add
 					//   the description to it
-					for (Iterator rpi = routine.parameterIterator(); 
-						rpi.hasNext(); ) {
-						Parameter param = (Parameter)rpi.next();
+					for (Parameter param: routine.getParameters()) {
 						if (param.getName().equals(current)) {
 							param.addProperty(
 								new Entity.Property("description", desc));
