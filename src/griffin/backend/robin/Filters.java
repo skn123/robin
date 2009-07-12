@@ -311,7 +311,7 @@ public class Filters extends GenericFilters {
 	static Type getTouchup(Type returnType)
 	{
 		if (getTouchupsMap().containsKey(returnType)) {
-			return ((Touchup)getTouchupsMap().get(returnType)).m_newType;
+			return (getTouchupsMap().get(returnType)).m_newType;
 		}
 		return null;
 	}

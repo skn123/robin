@@ -295,6 +295,7 @@ public class SourceFile extends Entity {
 	 * the return value is the same as from getName().
 	 * @return String full path (e.g., /tmp/karateka/punch.h)
 	 */
+	@Override
 	public String getFullName()
 	{
 		return m_fullPath == null ? super.getFullName() : m_fullPath;

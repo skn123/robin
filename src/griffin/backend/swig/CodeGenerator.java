@@ -137,7 +137,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 		
 		for (Iterator<Parameter> pi = routine.getParameters().iterator();
 					pi.hasNext() && paramCount < nParams; ) {
-			Parameter parameter = (Parameter)pi.next();	
+			Parameter parameter = pi.next();	
 			// Obtain parameter information		
 			String name = parameter.getName(); 			
 			Type type = parameter.getType();

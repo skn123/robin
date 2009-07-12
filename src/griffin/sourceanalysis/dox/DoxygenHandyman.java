@@ -107,7 +107,7 @@ public class DoxygenHandyman {
 		for (ContainedConnection<? extends Entity, Aggregate> connection: anchor.getAggregates()) {
 			collectContained(connection);
 			// - descend
-			Aggregate aggregate = (Aggregate)connection.getContained();
+			Aggregate aggregate = connection.getContained();
 			collectEntitiesByName(aggregate.getScope());
 		}
 		// Go through aliases
@@ -120,7 +120,7 @@ public class DoxygenHandyman {
 		}
 		// Even go through constant data members
 		for (ContainedConnection<? extends Entity, Field> connection: anchor.getFields()) {
-			Field field = (Field)connection.getContained();
+			Field field = connection.getContained();
 			try {
 				Type type = field.getType();
 				if (type.isFlat() && type.isConst() 
@@ -134,7 +134,7 @@ public class DoxygenHandyman {
 		// Look in inner namespace scopes
 		for (ContainedConnection<? extends Entity, Namespace> connection: anchor.getNamespaces()) {
 			// - descend
-			Namespace namespace = (Namespace)connection.getContained();
+			Namespace namespace = connection.getContained();
 			collectEntitiesByName(namespace.getScope());
 		}		
 	}
@@ -334,7 +334,7 @@ public class DoxygenHandyman {
 			// Each member of the fields map is a contained-connection which
 			// describes field visibility and storage with reference to the
 			// target scope
-			Field field = (Field)element.getContained();
+			Field field = element.getContained();
 			target.addMember(field,
 				element.getVisibility(), element.getStorage());
 		}

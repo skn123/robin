@@ -11,12 +11,14 @@ import backend.exceptions.configuration.ConfigurationParseException;
  */
 public class TestPackageFinder extends TestCase {
 
-   protected void setUp() throws Exception {
+   @Override
+protected void setUp() throws Exception {
        super.setUp();
        pf = new PackageFinder("unittest.backend.configuration.testfinder");
    }
 
-   protected void tearDown() throws Exception {
+   @Override
+protected void tearDown() throws Exception {
        super.tearDown();
    }
 

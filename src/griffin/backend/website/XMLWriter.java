@@ -339,8 +339,8 @@ public class XMLWriter {
 				return false;
 			}
 			
-			Parameter fparam = (Parameter)fiter.next();
-			Parameter sparam = (Parameter)siter.next();
+			Parameter fparam = fiter.next();
+			Parameter sparam = siter.next();
 			
 			String firstArg = fparam.getType().formatCpp() + fparam.getName();
 			String secondArg = sparam.getType().formatCpp() + sparam.getName();
@@ -385,8 +385,8 @@ public class XMLWriter {
 				return false;
 			}
 			
-			Parameter fparam = (Parameter)fiter.next();
-			Parameter sparam = (Parameter)siter.next();
+			Parameter fparam = fiter.next();
+			Parameter sparam = siter.next();
 			
 			String firstArg = fparam.getType().toString();// + fparam.getName();
 			String secondArg = sparam.getType().toString();// + sparam.getName();
@@ -937,7 +937,7 @@ public class XMLWriter {
 			// (this is a patch due to some bug in doxygen)
 			boolean alreadyDocumented = false;
 			for(int i = 0; i < documentedRoutines.size(); ++i) {
-				if(equalRoutines(routine, (Routine)documentedRoutines.get(i))) {
+				if(equalRoutines(routine, documentedRoutines.get(i))) {
 					alreadyDocumented = true;
 				}
 			}

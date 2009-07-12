@@ -83,6 +83,7 @@ public class Enum extends Entity {
 	 * Creates an exact copy of this enum.
 	 * @return a replica
 	 */
+	@Override
 	public Object clone()
 	{
 		Enum replica = new Enum();

@@ -219,6 +219,7 @@ public class Type extends DefaultTreeModel {
 		 * Returns <b>true</b> if the kind of this node is not NODE_LEAF.
 		 * @see javax.swing.tree.TreeNode#getAllowsChildren()
 		 */
+		@Override
 		public boolean getAllowsChildren() {
 			return (m_kind != NODE_LEAF);
 		}
@@ -228,6 +229,7 @@ public class Type extends DefaultTreeModel {
 		 * <tt>kind(...children...)</tt>
 		 * @return String textual representation
 		 */
+		@Override
 		@SuppressWarnings("unchecked")
 		public String toString()
 		{
@@ -392,6 +394,7 @@ public class Type extends DefaultTreeModel {
 		/* (non-Javadoc)
 		 * @see java.lang.Object#equals(Object)
 		 */
+		@Override
 		public boolean equals(Object other)
 		{
 			if (!(other instanceof TypeNode)) {
@@ -407,6 +410,7 @@ public class Type extends DefaultTreeModel {
 		/* (non-Javadoc)
 		 * @see java.lang.Object#hashCode()
 		 */
+		@Override
 		public int hashCode() {
 			int hash = Integer.toString(m_kind).hashCode();
 			hash += Integer.toString(m_cvQualifiers).hashCode(); 
@@ -458,6 +462,7 @@ public class Type extends DefaultTreeModel {
 	 * throw an error when it's created with a null root. This is the main
 	 * reason for the existance of this extension. 
 	 */
+	@Override
 	public Object getRoot()
 	{
 		return m_isEmpty ? null : super.getRoot();
@@ -476,6 +481,7 @@ public class Type extends DefaultTreeModel {
 	 * Create a textual representation of the type. If this type is empty, the 
 	 * value is "". Otherwise, the representation of the root is taken.
 	 */
+	@Override
 	public String toString()
 	{
 		TypeNode root = getRootNode();
@@ -1050,6 +1056,7 @@ public class Type extends DefaultTreeModel {
 	/**
 	 * @see java.lang.Object#equals(Object)
 	 */
+	@Override
 	public boolean equals(Object other)
 	{
 		if (!(other instanceof Type)) {
@@ -1068,6 +1075,7 @@ public class Type extends DefaultTreeModel {
 	/**
 	 * @see java.lang.Object#hashCode()
 	 */
+	@Override
 	public int hashCode() {
 		int hash = Boolean.toString(m_isEmpty).hashCode();
 		if(root != null) hash += root.hashCode();

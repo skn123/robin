@@ -50,9 +50,11 @@ public class GeneratorTest extends TestCase {
 	{
 		final Process run = 
 			Runtime.getRuntime().exec(command);
-		new Thread() { public void run() { deplete(run.getInputStream()); }
+		new Thread() { @Override
+		public void run() { deplete(run.getInputStream()); }
 		}.start();
-		new Thread() { public void run() { deplete(run.getErrorStream()); }
+		new Thread() { @Override
+		public void run() { deplete(run.getErrorStream()); }
 		}.start();
 		// Wait for completion
 		boolean finished = false;

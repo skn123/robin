@@ -51,13 +51,13 @@ public class IncompleteTemplateInstance extends Aggregate {
     private void copyInnerCompoundsFromTemplate(Scope<Aggregate> templateScope) {
         for (ContainedConnection<Aggregate, Aggregate> connection: templateScope.getAggregates()) {
 
-            copyInnerAggregate( (Aggregate)connection.getContained(), connection.getVisibility() );
+            copyInnerAggregate( connection.getContained(), connection.getVisibility() );
         }
     }
 
     private void copyInnerAliasesFromTemplate(Scope<Aggregate> templateScope) {
         for (ContainedConnection<Aggregate, Alias> connection: templateScope.getAliass()) {
-            copyInnerAlias( (Alias)connection.getContained(), connection.getVisibility() );
+            copyInnerAlias( connection.getContained(), connection.getVisibility() );
         }
     }
 

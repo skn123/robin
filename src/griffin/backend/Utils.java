@@ -504,7 +504,7 @@ public class Utils {
         boolean hasNoPrivateConstructors = false;
 
         for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
-            Routine routine = (Routine)connection.getContained();
+            Routine routine = connection.getContained();
             if (routine.isConstructor()) {
                 if (connection.getVisibility() != Specifiers.Visibility.PRIVATE) {
                     return false;
@@ -532,7 +532,7 @@ public class Utils {
 		if (entity.getDeclaration() == null) return false;
 		
 		for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
-			Routine routine = (Routine)connection.getContained();
+			Routine routine = connection.getContained();
 			
 			if (routine.isConstructor()
 				&& !routine.getParameters().iterator().hasNext()) {
@@ -546,7 +546,7 @@ public class Utils {
         boolean membersHaveDefaultConstructors = true;
 
 		for (ContainedConnection<Aggregate, Field> connection: scope.getFields()) {
-            Field field = (Field)connection.getContained();
+            Field field = connection.getContained();
             
             Type fieldType = flatUnalias(field.getType());
             Entity fieldBaseType = fieldType.getBaseType();
@@ -586,17 +586,17 @@ public class Utils {
 		
 		// Scan each and every routine in the global namespace
 		for (ContainedConnection<Namespace, Routine> connection: program.getGlobalNamespace().getScope().getRoutines()) {
-			Routine fcn = (Routine)connection.getContained();
+			Routine fcn = connection.getContained();
 			
 			// Filter "operator<<"
 			if (fcn.getName().equals("operator<<")) {
 				Iterator<Parameter> pi = fcn.getParameters().iterator();
 				if (pi.hasNext()) {
 					// Obtain left operand type
-					Parameter left = (Parameter)pi.next();
+					Parameter left = pi.next();
 					if (pi.hasNext()) {
 						// Obtain right operand type
-						Parameter right = (Parameter)pi.next();
+						Parameter right = pi.next();
 						// Check types
 						if (left.getType().isFlat()
 							&& left.getType().getBaseType()
@@ -632,14 +632,14 @@ public class Utils {
 		if (with.isTemplated()) return matches;
 		
 		for (ContainedConnection<Namespace, Routine> connection: program.getGlobalNamespace().getScope().getRoutines()) {
-			Routine fcn = (Routine)connection.getContained();
+			Routine fcn = connection.getContained();
 			
 			// Filter operators
 			if (fcn.isOperator() && !fcn.isTemplated()) {
 				Iterator<Parameter> pi = fcn.getParameters().iterator();
 				if (pi.hasNext()) {
 					// Obtain left operand type
-					Parameter left = (Parameter)pi.next();
+					Parameter left = pi.next();
 					// Check types
 					if (left.getType().isFlat()
 							&& left.getType().getBaseType() == with
@@ -795,7 +795,7 @@ public class Utils {
 		String existingExpression =
 			templateExpression((d==null) ? template : d, arguments);
 		if(existingInstancesMap.containsKey(existingExpression)) {
-			return (Aggregate)existingInstancesMap.get(existingExpression);
+			return existingInstancesMap.get(existingExpression);
 		}
 		
 		
@@ -923,7 +923,7 @@ public class Utils {
 		List<Aggregate[]> inners = new LinkedList<Aggregate[]>();
 		for (ContainedConnection<Aggregate, Aggregate> connection: template.getScope().getAggregates()) {
 			Aggregate innerClass = 
-				(Aggregate)connection.getContained();
+				connection.getContained();
 			if (!isATemplateParameter(innerClass)) {
 				// Create a class by the same name in templateInstance
 				Aggregate instance = new Aggregate();
@@ -940,7 +940,7 @@ public class Utils {
 		// Instantiate inner typedefs
 		// --------------------------		
 		for (ContainedConnection<Aggregate, Alias> connection: template.getScope().getAliass()) {
-			Alias alias = (Alias)connection.getContained();
+			Alias alias = connection.getContained();
 			Alias instance = instantiateTemplate(alias, substitution, macros);
 			templateInstance.getScope().addMember(
 				instance, connection.getVisibility());
@@ -951,7 +951,7 @@ public class Utils {
 		// Instantiate inner enums
 		// -----------------------
 		for (ContainedConnection<Aggregate, sourceanalysis.Enum> connection: template.getScope().getEnums()) {
-			sourceanalysis.Enum enume = (sourceanalysis.Enum)connection.getContained();
+			sourceanalysis.Enum enume = connection.getContained();
 			sourceanalysis.Enum instance = (sourceanalysis.Enum)enume.clone();
 			templateInstance.getScope().addMember(
 				instance, connection.getVisibility());
@@ -962,7 +962,7 @@ public class Utils {
 		// Instantiate member functions
 		// ----------------------------
 		for (ContainedConnection<Aggregate, Routine> connection: template.getScope().getRoutines()) {
-			Routine method = (Routine)connection.getContained();
+			Routine method = connection.getContained();
 			Routine methodinst = new Routine();
 			methodinst.setName(method.getName());
 			methodinst.setConst(method.isConst());
@@ -1006,7 +1006,7 @@ public class Utils {
 		// Instantiate data members
 		// ------------------------
 		for (ContainedConnection<Aggregate, Field> connection: template.getScope().getFields()) {
-			Field field = (Field)connection.getContained();
+			Field field = connection.getContained();
 			Field instance = new Field();
 			instance.setName(field.getName());
 			// - copy properties
@@ -1024,8 +1024,8 @@ public class Utils {
 		// Fill inner class instantiations
 		// -------------------------------
 		for (Aggregate[] element: inners) {
-			Aggregate innerClass = (Aggregate)element[0];
-			Aggregate instance = (Aggregate)element[1];
+			Aggregate innerClass = element[0];
+			Aggregate instance = element[1];
 			instantiateTemplate(innerClass, new TemplateArgument[0],
 					substitution, instance, existingInstancesMap);
 		}
@@ -1125,7 +1125,7 @@ public class Utils {
 			new TemplateArgument[types.length];
 		// Transform TypenameTemplateArgument elements, copy the rest
 		for (int index = 0; index < types.length; ++index) {
-			TemplateArgument element = (TemplateArgument)types[index];
+			TemplateArgument element = types[index];
 			if (element instanceof TypenameTemplateArgument) {
 				// Substitute T in argument
 				Type value = ((TypenameTemplateArgument)element).getValue();
@@ -1182,7 +1182,7 @@ public class Utils {
 		final Aggregate fin_template = template;
 		final Map<Entity, Type> fin_substitution = substitution;
 		final TemplateArgument[] fin_targs =
-			(TemplateArgument[])arguments.toArray(new TemplateArgument[] { });
+			arguments.toArray(new TemplateArgument[] { });
 		final Map<String, Aggregate> fin_existingInstancesMap = existingInstancesMap;
 		
 		Type.Transformation collect = new Type.Transformation() {
@@ -1238,7 +1238,7 @@ public class Utils {
 					String expression = templateExpression(traitsClass, targs);
 					if (existingInstancesMap != null 
 							&& existingInstancesMap.containsKey(expression)) {
-						traitsClass = (Aggregate)existingInstancesMap.get(expression);
+						traitsClass = existingInstancesMap.get(expression);
 						foundInstantiation = true;
 						//System.err.println("Found instantiation for " + expression + ": " + traitsClass);
 					}
@@ -1269,26 +1269,26 @@ public class Utils {
 	{
 		// Find aggregates
 		for (ContainedConnection<? extends Entity, Aggregate> connection: scope.getAggregates()) {
-			Aggregate agg = (Aggregate)connection.getContained();
+			Aggregate agg = connection.getContained();
 			if (agg.getName().equals(componentname))
 				return agg;
 		}
 		// Find namespaces
 		for (ContainedConnection<? extends Entity, Namespace> connection: scope.getNamespaces()) {
-			Namespace ns = (Namespace)connection.getContained();
+			Namespace ns = connection.getContained();
 			if (ns.getName().equals(componentname))
 				return ns;
 		}
 		// Find enums
 		for (ContainedConnection<? extends Entity, sourceanalysis.Enum> connection: scope.getEnums()) {
-			sourceanalysis.Enum enume = (sourceanalysis.Enum)connection.getContained();
+			sourceanalysis.Enum enume = connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& enume.getName().equals(componentname))
 				return enume;
 		}
 		// Find typedefs
 		for (ContainedConnection<? extends Entity, Alias> connection: scope.getAliass()) {
-			Alias alias = (Alias)connection.getContained();
+			Alias alias = connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& alias.getName().equals(componentname))
 				return alias;
@@ -1434,8 +1434,8 @@ public class Utils {
 				return false;
 			}
 			
-			Parameter fparam = (Parameter)fiter.next();
-			Parameter sparam = (Parameter)siter.next();
+			Parameter fparam = fiter.next();
+			Parameter sparam = siter.next();
 			
 			String firstArg = fparam.getType().formatCpp();
 			String secondArg = sparam.getType().formatCpp();
@@ -1502,7 +1502,7 @@ public class Utils {
 		List<Field> accessible = new LinkedList<Field>();
 		
 		for (ContainedConnection<Aggregate, Field> fieldConnection: subject.getScope().getFields()) {
-			Field myField = (Field)fieldConnection.getContained();
+			Field myField = fieldConnection.getContained();
 			
 			if(isVisible(minimumAllowedVisibility, fieldConnection.getVisibility())) {
 				accessible.add(myField);
@@ -1517,7 +1517,7 @@ public class Utils {
 			if (targs != null) {
 				String expr = templateExpression(base, targs);
 				if (instanceMap != null) 
-					base = (Aggregate)instanceMap.get(expr);
+					base = instanceMap.get(expr);
 			}
 			if (base == null) continue;
 			
@@ -1599,7 +1599,7 @@ public class Utils {
 		
 		// Add virtual methods declared in this class
 		for (ContainedConnection<Aggregate, Routine> rconnection: subject.getScope().getRoutines()) {
-			Routine myMethod = (Routine)rconnection.getContained();
+			Routine myMethod = rconnection.getContained();
 
 			if (rconnection.getVirtuality() 
 			    != Specifiers.Virtuality.NON_VIRTUAL &&
@@ -1615,7 +1615,7 @@ public class Utils {
 			if (targs != null) {
 				String expr = templateExpression(base, targs);
 				if (instanceMap != null) 
-					base = (Aggregate)instanceMap.get(expr);
+					base = instanceMap.get(expr);
 			}
 			if (base == null) continue;
 			// - recursively fetch the virtual methods in the base class
@@ -1667,7 +1667,7 @@ public class Utils {
 			if (targs != null) {
 				String expr = templateExpression(base, targs);
 				if (instanceMap != null) 
-					base = (Aggregate)instanceMap.get(expr);
+					base = instanceMap.get(expr);
 			}
 			if (base == null) continue;
 			// - recursively fetch the unimplemented methods in the base class
@@ -1678,7 +1678,7 @@ public class Utils {
 				boolean found = false;
 				
 				for (ContainedConnection<Aggregate, Routine> rconnection: subject.getScope().getRoutines()) {
-					Routine myMethod = (Routine)rconnection.getContained();
+					Routine myMethod = rconnection.getContained();
 					// - compare unimplemented method in parent and method in
 					//   derived
 					if (rconnection.getVirtuality() 
@@ -1697,7 +1697,7 @@ public class Utils {
 
 		// Add pure virtual methods declared in this class
 		for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
-			Routine myMethod = (Routine)connection.getContained();
+			Routine myMethod = connection.getContained();
 	
 			if (connection.getVirtuality() 
 				== Specifiers.Virtuality.PURE_VIRTUAL) {
@@ -1831,9 +1831,9 @@ public class Utils {
         Aggregate derived = (Aggregate)container;
 
         for (InheritanceConnection ic: derived.getBases()) {
-            Aggregate base = ((InheritanceConnection)ic).getBase();
+            Aggregate base = (ic).getBase();
     		for (ContainedConnection<Aggregate, Routine> connection: base.getScope().getRoutines()) {
-                Routine candidate = (Routine)connection.getContained();
+                Routine candidate = connection.getContained();
                 //System.err.println("candidate " + candidate.getFullName());
                 if (routine.isCompatible(candidate))
                     return candidate;

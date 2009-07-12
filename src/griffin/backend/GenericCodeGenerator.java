@@ -132,13 +132,13 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	public void collect(Scope<Namespace> scope, String componentname) {
 		// Find aggregates
 		for (ContainedConnection<Namespace, Aggregate> connection: scope.getAggregates()) {
-			Aggregate agg = (Aggregate) connection.getContained();
+			Aggregate agg = connection.getContained();
 			if (nameMatches(agg, componentname))
 				consume(agg);
 		}
 		// Find enums
 		for (ContainedConnection<Namespace, sourceanalysis.Enum> connection: scope.getEnums()) {
-			sourceanalysis.Enum enume = (sourceanalysis.Enum) connection
+			sourceanalysis.Enum enume = connection
 					.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& nameMatches(enume, componentname)) {
@@ -147,7 +147,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 		}
 		// Find typedefs
 		for (ContainedConnection<Namespace, Alias> connection: scope.getAliass()) {
-			Alias alias = (Alias) connection.getContained();
+			Alias alias = connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& nameMatches(alias, componentname)) {
 				m_typedefs.add(alias);
@@ -155,7 +155,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 		}
 		// Find global functions
 		for (ContainedConnection<Namespace, Routine> connection: scope.getRoutines()) {
-			Routine routine = (Routine) connection.getContained();
+			Routine routine = connection.getContained();
 			if (/*!(connection.getContainer() instanceof Aggregate) &&*/ // TODO(misha): is this if important?
 					nameMatches(routine, componentname)) {
 				m_globalFuncs.add(routine);
@@ -163,7 +163,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 		}
 		// Find namespaces and look in inner namespace scopes
 		for (ContainedConnection<Namespace, Namespace> connection: scope.getNamespaces()) {
-			Namespace namespace = (Namespace) connection.getContained();
+			Namespace namespace = connection.getContained();
 			if (nameMatches(namespace, componentname)) {
 				m_namespaces.add(namespace);
 				autocollect(namespace.getScope());
@@ -190,23 +190,23 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	private void autocollect(Scope<Namespace> scope) {
 		// Find aggregates
 		for (ContainedConnection<Namespace, Aggregate> connection: scope.getAggregates()) {
-			Aggregate agg = (Aggregate) connection.getContained();
+			Aggregate agg = connection.getContained();
 			consume(agg);
 		}
 		// Find global functions
 		for (ContainedConnection<Namespace, Routine> connection: scope.getRoutines()) {
-			Routine routine = (Routine) connection.getContained();
+			Routine routine = connection.getContained();
 			m_globalFuncs.add(routine);
 		}
 		// Find typedefs
 		for (ContainedConnection<Namespace, Alias> connection: scope.getAliass()) {
-			Alias alias = (Alias) connection.getContained();
+			Alias alias = connection.getContained();
 			// Add the typedef
 			m_typedefs.add(alias);
 		}
 		// Look in inner namespace scopes
 		for (ContainedConnection<Namespace, Namespace> connection: scope.getNamespaces()) {
-			Namespace namespace = (Namespace) connection.getContained();
+			Namespace namespace = connection.getContained();
 			autocollect(namespace.getScope());
 		}
 	}
@@ -295,26 +295,26 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 		// Add public enums
 		for (ContainedConnection<Aggregate, sourceanalysis.Enum> connection: scope.getEnums()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
-				m_enums.add((sourceanalysis.Enum) connection.getContained());
+				m_enums.add(connection.getContained());
 			}
 		}
 		// Add public typedefs
 		for (ContainedConnection<Aggregate, Alias> connection: scope.getAliass()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
-				m_typedefs.add((Alias) connection.getContained());
+				m_typedefs.add(connection.getContained());
 			}
 		}
 		// Add public static methods
 		for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& connection.getStorage() == Specifiers.Storage.STATIC) {
-				m_globalFuncs.add((Routine) connection.getContained());
+				m_globalFuncs.add(connection.getContained());
 			}
 		}
 		// Add public inner classes
 		for (ContainedConnection<Aggregate, Aggregate> connection: scope.getAggregates()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
-				Aggregate inner = (Aggregate) connection.getContained();
+				Aggregate inner = connection.getContained();
 				innerClasses.add(inner);
 				grabInnersOf(inner, innerClasses);
 			}
@@ -664,7 +664,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 				return;
 
 			Aggregate template = Utils.extractTemplate(root);
-			TemplateArgument[] arguments = (TemplateArgument[]) Utils
+			TemplateArgument[] arguments = Utils
 					.extractTemplateArguments(root).toArray(
 							new TemplateArgument[0]);
 			// Look in supervised templates
@@ -750,7 +750,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 		}
 		for (Aggregate subject : m_subjects) {
 			for (InheritanceConnection connection: subject.getBases()) {
-				Aggregate base = (Aggregate) connection.getBase();
+				Aggregate base = connection.getBase();
 				// Find the specialization if one was generated
 				if (base.isTemplated() && considerInstantiations) {
 					String expression = Utils.templateExpression(base,
@@ -759,8 +759,8 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 				}
 				// Update the topo-nodes
 				if (base != null && bases.containsKey(base)) {
-					((TopologicalNode) bases.get(base)).exit.add(subject);
-					((TopologicalNode) bases.get(subject)).entryDegree++;
+					(bases.get(base)).exit.add(subject);
+					(bases.get(subject)).entryDegree++;
 				}
 			}
 		}
@@ -779,7 +779,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 					// Remove node from graph including all edges connected
 					// to it
 					for (Aggregate exit : topo.exit) {
-						TopologicalNode exitTarget = (TopologicalNode) bases
+						TopologicalNode exitTarget = bases
 								.get(exit);
 						exitTarget.entryDegree--;
 					}

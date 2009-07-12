@@ -291,8 +291,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
         for (my = getParameters().iterator(), his = other.getParameters().iterator();
                 my.hasNext() && his.hasNext(); ) {
         	
-        		final Type myType = ((Parameter)my.next()).getType();
-        		final Type hisType = ((Parameter)his.next()).getType();
+        		final Type myType = (my.next()).getType();
+        		final Type hisType = (his.next()).getType();
             if(!myType.isCompatible(hisType, true)) {
             		return false;
             }
@@ -303,6 +303,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	/**
 	 * @see java.lang.Object#clone()
 	 */
+	@Override
 	public Object clone() {
 		try {
 			return super.clone();

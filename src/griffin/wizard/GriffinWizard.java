@@ -19,7 +19,8 @@ public class GriffinWizard extends Wizard {
         this.addPage(new ClassesPage());
     }  
 
-    public boolean performFinish() {
+    @Override
+	public boolean performFinish() {
         MessageBox box = new MessageBox(this.getShell(), SWT.ICON_ERROR | SWT.OK);
         box.setText("Error!");
         FilesPage filesPage = (FilesPage)this.getPage("Files");

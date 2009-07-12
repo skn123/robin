@@ -1885,7 +1885,7 @@ public class DoxygenAnalyzer {
 		for (SourceFile.DeclDefConnection unfulfilled: m_unfulfilled_declarations) {
 			// Look for filename in map
 			String filename = unfulfilled.getSourceFilename();
-			SourceFile source = (SourceFile)m_files_byname.get(filename);
+			SourceFile source = m_files_byname.get(filename);
 			// Update connection as neccessary
 			if (source != null) {
 				// - check if this is a definition or a declaration
