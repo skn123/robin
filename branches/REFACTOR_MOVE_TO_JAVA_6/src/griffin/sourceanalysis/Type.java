@@ -228,6 +228,7 @@ public class Type extends DefaultTreeModel {
 		 * <tt>kind(...children...)</tt>
 		 * @return String textual representation
 		 */
+		@SuppressWarnings("unchecked")
 		public String toString()
 		{
 			StringBuffer sb = new StringBuffer();
@@ -265,6 +266,7 @@ public class Type extends DefaultTreeModel {
 		 * class-names involved in the type expression
 		 * @return String textual representation.
 		 */
+		@SuppressWarnings("unchecked")
 		public String formatCpp(String declname, BaseTypeFormatter baseFormatter)
 		{
 			StringBuffer sb = new StringBuffer();
@@ -366,6 +368,7 @@ public class Type extends DefaultTreeModel {
 		 * @param filltype value to fill in blanks
 		 * @return TypeNode a normal form, may be <b>this</b>.
 		 */
+		@SuppressWarnings("unchecked")
 		private TypeNode normalize(TypeNode filltype)
 		{
 			if (getKind() == NODE_X_BLANK) {
@@ -411,6 +414,7 @@ public class Type extends DefaultTreeModel {
 			return hash;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public TypeNode clone() {
 			TypeNode replica = new TypeNode(m_kind);
@@ -915,6 +919,7 @@ public class Type extends DefaultTreeModel {
 	 * If 'expandTypedefs' is true, then typedefs are expanded into a typenode tree
 	 */
 	
+	@SuppressWarnings("unchecked")
 	private boolean equalTypenodes(TypeNode first, TypeNode second, boolean expandTypedefs) {
 		
 		// trivial case, same nodes

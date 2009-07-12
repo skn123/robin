@@ -79,6 +79,7 @@ public class Utils {
 	 * @throws InappropriateKindException if the given type-node is
 	 * not a NODE_TEMPLATE_INSTANTIATION node.
 	 */
+	@SuppressWarnings("unchecked")
 	public static Aggregate extractTemplate(Type.TypeNode root) 
 	throws InappropriateKindException
 	{
@@ -102,6 +103,7 @@ public class Utils {
 	 * @throws InappropriateKindException if the given type-node is
 	 * not a NODE_TEMPLATE_INSTANTIATION node.
 	 */
+	@SuppressWarnings("unchecked")
 	public static List<TemplateArgument> extractTemplateArguments(Type.TypeNode root)
 	throws InappropriateKindException
 	{
@@ -288,12 +290,9 @@ public class Utils {
         if (!entity.getContainer().isTemplated())
             return false;
 
-        for (Iterator<TemplateParameter> tpi = entity.getContainer().templateParameterIterator();
-            tpi.hasNext(); ) {
+        for (TemplateParameter templateParameter: entity.getContainer().getTemplateParameters()) {
             // Check if this is a typename argument, and if this
             // argument's delegate entity is 'entity'
-            TemplateParameter templateParameter =
-                tpi.next();
             if (templateParameter instanceof TypenameTemplateParameter) {
                 // Exploit TypenameTemplateParameter's interface
                 TypenameTemplateParameter typename =
@@ -823,13 +822,11 @@ public class Utils {
 		// ---------------------------
 		// 1. Collect template parameters and their actual agruments
 		int argIndex = 0;
-		for (Iterator<TemplateParameter> tpi = template.templateParameterIterator(); 
-			 tpi.hasNext(); ++argIndex) {
+		for (TemplateParameter templateParameter: template.getTemplateParameters()) {
 			// - get current parameter and argument (use default if needed)
-			TemplateParameter templateParameter = tpi.next();
 			TemplateArgument templateArgument = argIndex < arguments.length ? 
 				arguments[argIndex] : templateParameter
-					.getDefaultValue(template.templateParameterIterator(),
+					.getDefaultValue(template.getTemplateParameters().iterator(),
 										fin_targs.iterator());
 			fin_targs.add(templateArgument);
 			// - if not enough arguments were supplied and there is no
@@ -850,6 +847,7 @@ public class Utils {
 			else if (templateParameter instanceof DataTemplateParameter) {
 				macros.put(templateParameter.getName(), templateArgument);
 			}
+			argIndex++;
 		}
 		// 2. Locate possible use of traits - that is, expressions where the
 		//    template parameter is used as a container (Traits::SIZE)
@@ -974,10 +972,7 @@ public class Utils {
 			}
 			// - copy template arguments if any
 			if (method.isTemplated()) {
-				for (Iterator<TemplateParameter> templi = method.templateParameterIterator(); 
-					templi.hasNext(); ) {
-					TemplateParameter tparameter = 
-						templi.next();
+				for (TemplateParameter tparameter: method.getTemplateParameters()) {
 					methodinst.addTemplateParameter(
 						(TemplateParameter)tparameter.clone());
 				}
@@ -1201,11 +1196,7 @@ public class Utils {
 					// - check whether 'name' begins with one of the template
 					//   parameters of 'template'
 					int index = 0;
-					for (Iterator<TemplateParameter> tpi = fin_template.templateParameterIterator();
-						 tpi.hasNext(); ++index) {
-						// - get names of template parameter and argument
-						TemplateParameter parameter = 
-							tpi.next();
+					for (TemplateParameter parameter: fin_template.getTemplateParameters()) {
 						String parameterName = parameter.getName();
 						TemplateArgument argument = fin_targs[index];
 						// - check criteria
@@ -1217,6 +1208,7 @@ public class Utils {
 							fin_substitution.put(typeNode.getBase(), 
 								new Type(new Type.TypeNode(entity)));
 						}
+						index++;
 					}
 				}
 				return null;

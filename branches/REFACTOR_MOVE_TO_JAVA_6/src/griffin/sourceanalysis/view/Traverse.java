@@ -3,8 +3,6 @@
  */
 package sourceanalysis.view;
 
-import java.util.Iterator;
-
 import sourceanalysis.Aggregate;
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;

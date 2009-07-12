@@ -655,6 +655,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	 *            template instantation is invested regardless of the identity
 	 *            of the template.
 	 */
+	@SuppressWarnings("unchecked")
 	private void findTemplatesToInstantiate(Type.TypeNode root,
 			List<Aggregate> instanceList, boolean inhibitForeignTemplates)
 			throws InappropriateKindException {

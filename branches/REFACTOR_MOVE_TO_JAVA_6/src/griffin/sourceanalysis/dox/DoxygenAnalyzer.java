@@ -4,7 +4,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -266,9 +265,9 @@ public class DoxygenAnalyzer {
 	 */
 	private class GlobalScope<Owner extends Entity> extends Scope<Owner>
 	{
-        private Scope globals;
+        private Scope<Namespace> globals;
 
-		GlobalScope(Owner owner, Scope globals) {
+		GlobalScope(Owner owner, Scope<Namespace> globals) {
             super(owner);
             this.globals = globals;
         }
@@ -294,7 +293,7 @@ public class DoxygenAnalyzer {
 		public void addMember(Field field, int visibility, int storage)
 		{
 			m_globalFields_byname.put(field.getName(),
-				new ContainedConnection(null, visibility, 
+				new ContainedConnection<Entity, Field>(null, visibility, 
 					Specifiers.DONT_CARE, storage, field));
 		}
 		
@@ -303,6 +302,7 @@ public class DoxygenAnalyzer {
 			globals.addMember(inner);
 		}
 		
+		@SuppressWarnings("unchecked")
 		protected void mirrorRelationToMember(Entity contained, 
 			ContainedConnection connection) {	}
 	};
@@ -322,7 +322,7 @@ public class DoxygenAnalyzer {
 		m_aliasesForRepair = new LinkedList<Alias>();
 		m_fieldsForRepair = new LinkedList<Field>();
 		m_inheritanceForRepair = new LinkedList<InheritanceConnection>();
-		m_globalFields_byname = new HashMap<String, ContainedConnection>();
+		m_globalFields_byname = new HashMap<String, ContainedConnection<Entity, Field>>();
 		logger = Logger.getLogger("sourceanalysis.dox");
 	}
 	
@@ -688,11 +688,12 @@ public class DoxygenAnalyzer {
 	 * @throws XMLFormatException if the sub-tree's composition does not
 	 * match expected schema.
 	 */
+	@SuppressWarnings("unchecked")
 	public Entity translateCompound(Node xmlnode, String entityClass, 
 			boolean isExternal) throws XMLFormatException
 	{
 		Entity compound = null;
-		Scope scope = null;
+		Scope<? extends Entity> scope = null;
 		// Create an entity for 'compound'
 		if (entityClass.equals("Namespace")) {
 			Namespace ns = new Namespace();
@@ -711,7 +712,7 @@ public class DoxygenAnalyzer {
 			 * For source files - a phony scope is created to put members in
 			 * global namespace (a SourceFile is not really a container).
 			 */
-			scope = new GlobalScope(compound,
+			scope = new GlobalScope<Entity>(compound,
 					isExternal ? m_db.getExternals() 
 					           : m_db.getGlobalNamespace().getScope());
 		}
@@ -907,13 +908,13 @@ public class DoxygenAnalyzer {
 	 * tag, nothing is done and no exception is thrown.
 	 */
 	private void translateTemplated(Node xmlnode,
-		TemplateEnabledEntity entity, Scope scope) throws XMLFormatException
+		TemplateEnabledEntity entity, Scope<? extends Entity> scope) throws XMLFormatException
 	{
 		Node list = XML.subNode(xmlnode, Tags.TEMPLATEPARAMLIST);
 		// If any list is present, read parameters
 		if (list != null) {
 			if (scope == null) {
-				scope = new Scope(entity);
+				scope = new Scope<Entity>(entity);
 			}
 			Collection<Node> params = XML.subNodes(list, Tags.PARAM);
 			for (Node paramnode: params) {
@@ -936,7 +937,7 @@ public class DoxygenAnalyzer {
 	 * expected schema.
 	 */
 	private TemplateParameter translateTemplateParameter(Node xmlnode,
-		Scope scope) throws XMLFormatException
+		Scope<? extends Entity> scope) throws XMLFormatException
 	{
 		// Get Type
 		Node typenode = XML.subNode(xmlnode, Tags.TYPE);
@@ -995,7 +996,7 @@ public class DoxygenAnalyzer {
 	 * not denote a group, in which case the returned value is <b>null</b>.
 	 * @throws XMLFormatException if the format of the section is corrupt
 	 */
-	private Group translateGroup(Node xmlnode, Scope compound)
+	private Group translateGroup(Node xmlnode, Scope<? extends Entity> compound)
 		throws XMLFormatException
 	{
 		String kind = XML.attribute(xmlnode, Tags.KIND, null);
@@ -1009,7 +1010,7 @@ public class DoxygenAnalyzer {
 					"(anonymous)" : XML.collectText(header);
 			String[] headers = headerstring.split("!");
 			// Look for group in scope
-			Scope groupscope = compound;
+			Scope<? extends Entity> groupscope = compound;
 			Group group = null;
 			
 			for (int hsi = 0; hsi < headers.length; hsi++) {
@@ -1046,7 +1047,7 @@ public class DoxygenAnalyzer {
 	 * during the translation of any of the inner compounds.
 	 */
 	private void translateInnerCompounds(Node xmlnode, Entity compound,
-		Scope scope, String tag) throws XMLFormatException
+		Scope<? extends Entity> scope, String tag) throws XMLFormatException
 	{
 		Collection<Node> innerclasses = XML.subNodes(xmlnode, tag);
 		for (Node innerclass: innerclasses) {
@@ -1864,10 +1865,7 @@ public class DoxygenAnalyzer {
 	private void adjustFriend(Entity compound, Routine emember, boolean isExternal)
 	{
 		// Add class' template parameters of container
-		for (Iterator ti = compound.templateParameterIterator();
-				ti.hasNext(); ) {
-			TemplateParameter parameter = 
-			(TemplateParameter)(ti.next());
+		for (TemplateParameter parameter: compound.getTemplateParameters()) {
 			emember.addTemplateParameter((TemplateParameter)parameter.clone());
 		}
 		// Create connection to global scope
@@ -1935,7 +1933,7 @@ public class DoxygenAnalyzer {
 	 * Inserts information collected about global fields (variables) into
 	 * the global namespace in the program database.
 	 */
-	private void fillGlobalVariables(Scope globalScope)
+	private void fillGlobalVariables(Scope<Namespace> globalScope)
 	{
 		DoxygenHandyman.transferFields(globalScope,
 			m_globalFields_byname);
@@ -1966,7 +1964,7 @@ public class DoxygenAnalyzer {
 	private List<Alias> m_aliasesForRepair;
 	private List<Field> m_fieldsForRepair;
 	private List<InheritanceConnection> m_inheritanceForRepair;
-	private Map<String, ContainedConnection> m_globalFields_byname;
+	private Map<String, ContainedConnection<Entity, Field>> m_globalFields_byname;
 
 	public Logger logger;
 }

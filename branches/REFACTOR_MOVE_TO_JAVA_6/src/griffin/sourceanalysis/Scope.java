@@ -323,7 +323,7 @@ public class Scope<Owner extends Entity> {
 	 * @param connection the newly created ContainedConnection for it
 	 */
 	protected void mirrorRelationToMember(Entity contained, 
-		ContainedConnection connection)
+		ContainedConnection<Owner, ? extends Entity> connection)
 	{
 		contained.connectToContainer(connection);
 	}

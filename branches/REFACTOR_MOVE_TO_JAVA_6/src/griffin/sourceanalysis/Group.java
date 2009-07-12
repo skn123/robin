@@ -32,7 +32,7 @@ public class Group extends Entity {
 		 * @see sourceanalysis.Entity#connectToGroup()
 		 */
 		protected void mirrorRelationToMember(Entity contained,
-			ContainedConnection connection) {
+			ContainedConnection<Group, ? extends Entity> connection) {
 			// Connect to group
 			contained.connectToGroup(m_groupScopeOwner);
 		}

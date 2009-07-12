@@ -1,7 +1,5 @@
 package backend;
 
-import java.util.Iterator;
-
 import sourceanalysis.Entity;
 import sourceanalysis.FriendConnection;
 import sourceanalysis.SourceFile;
@@ -28,9 +26,7 @@ public class GenericFilters {
 		sourceDecl = isAllowedToDeclare(connection);
 		// Look for friends
 		boolean friendDecl = false;
-		for (Iterator affi = entity.affiliatesIterator(); 
-				affi.hasNext(); ) {
-			FriendConnection fconnection = (FriendConnection)affi.next();
+		for (FriendConnection fconnection: entity.getAffiliates()) {
 			connection = fconnection.getDeclaring().getDeclaration();
 			friendDecl = isAllowedToDeclare(connection);
 		}

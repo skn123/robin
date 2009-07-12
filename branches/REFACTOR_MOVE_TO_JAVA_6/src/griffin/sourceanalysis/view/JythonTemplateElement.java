@@ -40,6 +40,7 @@ public class JythonTemplateElement extends ScriptingTemplateElement {
 				.fillTemplate(templatekey, nested_scope, m_perspective);
 		}
 		
+		@SuppressWarnings("unchecked")
 		public String refill(String templatekey, String addition, Iterator iterator)
 			throws ElementNotFoundException
 		{
@@ -86,10 +87,8 @@ public class JythonTemplateElement extends ScriptingTemplateElement {
 	 */
 	public String extractText(AbstractScope context, Perspective perspective) {
 		// Add members of the scope as variables to the interpreter environment
-		java.util.Iterator memberi = context.declIterator();
-		while (memberi.hasNext()) {
+		for (java.util.Map.Entry<String, Entity> entry: context.getDecls()) {
 			try {
-				java.util.Map.Entry entry = (java.util.Map.Entry)(memberi.next());
 				String varname = (String)entry.getKey();
 				Entity varobj = (Entity)entry.getValue();
 				// Set variable

@@ -3,6 +3,7 @@ package sourceanalysis.view;
 import java.util.HashMap;
 import java.util.Map;
 
+import sourceanalysis.ConstCollection;
 import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.Entity;
 
@@ -64,9 +65,8 @@ public class Scope implements AbstractScope {
 	 * has getKey() and getValue()  (both returning Object).
 	 * @see sourceanalysis.view.AbstractScope#declIterator()
 	 */
-	public java.util.Iterator declIterator()
-	{
-		return m_members.entrySet().iterator();
+	public ConstCollection<Map.Entry<String, Entity>> getDecls() {
+		return new ConstCollection<Map.Entry<String, Entity>>(m_members.entrySet());
 	}
 
 	// Implementation using a map

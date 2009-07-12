@@ -208,7 +208,7 @@ public class TypeToolbox {
 	 */
 	public static boolean isVisible(Entity entity)
 	{
-		ContainedConnection uplink = entity.getContainerConnection();
+		ContainedConnection<? extends Entity, ? extends Entity> uplink = entity.getContainerConnection();
 		return uplink == null
 				|| uplink.getContainer() instanceof Namespace
 				|| uplink.getVisibility() == Specifiers.Visibility.PUBLIC;
