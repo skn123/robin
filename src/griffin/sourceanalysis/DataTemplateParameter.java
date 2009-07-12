@@ -102,8 +102,8 @@ public class DataTemplateParameter extends TemplateParameter{
 	 * @see sourceanalysis.TemplateParameter#getDefaultValue(java.util.Iterator, java.util.Iterator)
 	 */
 	public TemplateArgument getDefaultValue(
-		Iterator parameterIterator,
-		Iterator argumentIterator) 
+		Iterator<TemplateParameter> parameterIterator,
+		Iterator<TemplateArgument> argumentIterator) 
 	{
 		if (!hasDefault()) return null;
 		

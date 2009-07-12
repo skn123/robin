@@ -277,9 +277,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 * @return an iterator over Aggregate. Thrown exceptions do not have
 	 * extra attributes in this connection. 
 	 */
-	public Iterator<Aggregate> throwsIterator()
-	{
-		return m_throws.iterator();
+	public ConstCollection<Aggregate> getThrows() {
+		return new ConstCollection<Aggregate>(m_throws);
 	}
 
     public boolean isCompatible(Routine other)

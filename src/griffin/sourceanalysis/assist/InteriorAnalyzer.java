@@ -2,7 +2,6 @@ package sourceanalysis.assist;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -583,9 +582,7 @@ public class InteriorAnalyzer {
 	private static Aggregate findTypenameTemplateParameter(Entity inside, 
 		String name)
 	{
-		for (Iterator pi = inside.templateParameterIterator(); pi.hasNext();)
-		{
-			TemplateParameter parameter = (TemplateParameter)pi.next();
+		for (TemplateParameter parameter: inside.getTemplateParameters()) {
 			if (parameter instanceof TypenameTemplateParameter &&
 				parameter.getName().equals(name)) {
 				Aggregate delegate = ((TypenameTemplateParameter)parameter)

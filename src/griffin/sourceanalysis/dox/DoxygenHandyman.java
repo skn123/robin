@@ -2,7 +2,6 @@ package sourceanalysis.dox;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -45,6 +44,7 @@ public class DoxygenHandyman {
 	{
 		private Entity origin;
 		
+		@SuppressWarnings("unused")
 		public OrphanTypeRepair()
 		{
 			origin = null;
@@ -143,7 +143,7 @@ public class DoxygenHandyman {
 	 * Inserts a single entity to both maps using a ContainedConnection.
 	 * @param connection a ContainedConnection pointing to current entity
 	 */
-	private void collectContained(ContainedConnection connection)
+	private void collectContained(ContainedConnection<? extends Entity, ? extends Entity> connection)
 	{
 		Entity inside = connection.getContained();
 		m_entitiesByName.put(inside.getName(), inside);
@@ -325,12 +325,12 @@ public class DoxygenHandyman {
 	 * @param fields a map of String->ContainedConnection. The
 	 * ContainedConnection
 	 */
-	public static void transferFields(Scope target, Map<String, ContainedConnection> fields)
+	public static void transferFields(Scope<Namespace> target, Map<String, ContainedConnection<Entity, Field>> fields)
 	{
-		Collection<ContainedConnection> fieldSet = fields.values();
+		Collection<ContainedConnection<Entity, Field>> fieldSet = fields.values();
 		// Go over fields in the set, insert each of them to the target
 		// scope
-		for (ContainedConnection element: fieldSet) {
+		for (ContainedConnection<Entity, Field> element: fieldSet) {
 			// Each member of the fields map is a contained-connection which
 			// describes field visibility and storage with reference to the
 			// target scope

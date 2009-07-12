@@ -90,8 +90,8 @@ public class TypenameTemplateParameter extends TemplateParameter {
 	 * @see sourceanalysis.TemplateParameter#getDefaultValue(java.util.Iterator, java.util.Iterator)
 	 */
 	public TemplateArgument getDefaultValue(
-		Iterator parameterIterator,
-		Iterator argumentIterator) throws InappropriateKindException
+		Iterator<TemplateParameter> parameterIterator,
+		Iterator<TemplateArgument> argumentIterator) throws InappropriateKindException
 	{
 		if (!hasDefault()) return null;
 		

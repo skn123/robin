@@ -1,6 +1,10 @@
 package sourceanalysis.view;
 
+import java.util.Map;
+
+import sourceanalysis.ConstCollection;
 import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
 
 /**
  * enclosing_type - undocumented.
@@ -11,5 +15,5 @@ public interface AbstractScope {
 	void declareMember(String key, sourceanalysis.Entity element, boolean asThis);
 	AbstractScope cloneScope();
 	
-	java.util.Iterator declIterator();
+	ConstCollection<Map.Entry<String, Entity>> getDecls();
 }

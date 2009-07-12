@@ -170,7 +170,7 @@ public class RoutineDeduction {
 	 */
 	public static CppExpression deduceCallExpression(Routine routine, boolean statically)
 	{
-		ContainedConnection uplink = routine.getContainerConnection();
+		ContainedConnection<? extends Entity, ? extends Entity> uplink = routine.getContainerConnection();
 		Entity container = (uplink == null) ? null : uplink.getContainer();
 		boolean isMethod = container != null && container instanceof Aggregate;
 		

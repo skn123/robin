@@ -175,12 +175,9 @@ public class CodeGenerator extends GenericCodeGenerator {
 			StringBuffer sb = new StringBuffer("template < ");
 			boolean first = true;
 			
-			for (Iterator tpi = entity.templateParameterIterator(); 
-				tpi.hasNext(); ) {
+			for (TemplateParameter templateParameter: entity.getTemplateParameters()) {
 				if (!first) sb.append(", ");
 				// Get next template parameter
-				TemplateParameter templateParameter =
-					(TemplateParameter)tpi.next();
 				// Observe whether template parameter is typename or data
 				if (templateParameter instanceof TypenameTemplateParameter) {
 					sb.append("class " + templateParameter.getName());

@@ -145,7 +145,7 @@ public class Filters extends GenericFilters {
 	 */
 	public static boolean isAvailableStatic(Routine routine)
 	{
-		ContainedConnection uplink = routine.getContainerConnection();
+		ContainedConnection<? extends Entity, ? extends Entity> uplink = routine.getContainerConnection();
 		
 		return (isAvailable(routine)
 				&& !routine.isConstructor() && !routine.isDestructor()
@@ -197,7 +197,7 @@ public class Filters extends GenericFilters {
 	 * @param up the connection from the field to its container
 	 * @return
 	 */
-	static boolean isAvailable(Field field, ContainedConnection up)
+	static boolean isAvailable(Field field, ContainedConnection<? extends Entity, ? extends Entity> up)
 	{
 		try {
 			return (up.getVisibility() == Specifiers.Visibility.PUBLIC
@@ -213,7 +213,7 @@ public class Filters extends GenericFilters {
 		}
 	}
 
-	static boolean isAvailableStatic(Field field, ContainedConnection up)
+	static boolean isAvailableStatic(Field field, ContainedConnection<? extends Entity, ? extends Entity> up)
 	{
 		try {
 			return (up.getVisibility() == Specifiers.Visibility.PUBLIC

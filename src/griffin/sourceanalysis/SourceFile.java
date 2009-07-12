@@ -276,9 +276,8 @@ public class SourceFile extends Entity {
 	 * Access the declarations in this file.
 	 * @return Iterator iterates over DeclDefConnection
 	 */
-	public Iterator<DeclDefConnection> declarationIterator()
-	{
-		return m_declarations.iterator();
+	public ConstCollection<DeclDefConnection> getDeclarations() {
+		return new ConstCollection<DeclDefConnection>(m_declarations);
 	}
 
 	/**

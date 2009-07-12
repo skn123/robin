@@ -696,10 +696,10 @@ public class XMLWriter {
 		baseClassDocumentation(aggr, doc, classElm);
 		
 		// Sources.
-		Set sources = getSources(aggr);
+		Set<SourceFile> sources = getSources(aggr);
 		Element sourcesElm = doc.createElement("source");
-		for(Iterator iter = sources.iterator(); iter.hasNext();) {
-			String source = ((SourceFile)iter.next()).getName();
+		for (SourceFile sf: sources) {
+			String source = sf.getName();
 			Element sourceElm = doc.createElement("file");
 			Text sourceFile = doc.createTextNode(source);
 			sourceElm.appendChild(sourceFile);
@@ -711,12 +711,13 @@ public class XMLWriter {
 		if(aggr.isTemplated()) {
 			Element templateElm = doc.createElement("template");
 			String proto = "<";
-			for (Iterator iter = aggr.templateParameterIterator(); iter.hasNext();) {
-				TemplateParameter parameter = (TemplateParameter) iter.next();
-				proto += parameter.getName();
-				if(iter.hasNext()) {
+			boolean first = true;
+			for (TemplateParameter parameter: aggr.getTemplateParameters()) {
+				if (!first) {
 					proto += ", ";
 				}
+				first = false;
+				proto += parameter.getName();
 			}
 			proto += ">";
 			Text templateText = doc.createTextNode(proto);
@@ -1249,9 +1250,7 @@ public class XMLWriter {
 		// Look for global functions in the sources.
 		for (SourceFile source: sources) {
 			
-			for(Iterator riter = source.declarationIterator(); riter.hasNext();) {
-				SourceFile.DeclDefConnection ddc = 
-					(SourceFile.DeclDefConnection)riter.next();
+			for (SourceFile.DeclDefConnection ddc: source.getDeclarations()) {
 				sourceanalysis.Entity declared = ddc.getDeclaredEntity();
 			
 				if(declared instanceof Routine) { // Function
@@ -1277,13 +1276,13 @@ public class XMLWriter {
 					// Prototype.
 					String prototype = "enum " + 
 						Utils.cleanFullName(enume) + "{";
-					for(Iterator citer = enume.constantIterator(); citer.hasNext();) {
-						sourceanalysis.Enum.Constant constant = (sourceanalysis.Enum.Constant)citer.next();
-						prototype += constant.getLiteral();
-						
-						if(citer.hasNext()) {
+					boolean first = true;
+					for (sourceanalysis.Enum.Constant constant: enume.getConstants()) {
+						if (!first) {
 							prototype += ", ";
 						}
+						first = false;
+						prototype += constant.getLiteral();
 					}
 					prototype += "}";
 					Element protoElm = doc.createElement("prototype");
@@ -1713,6 +1712,7 @@ public class XMLWriter {
 			m_sources.add(sourceName);	
 		}
 		
+		@SuppressWarnings("unused")
 		public String getName() { return m_name; }
 	
 		/** The name of the module */

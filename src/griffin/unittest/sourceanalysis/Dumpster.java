@@ -2,7 +2,6 @@ package unittest.sourceanalysis;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -71,9 +70,8 @@ public class Dumpster {
 		throws IOException, MissingInformationException
 	{
 		if (entity.isTemplated()) {
-			out.write(" (templated upon");			
-			for (Iterator tpi = entity.templateParameterIterator(); tpi.hasNext(); ) {
-				TemplateParameter tparam = (TemplateParameter)tpi.next();
+			out.write(" (templated upon");		
+			for (TemplateParameter tparam: entity.getTemplateParameters()) {
 				// Branch according to type of template paramter (typename/data)
 				if (tparam instanceof TypenameTemplateParameter) {
 					TypenameTemplateParameter ttp = (TypenameTemplateParameter)tparam;
@@ -146,7 +144,7 @@ public class Dumpster {
 	{
 		out.write("[routine]");
 		if (routine.hasContainer()) {
-            ContainedConnection connection = routine.getContainerConnection();
+            ContainedConnection<? extends Entity, ? extends Entity> connection = routine.getContainerConnection();
 			dumpVisibility(connection.getVisibility(), out);
 			dumpStorage(connection.getStorage(), out);
 			dumpVirtuality(connection.getVirtuality(), out);
@@ -204,7 +202,7 @@ public class Dumpster {
 	{
 		out.write("[field]");
 		if (field.hasContainer()) {
-            ContainedConnection connection = field.getContainerConnection();
+            ContainedConnection<? extends Entity, ? extends Entity> connection = field.getContainerConnection();
 			dumpVisibility(connection.getVisibility(), out);
 			dumpStorage(connection.getStorage(), out);
 		}
@@ -250,8 +248,7 @@ public class Dumpster {
 		out.write("\n");
 		dumpLocations(enume, out);
 		// Dump constants
-		for (Iterator ci = enume.constantIterator(); ci.hasNext(); ) {
-			sourceanalysis.Enum.Constant constant = (sourceanalysis.Enum.Constant)ci.next();
+		for (sourceanalysis.Enum.Constant constant: enume.getConstants()) {
 			out.write("[info] '");
 			out.write(constant.getLiteral());
 			out.write("' in ");

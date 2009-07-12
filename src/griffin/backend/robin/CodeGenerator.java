@@ -274,9 +274,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			"};\n\n");
 		
 		// Generate touchup code
-		Iterator i = Filters.getTouchupsMap().values().iterator();
-		while (i.hasNext()) {
-			m_output.write(((Filters.Touchup)i.next()).m_touchupCode + "\n");
+		for (Filters.Touchup touchup: Filters.getTouchupsMap().values()) {
+			m_output.write(touchup.m_touchupCode + "\n");
 		}
 	}
 	
@@ -367,14 +366,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         		m_output.write("\n");
 	        m_output.write("\t" + interceptor.getName() + "(");
 	        int paramIndex = 0;
-	        for (Iterator argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	        for (Iterator<Parameter> argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
 	            Parameter param = (Parameter) argIter.next();
 	            m_output.write(param.getType().formatCpp(param.getName()));
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
 	        }
 	        m_output.write(") : " + subject.getName() + "(");
 	        paramIndex = 0;
-	        for (Iterator argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	        for (Iterator<Parameter> argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
 	            Parameter param = (Parameter) argIter.next();
 	            m_output.write(param.getName());
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
@@ -388,9 +387,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     		if (routine != null && routine.hasThrowClause()) {
             m_output.write(" throw(");
             boolean first = true;
-            for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
+            for (Aggregate th: routine.getThrows()) {
                 if (!first) m_output.write(", ");
-                m_output.write(((Entity)ei.next()).getFullName());
+                first = false;
+                m_output.write(th.getFullName());
             }
             m_output.write(")");
         }
@@ -404,7 +404,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(routine.getReturnType().formatCpp());
         m_output.write(" " + routine.getName() + "(");
         int i = 0;
-        for (Iterator argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
+        for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
             Parameter param = (Parameter) argIter.next();
             // write a generic name, in order to avoid name clashes with our own parameters
             m_output.write(param.getType().formatCpp("interceptor_arg" + i));
@@ -428,7 +428,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         } else {
             m_output.write("\t\tbasic_block args[] = {\n");
             int i = 0;
-            for (Iterator argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
+            for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
                 writeInterceptorFunctionBasicBlockArgument(
                         (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
                     );
@@ -475,7 +475,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void writeInterceptorFunctionCallbackCall(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter, int nArgs)
         throws IOException, MissingInformationException
     {
-        ContainedConnection uplink = routine.getContainerConnection();
+        ContainedConnection<? extends Entity, ? extends Entity> uplink = routine.getContainerConnection();
         boolean isPure = 
             (uplink.getVirtuality() == Specifiers.Virtuality.PURE_VIRTUAL);
 
@@ -508,7 +508,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             // we need to write the name of the first class this routine appeared at
             m_output.write(routine.getContainer().getFullName() + "::" + routine.getName() + "(");
             int i = 0;
-            for (Iterator argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
+            for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
             		argIter.next(); // ignore the result, we just need to advance the iterator
             		// write the generated name instead of a real one
                 m_output.write("interceptor_arg" + i + 
@@ -701,11 +701,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("\tscripting_element _py() { return twin; }\n\n");
         
         // Write functions in interceptor class, and add them to the griffin class
-        int i = 0;
-        for (Iterator funcIter = Utils.virtualMethods(subject, m_instanceMap, false).iterator();
-            funcIter.hasNext(); ++i) {
-            Routine routine = (Routine) funcIter.next();
-            
+        for (Routine routine: Utils.virtualMethods(subject, m_instanceMap, false)) {
             /* for the odd case of an idiot writing
              * private:
              * 	virtual void method();
@@ -1274,8 +1270,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("/*\n * enum "); m_output.write(enume.getFullName());
 		m_output.write("\n */\n");
 		// Write the enumerated constants
-		for (Iterator ci = enume.constantIterator(); ci.hasNext(); ) {
-			sourceanalysis.Enum.Constant constant = (sourceanalysis.Enum.Constant)ci.next();
+		for (sourceanalysis.Enum.Constant constant: enume.getConstants()) {
 			m_output.write("int const_" + constant.hashCode());
 			m_output.write(" = (int)");
 			if (enume.hasContainer()) {
@@ -1385,7 +1380,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("; }\n");
 		// Create a set accessor
 		if (Filters.hasSetter(field)) {
-			Type touchedUpType = Filters.getTouchup(type);
 			accessorName = "data_set_" + uid(field) + fors;
 			// - generate accessor function header
 			m_output.write(tabs + "void " + accessorName + "(");
@@ -1430,7 +1424,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			+ (with ? "r": "s") + nArguments + "_proto[] = {\n");
 		// Go through arguments but not more than nArguments entries
 		int argCount = 0;
-		for (Iterator pi = routine.getParameters().iterator(); 
+		for (Iterator<Parameter> pi = routine.getParameters().iterator(); 
 				argCount < nArguments && pi.hasNext(); ++argCount) {
 			Parameter parameter = (Parameter)pi.next();
 			// Write name
@@ -1481,8 +1475,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		m_output.write("RegData enumerated_" + enume.hashCode() + "[] = {\n");
 		// Write the enumerated constants
-		for (Iterator ci = enume.constantIterator(); ci.hasNext(); ) {
-			sourceanalysis.Enum.Constant constant = (sourceanalysis.Enum.Constant)ci.next();
+		for (sourceanalysis.Enum.Constant constant: enume.getConstants()) {
 			m_output.write("\t{ \"");
 			m_output.write(constant.getLiteral());
 			m_output.write("\", 0, 0, (void*)&const_"
@@ -1767,7 +1760,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		m_output.write("RegData scope_" + scope.hashCode() + "[] = {\n");
 		// Go through bases
-		Iterator basesIterator = bases.iterator();
+		Iterator<InheritanceConnection> basesIterator = bases.iterator();
 		if (basesIterator != null) {
 			for (; basesIterator.hasNext(); ) {
 				InheritanceConnection connection =

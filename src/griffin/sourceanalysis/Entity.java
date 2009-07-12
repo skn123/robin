@@ -1,10 +1,12 @@
 package sourceanalysis;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
+
+import sourceanalysis.hints.Artificial;
+import sourceanalysis.hints.IncludedViaHeader;
 
 /**
  * <p>Base class for all source-analysis components.</p>
@@ -214,7 +216,7 @@ public abstract class Entity {
 	 * containing Entity, and must not be called directly on other occasions.
 	 * @param connection uplink connection to container
 	 */
-	protected void connectToContainer(ContainedConnection connection)
+	protected void connectToContainer(ContainedConnection<? extends Entity, ? extends Entity> connection)
 	{
 		m_uplink = connection;
 	}
@@ -226,7 +228,7 @@ public abstract class Entity {
     protected void connectToContainer(Entity container, Entity contained)
     {
         this.connectToContainer(
-            new ContainedConnection(
+            new ContainedConnection<Entity, Entity>(
                 container,
                 Specifiers.DONT_CARE,
                 Specifiers.DONT_CARE,
@@ -326,7 +328,7 @@ public abstract class Entity {
 	 * @param kind the Hint subclass to look for
 	 * @return true if a hint of this type was found. 
 	 */
-	public boolean hasHint(Class kind)
+	public boolean hasHint(Class<Artificial> kind)
 	{
 		for (Hint hint: m_hints) {
 			if (kind.isInstance(hint)) return true;
@@ -340,7 +342,7 @@ public abstract class Entity {
 	 * @return a Hint object which is an instance of hintClass if
 	 * such exists. Otherwise, <b>null</b>.
 	 */
-	public Hint lookForHint(Class hintClass)
+	public Hint lookForHint(Class<IncludedViaHeader> hintClass)
 	{
 		for (Hint hint: m_hints) {
 			if (hintClass.isInstance(hint))
@@ -375,7 +377,7 @@ public abstract class Entity {
 	 * ContainedConnection.getContainer and other methods.
 	 * @return ContainedConnection
 	 */
-	public ContainedConnection getContainerConnection()
+	public ContainedConnection<? extends Entity, ? extends Entity> getContainerConnection()
 	{
 		return m_uplink;
 	}
@@ -429,9 +431,8 @@ public abstract class Entity {
 	 * Access all the template parameters.
 	 * @return Iterator iterates over TemplateParameters
 	 */
-	public Iterator<TemplateParameter> templateParameterIterator()
-	{
-		return m_templateParameters.iterator();
+	public ConstCollection<TemplateParameter> getTemplateParameters() {
+		return new ConstCollection<TemplateParameter>(m_templateParameters);
 	}
 
 	/*@}*/	
@@ -447,9 +448,8 @@ public abstract class Entity {
 	 * Get entities which declare this entity as a friend.
 	 * @return an Iterator over FriendConnection.
 	 */
-	public Iterator<FriendConnection> affiliatesIterator()
-	{
-		return m_affiliates.iterator();
+	public ConstCollection<FriendConnection> getAffiliates() {
+		return new ConstCollection<FriendConnection>(m_affiliates);
 	}
 	
 	/**
@@ -491,7 +491,7 @@ public abstract class Entity {
 	private Vector<Property> m_properties;
 	private Collection<Hint> m_hints;
 	
-	private ContainedConnection m_uplink;
+	private ContainedConnection<? extends Entity, ? extends Entity> m_uplink;
 	private Group m_group;
 	private List<FriendConnection> m_affiliates;
 	

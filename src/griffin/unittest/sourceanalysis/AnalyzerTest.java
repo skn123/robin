@@ -59,7 +59,7 @@ public class AnalyzerTest extends TestCase {
 		for (int times = 0; times < 25; ++times) {
 			Type type = skel.randomType(true);
 			String typeexpr = type.formatCpp();
-			Type parsed = dox.parseType(typeexpr, new HashMap());
+			Type parsed = dox.parseType(typeexpr, new HashMap<String, Entity>());
 			parsed.toString();
 			if (!type.toString().equals(parsed.toString())) {
 				System.err.println("" + type + " ?= " + typeexpr + " ?= " + parsed);
@@ -105,14 +105,14 @@ public class AnalyzerTest extends TestCase {
 		
 		// Compared routines from extracted database to originally generated
 		// ones
-		Iterator originaliter = routines.iterator();
-		Iterator processediter = p.getGlobalNamespace().getScope().getRoutines().iterator();
+		Iterator<Routine> originaliter = routines.iterator();
+		Iterator<ContainedConnection<Namespace, Routine>> processediter = p.getGlobalNamespace().getScope().getRoutines().iterator();
 		
 		while (originaliter.hasNext() && processediter.hasNext()) {
 			// Extract both routines
 			Routine originalRoutine = (Routine)originaliter.next();
 			Routine processedRoutine = (Routine)
-				((ContainedConnection)processediter.next()).getContained();
+				((ContainedConnection<Namespace, Routine>)processediter.next()).getContained();
 			// Compare them using the string representations
 			StringWriter original = new StringWriter();
 			StringWriter processed = new StringWriter();
@@ -298,13 +298,14 @@ public class AnalyzerTest extends TestCase {
 	{
 		if (klass.isTemplated()) {
 			out.write("template <");
-			for (Iterator temparg = klass.templateParameterIterator();
-				temparg.hasNext(); ) {
-				// Print template argument
-				TemplateParameter tp = (TemplateParameter)temparg.next();
+			boolean first = true;
+			for (TemplateParameter tp: klass.getTemplateParameters()) {
+				if (!first) {
+					out.write(" , ");
+				}
+				first = false;
 				out.write("class ");
 				out.write(tp.getName());
-				if (temparg.hasNext()) out.write(" , ");
 			}
 			out.write(">\n");
 		}

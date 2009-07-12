@@ -1,6 +1,5 @@
 package sourceanalysis;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -109,9 +108,8 @@ public class Enum extends Entity {
 	 * order in which they were introduced.
 	 * @return Iterator an iteration over Enum.Constant
 	 */
-	public Iterator<Constant> constantIterator()
-	{
-		return m_constants.iterator();
+	public ConstCollection<Constant> getConstants() {
+		return new ConstCollection<Constant>(m_constants);
 	}
 	
 	/*@}*/
