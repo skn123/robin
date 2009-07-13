@@ -36,7 +36,7 @@ public abstract class TemplateEnabledEntity extends Entity {
 	 * @param specArgs actual arguments for this concrete specialization
 	 */
 	public void setGeneralTemplateForSpecialization(TemplateEnabledEntity general, 
-		Vector specArgs)
+		Vector<TemplateArgument> specArgs)
 	{
 		// Build a specialization connection
 		SpecializationConnection conn = 
@@ -71,10 +71,11 @@ public abstract class TemplateEnabledEntity extends Entity {
 	 * name as the general template which they specialize.
 	 * @see sourceanalysis.Entity#getName()
 	 */
+	@Override
 	public String getName()
 	{
 		if (isSpecialized()) {
-			Vector specArgs = getGeneralTemplateForSpecialization().getSpecificArguments();
+			Vector<TemplateArgument> specArgs = getGeneralTemplateForSpecialization().getSpecificArguments();
 			// Add args to string buffer
 			String specArgsString =
 				Type.formatTemplateArguments(specArgs, 

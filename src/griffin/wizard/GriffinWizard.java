@@ -9,11 +9,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.dox.DoxygenAnalyzer;
-
 import backend.robin.Launcher;
-/*
- * Created on 12/10/2005 by Misha.
- */
 
 public class GriffinWizard extends Wizard {
     public GriffinWizard() {
@@ -23,7 +19,8 @@ public class GriffinWizard extends Wizard {
         this.addPage(new ClassesPage());
     }  
 
-    public boolean performFinish() {
+    @Override
+	public boolean performFinish() {
         MessageBox box = new MessageBox(this.getShell(), SWT.ICON_ERROR | SWT.OK);
         box.setText("Error!");
         FilesPage filesPage = (FilesPage)this.getPage("Files");

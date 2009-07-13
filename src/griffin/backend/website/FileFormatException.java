@@ -24,6 +24,7 @@ public class FileFormatException extends Exception {
 	/**
 	 * @see java.lang.Throwable#getMessage()
 	 */
+	@Override
 	public String getMessage() {
 		return super.getMessage();
 	}

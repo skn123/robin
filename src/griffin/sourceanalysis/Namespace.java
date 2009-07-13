@@ -10,7 +10,7 @@ public class Namespace extends Entity {
 	 */
 	public Namespace() {
 		super();
-		m_nsScope = new Scope(this);
+		m_nsScope = new Scope<Namespace>(this);
 	}
 	
 	/** @name Scoping
@@ -24,7 +24,7 @@ public class Namespace extends Entity {
 	 * @return Scope a Scope object which belongs to the Namespace. Use
 	 * Push/Pull API of Scope to fill or retrieve members.
 	 */
-	public Scope getScope()
+	public Scope<Namespace> getScope()
 	{
 		return m_nsScope;
 	}
@@ -32,5 +32,5 @@ public class Namespace extends Entity {
 	/*@}*/
 
 	/* Scope */
-	Scope m_nsScope;
+	Scope<Namespace> m_nsScope;
 }

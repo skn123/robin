@@ -14,7 +14,26 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ConstCollection;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.InappropriateKindException;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.SourceFile;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateArgument;
 import sourceanalysis.hints.Artificial;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
@@ -43,12 +62,12 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public CodeGenerator(ProgramDatabase program, Writer output) {
 		super(program, output);
 		m_separateClassTemplates = true;
-		m_uidMap = new HashMap();
+		m_uidMap = new HashMap<Object, Integer>();
 		m_uidNext = 0;
-		m_globalDataMembers = new LinkedList();
-		m_interceptorMethods = new HashSet();
-		m_downCasters = new LinkedList();
-		m_interceptors = new LinkedList();
+		m_globalDataMembers = new LinkedList<Field>();
+		m_interceptorMethods = new HashSet<Routine>();
+		m_downCasters = new LinkedList<String>();
+		m_interceptors = new LinkedList<Aggregate>();
 		m_entry = new LinkedList<RegData>();
 
 	    m_randomNamespace = generateNamespaceName();
@@ -178,13 +197,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * @param scope program scope inside of which to search for constant.
 	 * Search will descend to inner scopes of this one as well.
 	 */
-	protected void collectConstants(Scope scope)
+	protected void collectConstants(Scope<? extends Entity> scope)
 		throws IOException, MissingInformationException
 	{
 		// Collect fields in current scope
-		for (Iterator fi = scope.fieldIterator(); fi.hasNext();) {
-			ContainedConnection connection =
-				(ContainedConnection)fi.next();
+		for (ContainedConnection<? extends Entity, Field> connection: scope.getFields()) {
 			Field field = (Field)connection.getContained();
 
 			if (Filters.isAvailableStatic(field, connection)) {
@@ -192,9 +209,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 		}
 		// Trace constants in innermore namespaces
-		for (Iterator ni = scope.namespaceIterator(); ni.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ni.next();
+		for (ContainedConnection<? extends Entity, Namespace> connection: scope.getNamespaces()) {
 			Namespace namespace = (Namespace)connection.getContained();
 			// - go to recursion
 			collectConstants(namespace.getScope());
@@ -262,9 +277,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			"};\n\n");
 		
 		// Generate touchup code
-		Iterator i = Filters.getTouchupsMap().values().iterator();
-		while (i.hasNext()) {
-			m_output.write(((Filters.Touchup)i.next()).m_touchupCode + "\n");
+		for (Filters.Touchup touchup: Filters.getTouchupsMap().values()) {
+			m_output.write(touchup.m_touchupCode + "\n");
 		}
 	}
 	
@@ -276,8 +290,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateIncludeDirectives()
 		throws IOException
 	{
-		List decldefs = new LinkedList();
-		Set headers = new HashSet();
+		List<SourceFile.DeclDefConnection> decldefs = new LinkedList<SourceFile.DeclDefConnection>();
+		Set<String> headers = new HashSet<String>();
 		
 		// Collect class declarations
 		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
@@ -286,29 +300,24 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Collect global routine declarations
-		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext(); ) {
-			Routine routine = (Routine) funcIter.next();
+		for (Routine routine: m_globalFuncs) {
 			if (Filters.isAvailable(routine))
 				decldefs.add(safeGetDeclaration(routine));
 		}
 		
 		// Collect typedef declarations
-		for (Iterator aliasIter = m_typedefs.iterator(); aliasIter.hasNext();) {
-			Alias alias = (Alias)aliasIter.next();
+		for (Alias alias: m_typedefs) {
 			decldefs.add(safeGetDeclaration(alias));
 		}
 		
 		// Collect declarations of constants
-		for (Iterator fieldIter = m_globalDataMembers.iterator(); fieldIter.hasNext();) {
-			Field field = (Field)fieldIter.next();
+		for (Field field: m_globalDataMembers) {
 			decldefs.add(safeGetDeclaration(field));
 		}
 		
 		// Collect the header files that should be included
-		for (Iterator declIter = decldefs.iterator(); declIter.hasNext(); ) {			
+		for (SourceFile.DeclDefConnection decl: decldefs) {
 			// Try to get location of the declaration
-			SourceFile.DeclDefConnection decl = 
-				(SourceFile.DeclDefConnection)declIter.next();
 			if (decl != null && Filters.isAllowedToInclude(decl)) {
 				// Try to get the SourceFile entity for the declaration
 				try {
@@ -330,9 +339,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}		
 
 		// Generate #include directives
-		for (Iterator headerIterator = headers.iterator(); 
-			headerIterator.hasNext();) {
-			String header_abs = (String)headerIterator.next();
+		for (String header_abs: headers) {
 			String header_rel = Utils.FileTools
 				.absoluteToRelative(header_abs, m_outputDirectory);
 			m_output.write("#include \"" + header_rel + "\"\n");
@@ -363,15 +370,15 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         		m_output.write("\n");
 	        m_output.write("\t" + interceptor.getName() + "(");
 	        int paramIndex = 0;
-	        for (Iterator argIter = newCtor.parameterIterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
-	            Parameter param = (Parameter) argIter.next();
+	        for (Iterator<Parameter> argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	            Parameter param = argIter.next();
 	            m_output.write(param.getType().formatCpp(param.getName()));
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
 	        }
 	        m_output.write(") : " + subject.getName() + "(");
 	        paramIndex = 0;
-	        for (Iterator argIter = newCtor.parameterIterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
-	            Parameter param = (Parameter) argIter.next();
+	        for (Iterator<Parameter> argIter = newCtor.getParameters().iterator(); argIter.hasNext() && paramIndex < nArgs; paramIndex++) {
+	            Parameter param = argIter.next();
 	            m_output.write(param.getName());
 	            if (argIter.hasNext() && paramIndex < nArgs - 1) m_output.write(", ");
 	        }
@@ -384,9 +391,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     		if (routine != null && routine.hasThrowClause()) {
             m_output.write(" throw(");
             boolean first = true;
-            for (Iterator ei = routine.throwsIterator(); ei.hasNext(); ) {
+            for (Aggregate th: routine.getThrows()) {
                 if (!first) m_output.write(", ");
-                m_output.write(((Entity)ei.next()).getFullName());
+                first = false;
+                m_output.write(th.getFullName());
             }
             m_output.write(")");
         }
@@ -400,8 +408,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write(routine.getReturnType().formatCpp());
         m_output.write(" " + routine.getName() + "(");
         int i = 0;
-        for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
-            Parameter param = (Parameter) argIter.next();
+        for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
+            Parameter param = argIter.next();
             // write a generic name, in order to avoid name clashes with our own parameters
             m_output.write(param.getType().formatCpp("interceptor_arg" + i));
             m_output.write(" /* " + param.getName() + " */");
@@ -424,9 +432,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         } else {
             m_output.write("\t\tbasic_block args[] = {\n");
             int i = 0;
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
+            for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
                 writeInterceptorFunctionBasicBlockArgument(
-                        (Parameter)argIter.next(), i, argIter.hasNext() && i < nArgs - 1
+                        argIter.next(), i, argIter.hasNext() && i < nArgs - 1
                     );
             }
             m_output.write("\t\t};\n");
@@ -471,7 +479,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     private void writeInterceptorFunctionCallbackCall(Aggregate subject, Aggregate interceptor, Routine routine, int funcCounter, int nArgs)
         throws IOException, MissingInformationException
     {
-        ContainedConnection uplink = routine.getContainerConnection();
+        ContainedConnection<? extends Entity, ? extends Entity> uplink = routine.getContainerConnection();
         boolean isPure = 
             (uplink.getVirtuality() == Specifiers.Virtuality.PURE_VIRTUAL);
 
@@ -504,7 +512,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
             // we need to write the name of the first class this routine appeared at
             m_output.write(routine.getContainer().getFullName() + "::" + routine.getName() + "(");
             int i = 0;
-            for (Iterator argIter = routine.parameterIterator(); argIter.hasNext() && i < nArgs; i++) {
+            for (Iterator<Parameter> argIter = routine.getParameters().iterator(); argIter.hasNext() && i < nArgs; i++) {
             		argIter.next(); // ignore the result, we just need to advance the iterator
             		// write the generated name instead of a real one
                 m_output.write("interceptor_arg" + i + 
@@ -654,8 +662,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         // get the dtor
         Routine dtor = null;
-        for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
-            ContainedConnection connection = (ContainedConnection) ctorIter.next();
+        for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
             final Routine possibleDtor = (Routine) connection.getContained();
 
             if (possibleDtor.isDestructor()) {
@@ -670,8 +677,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         
         // Create base constructor calls
         boolean anyCtors = false;
-        for (Iterator ctorIter = subject.getScope().routineIterator(); ctorIter.hasNext();) {
-            ContainedConnection connection = (ContainedConnection) ctorIter.next();
+        for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
             final Routine ctor = (Routine) connection.getContained();
 
             if (ctor.isConstructor() &&
@@ -699,11 +705,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         m_output.write("\tscripting_element _py() { return twin; }\n\n");
         
         // Write functions in interceptor class, and add them to the griffin class
-        int i = 0;
-        for (Iterator funcIter = Utils.virtualMethods(subject, m_instanceMap, false).iterator();
-            funcIter.hasNext(); ++i) {
-            Routine routine = (Routine) funcIter.next();
-            
+        for (Routine routine: Utils.virtualMethods(subject, m_instanceMap, false)) {
             /* for the odd case of an idiot writing
              * private:
              * 	virtual void method();
@@ -730,22 +732,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
         // now, we want to add bogus members with public visibility
         // that expose all the members up to 'protected' of parent classes
         
-        Map wrappedTypes = new HashMap();
+        Map<String, Type> wrappedTypes = new HashMap<String, Type>();
         
-        for(Iterator fieldIter = Utils.accessibleFields(subject, m_instanceMap, Specifiers.Visibility.PROTECTED).iterator();
-        				 fieldIter.hasNext();)
-        {
-        	
-        		Field f = (Field)fieldIter.next();
-        		
-        		
-        		
+        for (Field f: Utils.accessibleFields(subject, m_instanceMap, Specifiers.Visibility.PROTECTED)) {
         		writeInterceptorFieldWrapper(subject, result, f, funcCounter, m_instanceMap, wrappedTypes);
-        		
-        		
         }
-        
-        
         
         // Write private sections of class
         m_output.write("private:\n");
@@ -756,7 +747,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 	
 	private void writeInterceptorFieldWrapper(Aggregate subject,
-			Aggregate result, Field originalField, int funcCounter, Map templateInstances, Map newTypes) 
+			Aggregate result, Field originalField, int funcCounter, Map<String, Aggregate> templateInstances, Map<String, Type> newTypes) 
 	throws IOException, MissingInformationException {
 		
 		Type type = originalField.getType();
@@ -782,7 +773,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(";\n");
 		}
 		
-		Type interceptedType = (Type)newTypes.get(newTypeName);
+		Type interceptedType = newTypes.get(newTypeName);
 		
 		Field interceptorF = (Field)originalField.clone();
 		interceptorF.setFieldType(Field.FieldType.WRAPPED);	
@@ -818,8 +809,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		Set newSubjects = new HashSet();
 		
 		// Generate interceptor class decleration
-		for (Iterator subjectIter = m_interceptors.iterator(); subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate) subjectIter.next();
+		for (Aggregate subject: m_interceptors) {
 
             // Check if the class is a template instantiation, and if so skip it
             if (subject.isSpecialized()) continue;
@@ -857,10 +847,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 						new NopExpression(), new SimpleType(subject, null, "&"));
 
 			// Grab all the routines from subject aggregate
-			for (Iterator routineIter = subject.getScope().routineIterator();
-				routineIter.hasNext(); ) {
-				// Generate wrapper for routine
-				ContainedConnection connection = (ContainedConnection)routineIter.next();
+			for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
 				Routine routine = (Routine)connection.getContained();
 
 				if (Filters.isAvailableStatic(routine)) {
@@ -871,7 +858,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 							++nArguments) {
 						try {
 							List<RoutineDeduction.ParameterTransformer> paramf =
-								RoutineDeduction.deduceParameterTransformers(routine.parameterIterator(), nArguments);
+								RoutineDeduction.deduceParameterTransformers(routine.getParameters().iterator(), nArguments);
 							RoutineDeduction.ParameterTransformer retf =
 								RoutineDeduction.deduceReturnTransformer(routine);
 							String name = "static_" + uid(routine) + "r" + nArguments;
@@ -912,14 +899,11 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			boolean hasOutput = Utils.hasOutputOperator(subject, m_program);
 			boolean hasAssignment = Filters.isAssignmentSupportive(subject);
 			boolean hasClone = Filters.isCloneable(subject);
-			List additional = Utils.findGloballyScopedOperators(subject, m_program);
+			List<Routine> additional = Utils.findGloballyScopedOperators(subject, m_program);
 			// Create upcasts
 			generateUpDownCastFlatWrappers(subject);
 			// Grab all the routines from subject aggregate
-			for (Iterator routineIter = subject.getScope().routineIterator();
-				routineIter.hasNext(); ) {
-				// Generate wrapper for routine
-				ContainedConnection connection = (ContainedConnection)routineIter.next();
+			for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
 				Routine routine = (Routine)connection.getContained();
 				if (routine.isConstructor() && isAbstractClass) continue;
 				if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
@@ -938,10 +922,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				}
 			}
 			// Grab members from subject aggregate
-			for (Iterator fieldIter = subject.getScope().fieldIterator();
-				fieldIter.hasNext(); ) {
-				// Generate wrapper for field
-				ContainedConnection connection = (ContainedConnection)fieldIter.next();
+			for (ContainedConnection<Aggregate, Field> connection: subject.getScope().getFields()) {
 				Field field = (Field)connection.getContained();
 				if (Filters.isAvailable(field, connection))
 					generateFlatWrapper(field, true, false);
@@ -960,8 +941,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				generateSpecialOutputOperator(subject);
 				generateSpecialStringConverter(subject);
 			}
-			for (Iterator addi = additional.iterator(); addi.hasNext(); ) {
-				Routine routine = (Routine)addi.next();
+			for (Routine routine: additional) {
 				if (!m_globalFuncs.contains(routine) 
 						&& Filters.isAvailable(routine))
 					m_globalFuncs.add(routine);
@@ -970,9 +950,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Generate wrappers for encapsulated aliases
-		for (Iterator aliasIter = m_typedefs.iterator(); aliasIter.hasNext();)
-		{
-			Alias alias = (Alias)aliasIter.next();
+		for (Alias alias: m_typedefs) {
 			if (Filters.needsEncapsulation(alias)) {
 				generateFlatWrapper(alias);
 				generateRegistrationPrototype(alias);
@@ -980,9 +958,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Generated global function wrappers
-		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext() ;)
-		{
-			Routine func = (Routine)funcIter.next();
+		for (Routine func: m_globalFuncs) {
 			if (Filters.isAvailable(func)) {
 				// - align the number of arguments
 				int minArgs = Utils.minimalArgumentCount(func),
@@ -1003,8 +979,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateConstantWrappers()
 		throws IOException, MissingInformationException
 	{
-		for (Iterator ci = m_globalDataMembers.iterator(); ci.hasNext(); ) {
-			Field global = (Field)ci.next();
+		for (Field global: m_globalDataMembers) {
 			generateFlatWrapper(global, false, false);
 		}
 	}
@@ -1016,8 +991,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateEnumeratedTypeWrappers()
 		throws IOException
 	{
-		for (Iterator enumIter = m_enums.iterator(); enumIter.hasNext();) {
-			sourceanalysis.Enum subject = (sourceanalysis.Enum) enumIter.next();
+		for (sourceanalysis.Enum subject: m_enums) {
 			// Generate a fine prototype here
 			generateFlatWrapper(subject);
 			generateRegistrationPrototype(subject);
@@ -1027,7 +1001,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateEntry()
 		throws IOException, MissingInformationException
 	{
-		List sorted_subjects = topologicallySortSubjects(true);
+		List<Aggregate> sorted_subjects = topologicallySortSubjects(true);
 		
 		for (Iterator subjectIter = m_subjects.iterator();
 			 subjectIter.hasNext();) {
@@ -1038,7 +1012,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			// Generate the interface for the class
 			generateRegistrationPrototype(subject.getScope(),
 				Utils.cleanFullName(subject),
-				subject.baseIterator(), 
+				subject.getBases(), 
 				Utils.isAbstract(subject, m_instanceMap),
 				Utils.hasDefaultConstructor(subject),
 				Filters.isAssignmentSupportive(subject),
@@ -1055,8 +1029,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("extern \"C\" EXPORT RegData entry[];\n\n");
 		m_output.write("RegData entry[] = {\n");
 		// - enter enumerated types (these should all appear BEFORE function protos)
-		for (Iterator enumIter = m_enums.iterator(); enumIter.hasNext();) {
-			sourceanalysis.Enum subject = (sourceanalysis.Enum) enumIter.next();
+		for (sourceanalysis.Enum subject: m_enums) {
 			m_output.write("\t{\"");
 			m_output.write(Utils.cleanFullName(subject));
 			m_output.write("\", \"enum\", ");
@@ -1064,8 +1037,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("},\n");
 		}
 		// - enter typedefs
-		for (Iterator typedefIter = m_typedefs.iterator(); typedefIter.hasNext();) {
-			Alias subject = (Alias)typedefIter.next();
+		for (Alias subject: m_typedefs) {
 			// do not generate prototypes for typedefs that weren't
 			// declared in headers
 			if(!Filters.isDeclared(subject)) {
@@ -1087,9 +1059,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 		}
 		// - enter classes
-		for (Iterator subjectIter = sorted_subjects.iterator();
-			 subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate) subjectIter.next();
+		for (Aggregate subject: sorted_subjects) {
                         if (!Filters.isAvailable(subject)) {
                           continue;
                         }
@@ -1100,8 +1070,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write("},\n");
 		}
 		// - enter global functions
-		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext(); ) {
-			Routine subject = (Routine)funcIter.next();
+		for (Routine subject: m_globalFuncs) {
 			if (Filters.isAvailable(subject)) {
 				generateRegistrationLine(subject, 0, false);
 			}
@@ -1110,17 +1079,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			m_output.write(Formatters.formatRegData(iter.next()) + "\n");
 		}
 		// - enter global data members
-		for (Iterator fieldIter = m_globalDataMembers.iterator();
-			fieldIter.hasNext(); ) {
+		for (Field field: m_globalDataMembers) {
 			// Create an entry for each public data member
-			Field field = (Field)fieldIter.next();
 			if (Filters.isAvailable(field, field.getContainerConnection()))
 				generateRegistrationLine(field, false);
 		}
 		// - enter downcast functions
-		for (Iterator downIter = m_downCasters.iterator(); 
-		     downIter.hasNext(); ) {
-			m_output.write("{ " + downIter.next() + " },\n");
+		for (String downCaster: m_downCasters) {
+			m_output.write("{ " + downCaster + " },\n");
 		}
 		m_output.write(END_OF_LIST);
 		m_output.flush();
@@ -1213,7 +1179,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		Type returnType = routine.getReturnType();
-		Type touchupReturnType = null;
 		String wrapperName = "routine_" + uid(routine) 
 			+ (with ? "r" : "s") + nArguments;
 		
@@ -1228,7 +1193,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		// Construct parameters fitting for the flat purpose
-		int paramCount = 0;
 		boolean first = true;
 		boolean staticParam = false;
 		m_output.write("(");
@@ -1253,7 +1217,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		
 		List<ParameterTransformer> paramf = RoutineDeduction
-			.deduceParameterTransformers(routine.parameterIterator(), nArguments);
+			.deduceParameterTransformers(routine.getParameters().iterator(), nArguments);
 		ParameterTransformer retf = RoutineDeduction.deduceReturnTransformer(routine);
 		m_output.write(Formatters.formatParameters(paramf));
 		m_output.write(")\n");
@@ -1288,7 +1252,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		// - generate call parameters
 		if (!routine.isConversionOperator()) {
-			paramCount = 0;
 			first = true;
 			staticParam = false;
 			
@@ -1315,8 +1278,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("/*\n * enum "); m_output.write(enume.getFullName());
 		m_output.write("\n */\n");
 		// Write the enumerated constants
-		for (Iterator ci = enume.constantIterator(); ci.hasNext(); ) {
-			sourceanalysis.Enum.Constant constant = (sourceanalysis.Enum.Constant)ci.next();
+		for (sourceanalysis.Enum.Constant constant: enume.getConstants()) {
 			m_output.write("int const_" + constant.hashCode());
 			m_output.write(" = (int)");
 			if (enume.hasContainer()) {
@@ -1426,7 +1388,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.write("; }\n");
 		// Create a set accessor
 		if (Filters.hasSetter(field)) {
-			Type touchedUpType = Filters.getTouchup(type);
 			accessorName = "data_set_" + uid(field) + fors;
 			// - generate accessor function header
 			m_output.write(tabs + "void " + accessorName + "(");
@@ -1471,9 +1432,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			+ (with ? "r": "s") + nArguments + "_proto[] = {\n");
 		// Go through arguments but not more than nArguments entries
 		int argCount = 0;
-		for (Iterator pi = routine.parameterIterator(); 
+		for (Iterator<Parameter> pi = routine.getParameters().iterator(); 
 				argCount < nArguments && pi.hasNext(); ++argCount) {
-			Parameter parameter = (Parameter)pi.next();
+			Parameter parameter = pi.next();
 			// Write name
 			m_output.write("\t{\"");
 			m_output.write(parameter.getName());
@@ -1522,8 +1483,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		m_output.write("RegData enumerated_" + enume.hashCode() + "[] = {\n");
 		// Write the enumerated constants
-		for (Iterator ci = enume.constantIterator(); ci.hasNext(); ) {
-			sourceanalysis.Enum.Constant constant = (sourceanalysis.Enum.Constant)ci.next();
+		for (sourceanalysis.Enum.Constant constant: enume.getConstants()) {
 			m_output.write("\t{ \"");
 			m_output.write(constant.getLiteral());
 			m_output.write("\", 0, 0, (void*)&const_"
@@ -1681,9 +1641,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	private void generateUpDownCastFlatWrappers(Aggregate subject)
 		throws IOException, MissingInformationException
 	{
-		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext();) {
-			InheritanceConnection connection =
-				(InheritanceConnection)baseIter.next();
+		for (InheritanceConnection connection: subject.getBases()) {
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 				 Aggregate base = (Aggregate)connection.getBase();
 				 String basename = "";
@@ -1802,18 +1760,19 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * @param scope scope containing routines
 	 * @throws IOException if output operation fails 
 	 */
-	public void generateRegistrationPrototype(Scope scope, String classname,
-		Iterator basesIterator, boolean isAbstractClass,
+	public void generateRegistrationPrototype(Scope<Aggregate> scope, String classname,
+		ConstCollection<InheritanceConnection> bases, boolean isAbstractClass,
 		boolean mustHaveCtor, boolean hasAssign, boolean hasClone,
-		boolean hasOutput, boolean hasDtor, boolean with, List additional)
+		boolean hasOutput, boolean hasDtor, boolean with, List<Routine> additional)
 		throws IOException, MissingInformationException
 	{
 		m_output.write("RegData scope_" + scope.hashCode() + "[] = {\n");
 		// Go through bases
+		Iterator<InheritanceConnection> basesIterator = bases.iterator();
 		if (basesIterator != null) {
 			for (; basesIterator.hasNext(); ) {
 				InheritanceConnection connection =
-					(InheritanceConnection)basesIterator.next();
+					basesIterator.next();
 				if (connection.getVisibility() == Specifiers.Visibility.PUBLIC) {
 					Aggregate base = connection.getBase();
 					m_output.write("{\"");
@@ -1826,10 +1785,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		// Go through routines in this scope
 		boolean ctors = false;
-		for (Iterator routineIter = scope.routineIterator(); 
-				routineIter.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)routineIter.next();
+		for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
 			// Create an entry for each public routine
 			Routine routine = (Routine)connection.getContained();
 			if (routine.isConstructor() && isAbstractClass) continue;
@@ -1841,10 +1797,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			}
 		}
 		// Go through data members in this scope
-		for (Iterator fieldIter = scope.fieldIterator();
-				fieldIter.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)fieldIter.next();
+		for (ContainedConnection<Aggregate, Field> connection: scope.getFields()) {
 			// Create an entry for public data members
 			Field field = (Field)connection.getContained();
 			if (Filters.isAvailable(field, connection)) 
@@ -1879,8 +1832,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 				+ uid(scope));
 			m_output.write("},\n");
 		}
-		for (Iterator addi = additional.iterator(); addi.hasNext(); ) {
-			Routine routine = (Routine)addi.next();
+		for (Routine routine: additional) {
 			if (Filters.isAvailable(routine))
 				generateRegistrationLine(routine, 1, false);
 		}
@@ -1956,7 +1908,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	 * registered.
 	 */
 	public void report(String[] classnames) {
-		Set requested = new HashSet();
+		Set<String> requested = new HashSet<String>();
 		for (int i = 0; i < classnames.length; ++i)
 			if (!classnames[i].equals("*"))
 				requested.add(classnames[i]);
@@ -1974,15 +1926,13 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		}
 		if (!m_globalFuncs.isEmpty()) 
 			System.out.println("| Registered functions:");
-		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext(); ) {
-			Entity func = (Entity)funcIter.next();
+		for (Entity func: m_globalFuncs) {
 			System.out.println("|   " + func.getFullName());
 		}
 		// Print header for global variables
 		if (!m_globalDataMembers.isEmpty())
 			System.out.println("| Registered variables:");
-		for (Iterator varIter = m_globalDataMembers.iterator(); varIter.hasNext(); ) {
-			Entity var = (Entity)varIter.next();
+		for (Entity var: m_globalDataMembers) {
 			System.out.println("|   " + var.getFullName());
 		}
 		// Functions
@@ -1993,9 +1943,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// Print those classes that were not found
 		if (!requested.isEmpty())
 			System.out.println("| Missed classes:");
-		for (Iterator missedIter = requested.iterator();
-		     missedIter.hasNext(); ) {
-			System.out.println("|   " + missedIter.next());
+		for (String missed: requested) {
+			System.out.println("|   " + missed);
 		}
 		// Print footer
 		System.out.println("=================================");
@@ -2003,10 +1952,9 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			System.err.println("griffin: WARNING - Some components could not be found.");
 	}
 	
-	private static void unmiss(Collection requested, Collection found)
+	private static void unmiss(Collection<String> requested, Collection<? extends Entity> found)
 	{
-		for (Iterator foundIter = found.iterator(); foundIter.hasNext(); ) {
-			Entity entity = (Entity)foundIter.next();
+		for (Entity entity: found) {
 			requested.removeAll(allPossibleNames(entity));
 		}
 	}
@@ -2021,14 +1969,14 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
     }
 
 	// Private members
-	private Map m_uidMap;
+	private Map<Object, Integer> m_uidMap;
 	private int m_uidNext;
-	private List m_globalDataMembers;
-	private List m_downCasters;
+	private List<Field> m_globalDataMembers;
+	private List<String> m_downCasters;
 	private List<RegData> m_entry;
 
-	private List m_interceptors;
-	private Set m_interceptorMethods;
+	private List<Aggregate> m_interceptors;
+	private Set<Routine> m_interceptorMethods;
 
     // random namespace name
     private String m_randomNamespace;

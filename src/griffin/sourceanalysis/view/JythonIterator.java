@@ -10,7 +10,7 @@ public class JythonIterator {
 	/**
 	 * 
 	 */
-	public JythonIterator(Iterator javaIterator) {
+	public JythonIterator(Iterator<Object> javaIterator) {
 		super();
 		m_javaIterator = javaIterator;
 	}
@@ -24,5 +24,5 @@ public class JythonIterator {
 	}
 	
 	// Private attributes
-	Iterator m_javaIterator;
+	Iterator<Object> m_javaIterator;
 }
