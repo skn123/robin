@@ -5,6 +5,7 @@ package backend.configuration;
 
 import java.util.Collection;
 
+import backend.Backend;
 import backend.exceptions.configuration.BackendNotFoundException;
 import backend.exceptions.configuration.ConfigurationParseException;
 import backend.exceptions.configuration.InvalidBackendException;
@@ -18,8 +19,6 @@ import backend.exceptions.configuration.InvalidBackendException;
  *
  */
 public class BackendConfiguration {
-   
-   
    /**
     * Reads the configuration from java class files
     * @throws ConfigurationParseException 
@@ -30,7 +29,6 @@ public class BackendConfiguration {
        
        enumerateBackends();
    }
-   
    
    /**
     * Returns a specific backend
@@ -72,10 +70,7 @@ public class BackendConfiguration {
        // go over all known packages and scan only those with the required prefix
        for(String s : allPackages) {
            processPackage(s);
-
        }
-       
-       
    }
 
    /**
@@ -83,17 +78,16 @@ public class BackendConfiguration {
     * - checks if p.MAIN_BACKEND_CLASS_NAME exist and implements Backend
     * @param s package name to scan for existence of backend
     */
-   private void processPackage(String s) {
+@SuppressWarnings("unchecked")
+private void processPackage(String s) {
        
        // try loading Launcher class
        try {
-           Class backendClass = Class.forName(s + "." + BackendConfiguration.MAIN_BACKEND_CLASS_NAME);
+           Class<Backend> backendClass = (Class<Backend>)Class.forName(s + "." + BackendConfiguration.MAIN_BACKEND_CLASS_NAME);
            
            BackendData backendData = new BackendData(backendClass); 
            
            configurationStorage.addBackend(backendData);
-           
-           
        } catch (ClassNotFoundException e) {
            // not a backend
            return;

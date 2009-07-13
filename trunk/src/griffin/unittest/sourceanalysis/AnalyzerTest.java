@@ -18,8 +18,19 @@ import java.util.Random;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import junit.framework.TestCase;
-
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateParameter;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateParameter;
 import sourceanalysis.dox.DoxygenAnalyzer;
 
 /**
@@ -48,7 +59,7 @@ public class AnalyzerTest extends TestCase {
 		for (int times = 0; times < 25; ++times) {
 			Type type = skel.randomType(true);
 			String typeexpr = type.formatCpp();
-			Type parsed = dox.parseType(typeexpr, new HashMap());
+			Type parsed = dox.parseType(typeexpr, new HashMap<String, Entity>());
 			parsed.toString();
 			if (!type.toString().equals(parsed.toString())) {
 				System.err.println("" + type + " ?= " + typeexpr + " ?= " + parsed);
@@ -73,7 +84,7 @@ public class AnalyzerTest extends TestCase {
 	public void testRoutines() throws Exception
 	{
 		// Prepare a file containing function headers
-		List routines = new LinkedList();
+		List<Routine> routines = new LinkedList<Routine>();
 		int nroutines = 5;
 		PrintStream fout = new PrintStream(new FileOutputStream("check/idl.h"));
 		ProgramSkeleton skel = new ProgramSkeleton();
@@ -94,14 +105,13 @@ public class AnalyzerTest extends TestCase {
 		
 		// Compared routines from extracted database to originally generated
 		// ones
-		Iterator originaliter = routines.iterator();
-		Iterator processediter = p.getGlobalNamespace().getScope().routineIterator();
+		Iterator<Routine> originaliter = routines.iterator();
+		Iterator<ContainedConnection<Namespace, Routine>> processediter = p.getGlobalNamespace().getScope().getRoutines().iterator();
 		
 		while (originaliter.hasNext() && processediter.hasNext()) {
 			// Extract both routines
-			Routine originalRoutine = (Routine)originaliter.next();
-			Routine processedRoutine = (Routine)
-				((ContainedConnection)processediter.next()).getContained();
+			Routine originalRoutine = originaliter.next();
+			Routine processedRoutine = (processediter.next()).getContained();
 			// Compare them using the string representations
 			StringWriter original = new StringWriter();
 			StringWriter processed = new StringWriter();
@@ -120,10 +130,8 @@ public class AnalyzerTest extends TestCase {
 	{
 		ProgramSkeleton skel = new ProgramSkeleton();
 		// Fill skeleton with some methods
-		for (Iterator aggiter = skel.nsGlobal.getScope().aggregateIterator();
-			aggiter.hasNext(); )	{
-			Aggregate agg = (Aggregate)
-				((ContainedConnection)aggiter.next()).getContained();
+		for (ContainedConnection<Namespace, Aggregate> cc: skel.nsGlobal.getScope().getAggregates()) {
+			Aggregate agg = cc.getContained();
 			// Add methods to this aggregate
 			for (int count = 0; count < 5; count++) {
 				Routine ro = skel.randomRoutine(false);
@@ -143,21 +151,13 @@ public class AnalyzerTest extends TestCase {
 			"src/unittest/sourceanalysis/Doxyfile.testCode");
 		
 		// Compare analyzed aggregates to original ones	
-		for (Iterator originaliter = skel.nsGlobal.getScope().aggregateIterator();
-			originaliter.hasNext(); ) {
-			// Get originally generated aggregate
-			ContainedConnection connection =
-				(ContainedConnection)originaliter.next();
-			Aggregate original = (Aggregate)connection.getContained();
+		for (ContainedConnection<Namespace, Aggregate> connection: skel.nsGlobal.getScope().getAggregates()) {
+			Aggregate original = connection.getContained();
 			Aggregate analyzed = null;
 			// Find other aggregate
-			for (Iterator aggiter = p.getGlobalNamespace().getScope()
-				.aggregateIterator(); aggiter.hasNext(); ) {
-				// Get analyzed aggregate
-				ContainedConnection aconnection =
-					(ContainedConnection)aggiter.next();
+			for (ContainedConnection<Namespace, Aggregate> aconnection: p.getGlobalNamespace().getScope().getAggregates()) {
 				// Check full name of aggregate
-				analyzed = (Aggregate)aconnection.getContained();
+				analyzed = aconnection.getContained();
 				if (analyzed.getFullName().equals(original.getFullName()))
 					break ;
 				else
@@ -243,10 +243,9 @@ public class AnalyzerTest extends TestCase {
 		out.write("(");
 		// Verbose parameters
 		boolean first = true;
-		for (Iterator paramiter = routine.parameterIterator();
-				paramiter.hasNext(); first = false) {
-			Parameter param = (Parameter)paramiter.next();
+		for (Parameter param: routine.getParameters()) {
 			if (!first) out.write(" , ");
+			first = false;
 			out.write(param.getType().toString());
 		}
 		out.write(")\n");
@@ -260,11 +259,8 @@ public class AnalyzerTest extends TestCase {
 		throws MissingInformationException, IOException
 	{
 		out.write(agg.getName()) ; out.write(":\n");
-		for (Iterator rouiter = agg.getScope().routineIterator();
-			rouiter.hasNext(); ) {
-			// Get the routines and print them
-			ContainedConnection connection = (ContainedConnection)rouiter.next();
-			Routine routine = (Routine)connection.getContained();
+		for (ContainedConnection<Aggregate, Routine> connection: agg.getScope().getRoutines()) {
+			Routine routine = connection.getContained();
 			verboseRoutine(routine, out);
 		}
 		out.flush();
@@ -282,10 +278,9 @@ public class AnalyzerTest extends TestCase {
 		out.write("(");
 		// Verbose parameters
 		boolean first = true;
-		for (Iterator paramiter = routine.parameterIterator();
-				paramiter.hasNext(); first = false) {
-			Parameter param = (Parameter)paramiter.next();
+		for (Parameter param: routine.getParameters()) {
 			if (!first) out.write(" , ");
+			first = false;
 			out.write(param.getType().formatCpp(param.getName()));
 		}
 		out.write(")\n");
@@ -302,13 +297,14 @@ public class AnalyzerTest extends TestCase {
 	{
 		if (klass.isTemplated()) {
 			out.write("template <");
-			for (Iterator temparg = klass.templateParameterIterator();
-				temparg.hasNext(); ) {
-				// Print template argument
-				TemplateParameter tp = (TemplateParameter)temparg.next();
+			boolean first = true;
+			for (TemplateParameter tp: klass.getTemplateParameters()) {
+				if (!first) {
+					out.write(" , ");
+				}
+				first = false;
 				out.write("class ");
 				out.write(tp.getName());
-				if (temparg.hasNext()) out.write(" , ");
 			}
 			out.write(">\n");
 		}
@@ -316,12 +312,8 @@ public class AnalyzerTest extends TestCase {
 		out.write(klass.getName());
 		out.write("\n{\n");
 		
-		for (Iterator rouiter = klass.getScope().routineIterator();
-			rouiter.hasNext(); ) {
-			// Print all routines
-			ContainedConnection connection =
-				(ContainedConnection)rouiter.next();
-			Routine method = (Routine)connection.getContained();
+		for (ContainedConnection<Aggregate, Routine> connection: klass.getScope().getRoutines()) {
+			Routine method = connection.getContained();
 			// - express visibility
 			int vis = connection.getVisibility();
 			if (vis == Specifiers.Visibility.PUBLIC)
@@ -345,10 +337,8 @@ public class AnalyzerTest extends TestCase {
 	private void printHeaderCpp(ProgramSkeleton skel, Writer out)
 		throws MissingInformationException, IOException
 	{
-		for (Iterator aggiter = skel.nsGlobal.getScope().aggregateIterator();
-			aggiter.hasNext(); )	{
-			Aggregate agg = (Aggregate)
-				((ContainedConnection)aggiter.next()).getContained();
+		for (ContainedConnection<Namespace, Aggregate> cc: skel.nsGlobal.getScope().getAggregates()) {
+			Aggregate agg = cc.getContained();
 			printClassCpp(agg, out);
 		}
 	}

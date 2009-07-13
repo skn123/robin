@@ -3,7 +3,6 @@ package backend;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +14,6 @@ import sourceanalysis.ProgramDatabase;
 import sourceanalysis.dox.DoxygenAnalyzer;
 import sourceanalysis.mixin.JythonMixIn;
 import sourceanalysis.mixin.MixIn;
-
 import backend.configuration.BackendConfiguration;
 import backend.configuration.BackendData;
 import backend.configuration.PropertyData;
@@ -246,16 +244,12 @@ public class Launcher {
            dox.logger.setLevel(Level.WARNING);
            ProgramDatabase pdb = dox.processIndex();
            
-           
-           
            // Apply mix-ins
-           for (Iterator mixini = mixins.iterator(); mixini.hasNext(); ) {
-               ((MixIn)mixini.next()).apply(pdb);
+           for (MixIn mixin: mixins) {
+        	   mixin.apply(pdb);
            }
            
            // create an instance of the backend
-       
-
            Backend backend = backendData.getBackendInterface().newInstance();
            backend.execute(pdb, backendProperties);
            return;

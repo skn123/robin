@@ -168,9 +168,9 @@ public class XML {
 	 * @param subname name of sub-nodes to search for
 	 * @return Collection all the sub-nodes which have the requested name
 	 */
-	public static Collection subNodes(Node xmlnode, String subname)
+	public static Collection<Node> subNodes(Node xmlnode, String subname)
 	{
-		List matching = new LinkedList();
+		List<Node> matching = new LinkedList<Node>();
 		// Iterate children and add them all to the list
 		NodeList children = xmlnode.getChildNodes();
 		// Go through children

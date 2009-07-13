@@ -2,7 +2,6 @@ package sourceanalysis;
 
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
@@ -52,7 +51,7 @@ public class Type extends DefaultTreeModel {
 				SpecializationConnection specz = 
 					enabled.getGeneralTemplateForSpecialization();
 				sb.append(baseFormatter.formatBase(specz.getGeneral()));
-				Vector args = specz.getSpecificArguments();
+				Vector<TemplateArgument> args = specz.getSpecificArguments();
 				formatTemplateArguments(args, sb, baseFormatter);
 			}
 			else
@@ -71,25 +70,24 @@ public class Type extends DefaultTreeModel {
 	 * @param baseFormatter formatter to apply to each template argument
 	 * (it is only applied to TypeNameTemplateArgument-s, of course).
 	 */
-	private static void formatTemplateArguments(Collection templateArgs,
+	private static void formatTemplateArguments(Collection<TemplateArgument> templateArgs,
 		StringBuffer destination, BaseTypeFormatter baseFormatter)
 	{
 		// Open angle brackets
 		destination.append("< ");
 		// Add arguments
 		boolean first = true;
-		for (Iterator iter = templateArgs.iterator(); iter.hasNext(); ) {
-			Object object = iter.next();
+		for (TemplateArgument ta: templateArgs) {
 			// add separating comma
 			if (!first) destination.append(",");
 			first = false;
 			// format base types using the base formatter; other objects
 			// are merely converted to text
-			if (object instanceof TypenameTemplateArgument) 
-				destination.append(((TypenameTemplateArgument)object)
+			if (ta instanceof TypenameTemplateArgument) 
+				destination.append(((TypenameTemplateArgument)ta)
 					.getValue().formatCpp("", baseFormatter));
 			else
-				destination.append(object.toString());
+				destination.append(ta.toString());
 		}
 		// Close angle brackets
 		destination.append(" >");
@@ -102,7 +100,7 @@ public class Type extends DefaultTreeModel {
 	 * @param baseFormatter formatter to apply to each template argument
 	 * (it is only applied to TypeNameTemplateArgument-s, of course).
 	 */
-	public static String formatTemplateArguments(Collection templateArgs,
+	public static String formatTemplateArguments(Collection<TemplateArgument> templateArgs,
 		BaseTypeFormatter baseFormatter)
 	{
 		// Create a StringBuffer and use formatTemplateUsingArguments to
@@ -221,6 +219,7 @@ public class Type extends DefaultTreeModel {
 		 * Returns <b>true</b> if the kind of this node is not NODE_LEAF.
 		 * @see javax.swing.tree.TreeNode#getAllowsChildren()
 		 */
+		@Override
 		public boolean getAllowsChildren() {
 			return (m_kind != NODE_LEAF);
 		}
@@ -230,6 +229,8 @@ public class Type extends DefaultTreeModel {
 		 * <tt>kind(...children...)</tt>
 		 * @return String textual representation
 		 */
+		@Override
+		@SuppressWarnings("unchecked")
 		public String toString()
 		{
 			StringBuffer sb = new StringBuffer();
@@ -267,6 +268,7 @@ public class Type extends DefaultTreeModel {
 		 * class-names involved in the type expression
 		 * @return String textual representation.
 		 */
+		@SuppressWarnings("unchecked")
 		public String formatCpp(String declname, BaseTypeFormatter baseFormatter)
 		{
 			StringBuffer sb = new StringBuffer();
@@ -368,6 +370,7 @@ public class Type extends DefaultTreeModel {
 		 * @param filltype value to fill in blanks
 		 * @return TypeNode a normal form, may be <b>this</b>.
 		 */
+		@SuppressWarnings("unchecked")
 		private TypeNode normalize(TypeNode filltype)
 		{
 			if (getKind() == NODE_X_BLANK) {
@@ -391,6 +394,7 @@ public class Type extends DefaultTreeModel {
 		/* (non-Javadoc)
 		 * @see java.lang.Object#equals(Object)
 		 */
+		@Override
 		public boolean equals(Object other)
 		{
 			if (!(other instanceof TypeNode)) {
@@ -406,6 +410,7 @@ public class Type extends DefaultTreeModel {
 		/* (non-Javadoc)
 		 * @see java.lang.Object#hashCode()
 		 */
+		@Override
 		public int hashCode() {
 			int hash = Integer.toString(m_kind).hashCode();
 			hash += Integer.toString(m_cvQualifiers).hashCode(); 
@@ -413,6 +418,7 @@ public class Type extends DefaultTreeModel {
 			return hash;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public TypeNode clone() {
 			TypeNode replica = new TypeNode(m_kind);
@@ -456,6 +462,7 @@ public class Type extends DefaultTreeModel {
 	 * throw an error when it's created with a null root. This is the main
 	 * reason for the existance of this extension. 
 	 */
+	@Override
 	public Object getRoot()
 	{
 		return m_isEmpty ? null : super.getRoot();
@@ -474,6 +481,7 @@ public class Type extends DefaultTreeModel {
 	 * Create a textual representation of the type. If this type is empty, the 
 	 * value is "". Otherwise, the representation of the root is taken.
 	 */
+	@Override
 	public String toString()
 	{
 		TypeNode root = getRootNode();
@@ -917,6 +925,7 @@ public class Type extends DefaultTreeModel {
 	 * If 'expandTypedefs' is true, then typedefs are expanded into a typenode tree
 	 */
 	
+	@SuppressWarnings("unchecked")
 	private boolean equalTypenodes(TypeNode first, TypeNode second, boolean expandTypedefs) {
 		
 		// trivial case, same nodes
@@ -1047,6 +1056,7 @@ public class Type extends DefaultTreeModel {
 	/**
 	 * @see java.lang.Object#equals(Object)
 	 */
+	@Override
 	public boolean equals(Object other)
 	{
 		if (!(other instanceof Type)) {
@@ -1065,6 +1075,7 @@ public class Type extends DefaultTreeModel {
 	/**
 	 * @see java.lang.Object#hashCode()
 	 */
+	@Override
 	public int hashCode() {
 		int hash = Boolean.toString(m_isEmpty).hashCode();
 		if(root != null) hash += root.hashCode();

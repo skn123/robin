@@ -3,17 +3,16 @@
  */
 package sourceanalysis.view;
 
-import java.util.Iterator;
-
 import sourceanalysis.Aggregate;
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
+import sourceanalysis.Entity;
 import sourceanalysis.Field;
 import sourceanalysis.InheritanceConnection;
 import sourceanalysis.MissingInformationException;
 import sourceanalysis.Namespace;
-import sourceanalysis.Routine;
 import sourceanalysis.Parameter;
+import sourceanalysis.Routine;
 import sourceanalysis.Scope;
 import sourceanalysis.Type;
 
@@ -45,23 +44,19 @@ public class Traverse {
 	 * only to members having at least the specified visibility (see
 	 * Specifiers.Visibility) 
 	 */
-	public void traverse(Scope starting, TypeInformationVisitor visitor, 
+	public void traverse(Scope<Aggregate> starting, TypeInformationVisitor visitor, 
 		boolean intoTemplates, int minVisibility)
 	{
 		// - traverse routines of scope
-		for (Iterator ri = starting.routineIterator(); ri.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ri.next();
-			Routine routine = (Routine)connection.getContained();
+		for (ContainedConnection<Aggregate, Routine> connection: starting.getRoutines()) {
+			Routine routine = connection.getContained();
 			if (connection.getVisibility() >= minVisibility && 
 					(intoTemplates || !routine.isTemplated()))
 				traverse(routine, visitor);
 		}
 		// - traverse fields of scope
-		for (Iterator fi = starting.fieldIterator(); fi.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)fi.next();
-			Field field = (Field)connection.getContained();
+		for (ContainedConnection<Aggregate, Field> connection: starting.getFields()) {
+			Field field = connection.getContained();
 			try {
 				if (connection.getVisibility() >= minVisibility)
 					visitor.visit(field.getType());
@@ -71,9 +66,8 @@ public class Traverse {
 			}
 		}
 		// - traverse typedefs in scope
-		for (Iterator ai = starting.aliasIterator(); ai.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)ai.next();
-			Alias alias = (Alias)connection.getContained();
+		for (ContainedConnection<Aggregate, Alias> connection: starting.getAliass()) {
+			Alias alias = connection.getContained();
 			if (connection.getVisibility() >= minVisibility)
 				visitor.visit(alias.getAliasedType());
 		}
@@ -95,9 +89,7 @@ public class Traverse {
 	{
 		traverse(aggregate.getScope(), visitor, intoTemplates, minVisibility);
 		// Also trace types occurring in inheritance
-		for (Iterator bi = aggregate.baseIterator(); bi.hasNext(); ) {
-			InheritanceConnection connection =
-				(InheritanceConnection)bi.next();
+		for (InheritanceConnection connection: aggregate.getBases()) {
 			if (connection.getVisibility() >= minVisibility)
 				visitor.visit(connection.getBaseAsType());
 		}
@@ -119,8 +111,7 @@ public class Traverse {
 			/* This type is corrupted and it's ignored */
 		}
 		// Visit parameters
-		for (Iterator pi = starting.parameterIterator(); pi.hasNext(); ) {
-			Parameter param = (Parameter)pi.next();
+		for (Parameter param: starting.getParameters()) {
 				
 			try {
 				visitor.visit(param.getType());
@@ -136,24 +127,18 @@ public class Traverse {
 	 * @param starting parent scope
 	 * @param visitor an object which is invoked for every routine found
 	 */
-	public void traverse(Scope starting, RoutineVisitor visitor)
+	public void traverse(Scope<? extends Entity> starting, RoutineVisitor visitor)
 	{
-		for (Iterator ri = starting.routineIterator(); ri.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ri.next();
-			Routine routine = (Routine)connection.getContained();
+		for (ContainedConnection<? extends Entity, Routine> connection: starting.getRoutines()) {
+			Routine routine = connection.getContained();
 			visitor.visit(routine);
 		}
-		for (Iterator ai = starting.aggregateIterator(); ai.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ai.next();
-			Aggregate aggregate = (Aggregate)connection.getContained();
+		for (ContainedConnection<? extends Entity, Aggregate> connection: starting.getAggregates()) {
+			Aggregate aggregate = connection.getContained();
 			traverse(aggregate.getScope(), visitor);
 		}
-		for (Iterator ni = starting.namespaceIterator(); ni.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ni.next();
-			Namespace ns = (Namespace)connection.getContained();
+		for (ContainedConnection<? extends Entity, Namespace> connection: starting.getNamespaces()) {
+			Namespace ns = connection.getContained();
 			traverse(ns.getScope(), visitor);
 		}
 	}
@@ -163,19 +148,15 @@ public class Traverse {
 	 * @param starting parent scope
 	 * @param visitor an object which is invoked for every aggregate found
 	 */
-	public void traverse(Scope starting, AggregateVisitor visitor)
+	public void traverse(Scope<? extends Entity> starting, AggregateVisitor visitor)
 	{
-		for (Iterator ai = starting.aggregateIterator(); ai.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ai.next();
-			Aggregate aggregate = (Aggregate)connection.getContained();
+		for (ContainedConnection<? extends Entity, Aggregate> connection: starting.getAggregates()) {
+			Aggregate aggregate = connection.getContained();
 			visitor.visit(aggregate);
 			traverse(aggregate.getScope(), visitor);
 		}
-		for (Iterator ni = starting.namespaceIterator(); ni.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ni.next();
-			Namespace ns = (Namespace)connection.getContained();
+		for (ContainedConnection<? extends Entity, Namespace> connection: starting.getNamespaces()) {
+			Namespace ns = connection.getContained();
 			traverse(ns.getScope(), visitor);
 		}
 	}

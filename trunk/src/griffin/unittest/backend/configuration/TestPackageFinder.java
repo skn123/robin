@@ -1,8 +1,8 @@
 package unittest.backend.configuration;
 
+import junit.framework.TestCase;
 import backend.configuration.PackageFinder;
 import backend.exceptions.configuration.ConfigurationParseException;
-import junit.framework.TestCase;
 /**
  * Tests package finder
  * **NOTE**: Assumes that backend.configuration.testfinder is available
@@ -11,12 +11,14 @@ import junit.framework.TestCase;
  */
 public class TestPackageFinder extends TestCase {
 
-   protected void setUp() throws Exception {
+   @Override
+protected void setUp() throws Exception {
        super.setUp();
        pf = new PackageFinder("unittest.backend.configuration.testfinder");
    }
 
-   protected void tearDown() throws Exception {
+   @Override
+protected void tearDown() throws Exception {
        super.tearDown();
    }
 
