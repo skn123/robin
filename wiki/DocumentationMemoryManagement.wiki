@@ -1,8 +1,5 @@
 #summary Documentation for Language Feature - Memory Management.
 
-= Language Features =
-== Memory Management ==
-
 Python is garbage-collected. C++ is not. This brings up frequent conflicts when allocating and de-allocating objects dynamically on the heap. In particular, when a C++ programmer writes a function which dynamically allocates and object, it is beyond the scope of the programming language itself to specify how and when should the object be deleted.
 
 Robin, therefore, effects a crude heuristic approach:
