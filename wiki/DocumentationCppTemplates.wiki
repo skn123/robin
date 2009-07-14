@@ -1,8 +1,5 @@
 #summary Documentation for Language Feature - C++ Templates.
 
-= Language Features =
-== C++ Templates ==
-
 Templates allow extensive reuse of C++ code, and are used widely in C++ applications and libraries. Generally, a class template {{{C<T>}}} is declared, and concrete classes {{{C<int>}}}, {{{C<char>}}}, {{{C<std::string>}}} are so-called instantiated by the compiler to support various uses of the template across the program.
 
 When creating a binding with Robin, one has to make a decision concerning which template instances will be generated. A template instance may be requested either explicitly or implicitly:
