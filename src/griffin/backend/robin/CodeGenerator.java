@@ -152,8 +152,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void investInterceptor(String classname)
 	{
 		// Go through all of the Subjects, searching for the given name
-		for (Iterator subjectiter = m_subjects.iterator(); subjectiter.hasNext(); ) {
-			Aggregate agg = (Aggregate)subjectiter.next();
+		for (Aggregate agg: m_subjects) {
             if (!agg.getName().equals(classname)) continue; // not the right class
             try { if (!backend.Utils.isAbstract(agg)) continue; } catch (MissingInformationException e) {}
             if (agg.isTemplated() && m_separateClassTemplates) continue;
@@ -167,8 +166,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
      */
     public void autoInvestInterceptor() {
 		// Go through all of the Subjects, searching for the given name
-		for (Iterator subjectiter = m_subjects.iterator(); subjectiter.hasNext(); ) {
-			Aggregate agg = (Aggregate)subjectiter.next();
+    	for (Aggregate agg: m_subjects) {
             try { if (!backend.Utils.isPolymorphic(agg)) continue; } catch (MissingInformationException e) {}
             if (agg.isTemplated() && m_separateClassTemplates) continue;
 
@@ -185,8 +183,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		// collect constants in the global namespace
 		collectConstants(m_program.getGlobalNamespace().getScope());
 		// collect constants in subject classes
-		for (Iterator si = m_subjects.iterator(); si.hasNext();) {
-			Aggregate aggr = (Aggregate) si.next();
+		for (Aggregate aggr: m_subjects) {
 			collectConstants(aggr.getScope());
 		}
 	}
@@ -294,8 +291,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		Set<String> headers = new HashSet<String>();
 		
 		// Collect class declarations
-		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate) subjectIter.next();
+		for (Aggregate subject: m_subjects) {
 			decldefs.add(safeGetDeclaration(subject));
 		}
 		
@@ -806,7 +802,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException, MissingInformationException
 	{
 		// New classes to add
-		Set newSubjects = new HashSet();
+		Set<Aggregate> newSubjects = new HashSet<Aggregate>();
 		
 		// Generate interceptor class decleration
 		for (Aggregate subject: m_interceptors) {
@@ -835,8 +831,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	public void generateStaticRoutines() throws IOException 
 	{
 		// Generate routine wrappers for class methods
-		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate) subjectIter.next();
+		for (Aggregate subject: m_subjects) {
                         if (!Filters.isAvailable(subject)) {
                           continue;
                         }
@@ -888,8 +883,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		throws IOException, MissingInformationException
 	{ 
 		// Generate routine wrappers for class methods
-		for (Iterator subjectIter = m_subjects.iterator(); subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate) subjectIter.next();
+		for (Aggregate subject: m_subjects) {
                         if (!Filters.isAvailable(subject)) {
                           continue;
                         }
@@ -1003,9 +997,7 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 	{
 		List<Aggregate> sorted_subjects = topologicallySortSubjects(true);
 		
-		for (Iterator subjectIter = m_subjects.iterator();
-			 subjectIter.hasNext();) {
-			Aggregate subject = (Aggregate) subjectIter.next();
+		for (Aggregate subject: m_subjects) {
                         if (!Filters.isAvailable(subject)) {
                           continue;
                         }
@@ -1917,10 +1909,8 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		if (!m_subjects.isEmpty())
 			System.out.println("| Registered classes:");
 		// Print subjects
-		for (Iterator subjectIter = m_subjects.iterator(); 
-		     subjectIter.hasNext(); ) {
+		for (Aggregate subject: m_subjects) {
 			// - print name
-			Entity subject = (Entity)subjectIter.next();
 			System.out.println("|   " + subject.getFullName());
 			requested.removeAll(allPossibleNames(subject));
 		}

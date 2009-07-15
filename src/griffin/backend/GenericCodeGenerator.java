@@ -16,7 +16,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.InappropriateKindException;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.TemplateEnabledEntity;
+import sourceanalysis.Type;
 import sourceanalysis.assist.SupervisedTemplates;
 import sourceanalysis.view.TemplateBank;
 import sourceanalysis.view.Traverse;
@@ -35,7 +51,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 		super();
 		m_program = program;
 		m_output = output;
-		m_subjects = new HashSet();
+		m_subjects = new HashSet<Aggregate>();
 		m_subjectTemplates = new HashSet<Aggregate>();
 		m_enums = new HashSet<sourceanalysis.Enum>();
 		m_typedefs = new HashSet<Alias>();
@@ -265,7 +281,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	 * classes and inner enumerated types.
 	 */
 	public void grabInnersAsWell() {
-		List innerClasses = new LinkedList();
+		List<Aggregate> innerClasses = new LinkedList<Aggregate>();
 
 		for (Aggregate subject : m_subjects) {
 			grabInnersOf(subject, innerClasses);
@@ -727,7 +743,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 		;
 
 		// Translate the inheritance information into a graph
-		Map bases = new HashMap();
+		Map<Aggregate, TopologicalNode> bases = new HashMap<Aggregate, TopologicalNode>();
 
 		for (Aggregate subject : m_subjects) {
 			bases.put(subject, new TopologicalNode());
@@ -784,7 +800,7 @@ public class GenericCodeGenerator implements sourceanalysis.view.Perspective {
 	protected ProgramDatabase m_program;
 	protected File m_outputDirectory;
 	protected Writer m_output;
-	protected Set m_subjects;
+	protected Set<Aggregate> m_subjects;
 	protected Set<Aggregate> m_subjectTemplates;
 	protected Set<sourceanalysis.Enum> m_enums;
 	protected Set<Alias> m_typedefs;
