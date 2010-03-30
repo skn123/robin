@@ -23,5 +23,5 @@ Below is a summary of several properties of SWIG compared to those of Robin.
 ||Custom Conversions||Yes (implement in C++)||Yes (implement in Python)||
 ||STL Support||Yes||Yes||
 ||C++ Exception Handling||Yes||Yes||
-||Polymorphism (interceptors)||No||Yes (passing Python objects to C++ is supported)||
+||Polymorphism (passing python objects to C functions) ||Yes (called directors)||Yes (called interceptors)||
 ||Custom Operators||Yes (implement in C++)||Yes (implement in Python)||
