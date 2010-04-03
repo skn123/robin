@@ -8,7 +8,7 @@
 #include <map>
 #include <complex>
 #include <stdexcept>
-
+#include <stdlib.h>
 
 namespace StandardLibrary
 {
@@ -47,7 +47,7 @@ namespace StandardLibrary
 		UsingVectors(std::vector<unsigned long long> data) : m_id(4) { }
 
 		std::vector<double> get() const { return m_data; }
-		std::vector<std::vector<double> > getv() const { 
+		std::vector<std::vector<double> > getv() const {
 			std::vector<std::vector<double> > vd;
 			vd.push_back(m_data);
 			return vd;
@@ -121,7 +121,7 @@ namespace StandardLibrary
 		typedef std::complex<double> C;
 		typedef std::pair<C,C> Qubit;
 
-		void append(C alpha, C beta) 
+		void append(C alpha, C beta)
 		{ m_states.push_back(Qubit(alpha, beta)); }
 
 		std::complex<double> pivot() const { return C(1.0, 1.0); }
@@ -149,11 +149,11 @@ namespace StandardLibrary
 	public:
 		struct Datum {
 			int num; std::string text;
-			
-			Datum() {} 
+
+			Datum() {}
 			void setText(const std::string& t) { text = t; }
 		};
-		
+
 		void read_or_write(std::ostream& out, Datum& datum)
 		{
 			out << datum.text << ", " << datum.num;
@@ -162,7 +162,7 @@ namespace StandardLibrary
 		{
 			in >> datum.text >> datum.num;
 		}
-		
+
 		void write(std::ostream& out, Datum& datum)
 		{
 			out << datum.text << ", " << datum.num;
