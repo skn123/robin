@@ -16,6 +16,7 @@
 #include <Python.h>
 
 #include <string>
+#include <cstdlib>
 
 #include "pythonfrontend.h"
 #include "pythonobjects.h"
@@ -50,8 +51,8 @@ public:
 			// Load and register library
 			RegistrationMechanism *mech =
 				RegistrationMechanismSingleton::getInstance();
-			Handle<Library> library = 
-				(libname == 0) ? mech->import(libfile) 
+			Handle<Library> library =
+				(libname == 0) ? mech->import(libfile)
 							   : mech->import(libfile, libname);
 			// Expose library
 			fe->exposeLibrary(*library);
@@ -152,10 +153,10 @@ public:
 			}
 
 			try {
-				Handle<TypeOfArgument> 
+				Handle<TypeOfArgument>
 					toasrc = fe->detectType((scripting_element)source),
 					toadst = fe->detectType((scripting_element)dest);
-				Handle<ConversionRoute> convRoute = 
+				Handle<ConversionRoute> convRoute =
 					ConversionTableSingleton::getInstance()->
 					bestSingleRoute(*toasrc, *toadst);
 				w = convRoute->totalWeight();
@@ -172,8 +173,8 @@ public:
 		}
 
 		PyObject* wtuple =
-			Py_BuildValue("(iiii)", 
-					w.getEpsilon(), w.getPromotion(), 
+			Py_BuildValue("(iiii)",
+					w.getEpsilon(), w.getPromotion(),
 					w.getUpcast(), w.getUserDefined());
 		return wtuple;
 	}
@@ -218,7 +219,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:obscure", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:obscure", &pyobj))
 			return NULL;
 
 		Py_XINCREF(pyobj);
@@ -232,7 +233,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:disown", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:disown", &pyobj))
 			return NULL;
 
 		if (InstanceObject_Check(pyobj)) {
@@ -251,7 +252,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:own", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:own", &pyobj))
 			return NULL;
 
 		if (InstanceObject_Check(pyobj)) {
@@ -270,7 +271,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:familiarize", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:familiarize", &pyobj))
 			return NULL;
 
 		if (!PyType_Check(pyobj)) {
@@ -281,7 +282,7 @@ public:
 		Handle<UserDefinedTranslator> translate
 			(new ByTypeTranslator((PyTypeObject*)pyobj));
 		fe->addUserDefinedType(translate);
-		
+
 		Py_XINCREF(Py_None);
 		return Py_None;
 	}
@@ -294,7 +295,7 @@ public:
 		PyObject *pyobj;
 		Handle<Robin::TypeOfArgument> rtype;
 
-		if (!PyArg_ParseTuple(args, "O:pointer", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:pointer", &pyobj))
 			return NULL;
 
 		try {
@@ -302,7 +303,7 @@ public:
 				rtype = fe->detectType((PyTypeObject*)pyobj);
 
 				int *ptr = new int(0);
-				Handle<Robin::Address> haddress(new Robin::Address(rtype, 
+				Handle<Robin::Address> haddress(new Robin::Address(rtype,
 																   ptr));
 				return new Robin::Python::AddressObject(haddress);
 			}
@@ -328,7 +329,7 @@ public:
 		PyObject *pyobj;
 		long subscript = 0;
 
-		if (!PyArg_ParseTuple(args, "O|i:dereference", &pyobj, &subscript)) 
+		if (!PyArg_ParseTuple(args, "O|i:dereference", &pyobj, &subscript))
 			return NULL;
 
 		return (PyObject*)((Robin::Python::AddressObject*)pyobj)->getUnderlying()->dereference(subscript);
@@ -338,10 +339,10 @@ public:
 };
 
 PyMethodDef PythonFrontend::Module::methods[] = {
-	{ "loadLibrary", &py_loadLibrary, METH_VARARGS, 
+	{ "loadLibrary", &py_loadLibrary, METH_VARARGS,
 	  "loadLibrary([libname], libfile)\nloads a library "
 	  "using Robin's registration mechanism." },
-	{ "classByName", &py_classByName, METH_VARARGS, 
+	{ "classByName", &py_classByName, METH_VARARGS,
 	  "classByName(classname)\nFetches a registered class from Robin's "
 	  "internal registry." },
 	{ "declareTemplate", &py_setTemplateObject, METH_VARARGS,
@@ -367,7 +368,7 @@ PyMethodDef PythonFrontend::Module::methods[] = {
 	  "familiarize(type)\n"
 	  "Makes the given Python type known to Robin, allowing user to define\n"
 	  "custom conversions to/from it." },
-	{ "debugOn", &py_debugOn, METH_VARARGS, 
+	{ "debugOn", &py_debugOn, METH_VARARGS,
 	  "debugOn()\nTurns on Robin's internal debug flag." },
 	{ "pointer", &py_pointer, METH_VARARGS, "" },
 	{ "dereference", &py_dereference, METH_VARARGS, "" },
@@ -414,11 +415,11 @@ void initrobin()
 	Py_XINCREF(Robin::Python::ClassTypeObject);
 	Py_XINCREF(Robin::Python::EnumeratedTypeTypeObject);
 
-	PyModule_AddObject(module, "FunctionType", 
+	PyModule_AddObject(module, "FunctionType",
 					   (PyObject*)&Robin::Python::FunctionTypeObject);
-	PyModule_AddObject(module, "ClassType", 
+	PyModule_AddObject(module, "ClassType",
 					   (PyObject*)Robin::Python::ClassTypeObject);
-	PyModule_AddObject(module, "EnumeratedTypeType", 
+	PyModule_AddObject(module, "EnumeratedTypeType",
 					   (PyObject*)Robin::Python::EnumeratedTypeTypeObject);
 	PyModule_AddObject(module, "double", Robin::Python::pydouble =
 					   PyCObject_FromVoidPtr((void*)"double", 0));
@@ -430,7 +431,7 @@ void initrobin()
 					   PyCObject_FromVoidPtr((void*)"unsigned int", 0));
 	PyModule_AddObject(module, "ulong", Robin::Python::pyunsigned_long =
 					   PyCObject_FromVoidPtr((void*)"unsigned long", 0));
-	PyModule_AddObject(module, "ulonglong", 
+	PyModule_AddObject(module, "ulonglong",
 					   Robin::Python::pyunsigned_long_long =
 					   PyCObject_FromVoidPtr((void*)"unsigned long long", 0));
 	PyModule_AddObject(module, "uchar", Robin::Python::pyunsigned_char =
@@ -440,7 +441,7 @@ void initrobin()
 
 #define _QUOTE(X) (#X)
 #define QUOTE(X) (_QUOTE(X))
-	PyModule_AddObject(module, "VERSION", 
+	PyModule_AddObject(module, "VERSION",
 					   PyString_FromString(QUOTE(_VERSION)));
 
 #ifndef _MSC_VER

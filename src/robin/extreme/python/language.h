@@ -7,7 +7,8 @@
 #include <string>
 #include <iostream>
 #include <vector>
-
+#include <stdlib.h>
+#include <string.h>
 
 // ----------------------------------------------------------------------
 
@@ -138,7 +139,7 @@ class AssignmentOperator
 public:
 	AssignmentOperator(float factor) : x_factor(factor) { }
 
-	void report() const 
+	void report() const
 	{ fprintf(stderr, "AssignmentOperator: %f\n", x_factor); }
 
 	float x_factor;
@@ -268,7 +269,7 @@ private:
 		sprintf(sdouble, "%.3lf", val);
 		return std::string(sdouble);
 	}
-	
+
 	long m_long;
 	float m_float;
 	double m_double;
@@ -321,7 +322,7 @@ private:
 
 	my_quintuple *foo;
 };
-	
+
 // ----------------------------------------------------------------------
 
 template < typename T >
