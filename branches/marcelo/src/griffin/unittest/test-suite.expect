@@ -1,0 +1,387 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[alias] 'buf_type' of 'igarbledstream' of '' is an alias for 'garblebuf' of ''
+[alias] 'enmity' of 'Latvia' of 'Planet' of '' is an alias for 'unsigned int'
+[alias] 'ios_base' of 'garblebuf' of '' is an alias for 'std::ios_base'
+[alias] 'ios' of '' is an alias for 'std::ios_base'
+[alias] 'name_string' of 'Site' of 'Geography' of '' is an alias for 'std::string'
+[alias] 'openmode' of 'garblebuf' of '' is an alias for 'std::ios_base::openmode'
+[alias] 'streamsize' of 'garblebuf' of '' is an alias for 'std::streamsize'
+[class] 'Blend1' of ''
+[class] 'Blend2' of ''
+[class] 'Blend3' of ''
+[class] 'Blend4' of ''
+[class] 'Brian' of 'Sanctity' of ''
+[class] 'Candlestick' of 'Sanctity' of ''
+[class] 'Cigar' of 'Felony' of ''
+[class] 'Confession' of 'Sanctity' of ''
+[class] 'Convenient' of ''
+[class] 'Dia' of 'Planet' of ''
+[class] 'Divert' of 'ForInstance' of ''
+[class] 'EV2003' of 'Latvia' of 'Planet' of ''
+[class] 'garblebuf' of ''
+[class] 'Handle' of '' (templated upon typename T)
+[class] 'HolyGrail' of 'Sanctity' of ''
+[class] 'igarbledstream' of ''
+[class] 'Jug' of 'Sanctity' of ''
+[class] 'LSD' of 'Felony' of ''
+[class] 'Marlboro' of 'Felony' of '' (templated upon typename T)
+[class] 'Oj1' of 'ForInstance' of ''
+[class] 'Oj2' of 'ForInstance' of ''
+[class] 'Oj3' of 'ForInstance' of ''
+[class] 'Oj' of 'Son< const Oj *, 666 >' of 'Felony' of ''
+[class] 'Oj' of 'Son' of 'Felony' of ''
+[class] 'Oj' of 'Son< Oj, 666 >' of 'Felony' of ''
+[class] 'Riga' of 'Latvia' of 'Planet' of ''
+[class] 'Romper' of 'Sanctity' of ''
+[class] 'Scalpel' of 'Sanctity' of ''
+[class] 'Secure' of 'Integrity' of ''
+[class] 'Site' of 'Geography' of ''
+[class] 'Smoke' of 'Felony' of '' (templated upon ???)
+[class] 'Son< const Oj *, 666 >' of 'Felony' of '' (templated upon typename Oj)
+[class] 'Son' of 'Felony' of '' (templated upon typename Oj 'unsigned long' Simp)
+[class] 'Son< Oj, 666 >' of 'Felony' of '' (templated upon typename Oj)
+[class] 'Son< Villain, 6 >' of 'Felony' of ''
+[class] 'ST' of 'WarpProtocol' of 'Galaxy' of ''
+[class] 'Time' of 'Felony' of '' (templated upon typename T)
+[class] 'T' of 'Handle' of ''
+[class] 'T' of 'Marlboro' of 'Felony' of ''
+[class] 'T' of 'Time' of 'Felony' of ''
+[class] 'T' of 'WarpTemplate1' of 'Galaxy' of ''
+[class] 'T' of 'WarpTemplate2' of 'Galaxy' of ''
+[class] 'TT' of 'WarpProtocol' of 'Galaxy' of ''
+[class] 'Villain' of 'Felony' of ''
+[class] 'Warp' of 'Galaxy' of ''
+[class] 'WarpProtocol' of 'Galaxy' of '' (templated upon typename ST typename TT)
+[class] 'WarpTemplate1' of 'Galaxy' of '' (templated upon typename T)
+[class] 'WarpTemplate2' of 'Galaxy' of '' (templated upon typename T)
+[enum] 'Orient' of 'Felony' of ''
+[field] private 'counter' of 'Handle' of '' has type pointer to 'int' initialized as ()
+[field] private 'hostess' of 'EV2003' of 'Latvia' of 'Planet' of '' has type 'name_string' of 'Site' of 'Geography' of '' initialized as ()
+[field] private 'host' of 'EV2003' of 'Latvia' of 'Planet' of '' has type 'name_string' of 'Site' of 'Geography' of '' initialized as ()
+[field] private 'm_brackets' of 'garblebuf' of '' has type 'bool' initialized as ()
+[field] private 'm_buffer' of 'garblebuf' of '' has type pointer to 'char_type' initialized as ()
+[field] private 'm_comment' of 'garblebuf' of '' has type 'bool' initialized as ()
+[field] private 'm_ended' of 'garblebuf' of '' has type 'bool' initialized as ()
+[field] private 'm_In' of 'garblebuf' of '' has type pointer to 'std::istream' initialized as ()
+[field] private 'm_in_section' of 'garblebuf' of '' has type 'bool' initialized as ()
+[field] private 'm_mode' of 'garblebuf' of '' has type 'openmode' of 'garblebuf' of '' initialized as ()
+[field] private 'm_newline' of 'garblebuf' of '' has type 'bool' initialized as ()
+[field] private 'm_section' of 'garblebuf' of '' has type 'std::string' initialized as ()
+[field] private 'm_section_title' of 'garblebuf' of '' has type 'std::string' initialized as ()
+[field] private 'p' of 'Handle' of '' has type pointer to 'T' of 'Handle' of '' initialized as ()
+[field] private 'sbuf' of 'igarbledstream' of '' has type 'garblebuf' of '' initialized as ()
+[field] private static 'dossier' of 'Smoke' of 'Felony' of '' has type instance of template 'Company' with arguments 'void' initialized as ()
+[field] private static 'max_buffer_size' of 'garblebuf' of '' has type 'int' initialized as = 120
+[field] private 't' of 'WarpTemplate1' of 'Galaxy' of '' has type 'T' of 'WarpTemplate1' of 'Galaxy' of '' initialized as ()
+[field] private 'x_name' of 'Site' of 'Geography' of '' has type 'std::string' initialized as ()
+[field] private 'x' of 'WarpTemplate2' of 'Galaxy' of '' has type 'T' of 'WarpTemplate2' of 'Galaxy' of '' initialized as ()
+[field] public 'father' of 'Son< Villain, 6 >' of 'Felony' of '' has type 'Villain' of 'Felony' of '' initialized as ()
+[field] public static 'gc' of 'ForInstance' of '' has type 'Candlestick' initialized as = Candlestick()
+[field] public static 'gj' of 'ForInstance' of '' has type 'Jug' initialized as = Jug()
+[field] public static 'gs' of 'ForInstance' of '' has type 'Scalpel' initialized as = Scalpel()
+[info] 'admitAudiance' of 'EV2003' of 'Latvia' of 'Planet' of '' is declared in ns.h:60
+[info] 'argh' of 'Villain' of 'Felony' of '' is declared in fs.h:21
+[info] 'Blend1' of '' extends 'Convenient' of '' as public
+[info] 'Blend1' of '' extends 'Secure' of 'Integrity' of '' as public
+[info] 'Blend1' of '' is declared in mi.h:84
+[info] 'Blend2' of '' extends 'Convenient' of '' as public
+[info] 'Blend2' of '' extends 'Secure' of 'Integrity' of '' as private
+[info] 'Blend2' of '' is declared in mi.h:88
+[info] 'Blend3' of '' extends 'Convenient' of '' as private
+[info] 'Blend3' of '' extends 'Secure' of 'Integrity' of '' as public
+[info] 'Blend3' of '' is declared in mi.h:92
+[info] 'Blend4' of '' extends 'Convenient' of '' as private
+[info] 'Blend4' of '' extends 'Secure' of 'Integrity' of '' as private
+[info] 'Blend4' of '' is declared in mi.h:96
+[info] 'blendIn' of '' is declared in mi.cc:39
+[info] 'Brian' of 'Sanctity' of '' extends 'HolyGrail' of 'Sanctity' of '' as public
+[info] 'Brian' of 'Sanctity' of '' is declared in tmf.h:21
+[info] 'bring' of 'ForInstance' of '' is declared in ii.h:26
+[info] 'Candlestick' of 'Sanctity' of '' is declared in tgf.h:17
+[info] 'Cigar' of 'Felony' of '' is declared in ttp.h:16
+[info] 'confess1' of 'Sanctity' of '' is declared in ext.cc:20
+[info] 'confess2' of 'Sanctity' of '' is declared in ext.cc:25
+[info] 'confess3' of 'Sanctity' of '' is declared in ext.cc:30
+[info] 'Confession' of 'Sanctity' of '' is declared in ext.h:19
+[info] 'const_hcast' of 'Handle' of '' is declared in handle.h:122
+[info] 'Convenient' of '' is declared in mi.h:15
+[info] 'crime' of 'Son< Villain, 6 >' of 'Felony' of '' is declared in fs.h:29
+[info] 'Dia' of 'Planet' of '' is declared in dtp.h:43
+[info] 'Divert' of 'Divert' of 'ForInstance' of '' is declared in ucn.h:37
+[info] 'Divert' of 'ForInstance' of '' is declared in ucn.h:35
+[info] 'dynamic_hcast' of 'Handle' of '' is declared in handle.h:128
+[info] 'ensnare' of 'Brian' of 'Sanctity' of '' is declared in tmf.h:28
+[info] 'eternal' of '' is declared in tgf.cc:35
+[info] 'eternal' of '' is declared in tmf.cc:21
+[info] 'EV2003' of 'Latvia' of 'Planet' of '' extends 'Riga' of 'Latvia' of 'Planet' of '' as protected
+[info] 'EV2003' of 'Latvia' of 'Planet' of '' is declared in ns.h:58
+[info] 'fetchCandlestick' of 'Divert' of 'ForInstance' of '' is declared in ucn.h:55
+[info] 'fetchCandlestick' of 'Divert' of 'ForInstance' of '' is grouped in Tool gopher
+[info] 'fetchCandlestick' of 'Romper' of 'Sanctity' of '' is declared in ucc.h:42
+[info] 'fetchCandlestick' of 'Romper' of 'Sanctity' of '' is grouped in Tool gopher
+[info] 'fetchJug' of 'Divert' of 'ForInstance' of '' is declared in ucn.h:50
+[info] 'fetchJug' of 'Divert' of 'ForInstance' of '' is grouped in Tool gopher
+[info] 'fetchJug' of 'Romper' of 'Sanctity' of '' is declared in ucc.h:37
+[info] 'fetchJug' of 'Romper' of 'Sanctity' of '' is grouped in Tool gopher
+[info] 'fetchScalpel' of 'Divert' of 'ForInstance' of '' is declared in ucn.h:67
+[info] 'fetchScalpel' of 'Divert' of 'ForInstance' of '' is grouped in Surgery in Tool Gopher
+[info] 'fetchScalpel' of 'Romper' of 'Sanctity' of '' is declared in ucc.h:54
+[info] 'fetchScalpel' of 'Romper' of 'Sanctity' of '' is grouped in Surgery in Tool Gopher
+[info] 'flush_buffer' of 'garblebuf' of '' is declared in hs.h:69
+[info] 'garblebuf' of 'garblebuf' of '' is declared in hs.h:41
+[info] '~garblebuf' of 'garblebuf' of '' is declared in hs.h:42
+[info] 'garblebuf' of '' is declared in hs.h:35
+[info] 'getToBusiness' of 'ForInstance' of '' is declared in ii.cc:21
+[info] 'Handle' of 'Handle' of '' is declared in handle.h:50
+[info] 'Handle' of 'Handle' of '' is declared in handle.h:55
+[info] 'Handle' of 'Handle' of '' is declared in handle.h:58
+[info] 'Handle' of 'Handle' of '' is declared in handle.h:63
+[info] 'Handle' of 'Handle' of '' is declared in handle.h:71
+[info] '~Handle' of 'Handle' of '' is declared in handle.h:78
+[info] 'Handle' of '' is declared in handle.h:40
+[info] 'HolyGrail' of 'Sanctity' of '' is declared in tgf.h:30
+[info] 'igarbledstream' of 'igarbledstream' of '' is declared in hs.h:98
+[info] '~igarbledstream' of 'igarbledstream' of '' is declared in hs.h:99
+[info] 'igarbledstream' of '' is declared in hs.h:91
+[info] 'inscribe' of 'Son< const Oj *, 666 >' of 'Felony' of '' is declared in ps.h:35
+[info] 'inscribe' of 'Son< Oj, 666 >' of 'Felony' of '' is declared in ps.h:25
+[info] 'inscription' of 'Felony' of '' is declared in ps.h:45
+[info] 'Jug' of 'Sanctity' of '' is declared in tgf.h:18
+[info] 'justice1' of 'Planet' of '' is declared in dtp.h:45
+[info] 'justice2' of 'Planet' of '' is declared in dtp.h:48
+[info] 'justice3' of 'Planet' of '' is declared in dtp.h:51
+[info] 'light' of 'Smoke' of 'Felony' of '' is declared in ttp.h:24
+[info] 'LSD' of 'Felony' of '' is declared in ttp.h:17
+[info] 'Marlboro' of 'Felony' of '' is declared in ttp.h:33
+[info] 'minister' of 'Sanctity' of '' is declared in ext.cc:34
+[info] 'MISCHIEF' in 'Orient' of 'Felony' of '' is 7
+[info] 'MURDER' in 'Orient' of 'Felony' of '' is 1
+[info] 'Oj1' of 'ForInstance' of '' is declared in ii.h:19
+[info] 'Oj2' of 'ForInstance' of '' is declared in ii.h:20
+[info] 'Oj3' of 'ForInstance' of '' is declared in ii.h:21
+[info] 'operate' of 'Blend4' of '' is declared in mi.h:98
+[info] 'operate' of 'Convenient' of '' is declared in mi.h:17
+[info] 'operate' of 'Secure' of 'Integrity' of '' is declared in mi.h:26
+[info] 'operator bool' of 'Handle' of '' is declared in handle.h:99
+[info] 'operator->' of 'Handle' of '' is declared in handle.h:108
+[info] 'operator *' of 'Handle' of '' is declared in handle.h:113
+[info] 'operator=' of 'Handle' of '' is declared in handle.h:88
+[info] 'operator==' of '' is declared in handle.h:30
+[info] 'operator!=' of '' is declared in handle.h:33
+[info] 'Orient' of 'Felony' of '' is declared in dtp.h:36
+[info] 'overflow' of 'garblebuf' of '' is declared in hs.h:51
+[info] 'pbackfail' of 'garblebuf' of '' is declared in hs.h:52
+[info] 'prepare' of 'Son' of 'Felony' of '' is declared in dtp.h:29
+[info] 'prepare' of 'Son< Villain, 6 >' of 'Felony' of '' is declared in fs.h:28
+[info] 'rdbuf' of 'igarbledstream' of '' is declared in hs.h:105
+[info] 'reach' of 'Divert' of 'ForInstance' of '' is declared in ucn.h:39
+[info] 'reach' of 'Romper' of 'Sanctity' of '' is declared in ucc.h:26
+[info] 'refill_buffer' of 'garblebuf' of '' is declared in hs.h:68
+[info] 'reinterpret_hcast' of 'Handle' of '' is declared in handle.h:131
+[info] 'Riga' of 'Latvia' of 'Planet' of '' extends 'Site' of 'Geography' of '' as public
+[info] 'Riga' of 'Latvia' of 'Planet' of '' is declared in ns.h:49
+[info] 'Riga' of 'Riga' of 'Latvia' of 'Planet' of '' is declared in ns.h:51
+[info] 'ROBBERY' in 'Orient' of 'Felony' of '' is 0
+[info] 'Romper' of 'Romper' of 'Sanctity' of '' is declared in ucc.h:24
+[info] 'Romper' of 'Sanctity' of '' is declared in ucc.h:17
+[info] 'Scalpel' of 'Sanctity' of '' is declared in tgf.h:16
+[info] 'Secure' of 'Integrity' of '' is declared in mi.h:24
+[info] 'seekoff' of 'garblebuf' of '' is declared in hs.h:58
+[info] 'seekpos' of 'garblebuf' of '' is declared in hs.h:60
+[info] 'semi_static' of '' is declared in ps.cc:21
+[info] 'setbuf' of 'garblebuf' of '' is declared in hs.h:54
+[info] 'Site' of 'Geography' of '' is declared in ns.h:22
+[info] 'Site' of 'Site' of 'Geography' of '' is declared in ns.h:26
+[info] 'slogan' of 'Marlboro' of 'Felony' of '' is declared in ttp.h:35
+[info] 'slogan' of 'Time' of 'Felony' of '' is declared in ttp.h:42
+[info] 'Smoke' of 'Felony' of '' is declared in ttp.h:21
+[info] 'snap' of 'HolyGrail' of 'Sanctity' of '' is declared in tgf.h:37
+[info] 'snap' of 'Sanctity' of '' is declared in tgf.cc:18
+[info] 'Son< const Oj *, 666 >' of 'Felony' of '' is declared in ps.h:33
+[info] 'Son' of 'Felony' of '' is declared in dtp.h:27
+[info] 'Son< Oj, 666 >' of 'Felony' of '' is declared in ps.h:23
+[info] 'Son< Villain, 6 >' of 'Felony' of '' is declared in fs.h:26
+[info] 'sourceSector' of 'Warp' of 'Galaxy' of '' is declared in mi.h:39
+[info] 'sourceSector' of 'WarpTemplate1' of 'Galaxy' of '' is declared in mi.h:50
+[info] 'speakLatvian' of 'Latvia' of 'Planet' of '' is declared in ns.cc:35
+[info] 'static_hcast' of 'Handle' of '' is declared in handle.h:125
+[info] 'succumb' of '' is declared in ttp.cc:27
+[info] 'targetSector' of 'Warp' of 'Galaxy' of '' is declared in mi.h:40
+[info] 'targetSector' of 'WarpTemplate2' of 'Galaxy' of '' is declared in mi.h:63
+[info] 'Time' of 'Felony' of '' is declared in ttp.h:40
+[info] 'underflow' of 'garblebuf' of '' is declared in hs.h:50
+[info] 'Villain' of 'Felony' of '' is declared in fs.h:19
+[info] 'visa' of '' is declared in na.h:20
+[info] 'warping' of '' is declared in mi.cc:52
+[info] 'warping' of '' is declared in mi.cc:58
+[info] 'Warp' of 'Galaxy' of '' is declared in mi.h:37
+[info] 'WarpProtocol' of 'Galaxy' of '' extends 'WarpTemplate1' of 'Galaxy' of '' as public (with template arguments...)
+[info] 'WarpProtocol' of 'Galaxy' of '' extends 'WarpTemplate2' of 'Galaxy' of '' as public (with template arguments...)
+[info] 'WarpProtocol' of 'Galaxy' of '' is declared in mi.h:78
+[info] 'WarpTemplate1' of 'Galaxy' of '' extends 'Warp' of 'Galaxy' of '' as public
+[info] 'WarpTemplate1' of 'Galaxy' of '' is declared in mi.h:48
+[info] 'WarpTemplate2' of 'Galaxy' of '' extends 'Warp' of 'Galaxy' of '' as public
+[info] 'WarpTemplate2' of 'Galaxy' of '' is declared in mi.h:61
+[namespace] ''
+[namespace] 'Felony' of ''
+[namespace] 'ForInstance' of ''
+[namespace] 'Galaxy' of ''
+[namespace] 'Geography' of ''
+[namespace] 'Integrity' of ''
+[namespace] 'Latvia' of 'Planet' of ''
+[namespace] 'Planet' of ''
+[namespace] 'Sanctity' of ''
+[parameter] 'a' of 'minister' of 'Sanctity' of '' has type 'int'
+[parameter] 'b' of 'minister' of 'Sanctity' of '' has type 'int' defaults to 3
+[parameter] 'c' of 'Handle' of 'Handle' of '' has type pointer to 'int'
+[parameter] 'c' of 'minister' of 'Sanctity' of '' has type 'Confession' of 'Sanctity' of '' defaults to Confession()
+[parameter] 'c' of 'overflow' of 'garblebuf' of '' has type 'int_type' defaults to EOF
+[parameter] 'c' of 'pbackfail' of 'garblebuf' of '' has type 'int_type' defaults to EOF
+[parameter] 'defendant' of 'justice1' of 'Planet' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Dia' of 'Planet' of '' 2
+[parameter] 'defendant' of 'justice2' of 'Planet' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Dip' of 'justice2' of 'Planet' of '' 2
+[parameter] 'defendant' of 'justice3' of 'Planet' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Dia' of 'Planet' of '' 'Du2'
+[parameter] 'diablo' of 'inscription' of 'Felony' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Oj' of 'inscription' of 'Felony' of '' 'K1'
+[parameter] 'filth' of 'inscribe' of 'Son< Oj, 666 >' of 'Felony' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Oj' of 'Son< Oj, 666 >' of 'Felony' of '' 5
+[parameter] 'first' of 'operator==' of '' has type reference to instance of template 'Handle' of '' with arguments 'T' of 'operator==' of ''
+[parameter] 'first' of 'operator!=' of '' has type reference to instance of template 'Handle' of '' with arguments 'T' of 'operator!=' of ''
+[parameter] 'in' of 'garblebuf' of 'garblebuf' of '' has type pointer to 'std::istream'
+[parameter] 'in' of 'igarbledstream' of 'igarbledstream' of '' has type pointer to 'std::istream'
+[parameter] 'm' of 'light' of 'Smoke' of 'Felony' of '' has type instance of template 'Company' with arguments 'Member' of 'light' of 'Smoke' of 'Felony' of ''
+[parameter] 'n' of 'setbuf' of 'garblebuf' of '' has type 'streamsize' of 'garblebuf' of ''
+[parameter] 'object' of 'Handle' of 'Handle' of '' has type pointer to 'T' of 'Handle' of ''
+[parameter] 'object' of 'Handle' of 'Handle' of '' has type pointer to 'T' of 'Handle' of ''
+[parameter] 'off' of 'seekoff' of 'garblebuf' of '' has type 'off_type'
+[parameter] 'om' of 'garblebuf' of 'garblebuf' of '' has type 'openmode' of 'garblebuf' of ''
+[parameter] 'other' of 'Handle' of 'Handle' of '' has type reference to instance of template 'Handle' of '' with arguments 'T2' of 'Handle' of 'Handle' of ''
+[parameter] 'other' of 'Handle' of 'Handle' of '' has type reference to instance of template 'Handle' of '' with arguments 'T' of 'Handle' of ''
+[parameter] 'other' of 'operator=' of 'Handle' of '' has type reference to instance of template 'Handle' of '' with arguments 'T' of 'Handle' of ''
+[parameter] 'riga' of 'reach' of 'Divert' of 'ForInstance' of '' has type 'Riga' of 'Latvia' of 'Planet' of ''
+[parameter] 'riga' of 'reach' of 'Romper' of 'Sanctity' of '' has type 'Riga' of 'Latvia' of 'Planet' of ''
+[parameter] 'riga' of 'visa' of '' has type 'Riga' of 'Latvia' of 'Planet'
+[parameter] 'second' of 'operator==' of '' has type reference to instance of template 'Handle' of '' with arguments 'T' of 'operator==' of ''
+[parameter] 'second' of 'operator!=' of '' has type reference to instance of template 'Handle' of '' with arguments 'T' of 'operator!=' of ''
+[parameter] 'section' of 'garblebuf' of 'garblebuf' of '' has type 'std::string'
+[parameter] 'section' of 'igarbledstream' of 'igarbledstream' of '' has type 'std::string'
+[parameter] 'sector' of 'sourceSector' of 'Warp' of 'Galaxy' of '' has type 'unsigned int'
+[parameter] 'sector' of 'sourceSector' of 'WarpTemplate1' of 'Galaxy' of '' has type 'unsigned int'
+[parameter] 'sector' of 'targetSector' of 'Warp' of 'Galaxy' of '' has type 'unsigned int'
+[parameter] 'sector' of 'targetSector' of 'WarpTemplate2' of 'Galaxy' of '' has type 'unsigned int'
+[parameter] 'sitename' of 'Site' of 'Site' of 'Geography' of '' has type 'name_string' of 'Site' of 'Geography' of ''
+[parameter] 'slime' of 'inscribe' of 'Son< const Oj *, 666 >' of 'Felony' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Oj' of 'Son< const Oj *, 666 >' of 'Felony' of '' 6
+[parameter] 'snip' of 'ensnare' of 'Brian' of 'Sanctity' of '' has type 'Instrument' of 'ensnare' of 'Brian' of 'Sanctity' of ''
+[parameter] 'snip' of 'snap' of 'HolyGrail' of 'Sanctity' of '' has type 'Instrument' of 'snap' of 'HolyGrail' of 'Sanctity' of ''
+[parameter] 'snip' of 'snap' of 'Sanctity' of '' has type 'Instrument' of 'snap' of 'Sanctity' of ''
+[parameter] 's' of 'setbuf' of 'garblebuf' of '' has type pointer to 'char_type'
+[parameter] 'son' of 'bring' of 'ForInstance' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Dip' of 'bring' of 'ForInstance' of '' 'K'
+[parameter] 'son' of 'Divert' of 'Divert' of 'ForInstance' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Site' of 'Geography' of '' 7
+[parameter] 'son' of 'Romper' of 'Romper' of 'Sanctity' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Site' of 'Geography' of '' 7
+[parameter] 'soul' of 'inscription' of 'Felony' of '' has type instance of template 'Son' of 'Felony' of '' with arguments 'Oj' of 'inscription' of 'Felony' of '' 'K2'
+[parameter] 'source' of 'const_hcast' of 'Handle' of '' has type reference to instance of template 'Handle' of '' with arguments 'T2' of 'const_hcast' of 'Handle' of ''
+[parameter] 'source' of 'dynamic_hcast' of 'Handle' of '' has type reference to instance of template 'Handle' of '' with arguments 'T2' of 'dynamic_hcast' of 'Handle' of ''
+[parameter] 'source' of 'reinterpret_hcast' of 'Handle' of '' has type reference to instance of template 'Handle' of '' with arguments 'T2' of 'reinterpret_hcast' of 'Handle' of ''
+[parameter] 'source' of 'static_hcast' of 'Handle' of '' has type reference to instance of template 'Handle' of '' with arguments 'T2' of 'static_hcast' of 'Handle' of ''
+[parameter] 'sp' of 'seekpos' of 'garblebuf' of '' has type 'pos_type'
+[parameter] 'text' of 'speakLatvian' of 'Latvia' of 'Planet' of '' has type 'std::string'
+[parameter] 'warp' of 'warping' of '' has type reference to 'Warp' of 'Galaxy' of ''
+[parameter] 'way' of 'seekoff' of 'garblebuf' of '' has type 'ios_base::seekdir'
+[parameter] 'which' of 'seekoff' of 'garblebuf' of '' has type 'ios_base::openmode' defaults to ios_base::in|ios_base::out
+[parameter] 'which' of 'seekpos' of 'garblebuf' of '' has type 'openmode' of 'garblebuf' of '' defaults to ios_base::in|std::ios::out
+[routine] private 'Handle' of 'Handle' of '' returns nothing
+[routine] protected 'flush_buffer' of 'garblebuf' of '' returns 'void'
+[routine] protected 'refill_buffer' of 'garblebuf' of '' returns 'bool'
+[routine] protected virtual 'overflow' of 'garblebuf' of '' returns 'int_type'
+[routine] protected virtual 'pbackfail' of 'garblebuf' of '' returns 'int_type'
+[routine] protected virtual 'seekoff' of 'garblebuf' of '' returns 'pos_type'
+[routine] protected virtual 'seekpos' of 'garblebuf' of '' returns 'pos_type'
+[routine] protected virtual 'setbuf' of 'garblebuf' of '' returns pointer to instance of template 'std::basic_streambuf' with arguments 'char' instance of template 'std::char_traits' with arguments 'char'
+[routine] protected virtual 'underflow' of 'garblebuf' of '' returns 'int_type'
+[routine] public 'admitAudiance' of 'EV2003' of 'Latvia' of 'Planet' of '' (const) returns 'void'
+[routine] public 'argh' of 'Villain' of 'Felony' of '' (const) returns 'bool'
+[routine] public 'bring' of 'ForInstance' of '' (templated upon typename Dip 'unsigned long' K) returns instance of template 'Son' of 'Felony' of '' with arguments 'Dip' of 'bring' of 'ForInstance' of '' 'K'
+[routine] public 'confess1' of 'Sanctity' of '' returns 'void'
+[routine] public 'confess2' of 'Sanctity' of '' returns 'void'
+[routine] public 'confess3' of 'Sanctity' of '' returns 'void'
+[routine] public 'crime' of 'Son< Villain, 6 >' of 'Felony' of '' returns 'void'
+[routine] public 'Divert' of 'Divert' of 'ForInstance' of '' returns nothing
+[routine] public 'ensnare' of 'Brian' of 'Sanctity' of '' (templated upon typename Instrument) (inline) returns 'Instrument' of 'ensnare' of 'Brian' of 'Sanctity' of ''
+[routine] public 'fetchCandlestick' of 'Divert' of 'ForInstance' of '' returns 'Candlestick' of 'Sanctity' of ''
+[routine] public 'fetchCandlestick' of 'Romper' of 'Sanctity' of '' returns 'Candlestick' of 'Sanctity' of ''
+[routine] public 'fetchJug' of 'Divert' of 'ForInstance' of '' returns 'Jug' of 'Sanctity' of ''
+[routine] public 'fetchJug' of 'Romper' of 'Sanctity' of '' returns 'Jug' of 'Sanctity' of ''
+[routine] public 'fetchScalpel' of 'Divert' of 'ForInstance' of '' returns 'Scalpel' of 'Sanctity' of ''
+[routine] public 'fetchScalpel' of 'Romper' of 'Sanctity' of '' returns 'Scalpel' of 'Sanctity' of ''
+[routine] public 'garblebuf' of 'garblebuf' of '' returns nothing
+[routine] public 'getToBusiness' of 'ForInstance' of '' returns 'void'
+[routine] public '~Handle' of 'Handle' of '' returns nothing
+[routine] public 'Handle' of 'Handle' of '' returns nothing
+[routine] public 'Handle' of 'Handle' of '' returns nothing
+[routine] public 'Handle' of 'Handle' of '' returns nothing
+[routine] public 'Handle' of 'Handle' of '' (templated upon typename T2) returns nothing
+[routine] public 'igarbledstream' of 'igarbledstream' of '' (inline) returns nothing
+[routine] public 'inscribe' of 'Son< const Oj *, 666 >' of 'Felony' of '' (inline) returns 'void'
+[routine] public 'inscribe' of 'Son< Oj, 666 >' of 'Felony' of '' (inline) returns 'void'
+[routine] public 'inscription' of 'Felony' of '' (templated upon typename Oj 'unsigned long' K1 'unsigned long' K2) returns 'void'
+[routine] public 'justice1' of 'Planet' of '' returns instance of template 'Son' of 'Felony' of '' with arguments 'Dia' of 'Planet' of '' 1
+[routine] public 'justice2' of 'Planet' of '' (templated upon typename Dip) returns instance of template 'Son' of 'Felony' of '' with arguments 'Dip' of 'justice2' of 'Planet' of '' 1
+[routine] public 'justice3' of 'Planet' of '' (templated upon 'unsigned long' Du1 'unsigned long' Du2) returns instance of template 'Son' of 'Felony' of '' with arguments 'Dia' of 'Planet' of '' 'Du1'
+[routine] public 'light' of 'Smoke' of 'Felony' of '' (templated upon typename Member) returns 'Member' of 'light' of 'Smoke' of 'Felony' of ''
+[routine] public 'minister' of 'Sanctity' of '' returns 'void'
+[routine] public 'operate' of 'Blend4' of '' returns 'bool'
+[routine] public 'operate' of 'Convenient' of '' returns 'bool'
+[routine] public 'operate' of 'Secure' of 'Integrity' of '' returns 'bool'
+[routine] public 'operator bool' of 'Handle' of '' (const) returns 'bool'
+[routine] public 'operator->' of 'Handle' of '' (const) returns pointer to 'T' of 'Handle' of ''
+[routine] public 'operator *' of 'Handle' of '' (const) returns reference to 'T' of 'Handle' of ''
+[routine] public 'operator=' of 'Handle' of '' returns reference to instance of template 'Handle' of '' with arguments 'T' of 'Handle' of ''
+[routine] public 'operator==' of '' (templated upon typename T) returns 'bool'
+[routine] public 'operator!=' of '' (templated upon typename T) returns 'bool'
+[routine] public 'prepare' of 'Son' of 'Felony' of '' returns 'void'
+[routine] public 'prepare' of 'Son< Villain, 6 >' of 'Felony' of '' returns 'void'
+[routine] public pure-virtual 'sourceSector' of 'Warp' of 'Galaxy' of '' returns 'bool'
+[routine] public pure-virtual 'targetSector' of 'Warp' of 'Galaxy' of '' returns 'bool'
+[routine] public 'rdbuf' of 'igarbledstream' of '' (const) (inline) returns pointer to 'garblebuf' of ''
+[routine] public 'reach' of 'Divert' of 'ForInstance' of '' (const) returns 'enmity' of 'Latvia' of 'Planet' of ''
+[routine] public 'reach' of 'Romper' of 'Sanctity' of '' (const) returns 'enmity' of 'Latvia' of 'Planet' of ''
+[routine] public 'Riga' of 'Riga' of 'Latvia' of 'Planet' of '' returns nothing
+[routine] public 'Romper' of 'Romper' of 'Sanctity' of '' returns nothing
+[routine] public 'Site' of 'Site' of 'Geography' of '' returns nothing
+[routine] public 'slogan' of 'Marlboro' of 'Felony' of '' (const) (inline) returns pointer to 'char'
+[routine] public 'slogan' of 'Time' of 'Felony' of '' (const) (inline) returns pointer to 'char'
+[routine] public 'snap' of 'Sanctity' of '' (templated upon typename Instrument) returns 'Instrument' of 'snap' of 'Sanctity' of ''
+[routine] public 'speakLatvian' of 'Latvia' of 'Planet' of '' returns 'void'
+[routine] public static 'blendIn' of '' returns 'void'
+[routine] public static 'const_hcast' of 'Handle' of '' (templated upon typename T2) returns 'Handle' of ''
+[routine] public static 'dynamic_hcast' of 'Handle' of '' (templated upon typename T2) returns 'Handle' of ''
+[routine] public static 'eternal' of '' returns 'void'
+[routine] public static 'eternal' of '' returns 'void'
+[routine] public static 'reinterpret_hcast' of 'Handle' of '' (templated upon typename T2) returns 'Handle' of ''
+[routine] public static 'semi_static' of '' returns 'void'
+[routine] public static 'snap' of 'HolyGrail' of 'Sanctity' of '' (templated upon typename Instrument) returns 'Instrument' of 'snap' of 'HolyGrail' of 'Sanctity' of ''
+[routine] public static 'static_hcast' of 'Handle' of '' (templated upon typename T2) returns 'Handle' of ''
+[routine] public static 'succumb' of '' returns 'bool'
+[routine] public static 'warping' of '' returns 'void'
+[routine] public static 'warping' of '' returns 'void'
+[routine] public virtual '~garblebuf' of 'garblebuf' of '' returns nothing
+[routine] public virtual '~igarbledstream' of 'igarbledstream' of '' (inline) returns nothing
+[routine] public virtual 'sourceSector' of 'WarpTemplate1' of 'Galaxy' of '' (inline) returns 'bool'
+[routine] public virtual 'targetSector' of 'WarpTemplate2' of 'Galaxy' of '' (inline) returns 'bool'
+[routine] public 'visa' of '' returns 'void'
