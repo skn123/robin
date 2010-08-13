@@ -2,7 +2,7 @@
 
 #include "interface.h"
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include <stdexcept>
 
 #include "../frontends/framework.h"
@@ -25,7 +25,7 @@ bool Interface::global_callback(scripting_element twin,
 {
 	Signature *real_signature = reinterpret_cast<Signature*>(signature->sym);
 
-	assert(real_signature);
+	assert_true(real_signature);
 
 	dbg::trace << "// Interface::global_callback "
 			   << (void*)real_signature << " '" << real_signature->name

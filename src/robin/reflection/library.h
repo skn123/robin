@@ -46,7 +46,6 @@ public:
 	 */
 
 	//@{
-	Library();
 	Library(std::string name);
 
 	//@}

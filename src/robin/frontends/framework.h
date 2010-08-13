@@ -29,7 +29,7 @@
 
 namespace Robin {
 
-class TypeOfArgument;
+class RobinType;
 class Class;
 
 /**
@@ -63,7 +63,7 @@ public:
 	 */
 
 	//@{
-	static void fillAdapter(Handle<TypeOfArgument> toa);
+	static void fillAdapter(Handle<RobinType> toa);
 	static void fillAdapters(Handle<Class> cls);
 	//@}
 

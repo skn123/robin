@@ -34,9 +34,8 @@
 #include <pattern/handle.h>
 
 // Package includes
-#include "typeofargument.h"
-#include "insight.h"
-
+#include "types.h"
+#include "../debug/trace.h"
 
 #ifdef INFINITE
 #undef INFINITE
@@ -45,6 +44,7 @@
 namespace Robin {
 
 class GarbageCollection;
+class RobinType;
 
 /**
  * @class Conversion
@@ -54,6 +54,12 @@ class GarbageCollection;
  * types as well as a field for the weight. By deriving and overriding
  * the pure virtual <methodref>convert()</methodref> method, many
  * types of conversions may be implemented.
+ *
+ * Notice that a conversion can be a const conversion when the
+ * target type of the conversion is constant. In that case the
+ * conversion is one directional, values wont be copied back when
+ * the called function returns.
+ *
  */
 class Conversion
 {
@@ -68,20 +74,33 @@ public:
 	Conversion();
 
 	//@}
+
+	/**
+	 * @name Destructors
+	 */
+
+	//@{
+	virtual ~Conversion() = 0;
+
+	//@}
+
+
+
+
 	/**
 	 * @name Access
 	 */
 
 	//@{
-	void setSourceType(Handle<TypeOfArgument> type);
-	void setTargetType(Handle<TypeOfArgument> type);
+	void setSourceType(Handle<RobinType> type);
+	void setTargetType(Handle<RobinType> type);
 	void setWeight(const Weight& w);
 
-	Handle<TypeOfArgument> sourceType() const;
-	Handle<TypeOfArgument> targetType() const;
+	Handle<RobinType> sourceType() const;
+	Handle<RobinType> targetType() const;
 	const Weight& weight() const;
 
-	virtual Weight weight(Insight insight) const;
+	virtual bool isZeroWorkConversion() const;
 
 	//@}
 
@@ -97,6 +116,7 @@ public:
 	 * type, and the return value should be of the target type.
 	 */
 	virtual scripting_element apply(scripting_element value) const = 0;
+
 	//@}
 
 	/**
@@ -118,11 +138,20 @@ public:
 	class Weight
 	{
 	public:
+		/**
+		 * This constructor generates an undefined
+		 * weight
+		 */
 		Weight();
+
+		/**
+		 * This is the real constructor which defines a
+		 * weight
+		 */
 		Weight(int eps, int prom, int up, int user);  /* explicit setting */
 
 		bool operator <(const Weight& other) const;
-
+		bool operator <=(const Weight& other) const;
 		Weight operator +(const Weight& other) const;
 		Weight& operator +=(const Weight& other);
 
@@ -139,25 +168,43 @@ public:
 
 		void dbgout() const;
 
+
 	private:
+		friend Robin::dbg::TraceSink &operator<<(Robin::dbg::TraceSink &out, const Conversion::Weight&type);
 		int m_n_epsilon;
 		int m_n_promotion;
 		int m_n_upcast;
 		int m_n_userDefined;
+#ifndef NDEBUG
+		/**
+		 * Whatever this weight object is unknown or defined
+		 */
+		bool m_set;
+#endif
 	};
 
 private:
-	Handle<TypeOfArgument> m_source;
-	Handle<TypeOfArgument> m_target;
+	Handle<RobinType> m_source;
+	Handle<RobinType> m_target;
 	Weight                 m_weight;
 };
+
+
+typedef std::vector<Conversion::Weight>       WeightList;
+Robin::dbg::TraceSink &operator<<(Robin::dbg::TraceSink &out, const Conversion::Weight&type);
 
 /**
  * @class ConversionRoute
  * @nosubgrouping
  *
- * A concatanation of several conversions applied one
+ * It describes how to convert from one type to another and the
+ * weight of doing that.
+ * It contains a concatanation of several conversions applied one
  * after another.
+ *
+ * Some zeroWork conversions might have been eliminated
+ * for the sake of efficiency but their weight is still included
+ * in the weight of the ConversionRoute.
  */
 class ConversionRoute : public std::vector<Handle<Conversion> >
 {
@@ -168,19 +215,60 @@ public:
 
 	//@{
 	Conversion::Weight totalWeight() const;
-	Conversion::Weight totalWeight(Insight insight) const;
 	//@}
+
+
+	/**
+	 * If some conversions were removed because they do no work
+	 * we still need to add their weight to the conversion
+	 */
+	void addExtraWeight(const Conversion::Weight &amount);
+
+
+	/**
+	 * Returns true if all the conversions composing the route
+	 * are one directional.
+	 */
+	bool hasOnlyConstantConversions() const;
+
+	/**
+	 * Returns true if all the internal conversions are zeroWorkConversions.
+	 * This means it will be true if they just return a new reference to
+	 * the same value without doing actual work.
+	 */
+	bool isZeroWorkConversionRoute() const;
 
 	/**
 	 * @name Activity
 	 */
-
 	//@{
 	scripting_element apply(scripting_element value,
 							GarbageCollection& temporaryHeap) const;
 	//@}
+
+	/**
+	 * @name Constructors
+	 */
+	//@{
+		ConversionRoute()
+			:m_extra(Conversion::Weight::ZERO)
+		{
+
+		}
+	//@}
+private:
+	Conversion::Weight m_extra;
 };
 
+/**
+ * This class represents a list of several independent conversion routes.
+ * Ussually used to represent conversion routes for each parameter of a function.
+ */
+class ConversionRoutes : public std::vector<Handle<ConversionRoute> >
+{
+public:
+	bool areAllEmptyConversions();
+};
 
 } // end of namespace Robin
 

@@ -15,10 +15,10 @@
 
 #include <Python.h>
 #include "pythonfrontend.h"
-
-#include <assert.h>
+#include "pyhandle.h"
 
 // Robin includes
+#include <robin/debug/assert.h>
 #include <robin/reflection/intrinsic_type_arguments.h>
 #include <robin/reflection/namespace.h>
 #include <robin/reflection/library.h>
@@ -28,11 +28,18 @@
 #include <robin/reflection/conversiontable.h>
 #include <robin/reflection/instance.h>
 #include <robin/reflection/fundamental_conversions.h>
+#include <robin/reflection/pointer.h>
+#include <robin/reflection/const.h>
+#include <robin/registration/mechanism.h>
 
 // Python Frontend includes
 #include "pythonadapters.h"
 #include "pythonobjects.h"
 #include "pythonconversions.h"
+#include "types/numericsubtypes.h"
+#include "types/listrobintype.h"
+#include "types/dictrobintype.h"
+
 
 // Python Low Level includes
 #include "pythonlowlevel.h"
@@ -51,11 +58,16 @@ extern PyObject *pydouble;
 extern PyObject *pychar;
 extern PyObject *pylong_long;
 extern PyObject *pyunsigned_long;
+extern PyObject *c_int;
+extern PyObject *c_long;
 extern PyObject *pyunsigned_int;
 extern PyObject *pyunsigned_long_long;
 extern PyObject *pyunsigned_char;
 extern PyObject *pysigned_char;
-
+extern PyObject *c_short;
+extern PyObject *c_ushort;
+extern PyObject *c_string;
+extern PyObject *c_float;
 
 namespace {
 
@@ -65,11 +77,24 @@ namespace {
 		return object;
 	}
 
-	PyObject *splitName(const std::string& fullname)
+
+	/**
+	 * It generates from a C++ full type name a list of
+	 * python object names which represents how to search
+	 * for that object.
+	 * For example if the type is 'std::vector', it will
+	 * generate the python scripts 'std', 'vector'.
+	 * For templated types it will
+	 * hide the type in a module called '_templates'.
+	 * For example 'std::vector<int>' will be placed in
+	 *  'std', '_templates', 'vector<int>'
+	 */
+	PyObject *generatePythonModulePath(const std::string& fullname)
 	{
 		PyObject *pylist = PyList_New(0);
 
 		unsigned int bracket_balance = 0;
+		bool wastemplated = false;
 		std::string::const_iterator start = fullname.begin();
 
 		for (std::string::const_iterator ci = fullname.begin(); 
@@ -77,12 +102,23 @@ namespace {
 			if (*ci == ':' && bracket_balance == 0) {
 				PyList_Append(pylist, 
 							  PyString_FromStringAndSize((char*)&*start,
-														 int(ci - start)));
+									  Py_ssize_t(ci - start)));
 				++ci;
 				start = ci + 1;
 			}
-			else if (*ci == '<') ++bracket_balance;
-			else if (*ci == '>') --bracket_balance;
+			else if (*ci == '<')
+			{
+				++bracket_balance;
+				wastemplated = true;
+			}
+			else if (*ci == '>')
+			{
+				--bracket_balance;
+				if (wastemplated) {
+					PyList_Append(pylist, PyString_FromString("template_classes_robin"));
+					wastemplated = false;
+				}
+			}
 		}
 
 		// - append last part of name
@@ -91,23 +127,26 @@ namespace {
 		return pylist;
 	}
 
-
-	void insertIntoNamespace(const std::string& modulename,
+	/*
+	 * Adss a python object to a module (or a submodule if using namelist).
+	 * Only borrows the reference to object (because it used PyDict_SetItem
+	 */
+	PyReferenceBorrow<PyObject> insertIntoNamespace(const std::string& modulename,
 							 PyObject *module,
 							 PyObject *namelist,
-							 PyObject *object)
+							 PyReferenceBorrow<PyObject> object)
 	{
-		assert(PyModule_Check(module));
-		assert(PyList_Check(namelist));
+		assert_true(PyModule_Check(module));
+		assert_true(PyList_Check(namelist));
 
-		int n_names = PyList_Size(namelist);
-		int last = n_names - 1;
+		Py_ssize_t n_names = PyList_Size(namelist);
+		Py_ssize_t last = n_names - 1;
 
 		PyObject *rootmodule = module;
 		std::string fullname = modulename;
 		static PyMethodDef empty[] = { { 0 } };
 
-		for (int nameindex = 0; nameindex < last; ++nameindex) {
+		for (Py_ssize_t nameindex = 0; nameindex < last; ++nameindex) {
 			PyObject *pyname = PyList_GetItem(namelist, nameindex);
 			// - create a submodule in current module
 			char *submodulename = PyString_AsString(pyname);
@@ -123,7 +162,8 @@ namespace {
 					// - create a module object
 					submodule = Py_InitModule(c_submodulename, empty);
 					// - place new module in current module's dict
-					assert(PyModule_Check(module));
+					assert_true(PyModule_Check(module));
+					Py_XINCREF(submodule);
 					PyModule_AddObject(module, submodulename, submodule);
 				}
 				else if (!(PyModule_Check(submodule) || 
@@ -134,7 +174,7 @@ namespace {
 					break;
 				}
 			}
-			assert(submodule && submodule->ob_type);
+			assert_true(submodule && submodule->ob_type);
 			// - descend to submodule
 			module = submodule;
 			fullname = submodule_fullname;
@@ -144,20 +184,22 @@ namespace {
 		PyObject *pylast = PyList_GetItem(namelist, last);
 		PyObject *dict = PyModule_Check(module) ? PyModule_GetDict(module)
 		                                        : ClassObject_GetDict(module);
-		PyDict_SetItem(dict, pyowned(pylast), pyowned(object));
+		PyDict_SetItem(dict, pylast, object.pointer());
+		return PyReferenceBorrow<PyObject> (module);
 	}
 
-	void insertIntoNamespace(const std::string& modulename,
+	PyReferenceBorrow<PyObject> insertIntoNamespace(const std::string& modulename,
 							 PyObject *module, 
 							 const std::string& cppname,
-							 PyObject *object)
+							 PyReferenceBorrow<PyObject> object)
 	{
 		// Split original C++ name by ::
-		PyObject *pysplit = splitName(cppname);
+		PyObject *pysplit = generatePythonModulePath(cppname);
 
-		insertIntoNamespace(modulename, module, pysplit, object);
+		PyReferenceBorrow<PyObject> ret = insertIntoNamespace(modulename, module, pysplit, object);
 
 		Py_XDECREF(pysplit);
+		return ret;
 	}
 
     PyObject *getPrimitiveType(Handle<Namespace> &namespc,
@@ -175,6 +217,7 @@ namespace {
 
 		// identify the argument
 		if      (type == "int")      return (PyObject*)&PyInt_Type;
+		else if (type == "bool")     return (PyObject*)&PyBool_Type;
 		else if (type == "float")    return (PyObject*)&PyFloat_Type;
 		else if (type == "long")     return (PyObject*)&PyLong_Type;
 		else if (type == "long long")       return pylong_long;
@@ -186,42 +229,12 @@ namespace {
 			                                return pyunsigned_long_long;
 		else if (type == "unsigned char")   return pyunsigned_char;
 		else if (type == "signed char")     return pysigned_char;
-		else if (type == "char *")    return (PyObject*)&PyString_Type;
+		else if (type == "short")			return c_short;
+		else if (type == "unsigned short")			return c_ushort;
         else
 			// not a primitive type
 			throw LookupFailureException(type_name);
     }
-
-    PyObject *getBuiltinType(Handle<Namespace> &namespc,
-                               const std::string &type_name)
-    {
-        std::string type = type_name;
-		
-		// remove the unnecessary modifiers (just const for now)
-		if (type.substr(0,6) == "const ") {
-			type.erase(type.begin(),
-			                  type.begin() + 6);
-		}
-
-		// identify the argument
-		if      (type == "int")      return (PyObject*)&PyInt_Type;
-		else if (type == "float")    return (PyObject*)&PyFloat_Type; 
-		else if (type == "long")     return (PyObject*)&PyLong_Type; 
-		else if (type == "long long")       return (PyObject*)&PyLong_Type;
-		else if (type == "char")            return (PyObject*)&PyString_Type;
-		else if (type == "double")          return (PyObject*)&PyFloat_Type;
-		else if (type == "unsigned int")    return (PyObject*)&PyInt_Type;
-		else if (type == "unsigned long")   return (PyObject*)&PyLong_Type;
-		else if (type == "unsigned long long")
-			                                       return (PyObject*)&PyLong_Type;
-		else if (type == "unsigned char")   return (PyObject*)&PyString_Type;
-		else if (type == "signed char")     return (PyObject*)&PyString_Type;
-		else if (type == "char *")    return (PyObject*)&PyString_Type;
-        else
-			throw LookupFailureException(type_name);
-    }
-
-
 
 
 	PyObject *identifyTemplateArgument(Handle<Namespace> namespc, 
@@ -256,11 +269,11 @@ namespace {
 	 * @param type_list list of UserDefinedTranslator instances
 	 * @param element the element to be detected
 	 */
-	Handle<TypeOfArgument> detectUserDefined
+	Handle<RobinType> detectUserDefined
 		(std::list<Handle<UserDefinedTranslator> > type_list, 
 		 scripting_element element)
 	{
-		Handle<TypeOfArgument> user;
+		Handle<RobinType> user;
 		typedef std::list<Handle<UserDefinedTranslator> > userdefinedtypelist;
 
 		for (userdefinedtypelist::const_iterator userit = type_list.begin();
@@ -269,7 +282,7 @@ namespace {
 				return user;
 		}
 
-		return Handle<TypeOfArgument>();
+		return Handle<RobinType>();
 	}
 
 	/* Integer bit sizes */
@@ -278,12 +291,12 @@ namespace {
 	const int UL = std::numeric_limits<unsigned long>::digits;
 	const int ULL = std::numeric_limits<unsigned long long>::digits;
 
-	typedef unsigned long long um;
-	const um MAX_LONG = std::numeric_limits<long>::max();
-	const um MAX_LONGLONG = std::numeric_limits<long long>::max();
-	const um MAX_ULONG = std::numeric_limits<unsigned long>::max();
+
+	const long MAX_LONG = std::numeric_limits<long>::max();
+	const long long MAX_LONGLONG = std::numeric_limits<long long>::max();
+	const unsigned long MAX_ULONG = std::numeric_limits<unsigned long>::max();
 	//const um MAX_ULONGLONG = std::numeric_limits<unsigned long long>::max();
-	const um MIN_LONG = std::numeric_limits<long>::min();
+	const long MIN_LONG = std::numeric_limits<long>::min();
 }
 
 
@@ -310,138 +323,82 @@ PythonFrontend::~PythonFrontend()
  */
 void PythonFrontend::initialize() const
 {
-	// Create some primitive conversions
-	Handle<Conversion> hlong2int(new TrivialConversion);
-	Handle<Conversion> hlong2uint(new IntegralTruncate(0, UL));
-	Handle<Conversion> hlong2short(new TrivialConversion);
-	Handle<Conversion> hlong2ushort(new TrivialConversion);
-	Handle<Conversion> hlong2ulong(new IntegralTruncate(0, UL));
-	Handle<Conversion> hlong2bool(new TrivialConversion);
-	Handle<Conversion> hint2longlong(new TrivialConversion);
-	Handle<Conversion> hint2ulonglong(new TrivialConversion);
-	Handle<Conversion> hbool2long(new TrivialConversion);
-	Handle<Conversion> hdouble2float(new TrivialConversion);
-	Handle<Conversion> hlong2double(new IntToFloatConversion);
-	Handle<Conversion> hchar2uchar(new TrivialConversion);
-	Handle<Conversion> hchar2string(new TrivialConversion);
-	Handle<Conversion> hpascal2cstring(new PascalStringToCStringConversion);
-	Handle<Conversion> hlist2element(new TrivialConversion);
-	Handle<Conversion> hpylong2longlong(new IntegralTruncate(-LL, LL));
-	Handle<Conversion> hpylong2ulonglong(new IntegralTruncate(0, ULL));
-	Handle<Conversion> hpylong2long(new IntegralTruncate(-L, L));
-	Handle<Conversion> hpylong2ulong(new IntegralTruncate(0, UL));
 
-	hlong2int        ->setSourceType(ArgumentLong);
-	hlong2int        ->setTargetType(ArgumentInt);
-	hlong2uint       ->setSourceType(ArgumentLong);
-	hlong2uint       ->setTargetType(ArgumentUInt);
-	hlong2short      ->setSourceType(ArgumentLong);
-	hlong2short      ->setTargetType(ArgumentShort);
-	hlong2ushort     ->setSourceType(ArgumentLong);
-	hlong2ushort     ->setTargetType(ArgumentUShort);
-	hlong2ulong      ->setSourceType(ArgumentLong);
-	hlong2ulong      ->setTargetType(ArgumentULong);
+	Handle<Conversion> hlong2bool(new TrivialConversion);
+	hlong2bool->setWeight(Conversion::Weight(0,0,0,1));
 	hlong2bool       ->setSourceType(ArgumentLong);
 	hlong2bool       ->setTargetType(ArgumentBoolean);
-	hint2longlong    ->setSourceType(ArgumentInt);
-	hint2longlong    ->setTargetType(ArgumentLongLong);
-	hint2ulonglong   ->setSourceType(ArgumentInt);
-	hint2ulonglong   ->setTargetType(ArgumentULongLong);
-	hpylong2longlong ->setSourceType(ArgumentPythonLong);
-	hpylong2longlong ->setTargetType(ArgumentLongLong);
-	hpylong2ulonglong->setSourceType(ArgumentPythonLong);
-	hpylong2ulonglong->setTargetType(ArgumentULongLong);
+	ConversionTableSingleton::getInstance()->registerConversion(hlong2bool);
+
+	Handle<Conversion> hbool2long(new TrivialConversion);
+	hbool2long->setWeight(Conversion::Weight(0,0,0,1));
 	hbool2long       ->setSourceType(ArgumentBoolean);
-	hbool2long       ->setTargetType(ArgumentLong);
+	PyReferenceSteal<PyLongObject> oneLong((PyLongObject*)PyLong_FromLong(1));
+	Handle<RobinType> smallLongsType = BoundedNumericRobinType::giveTypeForNum(oneLong);
+	hbool2long       ->setTargetType(smallLongsType);
+	ConversionTableSingleton::getInstance()->registerConversion(hbool2long);
+
+	Handle<Conversion> hdouble2float(new TrivialConversion); //No checks?
 	hdouble2float    ->setSourceType(ArgumentDouble);
 	hdouble2float    ->setTargetType(ArgumentFloat);
+	ConversionTableSingleton::getInstance()->registerConversion(hdouble2float);
+
+	Handle<Conversion> hlong2double(new IntToFloatConversion);
+	hlong2double->setWeight(Conversion::Weight(0,2,0,0));
 	hlong2double     ->setSourceType(ArgumentLong);
 	hlong2double     ->setTargetType(ArgumentDouble);
+	ConversionTableSingleton::getInstance()->registerConversion(hlong2double);
+
+	Handle<Conversion> hchar2uchar(new TrivialConversion);
 	hchar2uchar      ->setSourceType(ArgumentChar);
 	hchar2uchar      ->setTargetType(ArgumentUChar);
+	ConversionTableSingleton::getInstance()->registerConversion(hchar2uchar);
+
+	Handle<Conversion> hchar2string(new TrivialConversion);
 	hchar2string     ->setSourceType(ArgumentChar);
 	hchar2string     ->setTargetType(ArgumentPascalString);
+	ConversionTableSingleton::getInstance()->registerConversion(hchar2string);
+
+	Handle<Conversion> hpascal2cstring(new PascalStringToCStringConversion);
 	hpascal2cstring  ->setSourceType(ArgumentPascalString);
 	hpascal2cstring  ->setTargetType(ArgumentCString);
-	hlist2element    ->setSourceType(ArgumentPythonList);
-	hlist2element    ->setTargetType(ArgumentScriptingElementNewRef);
-	hpylong2long     ->setSourceType(ArgumentPythonLong);
-	hpylong2long     ->setTargetType(ArgumentLong);
-	hpylong2ulong    ->setSourceType(ArgumentPythonLong);
-	hpylong2ulong    ->setTargetType(ArgumentULong);
+	ConversionTableSingleton::getInstance()->registerConversion(hpascal2cstring);
 
-	hint2longlong->setWeight(Conversion::Weight(0,1,0,0));
-	hint2ulonglong->setWeight(Conversion::Weight(0,1,0,0));
-	hbool2long->setWeight(Conversion::Weight(0,1,0,0));
 
-	ConversionTableSingleton::getInstance()->registerConversion(hlong2int);
-	ConversionTableSingleton::getInstance()->registerConversion(hlong2uint);
-	ConversionTableSingleton::getInstance()->registerConversion(hlong2short);
-	ConversionTableSingleton::getInstance()->registerConversion(hlong2ushort);
-	ConversionTableSingleton::getInstance()->registerConversion(hlong2ulong);
-	ConversionTableSingleton::getInstance()->registerConversion(hint2longlong);
-	ConversionTableSingleton::getInstance()->registerConversion(hint2ulonglong);
-	ConversionTableSingleton::getInstance()->registerConversion(hlong2bool);
-	ConversionTableSingleton::getInstance()->registerConversion(hbool2long);
-	ConversionTableSingleton::getInstance()->registerConversion(hdouble2float);
-	ConversionTableSingleton::getInstance()->registerConversion(hlong2double);
-	ConversionTableSingleton::getInstance()->registerConversion(hchar2uchar);
-	ConversionTableSingleton::getInstance()->registerConversion(hchar2string);
-	ConversionTableSingleton::getInstance()
-		->registerConversion(hpascal2cstring);
-	ConversionTableSingleton::getInstance()
-		->registerConversion(hlist2element);
-	ConversionTableSingleton::getInstance()
-		->registerConversion(hpylong2longlong);
-	ConversionTableSingleton::getInstance()
-		->registerConversion(hpylong2ulonglong);
-	ConversionTableSingleton::getInstance()->registerConversion(hpylong2long);
-	ConversionTableSingleton::getInstance()->registerConversion(hpylong2ulong);
+
 }
 
-/**
- * Reveal the type of a given PyObject from its Python type.
- */
-Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
-	const
+Handle<RobinType> PythonFrontend::detectType_basic(PyObject *object) const
 {
-	PyObject *object = reinterpret_cast<PyObject*>(element);
 	PyObject *obtype = PyObject_Type(object);
-	Handle<TypeOfArgument> user;
+	Handle<RobinType> user;
 
-	if (object == Py_True || object == Py_False)
-		return ArgumentBoolean;
-	else if (PyInt_Check(object))
-		return ArgumentLong;
-	else if (PyFloat_Check(object))
+	if (PyFloat_Check(object))
 		return ArgumentDouble;
 	else if (PyString_Check(object))
 		return (PyString_Size(object)==1)? ArgumentChar : ArgumentPascalString;
-	else if (PyList_Check(object))
-		return ArgumentPythonList;
 	else if (PyTuple_Check(object))
 		return ArgumentPythonTuple;
-	else if (PyDict_Check(object))
-		return ArgumentPythonDict;
-	else if (PyLong_Check(object))
-		return ArgumentPythonLong;
 	else if (ClassObject_Check(obtype)) {
 		// - instance object
 		Handle<Class> clas = ((ClassObject*)obtype)->getUnderlying();
-		return clas->getRefArg();
+		return clas->getType();
 	}
 	else if (PyObject_Type(obtype) == (PyObject*)EnumeratedTypeTypeObject) {
 		// - enumerated constant object
 		Handle<EnumeratedConstant> enumconst = 
 			((EnumeratedConstantObject*)object)->getUnderlying();
-		return enumconst->getType()->getArg();
+		return enumconst->getType()->getType();
 	}
-	else if (user = detectUserDefined(m_userTypes, element)) {
+	else if (user = detectUserDefined(m_userTypes, object)) {
 		// - user-defined type object
 		return user;
 	}
 	else if (PyInstance_Check(object) || _PyObject_GetDictPtr(object) != 0
 			 || PyCObject_Check(object)) {
+		// instance of a python class
+		// class which has a dictionary
+		// cobject
 		return ArgumentScriptingElementNewRef;
 	}
 	else if (obtype == (PyObject*)&AddressTypeObject) {
@@ -449,110 +406,230 @@ Handle<TypeOfArgument> PythonFrontend::detectType(scripting_element element)
 		return address->getPointerType();
 	}
 	else
-		throw UnsupportedInterfaceException();
+		return Handle<RobinType>();
 }
 
-/**
- * Gives value insight.
- * The only insight currently supplied is for lists and dictionaries:
- * in this case, the frontend will return the type of the first element.
- * In a list this is the first element of the list.
- * In a dictionary this is a tuple containing the first key and it's value.
- */
-Insight PythonFrontend::detectInsight(scripting_element element) const
-{
-	PyObject *object = reinterpret_cast<PyObject*>(element);
-	Insight insight;
 
-	if (PyInt_Check(object)) {
-		long value = PyInt_AsLong(object);
-		insight.i_long =  (value < 0) ? -L : L;
+Handle<RobinType> PythonFrontend::detectType_mostSpecific(scripting_element element)
+	const
+{
+
+	PyObject *object = reinterpret_cast<PyObject*>(element);
+	Handle<RobinType> user;
+
+	if (object == Py_True || object == Py_False)
+	{
+		//this check has to be before checking if the type is an PyInt
+		return ArgumentBoolean;
+	} else if (object == Py_None) {
+		return ArgumentVoid;
 	}
-	else if (PyList_Check(object) && PyList_Size(object) > 0) {
-		PyObject *first = PyList_GetItem(object, 0);
-		//insight.i_ptr = PyObject_Type(first);
-        Py_XINCREF(first);
-		insight.i_ptr = first;
-	}
-	else if (PyDict_Check(object) && PyDict_Size(object) > 0) {
-		PyObject *items = PyDict_Items(object);
-		PyObject *first = PyList_GetItem(items, 0);
-		PyObject *types = PyList_New(2);
-		PyList_SetItem(types, 0, PyObject_Type(PyTuple_GetItem(first, 0)));
-		PyList_SetItem(types, 1, PyObject_Type(PyTuple_GetItem(first, 1)));
-		Py_XDECREF(items);
-		insight.i_ptr = types;
+	else if (PyInt_Check(object))
+	{
+		return BoundedNumericRobinType::giveTypeForNum(
+				PyReferenceBorrow<PyIntObject>((PyIntObject*)object));
 	}
 	else if (PyLong_Check(object)) {
-		unsigned long long value = PyLong_AsUnsignedLongLong(object);
-		if (PyErr_Occurred()) {
-			if (PyErr_ExceptionMatches(PyExc_TypeError)) { // negative
-				PyErr_Clear();
-				long long svalue = PyLong_AsLongLong(object);
-				if (PyErr_Occurred())
-					insight.i_long = -MAX_LONG; // impossible
-				else if (svalue >= MIN_LONG)
-					insight.i_long = -L;
-				else
-					insight.i_long = -LL;
-			}
-			else
-				insight.i_long = MAX_LONG; // impossible
-			PyErr_Clear();
-		}
-		else if (value <= MAX_LONG)
-			insight.i_long = L;
-		else if (value <= MAX_ULONG)
-			insight.i_long = UL;
-		else if (value <= MAX_LONGLONG)
-			insight.i_long = LL;
-		else
-			insight.i_long = ULL;
+		return BoundedNumericRobinType::giveTypeForNum(
+				PyReferenceBorrow<PyLongObject>((PyLongObject*)object));
 	}
-	else {
-		insight.i_ptr = 0;
+	else	 if((user = detectType_basic(object))) {
+		return user;
 	}
+	else if (PyList_Check(object)) {
+		Handle<RobinType> firstElementType;
+		if(PyList_Size(object)!=0) {
+			PyObject *firstElement = PyList_GET_ITEM(object,0);
+			// Obtaining the type of the elements, but also
+			// forcing list elements to be constant.
+			// Currently robin does not care to update back the
+			// elements of a list when its contents are modified,
+			// only they are replaced in the list.
+			firstElementType = PythonFrontend::detectType_mostSpecific(firstElement);
+			if(firstElementType->isConstant() != RobinType::constReferenceKind)
+			{
 
-	return insight;
+				firstElementType = ConstType::searchOrCreate(*firstElementType);
+			}
+		}
+		//Returning a non-const list for the element type found
+		return ListRobinType::listForSpecificElements(firstElementType);
+	}
+	else if (PyDict_Check(object)) {
+		Handle<RobinType> firstKeyType;
+		Handle<RobinType> firstValueType;
+
+		PyObject *key, *value;
+		Py_ssize_t pos = 0;
+		if (PyDict_Next(object, &pos, &key, &value)) {
+		    /* will bring a key-value pair to obtain
+		     * their types.
+		     * Of course only if the dictionary is not empty
+		     */
+			firstKeyType = PythonFrontend::detectType_mostSpecific(key);
+			firstValueType = PythonFrontend::detectType_mostSpecific(value);
+			if(firstKeyType->isConstant() != RobinType::constReferenceKind)
+			{
+				firstKeyType = ConstType::searchOrCreate(*firstKeyType);
+			}
+			if(firstValueType->isConstant() != RobinType::constReferenceKind)
+			{
+				firstValueType = ConstType::searchOrCreate(*firstValueType);
+			}
+		}
+		return DictRobinType::dictForSpecificKeyAndValues(firstKeyType,firstValueType);
+
+	}
+	throw UnsupportedInterfaceException();
 }
+
+Handle<RobinType> PythonFrontend::detectType_asPython(PyObject *object)
+	const
+{
+	/*
+	 * TODO: when detectType is ready reimplement detectType_asPython
+	 * using detectType
+	 */
+	Handle<RobinType> user;
+
+	if (object == Py_True || object == Py_False)
+	{
+		//this check has to be before checking if the type is an PyInt
+		return ArgumentBoolean;
+	} else if (object == Py_None) {
+		return ArgumentVoid;
+	}
+	else if (PyInt_Check(object))
+	{
+			return ArgumentLong;
+	}
+	else if (PyLong_Check(object))
+	{
+		return ArgumentPythonLong;
+	}
+	else if((user = detectType_basic(object))) {
+		return user;
+	}
+	else if (PyList_Check(object)) {
+		return ListRobinType::getGeneralListRobinType();
+	}
+	else if (PyDict_Check(object)) {
+		return DictRobinType::getGeneralDictRobinType();
+	}
+	throw UnsupportedInterfaceException();
+}
+
 
 /**
  * Statically detect a type represented by a Python PyTypeObject.
  */
-Handle<TypeOfArgument> PythonFrontend::detectType(struct _typeobject *pytype)
+Handle<RobinType> PythonFrontend::detectType(PyTypeObject *pytype)
 	const
 {
-	if (pytype == &PyInt_Type)
-		return ArgumentInt;
-	else if (pytype == &PyString_Type)
-		return ArgumentCString;
-	else if (ClassObject_Check((PyObject*)pytype)) {
-		return ((ClassObject*)pytype)->getUnderlying()->getRefArg();
+	/*
+	  This function should be able to translate from a python type
+	  to a robin type representing it.
+	  It should work exactly as detectType_asPython and detectType_asPython
+	  should be based in this function.
+	  TODO: Currently detectType is not divided between the types that can
+	  be used from detectType_basic.
+	  TODO: Currently there are a number of problems which prevent this function
+	  to fully parse the python types.
+	  These are the cases:
+
+	  Enumerated types
+	  ================
+	  Notice cannot currently detect the type of an enumerated object
+	  because all the enumerated types have the same type, which is not logical
+
+	  User defined types (types registered from other modules)
+	  ========================================================
+	  Currently detectUserDefined and other related functions use
+	  the element to know what is the robin type of the object, but
+	  cannot detect it only by the PyTypeObject* element.
+	  Need to redesign the mechanism.
+
+	  AddressTypeObject (pointer types)
+	  =================================
+	  Those are pointer to types. The same problem as with user defined
+	  types, still there is no support to know exactly the type of the object
+	  without having the object itself, need to change this.
+
+	  Unknown types
+	  ==============
+	  At first sight Types which do not belong to any other category should be considered
+	  of type ArgumentScriptingElementNewRef.
+	  The old code says otherwise; it only accepts three types of parameters
+	  for ArgumentScriptingElementNewRef:
+	    - types inheriting from a ClassTypeObject:
+	        those are probably python classes which extend the ClassTypeObject
+	    - types which do not have a instance dictionary:
+	        those are simple types or builtin types, not python classes
+	        (this definition is very problematic because we need the object to
+	        detect if it has a dictionary using the function _PyObject_GetDictPtr)
+	    - types exported from other extension modules written in C/C++
+	       (CObjects)
+	   In my opinion all of the aforementioned cases cover pretty much of
+	   the types that robin will need to handle and are not of any other category.
+	   Because of that, currently i simply return ArgumentScriptingElementNewRef
+	   as a default type if no other type matches.
+
+
+	}*/
+
+
+	//FASTCHECKSUBTYPE first checks equality of the types
+	// then uses the normal subtypes mechanism
+	// It is copied from pythons own
+#    define FASTCHECKSUBTYPE(subtype,supertype) \
+	((subtype) == (supertype) || PyType_IsSubtype((subtype), (supertype)))
+
+	if (FASTCHECKSUBTYPE(pytype,&PyBool_Type))
+	{
+			//this check has to be before checking if the type is an PyInt
+			return ArgumentBoolean;
 	}
-	else
-		throw UnsupportedInterfaceException();
+	else if (FASTCHECKSUBTYPE(pytype,&PyInt_Type))
+		return ArgumentLong;
+	else if (FASTCHECKSUBTYPE(pytype,&PyLong_Type))
+		return ArgumentPythonLong;
+	else if (FASTCHECKSUBTYPE(pytype,&PyList_Type))
+		return ListRobinType::getGeneralListRobinType();
+	else if (FASTCHECKSUBTYPE(pytype,&PyFloat_Type))
+		return ArgumentDouble;
+	else if (FASTCHECKSUBTYPE(pytype,&PyString_Type))
+		return ArgumentPascalString;
+	else if (FASTCHECKSUBTYPE(pytype,&PyTuple_Type))
+		return ArgumentPythonTuple;
+	else if (FASTCHECKSUBTYPE(pytype,&PyDict_Type))
+		return DictRobinType::getGeneralDictRobinType();
+	else if (pytype->ob_type == ClassTypeObject) {
+		// Only ClassType enters here.
+		// because if there is a python class inheriting from our type
+		// we need to take care about it differently.
+		Handle<Class> clas = ((ClassObject*)pytype)->getUnderlying();
+		return clas->getType();
+	}
+	else {
+		return ArgumentScriptingElementNewRef;
+	}
+
+#undef FASTCHECKSUBTYPE
 }
 
 
 /**
  * Creates a Python adapter for a specific type.
  */
-Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
+Handle<Adapter> PythonFrontend::giveAdapterFor(const RobinType& type)
 	const
 {
 	Type basetype = type.basetype();
 
-	if (type.isPointer()) {
-		Handle<TypeOfArgument> pointedType = 
-			TypeOfArgument::handleMap.acquire(type.pointed());
-		if (pointedType)
-			return Handle<Adapter>(new AddressAdapter(pointedType));
-		else if (basetype.category == TYPE_CATEGORY_EXTENDED
-				 && basetype.spec == TYPE_EXTENDED_VOID)
-			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<void*, PyCObjectTraits>);
-		else
-			throw UnsupportedInterfaceException();
+	if (dynamic_cast<const PointerType*>(&type)) {
+		const PointerType*pointerType = dynamic_cast<const PointerType*>(&type);
+		Handle<RobinType> pointedType = pointerType->pointed().get_handler();
+		return Handle<Adapter>(new AddressAdapter(pointedType));
 	}
 	if (basetype.category == TYPE_CATEGORY_INTRINSIC) {
 		typedef PySignedNumTraits<short> t_short;
@@ -635,7 +712,7 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const TypeOfArgument& type)
 			// - find the class object
 			ClassObject *classobj = getClassObject(basetype.objclass);
 			// - create instance adapter
-			bool owned = (&type == &*(basetype.objclass->getPtrArg()));
+			bool owned = (&type == &*(basetype.objclass->getPtrType()));
 			return Handle<Adapter>(new InstanceAdapter(classobj,
 													   owned));
 		}
@@ -661,7 +738,6 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 {
 	static PyMethodDef meth[] = { { 0 } };
 	PyObject *module = Py_InitModule((char*)(newcomer.name().c_str()), meth);
-	PyObject *dict = PyModule_GetDict(module);
 
 	Handle<Namespace> globals = newcomer.globalNamespace();
 
@@ -671,13 +747,13 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !cname_iter->done(); cname_iter->next()) {
 		// Create a class object in the module
 		std::string name = cname_iter->value();
+
+
 		Handle<Class> clas = globals->lookupClass(name);
 		ClassObject *pyclass = getClassObject(clas);
-		pyclass->inModule(module);
-		insertIntoNamespace(newcomer.name(), module, name, (PyObject*)pyclass);
-		// Register class in classes map
-		m_classes[&*clas]     = pyclass;
-		m_classesByName[name] = pyclass;
+		PyReferenceBorrow<PyObject> mod = insertIntoNamespace(newcomer.name(), module, name, PyReferenceBorrow<PyObject>((PyObject*)pyclass));
+		pyclass->inModule(mod.pointer());
+
 		// Apply implicit enhancements to this class
 		Protocol::autoEnhance(pyclass);
 	}
@@ -690,19 +766,20 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		if (name.substr(0, DATAMEMBER_PREFIX.size()) == DATAMEMBER_PREFIX) {
 			// Create a variable in the module by calling the function
 			std::string varname = name.substr(DATAMEMBER_PREFIX.size());
-			ActualArgumentList noargs;
+			Handle<ActualArgumentList> noargs(new ActualArgumentList);
             KeywordArgumentMap nokwargs;
-			PyObject *pyvar = (PyObject*)routine->call(noargs, nokwargs);
+			PyReferenceSteal<PyObject> pyvar ( (PyObject*)routine->call(noargs, nokwargs) );
 			insertIntoNamespace(newcomer.name(), module, varname, pyvar);
 		}
 		else {
 			// Create a function object in the module
-			FunctionObject *pyroutine = new FunctionObject(routine);
+			PyReferenceSteal<FunctionObject> pyroutine = FunctionObject::construct(routine);
 			pyroutine->setName(name);
 			pyroutine->inModule(module);
-			insertIntoNamespace(newcomer.name(), module, name, pyroutine);
+			insertIntoNamespace(newcomer.name(), module, name, static_pyhcast<PyObject>(pyroutine));
 			// Register in function map
 			m_functionsByName[name] = pyroutine;
+
 		}
 	}
 	// Expose enumerated types
@@ -712,20 +789,20 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		Handle<EnumeratedType> enumtype = globals->lookupEnum(name);
 		EnumeratedTypeObject *pyenumtype = getEnumeratedTypeObject(enumtype);
 		insertIntoNamespace(newcomer.name(), module, 
-							name, (PyObject*)pyenumtype);
+							name, PyReferenceBorrow<PyObject>((PyObject*)pyenumtype));
 		// Get the list of constants belonging to this type
 		std::vector<Handle<EnumeratedConstant> > enumconstants =
 			listOfConstants(enumtype);
 		// Create objects representing enum constants
 		for (std::vector<Handle<EnumeratedConstant> >::iterator ci =
 				 enumconstants.begin(); ci != enumconstants.end(); ++ci) {
-			PyObject *obj = new EnumeratedConstantObject(pyenumtype, *ci);
-			PyObject *namespaces = splitName(name);
+			PyReferenceSteal<PyObject> obj(new EnumeratedConstantObject(pyenumtype, *ci));
+			PyObject *namespaces = generatePythonModulePath(name);
 			PyList_SetItem(namespaces,
 			               PyList_Size(namespaces) - 1,
 			               PyString_FromString((*ci)->getLiteral().c_str()));
 			insertIntoNamespace(newcomer.name(), module, 
-								namespaces, obj);
+								namespaces, PyReferenceBorrow<PyObject>(obj));
 		}
 	}
 	// Apply aliases
@@ -733,27 +810,25 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !alias_iter->done(); alias_iter->next()) {
 		try {
 			std::string name = alias_iter->value();
-			
-            Handle<Class> aliased = globals->lookupClass(name);
+            Handle<Class> aliased = RegistrationMechanismSingleton::getInstance()->findClass(name);
 			ClassObject *pyaliased = m_classes[&*aliased];
 			insertIntoNamespace(newcomer.name(), module, name,
-								pyowned((PyObject*)pyaliased));
+								PyReferenceBorrow<PyObject>((PyObject*)pyaliased));
 			// Register class in classes map by its alias as well
 			m_classesByName[name] = pyaliased;
 		}
-		catch (LookupFailureException& ) {
+		catch (const LookupFailureException& ) {
             // this could be a primitive type
             try {
 				std::string name = alias_iter->value();
-				// FIXME: XXX:
-				// if desired to use a python built-in type (<type 'int'>, etc)
-				// this call should be replaced by getBuiltinType
-				PyObject *prim_type = getPrimitiveType(globals, name);
+				std::string unaliasedName = name;
+				RegistrationMechanismSingleton::getInstance()->unalias(unaliasedName);
+				PyObject *prim_type = getPrimitiveType(globals, unaliasedName);
 				insertIntoNamespace(newcomer.name(), module, name,
-                                    pyowned(prim_type));
+						PyReferenceBorrow<PyObject>(prim_type));
 				m_typesByName[name] = (PyTypeObject*)prim_type;
 				continue;
-            } catch(LookupFailureException &) {
+            } catch(const LookupFailureException&) {
 				// not a primitive, fallthrough to failure scenario
             } 
 
@@ -765,11 +840,12 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 		 !tname_iter->done(); tname_iter->next()) {
 		// Create or access a template object if necessary
 		std::string classname = tname_iter->value(), templatename;
+
 		TemplateObject *pytemplate = exposeTemplate(globals, T_CLASS, classname,
 													templatename);
 		if (pytemplate)
 			insertIntoNamespace(newcomer.name(), module, templatename, 
-								(PyObject*)pytemplate);
+					PyReferenceBorrow<PyObject>((PyObject*)pytemplate));
 	}
 	for (hiterator tfname_iter = globals->enumerateFunctions();
 		 !tfname_iter->done(); tfname_iter->next()) {
@@ -779,9 +855,10 @@ void PythonFrontend::exposeLibrary(const Library& newcomer)
 													templatename);
 		if (pytemplate)
 			insertIntoNamespace(newcomer.name(), module, templatename, 
-								(PyObject*)pytemplate);
+					PyReferenceBorrow<PyObject>((PyObject*)pytemplate));
 	}
 }
+
 
 /**
  * Checks whether a given class-name suggests a template instantiation.
@@ -799,17 +876,17 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
                                      std::vector<std::string>& templateargs)
 {
 	// find the first <
-	int lt = classname.find('<');
+	size_t lt = classname.find('<');
 
 	// if it wasn't found, this is not a template
-	if (lt == -1 || strncmp(classname.c_str(), "operator", strlen("operator")) == 0) {
+	if (lt == classname.npos || strncmp(classname.c_str(), "operator", strlen("operator")) == 0) {
 		return false;
 	}
 	else {
 		// find the last > that closes this one
-		int gt = classname.rfind('>');
+		size_t gt = classname.rfind('>');
 		// if there is no final bracket (this cannot possibly happen)
-		assert(gt < classname.length());
+		assert_true(gt < classname.length());
 		// if this is not the last character, then this could be a class inside
 		// a template class, such as std::vector<int>::iterator
 		if (gt != (classname.length() - 1)) {
@@ -823,10 +900,10 @@ bool PythonFrontend::getTemplateName(const std::string& classname,
 		std::string templatearg = 
 			classname.substr(lt + 2, gt - lt - 3) + ",";
 		// split the string by commas
-		int parenthesisCount;
+		size_t parenthesisCount;
 		while (templatearg.size()) {
 			// find the next comma
-			int i;
+			size_t i;
 			parenthesisCount = 0;
 			for (i = 0; i < templatearg.size(); ++i) {
 				if ((templatearg[i] == ',') && (parenthesisCount == 0)) {
@@ -897,7 +974,7 @@ TemplateObject *PythonFrontend::exposeTemplate(Handle<Namespace> &namespc,
 			pyarguments = identifyTemplateArgument(namespc, *this, templateargs[0]);
 			Py_XINCREF(pyarguments);
 		}
-		// If there are more than one argument, use a tuple
+		// If there is more than one argument, use a tuple
 		else {
 			pyarguments = PyTuple_New(templateargs.size());
 			for (size_t i = 0; i < templateargs.size(); ++i) {
@@ -912,7 +989,7 @@ TemplateObject *PythonFrontend::exposeTemplate(Handle<Namespace> &namespc,
 		}
 
 		if (pyarguments) {
-			PyObject *regobj = (PyObject*)getRegisteredObject(kind, elemname);
+			PyObject *regobj = getRegisteredObject(kind, elemname);
 			// Update the dictionary with the current element
 			if (regobj != NULL)
 				PyObject_SetItem((PyObject*)pytemplate,
@@ -927,12 +1004,12 @@ TemplateObject *PythonFrontend::exposeTemplate(Handle<Namespace> &namespc,
 	}
 }
 
-void *PythonFrontend::getRegisteredObject(TemplateKind kind,
+PyObject *PythonFrontend::getRegisteredObject(TemplateKind kind,
 										  const std::string& name)
 {
 	switch (kind) {
-	case T_CLASS:    return getClassObject(name);
-	case T_FUNCTION: return getFunctionObject(name);
+	case T_CLASS:    return (PyObject *)(PyTypeObject*)getClassObject(name);
+	case T_FUNCTION: return getFunctionObject(name).pointer();
 	default:         return NULL;
 	};
 }
@@ -1026,13 +1103,14 @@ PyTypeObject *PythonFrontend::getTypeObject(const std::string& name) const
 		}
 	}
 	else {
-		assert(typefind->second != NULL);
+		assert_true(typefind->second != NULL);
 		return typefind->second;
 	}
 }
 
 /**
  * Finds a Python::ClassObject via a Robin::Class reference.
+ * Additionaly it adds it to m_classes and m_classesByName
  */
 ClassObject *PythonFrontend::getClassObject(Handle<Robin::Class> clas) const
 {
@@ -1041,11 +1119,13 @@ ClassObject *PythonFrontend::getClassObject(Handle<Robin::Class> clas) const
 	// If class exists in map, return associated value.
 	// Otherwise, create a new class object and register it.
 	if (classfind == m_classes.end()) {
-		return (m_classes[&*clas] = m_classesByName[clas->name()] 
-					= new ClassObject(clas));
+		ClassObject *newClassObject = new ClassObject(clas);
+		m_classesByName[clas->name()] = newClassObject;
+		m_classes[&*clas] = newClassObject;
+		return newClassObject;
 	}
 	else {
-		assert(classfind->second != NULL);
+		assert_true(classfind->second != NULL);
 		return classfind->second;
 	}
 }
@@ -1063,7 +1143,7 @@ ClassObject *PythonFrontend::getClassObject(const std::string& name) const
 		return NULL;
 	}
 	else {
-		assert(classfind->second != NULL);
+		assert_true(classfind->second != NULL);
 		return classfind->second;
 	}
 }
@@ -1072,16 +1152,16 @@ ClassObject *PythonFrontend::getClassObject(const std::string& name) const
  * Finds a Python::FunctionObject by literal name.
  * Returns <b>NULL</b> if none exist.
  */
-FunctionObject *PythonFrontend::getFunctionObject(const std::string& name) 
+PyReferenceBorrow<FunctionObject> PythonFrontend::getFunctionObject(const std::string& name)
 	const
 {
 	funcnameassoc::const_iterator funcfind = m_functionsByName.find(name);
 	// If class exists in map, return associated value.
 	if (funcfind == m_functionsByName.end()) {
-		return NULL;
+		return PyReferenceBorrow<FunctionObject>();
 	}
 	else {
-		assert(funcfind->second != NULL);
+		assert_true(funcfind->second);
 		return funcfind->second;
 	}
 }
@@ -1100,7 +1180,7 @@ EnumeratedTypeObject *PythonFrontend
 		return (m_enums[&*enumtype] = new EnumeratedTypeObject(enumtype));
 	}
 	else {
-		assert(enumfind->second != NULL);
+		assert_true(enumfind->second != NULL);
 		return enumfind->second;
 	}
 }
@@ -1122,7 +1202,7 @@ TemplateObject *PythonFrontend::getTemplateObject(const std::string& name)
 		return NULL;
 	}
 	else {
-		assert(templfind->second != NULL);
+		assert_true(templfind->second != NULL);
 		return templfind->second;
 	}
 }
@@ -1146,9 +1226,9 @@ void PythonFrontend::setTemplateObject(const std::string& name,
 	if (existing) {
 		PyObject *items = PyMapping_Items((PyObject*)existing);
 		if (items != NULL) {
-			long nitems = PyList_Size(items);
-			assert(nitems >= 0);
-			for (long i = 0; i < nitems; ++i) {
+			Py_ssize_t nitems = PyList_Size(items);
+			assert_true(nitems >= 0);
+			for (Py_ssize_t i = 0; i < nitems; ++i) {
 				PyObject *key, *value;
 				if (PyArg_ParseTuple(PyList_GetItem(items, i), "OO", 
 									 &key, &value)) {
@@ -1179,20 +1259,25 @@ void PythonFrontend::addUserDefinedType(Handle<UserDefinedTranslator>
 
 
 ByTypeTranslator::ByTypeTranslator(PyTypeObject *pytype)
-	: m_type(new TypeOfArgument(TYPE_CATEGORY_USERDEFINED, 
-								TYPE_USERDEFINED_OBJECT)),
+	: m_type(RobinType::create_new(TYPE_CATEGORY_USERDEFINED,
+					TYPE_USERDEFINED_INTERCEPTOR,pytype->tp_name,RobinType::regularKind)),
 	  m_pytype(pytype)
 {
 }
 
-Handle<TypeOfArgument> ByTypeTranslator::detectType(scripting_element element)
+ByTypeTranslator::~ByTypeTranslator()
+{
+
+}
+
+Handle<RobinType> ByTypeTranslator::detectType(scripting_element element)
 {
 	PyObject *pyelement = (PyObject*)element;
 	if (PyObject_Type(pyelement) == (PyObject*)m_pytype) {
 		return m_type;
 	}
 	else {
-		return Handle<TypeOfArgument>();
+		return Handle<RobinType>();
 	}
 }
 

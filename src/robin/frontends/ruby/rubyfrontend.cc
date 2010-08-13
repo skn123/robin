@@ -21,7 +21,7 @@
 #include <node.h>
 
 // Package includes
-#include <robin/reflection/typeofargument.h>
+#include <robin/reflection/robintype.h>
 #include <robin/reflection/intrinsic_type_arguments.h>
 #include <robin/reflection/class.h>
 #include <robin/reflection/conversiontable.h>
@@ -76,10 +76,10 @@ void RubyFrontend::initialize() const
 
 
 /**
- * Returns the TypeOfArgument representing this element's type. The
+ * Returns the RobinType representing this element's type. The
  * 'element' is assumed to be a Ruby VALUE.
  */
-Handle<TypeOfArgument> RubyFrontend::detectType(scripting_element element)
+Handle<RobinType> RubyFrontend::detectType_mostSpecific(scripting_element element)
   const
 {
 	VALUE value = reinterpret_cast<VALUE>(element);
@@ -91,18 +91,6 @@ Handle<TypeOfArgument> RubyFrontend::detectType(scripting_element element)
 }
 
 
-/**
- * Returns an insight for a type.
- *
- * @note the simple frontend does not supply any insights, so the returned
- * value is always 0.
- */
-Insight RubyFrontend::detectInsight(scripting_element element) const
-{
-	Insight insight;
-	insight.i_long = 0;
-	return insight;
-}
 
 
 /**
@@ -115,7 +103,7 @@ Insight RubyFrontend::detectInsight(scripting_element element) const
  *   <li>RubyInstanceObjectAdapter</li>
  * </ul>
  */
-Handle<Adapter> RubyFrontend::giveAdapterFor(const TypeOfArgument& type)
+Handle<Adapter> RubyFrontend::giveAdapterFor(const RobinType& type)
   const
 {
 	Type basetype = type.basetype();
@@ -162,10 +150,10 @@ void RubyFrontend::exposeLibrary(const Library& newcomer)
 		std::string aname = "@" + name;
 
 		Handle<Callable> func = global->lookupFunction(name);
-		std::cerr << "Introducing function " << name<< std::endl;
+		dbg::trace << "Introducing function " << name<< dbg::endl;
 
 		VALUE rb_func = FunctionObject::allocate(&*func);
-		rb_attr(rb_singleton_class(module), rb_intern(name.c_str()), 
+		rb_attr(rb_singleton_class(module), rb_intern(name.c_str()),
 				1, 1, NOEX_PUBLIC);
 		rb_iv_set(module, aname.c_str(), rb_func);
 	}
@@ -219,7 +207,7 @@ const LowLevel& RubyFrontend::getLowLevel() const
  */
 const Interceptor& RubyFrontend::getInterceptor() const
 {
-	assert(false);
+	assert_true(false);
 }
 
 /**

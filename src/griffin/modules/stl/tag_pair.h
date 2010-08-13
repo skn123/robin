@@ -13,6 +13,7 @@ public:
 	pair(const T1 &a, const T2 &b);
 	template <class U1, class U2>
 	pair(const pair<U1,U2> &other);
+	bool operator==(const pair &) const;
 };
 	
 }

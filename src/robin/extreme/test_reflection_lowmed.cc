@@ -11,7 +11,7 @@
  * <ul><li>Low level</li><li>Medium level</li><li>High level</li></ul>
  */
 
-#include <robin/reflection/typeofargument.h>
+#include <robin/reflection/robintype.h>
 #include <robin/reflection/cfunction.h>
 #include <robin/reflection/intrinsic_type_arguments.h>
 #include <robin/reflection/overloadedset.h>
@@ -122,9 +122,9 @@ class TestLowLevel : public Test
     int  alt_return_value;
 
 public:
-    TestLowLevel() : Test("low-level"), func1((Robin::symbol)&callme),
-					 func2((Robin::symbol)&callme_ul),
-					 func3((Robin::symbol)&callme_c) { }
+    TestLowLevel() : Test("low-level"), func1((Robin::symbol)&callme,"callme",Robin::CFunction::GlobalFunction),
+					 func2((Robin::symbol)&callme_ul,"callme_u1",Robin::CFunction::GlobalFunction),
+					 func3((Robin::symbol)&callme_c, "callne_c",Robin::CFunction::GlobalFunction) { }
 
     void prepare() {
 		argument = 70;
@@ -174,9 +174,9 @@ class TestMediumLevel : public ReflectionTest
 
 public:
     TestMediumLevel() : ReflectionTest("medium-level"),
-			func1((Robin::symbol)&callme),
-			func2((Robin::symbol)&callme_ul),
-			func3((Robin::symbol)&callme_c) { }
+			func1((Robin::symbol)&callme,"callme",Robin::CFunction::GlobalFunction),
+			func2((Robin::symbol)&callme_ul,"callme_ul",Robin::CFunction::GlobalFunction),
+			func3((Robin::symbol)&callme_c,"callme_c",Robin::CFunction::GlobalFunction) { }
 
     void prepare() {
 		func1.specifyReturnType(Robin::ArgumentInt);
@@ -245,19 +245,20 @@ class TestOverloading : public ReflectionTest
     Handle<Robin::CFunction> alt2;
     Handle<Robin::CFunction> alt3;
     Handle<Robin::CFunction> alt4;
-    Robin::OverloadedSet func;
+    Handle<Robin::OverloadedSet> func;
 
     int chosen;
-    Robin::ActualArgumentList args;
+    Handle<Robin::ActualArgumentList> args;
 
     int returned;
 
 public:
     TestOverloading() : ReflectionTest("simple overloading"),
-	  alt1(new Robin::CFunction((Robin::symbol)&callmeo1)),
-	  alt2(new Robin::CFunction((Robin::symbol)&callmeo2)),
-	  alt3(new Robin::CFunction((Robin::symbol)&callmeo3)),
-	  alt4(new Robin::CFunction((Robin::symbol)&callmeo4)) {
+	  alt1(new Robin::CFunction((Robin::symbol)&callmeo1,"callmeo1",Robin::CFunction::GlobalFunction)),
+	  alt2(new Robin::CFunction((Robin::symbol)&callmeo2,"callmeo2",Robin::CFunction::GlobalFunction)),
+	  alt3(new Robin::CFunction((Robin::symbol)&callmeo3,"callmeo3",Robin::CFunction::GlobalFunction)),
+	  alt4(new Robin::CFunction((Robin::symbol)&callmeo4,"callmeo4",Robin::CFunction::GlobalFunction)),
+	  func(Robin::OverloadedSet::create_new("func")){
 		// Fill overloaded alternatives
 		alt2->addFormalArgument(Robin::ArgumentInt);
 		alt3->addFormalArgument(Robin::ArgumentLong);
@@ -269,26 +270,27 @@ public:
 		alt3->specifyReturnType(Robin::ArgumentInt);
 		alt4->specifyReturnType(Robin::ArgumentInt);
 		// Add all the alternatives
-		func.addAlternative(alt1); func.addAlternative(alt2);
-		func.addAlternative(alt3); func.addAlternative(alt4);
+		func->addAlternative(alt1); func->addAlternative(alt2);
+		func->addAlternative(alt3); func->addAlternative(alt4);
     }
 
     void prepare() {
 		chosen = rand() % 4 + 1;
-		dbg::trace << "// @CHOSEN: " << chosen << dbg::endl;
-		args = Robin::ActualArgumentList();
+		Robin::dbg::trace << "// @CHOSEN: " << chosen << Robin::dbg::endl;
+		args = Handle<Robin::ActualArgumentList>(new Robin::ActualArgumentList());
 		switch (chosen) {
-		case 4: args.push_back(randomElementInt());  // and fall through
-		case 2: args.push_back(randomElementInt());
+		case 4: args->push_back(randomElementInt());  // and fall through
+		case 2: args->push_back(randomElementInt());
 			break;
-		case 3: args.push_back(randomElementLong());
+		case 3: args->push_back(randomElementLong());
 			break;
 		}
     }
 
     void go() {
-		returned = Gint | func.call(args);
-		dbg::trace << "// @SELECTED: " << returned << dbg::endl;
+    	Robin::KeywordArgumentMap empty;
+		returned = Gint | func->call(args,empty);
+		Robin::dbg::trace << "// @SELECTED: " << returned << Robin::dbg::endl;
     }
 
     bool verify() {
@@ -321,8 +323,8 @@ private:
 
 public:
 	TestImplicitConversion() : ReflectionTest("Implicit Conversions"),
-				func(new Robin::CFunction((Robin::symbol)&callme_f)),
-			    ofunc(new Robin::OverloadedSet),
+				func(new Robin::CFunction((Robin::symbol)&callme_f,"callme_f",Robin::CFunction::GlobalFunction)),
+			    ofunc(Robin::OverloadedSet::create_new("ofunc")),
 				room04(new Room) { }
 
 	void prepare() {
@@ -339,15 +341,16 @@ public:
 
 	void go() {
 		// Call the callme_f function - assume a conversion from long to float
-		Robin::ActualArgumentList args;
-		args.push_back((Robin::scripting_element)Simple::build(argument));
-		returned = Glong | ofunc->call(args);
+		Handle<Robin::ActualArgumentList> args(new Robin::ActualArgumentList);
+		Robin::KeywordArgumentMap empty;
+		args->push_back((Robin::scripting_element)Simple::build(argument));
+		returned = Glong | ofunc->call(args,empty);
 		notification("RETURNED", returned);
 		// Call the callme_f function - assume a conversion from Room to int,
 		// and from int to float
-		Robin::ActualArgumentList args_oop;
-		args_oop.push_back(instanceElement(enterprise_Room, room04));
-		returned_oop = Glong | ofunc->call(args_oop);
+		Handle<Robin::ActualArgumentList> args_oop(new Robin::ActualArgumentList);
+		args_oop->push_back(instanceElement(enterprise_Room, room04));
+		returned_oop = Glong | ofunc->call(args_oop,empty);
 		notification("RETURNED-OOP", returned_oop);
 	}
 
@@ -448,8 +451,8 @@ private:
 
 public:
 	TestPointerArgument() : ReflectionTest("Pointer Argument"),
-							func1((Robin::symbol)&assignme),
-							func2((Robin::symbol)&listme)
+							func1((Robin::symbol)&assignme,"assignme",Robin::CFunction::GlobalFunction),
+							func2((Robin::symbol)&listme,"listme",Robin::CFunction::GlobalFunction)
 	{ }
 
 	void prepare() { 

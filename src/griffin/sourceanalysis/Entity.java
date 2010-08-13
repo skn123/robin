@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Vector;
 import java.util.Iterator;
 
+import sourceanalysis.SourceFile.DeclDefConnection;
+
 /**
  * <p>Base class for all source-analysis components.</p>
  * <p>The common thing about such components is that they hold <i>properties</i>, which
@@ -181,6 +183,28 @@ public abstract class Entity {
 		m_definitionAt =
 			new SourceFile.DeclDefConnection(source, position, this);
 		source.relateDefinition(m_definitionAt);
+	}
+
+	public void setDeclarationAt(DeclDefConnection declaration) {
+		if (declaration == null) return;
+		
+		SourceFile source = null;
+		try {
+			source = declaration.getSource();
+			m_declarationAt = new SourceFile.DeclDefConnection(source, declaration.where(), this);
+			source.relateDefinition(m_declarationAt);
+		} catch (MissingInformationException e) {}
+	}
+	
+	public void setDefinitionAt(DeclDefConnection definition) {
+		if (definition == null) return;
+		
+		SourceFile source = null;
+		try {
+			source = definition.getSource();
+			m_definitionAt = new SourceFile.DeclDefConnection(source, definition.where(), this);
+			source.relateDefinition(m_definitionAt);
+		} catch (MissingInformationException e) {}
 	}
 	
 	/**

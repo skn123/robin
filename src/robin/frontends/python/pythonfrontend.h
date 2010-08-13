@@ -15,17 +15,17 @@
 
 #ifndef ROBIN_PYTHON_FRONTEND_H
 #define ROBIN_PYTHON_FRONTEND_H
-
+#include "port.h"
 #include <map>
 #include <list>
 #include <robin/frontends/frontend.h>
-
+#include "pyhandle.h"
 
 extern "C"
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void initrobin();
+void initlibrobin_pyfe();
 
 struct _dictobject;
 struct _typeobject;
@@ -60,7 +60,7 @@ class PythonFrontend : public Frontend
 {
 public:
 	PythonFrontend();
-	~PythonFrontend();
+	virtual ~PythonFrontend();
 
 	/**
 	 * @name Deployment
@@ -77,11 +77,36 @@ public:
 	 */
 
 	//@{
-	virtual 
-	Handle<TypeOfArgument> detectType(scripting_element element) const;
-	virtual Insight detectInsight(scripting_element element) const;
 
-	Handle<TypeOfArgument> detectType(struct _typeobject *pytype) const;
+protected:
+
+	/**
+	 * This protected method is used to detect the RobinType when it
+	 * is unambiguous. Is used by both detectType_mostSpecific and detectType_asPython.
+	 */
+	inline virtual Handle<RobinType> detectType_basic(PyObject *element) const;
+
+public:
+
+	/**
+	 * It computes the RobinType of an object, if the object belongs
+	 * to several types it will report the most specific of those types.
+	 *  (a type which is a subtype of all the other types of the object).
+	 */
+	virtual Handle<RobinType> detectType_mostSpecific(scripting_element element) const;
+
+	/**
+	 * It computes the RobinType of an object. If the object belongs
+	 * to several types it will report the type imitating the behavior
+	 * of the 'type' function in python.
+	 * For example type([3]) == list, so it detectType_asPython will return
+	 * a general ListRobinType. No information will be given about
+	 * the type of the elements inside.
+	 */
+	virtual Handle<RobinType> detectType_asPython(PyObject *element) const;
+
+
+	Handle<RobinType> detectType(struct _typeobject *pytype) const;
 	//@}
 
 	/**
@@ -90,7 +115,7 @@ public:
 
 	//@{
 	virtual
-	Handle<Adapter> giveAdapterFor(const TypeOfArgument& type) const;
+	Handle<Adapter> giveAdapterFor(const RobinType& type) const;
 
 	//@}
 
@@ -146,7 +171,7 @@ public:
 	EnumeratedTypeObject    
 	               *getEnumeratedTypeObject(Handle<EnumeratedType> enumtype) 
 		const;
-	FunctionObject *getFunctionObject(const std::string& name) const;
+	PyReferenceBorrow<FunctionObject> getFunctionObject(const std::string& name) const;
 	TemplateObject *getTemplateObject(const std::string& name) const;
 	void            setTemplateObject(const std::string& name,
 									  TemplateObject *pytemplate);
@@ -156,24 +181,23 @@ public:
 
 protected:
 	enum TemplateKind { T_CLASS, T_FUNCTION };
-
-	bool getTemplateName(const std::string& classname, 
+	static bool getTemplateName(const std::string& classname,
 	                     std::string& templatename,
 	                     std::vector<std::string>& templateargs);
 	TemplateObject *exposeTemplate(Handle<Namespace>& namespc, TemplateKind kind,
 								   const std::string& classname,
 								   std::string& templatename);
-	void *getRegisteredObject(TemplateKind kind, const std::string& name);
+	PyObject *getRegisteredObject(TemplateKind kind, const std::string& name);
 
 	typedef std::map<std::string, PyTypeObject*> typenameassoc;
-	typedef std::map<const Robin::Class*, Robin::Python::ClassObject*> 
+	typedef std::map<const Robin::Class*, Robin::Python::ClassObject * >
 	    classassoc;
 	typedef std::map<std::string, Robin::Python::ClassObject*> 
 	    classnameassoc;
-	typedef std::map<const Robin::EnumeratedType*, 
+	typedef std::map<const Robin::EnumeratedType*,
 					 Robin::Python::EnumeratedTypeObject*> 
 	    enumassoc;
-	typedef std::map<std::string, Robin::Python::FunctionObject*>
+	typedef std::map<std::string, PyReferenceCreate<Robin::Python::FunctionObject> >
 		funcnameassoc;
 	typedef std::map<std::string, Robin::Python::TemplateObject*> 
 	    templatenameassoc;
@@ -189,7 +213,7 @@ protected:
 	userdefinedtypelist       m_userTypes;
 
 	class Module;
-	friend void ::initrobin();
+	friend void ::initlibrobin_pyfe();
 
 	friend class Robin::Python::Facade;
 
@@ -206,12 +230,20 @@ public:
 class ByTypeTranslator : public UserDefinedTranslator
 {
 public:
+	/*
+	 * @param pytype The type object. Regarding memory management: pytpe is passed
+	 * as a borrowed reference.
+	 */
 	ByTypeTranslator(struct _typeobject *pytype);
-
-	virtual Handle<TypeOfArgument> detectType(scripting_element element);
+	virtual ~ByTypeTranslator();
+	virtual Handle<RobinType> detectType(scripting_element element);
 
 private:
-	Handle<TypeOfArgument> m_type;
+	Handle<RobinType> m_type;
+
+	/*
+	 *  A weak reference to the type of this translator
+	 */
 	struct _typeobject *m_pytype;
 };
 

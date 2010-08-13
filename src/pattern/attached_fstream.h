@@ -101,10 +101,16 @@ public:
 
     explicit basic_attached_ifstream(FILE *withfile)
 		: sbuf(withfile, ios_base::in), 
-		  basic_istream<charT, traits>(&sbuf) { init(&sbuf); }
+		  basic_istream<charT, traits>(&sbuf)
+	{
+    	init(&sbuf);
+    }
     explicit basic_attached_ifstream(FILE *withfile, int buffer_size)
-		: sbuf(withfile, ios_base::in, buffer_size), 
-		  basic_istream<charT, traits>(&sbuf) { init(&sbuf); }
+		: basic_istream<charT, traits>(&sbuf),
+		sbuf(withfile, ios_base::in, buffer_size)
+	{
+    	init(&sbuf);
+    }
     virtual ~basic_attached_ifstream() { }
 
     buf_type* rdbuf() const { return &sbuf; }

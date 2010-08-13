@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.4
 """Griffin launcher script."""
 
 import os.path, sys, re, griffin as conf
@@ -50,6 +50,9 @@ class Griffin:
         tagfiles = [stltag] + [os.path.join(x, "module.tag") for x in modules]
         tagfile = os.path.join(project, "module.tag")
         stdmacros = ["__STDC__", "STDC", "__doxygen", "__cplusplus"]
+        doxygen_executable = self.arg_pts["doxygen_executable"]
+
+			
 
         doxyfile = {
             "INPUT": " ".join(sources),
@@ -62,7 +65,9 @@ class Griffin:
             "GENERATE_TAGFILE": tagfile,
             "GENERATE_XML": "Yes",
             "XML_PROGRAMLISTING": "No",
-            "GENERATE_HTML": "No", "GENERATE_LATEX": "No",
+            "GENERATE_HTML": "No", 
+	    "GENERATE_LATEX": "No",
+	    "SEARCHENGINE": "No",
             "EXTRACT_ALL": "Yes"
             }
 
@@ -71,7 +76,8 @@ class Griffin:
 
         if self.verbose: print ".griffin-doxyfile:\n" + fmtd_doxyfile
         open(".griffin-doxyfile", "w").write(fmtd_doxyfile)
-        Dots(self.verbose).run("doxygen .griffin-doxyfile")
+        Dots(self.verbose).run(doxygen_executable + " .griffin-doxyfile")
+
         if self.verbose: print "unlink .griffin-doxyfile"
         os.unlink(".griffin-doxyfile")
 
@@ -160,12 +166,15 @@ class Griffin:
         parser.add_argument(
             "--debug", metavar="port", type=int,
             help="(development) launch JVM in debug mode")
+        parser.add_argument(
+            "--doxygen_executable", default="doxygen",
+            help="The path to the doxygen executable");
 
         if not args: args = ["-h"]
 
         values = parser.parse_args(args)
         FLAGS = ["include", "checksources", "v", "debug", "interceptors", "module"]
-        OPTS = ["hints", "import"]
+        OPTS = ["hints", "import","doxygen_executable"]
         arg_in = values.__dict__['in']
         arg_out = values.out
         arg_classes = values.classes
@@ -193,6 +202,7 @@ class Griffin:
     def process(self, args):
         """Runs Griffin front-end and back-end using the given arguments."""
         arg_in, arg_out, arg_opts, arg_other = self._argv(args)
+        self.arg_pts = arg_opts
         arg_out = ["--outfile"] + arg_out
         arg_other = ["--classes"] + arg_other
 
@@ -215,6 +225,7 @@ class Griffin:
 
         imported = arg_opts["import"]
         if "module" in arg_opts: self.module = arg_opts["module"]
+
 
         # Set input source
         if input_type == "sources":

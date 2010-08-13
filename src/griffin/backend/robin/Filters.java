@@ -385,30 +385,6 @@ public class Filters extends GenericFilters {
 		return !(isSmallPrimitive(base) || base instanceof sourceanalysis.Enum);
 	}
 	
-	public static boolean needsEncapsulation(Alias alias)
-	{
-		return needsEncapsulation(alias, false);
-	}
-	
-	/**
-	 * Determines whether a simple typedef requires encapsulation - such
-	 * typedefs are "hidden" using a proxy wrapper class, which has a
-	 * constructor from the aliased type.
-	 * @param alias
-	 * @param ignoreSize true if the size of the primitive should be ignored (if it's a typedef)
-	 * @return <b>true</b> if encapsulation is required - <b>false</b> if
-	 * not.
-	 */
-	public static boolean needsEncapsulation(Alias alias, boolean ignoreSize)
-	{
-		if (alias.getAliasedType().isFlat() && 
-			alias.getAliasedType().getBaseType() instanceof Primitive && 
-				(!ignoreSize && !Filters.isSmallPrimitive(alias.getAliasedType().getBaseType()) ||
-				 alias.getAliasedType().getPointerDegree() != 0))
-			return true;
-		else
-			return false;
-	}
 
 	public static boolean isArray(Type type) {
 		return type.isArray() || Utils.flatUnalias(type).isArray();  

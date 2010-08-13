@@ -13,6 +13,7 @@
 
 #include "interactive/syntax.h"
 
+using namespace Robin;
 
 Handle<Robin::Library> enterprise;
 
@@ -44,7 +45,10 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	Extreme::TestingProgram::engage();
-	return 0;
+	if(Extreme::TestingProgram::engage()) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 

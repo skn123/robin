@@ -4,13 +4,20 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,13 +37,16 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import sourceanalysis.Aggregate;
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
 import sourceanalysis.Field;
 import sourceanalysis.Group;
 import sourceanalysis.InheritanceConnection;
@@ -49,7 +59,9 @@ import sourceanalysis.Scope;
 import sourceanalysis.SourceFile;
 import sourceanalysis.Specifiers;
 import sourceanalysis.TemplateParameter;
+import sourceanalysis.Entity.Property;
 import sourceanalysis.dox.DoxygenAnalyzer;
+import backend.GenericCodeGenerator;
 import backend.Utils;
 
 /**
@@ -58,6 +70,86 @@ import backend.Utils;
  */
 public class XMLWriter {
 
+	/**
+	 * This auxiliary class handles collecting the classes to process
+	 * and the distribution of output into multiple XML files.
+	 * 
+	 * @author corwin
+	 */
+	private class CodeGenerator extends GenericCodeGenerator
+	{
+		public CodeGenerator(ProgramDatabase program, Writer output) {
+			super(program, output);
+		}
+		
+		void writeXMLs(File targetDir) throws IOException
+		{
+			for (Iterator<Entity> subjectIter = m_subjects.iterator(); subjectIter.hasNext(); )
+			{
+				Entity entity = subjectIter.next();
+				if (!(entity instanceof Aggregate)) continue;
+				
+				Aggregate agg = (Aggregate)entity;
+				try {
+					Document doc = documentAggregate(agg, null);
+
+					FileOutputStream out = 
+						new FileOutputStream(new File(targetDir,
+								Utils.cleanFullName(agg) + ".xml"));
+
+					m_output.write(Utils.cleanFullName(agg) + "\n");
+					writeXMLDocument(out, doc);
+				}
+				catch (Exception e) {
+					System.err.println("While processing aggregate '"
+							+ agg.getFullName() + "':");
+					e.printStackTrace();
+				}
+			}
+			
+			m_output.close();
+		}
+		
+		/**
+		 * @name Reporting
+		 */
+		//@{
+		
+		/**
+		 * Reports the names of the classes which were successfully wrapped and
+		 * registered.
+		 */
+		public void report(String[] classnames) {
+			Set requested = new HashSet();
+			for (int i = 0; i < classnames.length; ++i)
+				if (!classnames[i].equals("*"))
+					requested.add(classnames[i]);
+			// Print header
+			System.out.println("=================================");
+			if (!m_subjects.isEmpty())
+				System.out.println("| Processed classes:");
+			// Print subjects
+			for (Iterator subjectIter = m_subjects.iterator(); 
+			     subjectIter.hasNext(); ) {
+				// - print name
+				Entity subject = (Entity)subjectIter.next();
+				System.out.println("|   " + subject.getFullName());
+				requested.removeAll(allPossibleNames(subject));
+			}
+			// Print those classes that were not found
+			if (!requested.isEmpty())
+				System.out.println("| Missed classes:");
+			for (Iterator missedIter = requested.iterator();
+			     missedIter.hasNext(); ) {
+				System.out.println("|   " + missedIter.next());
+			}
+			// Print footer
+			System.out.println("=================================");
+			if (!requested.isEmpty())
+				System.err.println("griffin: WARNING - Some components could not be found.");
+		}
+	}
+	
 	/**
 	 * Constructor for XMLWriter.
 	 * Creates an XMLWriter that will create XML documents from 
@@ -74,7 +166,7 @@ public class XMLWriter {
 		m_classes = classList(classListFile);
 		
 		DoxygenAnalyzer dox = new DoxygenAnalyzer(PDBDirectory);
-		m_oldDB = dox.processIndex();		
+		m_oldDB = dox.processIndex();
 		
 		m_toCompare = false;
 	}
@@ -99,8 +191,12 @@ public class XMLWriter {
 		DoxygenAnalyzer doxOld = new DoxygenAnalyzer(oldPDBDirectory);
 		m_oldDB = doxOld.processIndex();
 		
+		/*
 		DoxygenAnalyzer doxNew = new DoxygenAnalyzer(newPDBDirectory);
-		m_newDB = doxNew.processIndex();		
+		m_newDB = doxNew.processIndex();
+		*/
+		System.err.println("*** WARNING: version comparison feature discontinued.");
+		System.err.println("*** WARNING: second program database not used.");
 		
 		m_toCompare = true;
 	}
@@ -150,8 +246,8 @@ public class XMLWriter {
 					("Missing attribute - name", classListFile);
 			}
 			
-			// Add '::' to the name and remove template.
-			String name = "::" + attr.getNodeValue();
+			// Remove template specification from name.
+			String name = attr.getNodeValue();
 			if(name.indexOf("<") != -1) {
 				name = name.substring(0, name.indexOf("<"));
 			}
@@ -1024,7 +1120,31 @@ public class XMLWriter {
 			(getRoutinePrototype(routine));
 		routineElm.appendChild(routineProtoElm);
 		routineProtoElm.appendChild(routineProtoText);
-				
+		
+		// Routine's parameter descriptions
+		for (Iterator<Parameter> paramIter = routine.parameterIterator(); paramIter.hasNext(); ) {
+			Parameter param = paramIter.next();
+			try {
+				Property desc = param.findProperty("description");
+				Element paramElm = doc.createElement("param");
+				Text paramDescText = doc.createTextNode(desc.getValue());
+				paramElm.setAttribute("name", param.getName());
+				paramElm.appendChild(paramDescText);
+				routineElm.appendChild(paramElm);
+			}
+			catch (ElementNotFoundException e) { }
+		}
+		
+		// Routine's 'throws' descriptions
+		for (Iterator<Property> throwsIter = routine.throwsDescIterator(); throwsIter.hasNext(); ) {
+			Property throwsDesc = throwsIter.next();
+			Element throwsElm = doc.createElement("throws");
+			Text throwsDescText = doc.createTextNode(throwsDesc.getValue());
+			throwsElm.setAttribute("exception", throwsDesc.getName());
+			throwsElm.appendChild(throwsDescText);
+			routineElm.appendChild(throwsElm);
+		}
+		
 		// Routine's version.
 		versionDocumentation(version, doc, routineElm);
 				
@@ -1464,13 +1584,14 @@ public class XMLWriter {
 				(sourceanalysis.Entity.Property)iter.next();
 			
 			if (prop.isConcealed()) continue; // skip reserved properties
+			if (prop.getValue().trim().length() == 0) continue; // skip empty properties
 			
 			// The content of the property may be an element by
 			// itself, so it needs to be parsed. 
 			String name = prop.getName().trim().replace(' ', '-');
 			
 			String property = new String("<" + name + ">" + 
-				prop.getValue() + "</" + name + ">");
+				escaping(prop.getValue()) + "</" + name + ">");
 			
 			Node propNode;
 			try {
@@ -1487,13 +1608,29 @@ public class XMLWriter {
 				}
  
 				// Try to parse the property.
+				parser.setErrorHandler(new ErrorHandler() {
+
+					public void error(SAXParseException exception) throws SAXException {
+						throw exception;
+					}
+
+					public void fatalError(SAXParseException exception) throws SAXException {
+						throw exception;
+					}
+
+					public void warning(SAXParseException exception) throws SAXException { 				
+					}
+				});
+				
 				parser.parse(new InputSource(new StringReader(property)));
 				Document tmp = parser.getDocument();
 				propNode = tmp.getFirstChild();
-			} catch(Exception e) { 
+			} catch(Exception e) {
+				System.err.println(" --- Warning: in " + entity.getFullName());
 				System.err.println(" --- Warning: " + name + 
 					" element isn't written legally!");
 				System.err.println(" --- " + property);
+				System.err.println(" --- " + e);
 				
 				
 				//e.printStackTrace();	
@@ -1509,6 +1646,75 @@ public class XMLWriter {
 			//propElm.appendChild(propText);
 			parent.appendChild(cloned);
 		} 	
+	}
+	
+	/**
+	 * Escapes XML special characters in a text string, but
+	 * leaves recognized tags unmodified.
+	 * @param value
+	 * @return
+	 */
+	private String escaping(String value)
+	{
+		String escaped = value;
+		escaped = escapingEliminateTags(escaped);
+		escaped = escapingProtectTags(escaped);
+		escaped = escaped.replace("&", "&amp;");
+		escaped = escaped.replace("<", "&lt;");
+		escaped = escaped.replace(">", "&gt;");
+		escaped = escaped.replace("\b[", "<");
+		escaped = escaped.replace("\b]", ">");
+		escaped = escaped.replace("\b%", "&");
+		return escaped;
+	}
+	
+	private String escapingEliminateTags(String value)
+	{
+		Matcher matcher = eliminatedXMLTags.matcher(value);
+		return matcher.replaceAll("");
+	}
+	
+	/**
+	 * Auxiliary to escaping(), converts the '<' and '>' characters
+	 * of recognized XML tags to '\b[' and '\b]' respectively, so they
+	 * would not be escaped.
+	 * @param value string to undergo escaping
+	 * @return processed string
+	 */
+	private String escapingProtectTags(String value)
+	{
+		Matcher matcher = preservedXMLTags.matcher(value);
+		Map<String,String> tags_subst = new TreeMap<String, String>();
+		while (matcher.find()) {
+			String tag = matcher.group();
+			String prot = tag.replace("<", "\b[").replace(">", "\b]").replace("&", "\b%");
+			tags_subst.put(tag, prot);
+		}
+		String protected_value = value;
+		for (Iterator<Entry<String,String>> it = tags_subst.entrySet().iterator();
+			it.hasNext(); )
+		{
+			Entry<String, String> entry = it.next();
+			protected_value = protected_value.replace(entry.getKey(),
+					entry.getValue());
+		}
+		return protected_value;
+	}
+
+	/**
+	 * Generates a regular expression which matches any of the
+	 * given XML tags (both <tag> and </tag> are matched).
+	 * @param tags tag names
+	 * @return a Pattern object matching any of those tags
+	 */
+	private static Pattern createXMLTagsPattern(String[] tags)
+	{
+		StringBuffer ored = new StringBuffer();
+		for (int i = 0; i < tags.length; i++) {
+			if (ored.length() > 0) ored.append('|');
+			ored.append(tags[i]);
+		}
+		return Pattern.compile("<(/?(" + ored + ")[^>]*)>");
 	}
 	
 	/**
@@ -1537,76 +1743,19 @@ public class XMLWriter {
 		List createdDocs = new ArrayList();
 		List nonCreatedDocs = new ArrayList();
 		
+		File listfile = new File("website.classes.txt");
+		Writer listwriter = new OutputStreamWriter(new FileOutputStream(listfile));
+		
+		CodeGenerator codegen = new CodeGenerator(m_oldDB, listwriter);
+		
 		// Go over all the classes.
 		for(int i = 0; i < m_classes.length; ++i) {
-			
-			// Find the aggregate (class) in both versions (if possible).
-			Aggregate oldAggr = null;
-			Aggregate newAggr = null;
-			
-			try{
-				oldAggr = getAggregateByName(m_classes[i], m_oldDB);	
-			} catch(ElementNotFoundException enfe) {
-				oldAggr = null;
-			} catch(IllegalArgumentException iae) {
-				// If the name of the class is incorrect add it to
-				// the failed classes.
-				nonCreatedDocs.add(new String(m_classes[i] + ".xml" +
-					" (illegal name)"));
-				continue; 
-			}
-			
-			if(m_toCompare) {
-				try{
-					newAggr = getAggregateByName(m_classes[i], m_newDB);	
-				} catch(ElementNotFoundException enfe) {
-					newAggr = null;
-				} catch(IllegalArgumentException iae) {
-					// This exception can't be thrown because the name of
-					// the class is surely a legal name (otherwise it 
-					// would have thrown an exception in the last call to
-					// 'getAggregateByName'.
-					// Therefore if this exception is thrown it is a major
-					// error and the program must stop.
-					System.err.println(iae.getMessage());
-					System.exit(1); 
-				}
-			}
-			
-			// If the class doesn't exist in both versions, add it to
-			// the non documented classes list. Otherwise document it.
-			if(newAggr == null && oldAggr == null) {
-				nonCreatedDocs.add(new String(m_classes[i] + ".xml" +
-					" (not found)"));
-			} else {
-				
-				try{
-				
-					Document doc = documentAggregate(oldAggr, newAggr);
-					FileOutputStream out = 
-						new FileOutputStream(targetDir + m_classes[i].substring(2) + ".xml");
-					
-					//       FIX FILE NAME TO WHAT ??? (::)
-					
-					writeXMLDocument(out, doc);
-					
-					// Add the written document to the list.
-					createdDocs.add(m_classes[i] + ".xml");
-					
-				} catch(Exception e) {
-					// Every exception thrown from this methods is a 
-					// fatal one and therefore the program must end.
-					e.printStackTrace();
-					System.err.println(e.getMessage());
-					System.exit(1); 
-				}
-			}
-			
-			// CREATE A FILE FOR EACH MODULE CONTAINING THE MODULES'S
-			// GLOBAL FUNCTIONS.
-			
+			codegen.collect(m_classes[i]);
 		}
-			
+		
+		codegen.writeXMLs(new File(targetDir));
+		codegen.report(m_classes);
+		/*
 		// Print a log of all created \ non created classes.
 		System.out.println(" --------------------------------------- ");
 		if( createdDocs.size() > 0 ) {
@@ -1626,6 +1775,7 @@ public class XMLWriter {
 			" created,   " + nonCreatedDocs.size() + 
 			" failed.");
 		System.out.println(" --------------------------------------- ");
+		*/
 	}
 	
 	/**
@@ -1673,6 +1823,7 @@ public class XMLWriter {
 			System.exit(1);
 		} 
 		
+		Logger.getLogger("sourceanalysis.dox").setLevel(Level.WARNING);
 		
 		XMLWriter writer;
 		String targetDir;
@@ -1704,7 +1855,7 @@ public class XMLWriter {
 	/** The older version of the program DB */
 	private ProgramDatabase m_oldDB;
 	/** The newer version of the program DB */
-	private ProgramDatabase m_newDB;
+	//private ProgramDatabase m_newDB;
 	
 	/** Whether or not to compare two different DB's */
 	private boolean m_toCompare;
@@ -1714,7 +1865,17 @@ public class XMLWriter {
 	
 	/** The list of modules */
 	private Module[] m_modules;
-	
+
+	/** XML tags recognized (these will be passed without escaping) */
+	static Pattern preservedXMLTags = createXMLTagsPattern(
+			new String[] { "sample", "preformatted", "computeroutput",
+					"ref", "para", "bold", "emphasis", "itemizedlist",
+					"orderedlist", "listitem", "linebreak", "ulink", "anchor",
+					"glossaryref", "classref", "methodref",
+					"xrefsect", "xreftitle", "xrefdescription"});
+	static Pattern eliminatedXMLTags = createXMLTagsPattern(
+			new String[] { "ref" });
+
 	///////////////////////////////////////////////////////////////
 	///////////////////////// -- CLASS -- /////////////////////////
 	///////////////////////////////////////////////////////////////

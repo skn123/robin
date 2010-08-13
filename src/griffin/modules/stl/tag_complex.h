@@ -13,6 +13,7 @@ namespace std {
 
     RealType real();
     RealType imag();
+    bool operator==(const complex&) const;
   };
 
 }

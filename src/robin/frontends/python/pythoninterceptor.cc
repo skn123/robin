@@ -4,13 +4,13 @@
 #include "pythoninterceptor.h"
 
 #include <stdexcept>
-#include <assert.h>
+#include <robin/debug/assert.h>
 
 #include "../../debug/trace.h"
 #include "pythonlowlevel.h"
 #include "pythonerrorhandler.h"
 #include "pythonobjects.h"
-
+#include <robin/reflection/conversiontable.h>
 
 namespace Robin {
 
@@ -41,11 +41,11 @@ bool PythonInterceptor::callback(scripting_element twin,
 	PyObject *pytwin = (PyObject*)twin;
 
 	// Construct a tuple of arguments
-	int nargs = signature.argumentTypes.size();
+	size_t nargs = signature.argumentTypes.size();
 	PyObject *pyargs = PyTuple_New(nargs);
 
-	for (int argi = 0; argi < nargs; ++argi) {
-		Handle<TypeOfArgument> argumentType = signature.argumentTypes[argi];
+	for (size_t argi = 0; argi < nargs; ++argi) {
+		Handle<RobinType> argumentType = signature.argumentTypes[argi];
 
 		PyObject *pyarg = (PyObject*)argumentType->get(args[argi]);
 		PyTuple_SET_ITEM(pyargs, argi, pyarg);
@@ -80,11 +80,23 @@ bool PythonInterceptor::callback(scripting_element twin,
 	returnValue = 0;
 	if (signature.returnType) {
 		// - detect the result type
-		Handle<TypeOfArgument> detectedType =
-			FrontendsFramework::activeFrontend()->detectType(result);
-		if (detectedType != signature.returnType) {
+		Handle<RobinType> detectedType =
+			FrontendsFramework::activeFrontend()->detectType_mostSpecific(result);
+
+		bool isSubType;
+		try {
+			Handle<ConversionRoute> requestedConversions =  ConversionTableSingleton::getInstance()
+				->bestSingleRoute(*detectedType,*signature.returnType);
+			isSubType = requestedConversions->size()==0;
+		} catch (const NoApplicableConversionException &e) {
+			isSubType = false;
+		}
+
+		if (!isSubType) {
 			throw std::runtime_error("method '" + signature.name +
-			                         "' does not return the expected type.");
+			                         "' does not return the expected type.\n"
+									"expected: " + signature.returnType->getTypeName() +"\n"
+									"returned: " + detectedType->getTypeName() + "\n");
 		}
 		// - acquite the adapter for the function's return type
 		Handle<Adapter> adapter = FrontendsFramework::activeFrontend()

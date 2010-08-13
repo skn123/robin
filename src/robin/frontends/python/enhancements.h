@@ -43,6 +43,7 @@ class PyCallableWithInstance
 {
 public:
 	virtual PyObject *callUpon(InstanceObject *self, PyObject *args) = 0;
+	virtual ~PyCallableWithInstance() = 0;
 };
 
 /**
@@ -85,6 +86,7 @@ public:
 		TO_HEX,
 		TO_INT,
 		TO_FLOAT,
+		NEG,
 		/* Mapping slots */
 		GETSUBSCRIPT,
 		SETSUBSCRIPT,
@@ -138,6 +140,8 @@ public:
 	static Protocol& deployerBySlotName(const std::string& slotname);
 
 	static void autoEnhance(ClassObject *type);
+
+	virtual ~Protocol();
 };
 
 /**
@@ -147,8 +151,8 @@ class InstanceMethodFunctor : public PyCallableWithInstance
 {
 public:
 	InstanceMethodFunctor(const std::string& methodname);
+	virtual ~InstanceMethodFunctor();
 	virtual PyObject *callUpon(InstanceObject *self, PyObject *args);	
-
 private:
 	std::string m_methodname;
 };
@@ -161,7 +165,7 @@ class PyObjectNativeFunctor : public PyCallableWithInstance
 {
 public:
 	PyObjectNativeFunctor(PyObject *pycallable);
-	~PyObjectNativeFunctor();
+	virtual ~PyObjectNativeFunctor();
 	virtual PyObject *callUpon(InstanceObject *self, PyObject *args);
 
 private:
@@ -178,29 +182,13 @@ public:
 
 	scripting_element apply(scripting_element value) const;
 
+
 	void reportConversionError() const;
 
 private:
 	Handle<PyCallableWithInstance> m_functor;
 };
 
-/**
- * A conversion implemented in Python with an insight weigher implemented
- * in Python as well.
- */
-class PythonConversionWithWeigher : public PythonConversion
-{
-public:
-	PythonConversionWithWeigher(Handle<PyCallableWithInstance> functor,
-								PyObject *weigher);
-	~PythonConversionWithWeigher();
-
-	using PythonConversion::weight;
-	virtual Weight weight(Insight insight) const;
-
-private:
-	PyObject *m_weigher;
-};
 
 
 } // end of namespace Python

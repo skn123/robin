@@ -23,8 +23,10 @@
 #include <map>
 #include <string>
 #include <exception>
-
-
+#include <set>
+#include "../../pattern/handle.h"
+#include "types.h"
+#include "conversion.h"
 /**
  * @brief Basic reflection objects, manipulators, and registration methods.
  */
@@ -32,15 +34,10 @@ namespace Robin {
 
 class Instance;
 
-/**
- * \@TYPES
- */
-typedef void *scripting_element;
-typedef std::vector<scripting_element> ActualArgumentList;
-typedef scripting_element ActualArgumentArray[];
-typedef std::map<std::string, scripting_element> KeywordArgumentMap;
+
 
 #define NONE ((void*)0)
+
 
 /**
  * @class Callable
@@ -54,14 +51,37 @@ public:
     /**
      * Invokes the Callable object given a list
      * of arguments. Override to implement a callable action.
+     * @param self The 'this' argument
+     * @param args Arguments passed by position
+     * @param kwargs Arguments passed by name
+     * @param owner It means the owner of the memory returned by the function.
+     * 				The object returned by this func might have pointers referencing
+     * 				memory of 'owner'. Thus owner should not be released till the returned
+     * 				object is released.
+     * 				An example of this would be an object returning the value of a field by reference.
+     * 				In those cases the reference count of owner will be increased.
+     * 				NOTICE: this construct should be reviewed, the function itself should be the one
+     * 				to know who the memory belongs to and increase the refcount in the proper place.
+     * 				The caller should not be responsible for this.
      */
     virtual scripting_element 
-    		call(const ActualArgumentList& args, 
+    		call(const Handle<ActualArgumentList>& args,
     		     const KeywordArgumentMap &kwargs, 
     		     scripting_element owner=0) const = 0;
 
-	virtual ~Callable() { }
+
+    virtual Handle<Callable>			preResolveCallable() const = 0;
+
+    virtual Handle<WeightList> weight(const Handle<ActualArgumentList>& args,
+		     const KeywordArgumentMap &kwargs) const = 0;
+
+	virtual ~Callable()= 0;
 };
+
+
+inline Callable::~Callable() {
+
+}
 
 /**
  * @class CallableWithInstance
@@ -77,13 +97,42 @@ public:
     /**
      * Invokes the object with a class instance.
      * Override to implement a callable action.
+     * @param self The 'this' argument
+     * @param args Arguments passed by position
+     * @param kwargs Arguments passed by name
+     * @param owner It means the owner of the memory returned by the function.
+     * 				The object returned by this func might have pointers referencing
+     * 				memory of 'owner'. Thus owner should not be released till the returned
+     * 				object is released.
+     * 				An example of this would be an object returning the value of a field by reference.
+     * 				In those cases the reference count of owner will be increased.
+     * 				NOTICE: this construct should be reviewed, the function itself should be the one
+     * 				to know who the memory belongs to and increase the refcount in the proper place.
+     * 				The caller should not be responsible for this.
      */
     virtual scripting_element
-    		callUpon(Instance& self, 
+    		callUpon(scripting_element self,
 			         const ActualArgumentList& args,
 			         const KeywordArgumentMap &kwargs,
 			         scripting_element owner=0) 
       const = 0;
+
+
+    virtual Handle<WeightList> weightUpon(scripting_element self,
+										const Handle<ActualArgumentList>& args,
+										const KeywordArgumentMap &kwargs) const = 0;
+
+    /**
+     * It returns a CallableWithInstance that is equal to this one
+     * but it works faster if called several times with the same
+     * parameters.
+     * It caches data about the call resolution locally.
+     */
+     virtual Handle<CallableWithInstance>
+			preResolveCallableWithInstance() const = 0;
+
+
+
 
 	virtual ~CallableWithInstance() { }
 };
@@ -96,7 +145,7 @@ public:
  * Thrown when the number or types of the arguments in
  * a function call do not match those expected by the prototype.
  */
-class InvalidArgumentsException : public std::exception
+class InvalidArgumentsException : public CannotCallException
 {
 public:
     InvalidArgumentsException() : m_reason("invalid arguments."){ }
@@ -106,6 +155,7 @@ public:
 private:
     std::string m_reason;
 };
+
 
 } // end of namespace Robin
 

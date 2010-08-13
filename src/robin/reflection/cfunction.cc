@@ -22,7 +22,7 @@
 #include "error_handler.h"
 #include "../debug/trace.h"
 #include <robin/frontends/framework.h>
-
+#include <stdexcept>
 namespace Robin {
 
 
@@ -34,10 +34,20 @@ namespace Robin {
  * an address of a native C function (rather than resolving the
  * symbol from the Library).
  */
-CFunction::CFunction(symbol cfun)
-    : m_functionSymbol(cfun), m_returnIsOwner(true)
+CFunction::CFunction(symbol function, std::string functionName, CFunction::FunctionKind functionKind, std::string className)
+    : m_allow_edge(true), m_functionSymbol(function),  m_returnIsOwner(true),
+    m_functionName(functionName) , m_funcKind(functionKind), m_className(className)
 {
+
 }
+
+CFunction::CFunction(symbol function, std::string functionName, CFunction::FunctionKind functionKind)
+    : m_allow_edge(true), m_functionSymbol(function),  m_returnIsOwner(true),
+    m_functionName(functionName) , m_funcKind(functionKind)
+{
+
+}
+
 
 CFunction::~CFunction()
 {
@@ -46,9 +56,9 @@ CFunction::~CFunction()
 
 /**
  * Sets the expected type of the value returned from
- * the function, as a <classref>TypeOfArgument</classref> object.
+ * the function, as a <classref>RobinType</classref> object.
  */
-void CFunction::specifyReturnType(Handle<TypeOfArgument> type)
+void CFunction::specifyReturnType(Handle<RobinType> type)
 {
     m_returnType = type;
 }
@@ -63,7 +73,7 @@ void CFunction::specifyReturnType(Handle<TypeOfArgument> type)
  * currently ignored.
  */
 void CFunction::addFormalArgument(std::string name, 
-				  Handle<TypeOfArgument> type)
+				  Handle<RobinType> type)
 {
     m_formalArguments.push_back(type);
     m_formalArgumentNames.push_back(name);
@@ -78,7 +88,7 @@ void CFunction::addFormalArgument(std::string name,
  * Declares an anonymous argument (equivalent to
  * <code>addFormalArgument("", type)</code>.
  */
-void CFunction::addFormalArgument(Handle<TypeOfArgument> type)
+void CFunction::addFormalArgument(Handle<RobinType> type)
 {
     addFormalArgument("", type);
 }
@@ -95,10 +105,14 @@ void CFunction::supplyMemoryManagementHint(bool is_return_owner)
 	m_returnIsOwner = is_return_owner;
 }
 
+
+
+
+
 /**
  * Return a list of this function's formal arguments.
  */
-const FormalArgumentList& CFunction::signature() const
+const RobinTypes& CFunction::signature() const
 {
     return m_formalArguments;
 }
@@ -106,7 +120,7 @@ const FormalArgumentList& CFunction::signature() const
 /**
  * Returns the type object identified with the function's return type.
  */
-Handle<TypeOfArgument> CFunction::returnType() const
+Handle<RobinType> CFunction::returnType() const
 {
 	return m_returnType;
 }
@@ -119,99 +133,74 @@ const std::vector<std::string> &CFunction::argNames() const
         return m_formalArgumentNames;
 }
 
+
+
 /**
- * Merges the keyword argument parameters with the actual parameters, taking
- * care to verify sanity of passing
+ * It checks that the number of arguments and their names (if passed by name)
+ * are according to this signature.
  *
- * If kwargs contains an argument that was already supplied in positional args,
- * or an argument that does not exist,
- * an <classref>InvalidArgumentsException</classref> exception will be thrown
+ * @returns true if the arguments are valid
  *
  */
-Handle<ActualArgumentList> CFunction::mergeWithKeywordArguments(const ActualArgumentList &args, 
-                                                        const KeywordArgumentMap &kwargs) const
+bool CFunction::checkProperArgumentsPassed(CallRequest &req) const
 {
-    KeywordArgumentMap appearedArgumentsSet;
-
-    std::vector<unsigned int> appearedArgumentsPositions;
 
 
+	const std::vector<std::string> &namesOfPassedByName =  req.m_argsPassedByName;
+
+	// The amount of parameters needed by this function
+	size_t requiredAmount = this->m_formalArguments.size();
+
+	//Whatever each specific argument was passed
+	std::vector<bool> argumentWasPassed(requiredAmount,false);
+
+    if(req.m_nargs != requiredAmount) {
+			dbg::trace << "Incorrect number of arguments for this signature requested=" << req.m_nargs << " signature_required=" << requiredAmount << dbg::endl;
+            return false;
+    }
 
     // first, go over the nonkw-arguments
-    
-    for(ActualArgumentList::const_iterator aiter = args.begin();                                         aiter != args.end();
-                                           ++aiter)
+    for(size_t index = 0; index<req.m_nargsPassedByPosition; index++)
     {
-            int index = aiter - args.begin();
-            if(index >= m_formalArguments.size()) {
-                    throw InvalidArgumentsException("Too many arguments");
-            }
-            appearedArgumentsSet[m_formalArgumentNames[index]] = *aiter;
-            assert(index == m_formalArgumentNamePositionMap.find(m_formalArgumentNames[index])->second);
-            appearedArgumentsPositions.push_back(index);
+			assert_true(index == m_formalArgumentNamePositionMap.find(m_formalArgumentNames[index])->second);
+            argumentWasPassed[index] = true;
     }
 
 
     // then go over the kwargs, verify that they exist, haven't appeared before
     // and don't shadow a positional argument
-    for(KeywordArgumentMap::const_iterator kwiter = kwargs.begin();
-                                           kwiter != kwargs.end();
+    for(std::vector<std::string>::const_iterator
+											kwiter = namesOfPassedByName.begin();
+                                           kwiter != namesOfPassedByName.end();
                                            ++kwiter)
     {
-            std::string argument_name = kwiter->first;
+            const std::string &argument_name = *kwiter;
 
-            ArgumentPositionMap::const_iterator arg_find = m_formalArgumentNamePositionMap.find(argument_name);
-            
-            if(arg_find == m_formalArgumentNamePositionMap.end()) {
-                    throw InvalidArgumentsException("Tried to call a function with non-existed kwarg '" + argument_name + "'");
+            ArgumentPositionMap::const_iterator argumentPosition = m_formalArgumentNamePositionMap.find(argument_name);
+
+
+            if(argumentPosition == m_formalArgumentNamePositionMap.end()) {
+					dbg::trace << "Unexistant argument " + argument_name + " for this signature" << dbg::endl;
+					return false;
             }
 
-            if(appearedArgumentsSet.find(argument_name) != appearedArgumentsSet.end()) {
-                    throw InvalidArgumentsException("Value for '" + argument_name + "' appears more than once");
+
+
+            //The keyword args are after the regular args
+			int positionInArray = argumentPosition->second;
+
+			dbg::trace << "Parameter " << argument_name << " positioned in " << positionInArray << dbg::endl;
+
+			if(argumentWasPassed[positionInArray]) {
+				dbg::trace << "Passed twice the parameter  " + argument_name + " for this signature" << dbg::endl;
+            	return false;
             }
-
-            appearedArgumentsSet[argument_name] = kwiter->second;
-            appearedArgumentsPositions.push_back(arg_find->second);
+            argumentWasPassed[positionInArray] = true;
     }
-
-    // now verify continuity of the range
-    std::sort(appearedArgumentsPositions.begin(), appearedArgumentsPositions.end());
-
-    int lastFound = -1;
-
-    for(std::vector<unsigned int>::iterator positer = appearedArgumentsPositions.begin();
-                                   positer != appearedArgumentsPositions.end();
-                                   ++positer)
-    {
-        if(*positer != lastFound+1) {
-                throw InvalidArgumentsException("Missing value for argument: " + m_formalArgumentNames[lastFound+1]);
-        }
-        lastFound = *positer;
-    }
-   
-    // now construct the new tuple
-    Handle<ActualArgumentList> merged_args(new ActualArgumentList(appearedArgumentsPositions.size()));
-
-    for(std::vector<unsigned int>::iterator positer = appearedArgumentsPositions.begin();
-                                   positer != appearedArgumentsPositions.end();
-                                   ++positer)
-    {
-            (*merged_args)[*positer] = appearedArgumentsSet.find(m_formalArgumentNames[*positer])->second;
-    }
-
-    return merged_args;
-
+    return true;
 }
 
-/**
- * Directly calls underlying C function with no arguments.
- * The return type is assumed void, and no exceptions are caught.
- * Use only when performance is critical.
- */
-void CFunction::call() const
-{
-	((void(*)())m_functionSymbol)();
-}
+
 
 /**
  * Directly calls underlying C function with a single pointer argument.
@@ -265,7 +254,7 @@ basic_block CFunction::call(const ArgumentsBuffer& args) const
 /**
  * Implements a medium-level call. The arguments in
  * the actual arguments list are translated using the stored
- * <classref>TypeOfArgument</classref>s in the prototype and pushed
+ * <classref>RobinType</classref>s in the prototype and pushed
  * on an internal <classref>ArgumentsBuffer</classref>, which is
  * then passed to the corresponding low-level call. The return value
  * is also translated, provided that a return type was specified.
@@ -281,7 +270,7 @@ scripting_element CFunction::call(const ActualArgumentList& args,
 /**
  * Implements a medium-level call. The arguments in
  * the actual arguments list are translated using the stored
- * <classref>TypeOfArgument</classref>s in the prototype and pushed
+ * <classref>RobinType</classref>s in the prototype and pushed
  * on an internal <classref>ArgumentsBuffer</classref>, which is
  * then passed to the corresponding low-level call. The return value
  * is also translated, provided that a return type was specified.
@@ -289,7 +278,7 @@ scripting_element CFunction::call(const ActualArgumentList& args,
  * <classref>InvalidArgumentsException</classref> is thrown.
  * (this is an optimization version of call(ActualArgumentList) )
  */
-scripting_element CFunction::call(size_t nargs, 
+scripting_element CFunction::call(size_t nargs,
 								  const ActualArgumentArray args,
 								  scripting_element owner) const
 {
@@ -324,6 +313,72 @@ scripting_element CFunction::owned(scripting_element value, scripting_element ow
 	return value;
 }
 
+
+
+std::ostream &operator<<(std::ostream &o,const CFunction &fun)
+{
+
+	size_t parameter_index = 0;
+	bool removeFirstParam;
+	bool removeReturnType;
+	switch(fun.m_funcKind)
+	{
+		case CFunction::GlobalFunction:
+			removeFirstParam = false;
+			removeReturnType = false;
+			break;
+		case CFunction::Method:
+			removeFirstParam = true;
+			removeReturnType = false;
+			break;
+		case CFunction::StaticMethod:
+			removeFirstParam = false;
+			removeReturnType = false;
+			break;
+		case CFunction::Constructor:
+			removeFirstParam = false;
+			removeReturnType = true;
+			break;
+		case CFunction::Destructor:
+			removeFirstParam = false;
+			removeReturnType = true;
+			break;
+		default:
+			throw std::logic_error("Found an unknown type of function\n");
+
+	}
+
+	if(!removeReturnType)
+	{
+		if(fun.m_returnType) {
+			o << *fun.m_returnType << " ";
+		} else {
+			o << "void ";
+		}
+	}
+
+	if(fun.m_className.length() > 0) {
+		o << fun.m_className << "::";
+	}
+
+	if(removeFirstParam) {
+		parameter_index = 1;
+	}
+
+	o  << fun.m_functionName << "(";
+	assert_true(fun.m_formalArguments.size()== fun.m_formalArguments.size());
+	bool shown_first_argument = false;
+	for (; parameter_index< fun.m_formalArguments.size();parameter_index++) {
+		if(shown_first_argument){
+			o << ", ";
+		} else {
+			shown_first_argument = true;
+		}
+		o << *fun.m_formalArguments[parameter_index] << " " << fun.m_formalArgumentNames[parameter_index];
+	}
+	o << ")";
+	return o;
+}
 
 /**
  */

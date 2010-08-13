@@ -14,7 +14,8 @@
 #include "simpleadapters.h"
 #include "simpleconversions.h"
 
-#include <robin/reflection/typeofargument.h>
+#include <robin/reflection/robintype.h>
+#include <robin/reflection/pointer.h>
 #include <robin/reflection/intrinsic_type_arguments.h>
 #include <robin/reflection/class.h>
 #include <robin/reflection/conversiontable.h>
@@ -100,11 +101,11 @@ void SimpleFrontend::initialize() const
 
 
 /**
- * Returns the <classref>TypeOfArgument</classref>
+ * Returns the <classref>RobinType</classref>
  * representing this element's type. The 'element' is assumed to
  * be a <code>Simple::Element *</code>.
  */
-Handle<TypeOfArgument> SimpleFrontend::detectType(scripting_element element)
+Handle<RobinType> SimpleFrontend::detectType_mostSpecific(scripting_element element)
   const
 {
 	Simple::Element *se = reinterpret_cast<Simple::Element *>(element);
@@ -119,29 +120,17 @@ Handle<TypeOfArgument> SimpleFrontend::detectType(scripting_element element)
 	else if (dynamic_cast<Simple::Float*>(se))   return ArgumentFloat;
 	else if (dynamic_cast<PascalStringElement*>(se))  
 		                                         return ArgumentPascalString;
-	else if (sioe = dynamic_cast<SimpleInstanceObjectElement*>(se))
-		return sioe->value->getClass()->getRefArg();
-	else if (sae = dynamic_cast<SimpleAddressElement*>(se))
+	else if ((sioe = dynamic_cast<SimpleInstanceObjectElement*>(se)))
+		return sioe->value->getClass()->getType();
+	else if ((sae = dynamic_cast<SimpleAddressElement*>(se)))
 		return sae->value->getPointerType();
-	else if (sece = dynamic_cast<SimpleEnumeratedConstantElement*>(se))
-		return sece->value.getType()->getArg();
+	else if ((sece = dynamic_cast<SimpleEnumeratedConstantElement*>(se)))
+		return sece->value.getType()->getType();
 	else
 		throw UnsupportedInterfaceException();
 }
 
 
-/**
- * Returns an insight for a type.
- *
- * @note the simple frontend does not supply any insights, so the returned
- * value is always 0.
- */
-Insight SimpleFrontend::detectInsight(scripting_element element) const
-{
-	Insight insight;
-	insight.i_long = 0;
-	return insight;
-}
 
 
 /**
@@ -154,18 +143,14 @@ Insight SimpleFrontend::detectInsight(scripting_element element) const
  *   <li><classref>SimpleInstanceObjectAdapter</classref></li>
  * </ul>
  */
-Handle<Adapter> SimpleFrontend::giveAdapterFor(const TypeOfArgument& type)
-  const
+Handle<Adapter> SimpleFrontend::giveAdapterFor(const RobinType& type) const
 {
 	Type basetype = type.basetype();
 
-	if (type.isPointer()) {
-		Handle<TypeOfArgument> pointedType = 
-			TypeOfArgument::handleMap.acquire(type.pointed());
-		if (pointedType)
-			return Handle<Adapter>(new SimpleAddressAdapter(pointedType));
-		else
-			throw UnsupportedInterfaceException();
+	if (dynamic_cast<const PointerType*> (& type ) ) {
+		const PointerType*pointerType = dynamic_cast<const PointerType*>(&type);
+		Handle<RobinType> pointedType = pointerType->pointed().get_handler();
+		return Handle<Adapter>(new SimpleAddressAdapter(pointedType));
 	}
 	else if (basetype.category == TYPE_CATEGORY_INTRINSIC)
 	{
@@ -268,7 +253,8 @@ const LowLevel& SimpleFrontend::getLowLevel() const
  */
 const Interceptor& SimpleFrontend::getInterceptor() const
 {
-	assert(false);
+	assert_true(false);
+	return *(Interceptor *)0;
 }
 
 /**

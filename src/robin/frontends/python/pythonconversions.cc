@@ -39,33 +39,6 @@ scripting_element IntToFloatConversion::apply(scripting_element value) const
 }
 
 
-/**
- * This conversion is possible iff the Python Long can fit inside the
- * integral C type bounded by min_bits and max_bits.
- *
- * @return the normal weight of this conversion if the conversion is
- *    possible, otherwise Weight::INFINITE.
- */
-Conversion::Weight IntegralTruncate::weight(Insight insight) const
-{
-	if (insight.i_long >= m_min_bits && insight.i_long <= m_max_bits) {
-		return Conversion::weight();
-	}
-	else {
-		return Conversion::Weight::INFINITE;
-	}
-}
-
-/**
- * Truncates long long to long.
- */
-scripting_element IntegralTruncate::apply(scripting_element value) const
-{
-	PyObject *pyvalue = (PyObject *)value;
-	Py_INCREF(pyvalue);
-	return pyvalue;
-}
-
 
 } // end of namespace Python
 

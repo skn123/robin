@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys
-import griffin as conf
+import robinlib.platform as conf
 
 class Configure:
 
@@ -38,12 +38,32 @@ class Configure:
 		             action = "store_false",
 		             default = True,
 		             help = "indicates that -liberty is not available")
-
+		p.add_option("--with-ar", dest="ar",
+				default = "",
+				help = "Dermines which program to use as the ar program in linux")
+		p.add_option("--with-ranlib", dest="ranlib",
+				default = "",
+				help = "Dermines which program to use as the ranlib program in linux")
+		p.add_option("--with-flex", dest="flex",
+			    default = "flex",
+			    help = "Dermines which program to use as the flex program")
+		p.add_option("--includedir", dest="includedir",
+                     default = "",
+                     help = "Determines where to find standard header files")
+		p.add_option("--libdir", dest="libdir",
+                     default = "",
+                     help = "Determines where to find standard library files")
 		p.add_option("-m", "--multi-platform", dest = "multi", 
 		             action = "store_true",
 		             default = False,
 		             help = "extend library names with Python version and "\
 		                    "platform information")
+		
+		p.add_option(
+					 "",  "--doxygen_executable", 
+					 default = "doxygen",
+                     help="The path to the doxygen executable");
+            
 		o = p.parse_args()
 		if o[0].exec_prefix == "same as prefix":
 			o[0].exec_prefix = o[0].prefix
@@ -71,15 +91,21 @@ class Configure:
 		if os.path.isfile(filename):
 			os.unlink(filename)
 
+	def configure_distutils(self):
+		"""
+		It generates a file called 
+		"""
+
 	def configure(self):
 		options, remainder = self._parse_args()
 		print "configure: Creating config.mak and config.py"
 		self.config_mak = open("config.mak", "w")
-		self.config_py = open("src/robin/modules/robinlib/config.py", "w")
+		self.config_py = open("robinlib/config.py", "w")
 		self._set_var("prefix", options.prefix)
 		self._set_var("exec_prefix", options.exec_prefix)
 		self._set_var("python", options.python)
 		self._set_var("jython", options.jython)
+		self._set_var("doxygen_executable", options.doxygen_executable)
 		if options.python.startswith("/"):
 			options.python_exe = options.python
 		elif options.python.startswith("~"):
@@ -99,10 +125,42 @@ class Configure:
 				if rc != 0:
 					print "configure: warning: failed to execute Python "\
 						  "interpreter, command line was: ", cmdline
+		def obtain_from_python(printcode):
+			import commands
+			cmdline = options.python + \
+			  """ -c '""" + printcode + """ ' """
+			rc, ret = commands.getstatusoutput(cmdline)
+			if rc != 0:
+				print "configure: error: failed to execute Python "\
+					  "interpreter, command line was: ", cmdline
+				import sys
+				sys.exit(1)
+			return ret
+
+
+		def obtain_from_python_distutils(printcode):
+			return obtain_from_python("import distutils.sysconfig; " + printcode)
+		
+		self._set_var("INCLUDEPY",   obtain_from_python_distutils( """ print distutils.sysconfig.get_config_var("INCLUDEPY") """))
+		self._set_var("CONFINCLUDEPY",obtain_from_python_distutils(""" print distutils.sysconfig.get_config_var("CONFINCLUDEPY") """))
+		self._set_var("LIBP",  obtain_from_python_distutils("""print distutils.sysconfig.get_config_var("LIBP") """))
+		self._set_var("EXEC_PREFIX",  obtain_from_python_distutils("""print distutils.sysconfig.get_config_var("exec_prefix") """))
+		self._set_var("wordsize", obtain_from_python("""import struct;print struct.calcsize("l") * 8;"""))
+		
 		self._set_var("site-packages", options.py_prefix)
 		# C++ and Java
 		if options.cxx != "":
 			self._set_var("cxx", options.cxx)
+		if options.ar != "":
+			self._set_var("ar", options.ar)
+		if options.ranlib != "":
+			self._set_var("ranlib", options.ranlib)
+		if options.flex != "":
+			self._set_var("flex", options.flex)
+		if options.includedir != "":
+			self._set_var("includedir", options.includedir)
+		if options.libdir != "":
+			self._set_var("libdir", options.libdir)
 		if options.javac != "":
 			self._set_var("javac", options.javac)
 		if conf.arch == "darwin":
@@ -113,9 +171,14 @@ class Configure:
 		# Multi-platform support
 		if options.multi:
 			self._set_var("multi-platform", 1)
+			self._set_var("platspec", obtain_from_python("""import struct; wordsize = struct.calcsize("l")*8;print ["_%i" % wordsize, ""][wordsize == 32] """))
+			self._set_var("pyspec", obtain_from_python("""import sys;print "_py" + sys.version[0] + "_" + sys.version[2]"""))
+		else:
+			self._set_var("platspec","")
+			self._set_var("pyspec","")
 
 		# seems like a bug in Python's module system requires this
-		self._cleanup("src/robin/modules/robinlib/config.pyc")
+		self._cleanup("robinlib/config.pyc")
 
 
 

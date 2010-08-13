@@ -63,6 +63,12 @@ def loadModuleDocumentation(module):
 			Documentation.gopher[module] = Documentation.loaded[docat] \
 				  = cPickle.load(docdb)
 
+	while module.__name__.endswith(".template_classes_robin") \
+			and not Documentation.gopher.has_key(module):
+		import sys
+		module = sys.modules[module.__name__[:-len(".template_classes_robin")]]
+		del sys
+
 	# Load the documentation
 	try:
 		if not Documentation.gopher.has_key(module):
@@ -189,5 +195,6 @@ class Helper(site._Helper):
 		# - extract short name
 		return s.split("::")[-1]
 	
-
-help = Helper()
+import sys
+sys.modules["__main__"].help = Helper()
+del sys

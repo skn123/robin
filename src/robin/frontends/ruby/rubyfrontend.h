@@ -53,9 +53,8 @@ public:
 	 */
 	//@{
 	virtual 
-	Handle<TypeOfArgument> detectType(scripting_element element) const;
+	Handle<RobinType> detectType_mostSpecific(scripting_element element) const;
 
-	virtual Insight detectInsight(scripting_element) const;
 	//@}
 
 	/**
@@ -63,7 +62,7 @@ public:
 	 */
 	//@{
 	virtual
-	Handle<Adapter> giveAdapterFor(const TypeOfArgument& type) const;
+	Handle<Adapter> giveAdapterFor(const RobinType& type) const;
 	//@}
 
 	/**

@@ -1,4 +1,4 @@
-import robin, stl
+import robin_v1_1, stl
 import os.path
-robin.loadLibrary(__name__, os.path.join(robin.here(__file__), 
+robin_v1_1.loadLibrary(__name__, os.path.join(robin_v1_1.here(__file__), 
                                          "libhints.so"))

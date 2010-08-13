@@ -9,7 +9,6 @@ from unittest import TestCase, main
 from exceptions import Exception, ZeroDivisionError
 import random
 
-
 class LanguageTest(TestCase):
 
 	def setUp(self):
@@ -68,17 +67,14 @@ class LanguageTest(TestCase):
 	def testLongAndLongLong(self):
 		from robinlib.platform import wordsize
 		prim = language.Primitives()
-		self.assertEquals(prim.setLong(6), 2)
-		self.assertEquals(prim.setLong(-6), 2)
-		self.assertEquals(prim.setLong(1l << 40), 1)
-		self.assertEquals(prim.setLong(6l), 1)
-		self.assertEquals(prim.setLong(-6l), 1)
-		self.assertEquals(prim.setLong(6l, True), 3)
-		if wordsize == 32:
-			self.assertEquals(prim.setLong(0xffffffffl, True), 4)
-			self.assertEquals(prim.setLong(0x1ffffffff, True), 5)
-		elif wordsize == 64:
-			self.assertEquals(prim.setLong(0xffffffffffffffffl, True), 4)
+		# there is no way to really tell if the user wants to call the long
+		# version or the longlong version
+		#self.assertEquals(prim.setLong(6), 2)
+		#self.assertEquals(prim.setLong(-6), 2)
+		#self.assertEquals(prim.setLong((1<<63), True), 5)
+		if wordsize < 64:
+			self.assertEquals(prim.setLong(1l << 40), 1)
+			self.assertEquals(prim.setLong((1l<<wordsize)+1, True), 5)
 		self.assertEquals(prim.setLong(6, ""), 6)
 		try:
 			prim.setLong(-6, "")
@@ -112,7 +108,7 @@ class LanguageTest(TestCase):
 		cnv.apply(3)
 		try:
 			cnv.apply(0)
-		except RuntimeError, value:
+		except (RuntimeError, ZeroDivisionError), value:
 			self.failUnless(str(value).find(ZeroDivisionError.__name__) >= 0)
 
 	def testExceptions(self):
@@ -197,24 +193,20 @@ class STLTest(TestCase):
 
     def testVectors(self):
         import stl
-        ve =  language.StandardLibrary.UsingVectors([])
         vl =  language.StandardLibrary.UsingVectors([1,2,3])
         vd =  language.StandardLibrary.UsingVectors([1.0,2.0,3.0])
         vs =  language.StandardLibrary.UsingVectors(["one","two","three"])
-        vll = language.StandardLibrary.UsingVectors([1l,2l,5l])
         self.assertEquals(vl.getVectorType(), 1,
                           "vector<double> favoured over vector<long>")
         self.assertEquals(vd.getVectorType(), 0,
                           "vector<long> favoured over vector<double>")
         self.assertEquals(vs.getVectorType(), 2,
                           "vector<string> not favoured over others")
-        self.assertEquals(vll.getVectorType(), 3,
-                          "vector<long long> not favoured over others")
 
     def testVectorOfChar(self):
         import stl
-        ve =  language.StandardLibrary.UsingVectors([])
-        ve.atof(['0','.','5','\0'])
+        ve =  language.StandardLibrary.UsingVectors(['0'])
+        ve.atof(['.','5','\0'])
         self.assertEquals([0.5], ve.get())
         
     def testComplex(self):
@@ -242,51 +234,52 @@ class STLTest(TestCase):
         for i in xrange(len(l)):
             self.failUnless(l[i] == lorig[i] * 2)
     
-	def testVectorIter1(self):
-		values = [0.1,0.2,0.3]
-		uv = language.StandardLibrary.UsingVectors(values)
-		iter1 = uv.getIter()
-		iter2 = uv.getConstIter()
-		for iter in [iter1, iter2]:
-			first = getattr(iter, 'operator*')()
-			self.assertEquals(first, values[0])
-			getattr(iter, 'operator++')()
-			second = getattr(iter, 'operator*')()
-			self.assertEquals(second, values[1])
-
-	def testVectorIter2(self):
-		import robin, stl
-		values = [0.1,0.2,0.3]
-		v = stl.vector[robin.double](values)
-		self.assertEquals(list(stl.gen(v)), values)
-
-	def testStringStream(self):
-		import stl
-		o = language.StandardLibrary.UsingStreams()
+    def testVectorIter1(self):
+    	values = [0.1,0.2,0.3]
+    	uv = language.StandardLibrary.UsingVectors(values)
+    	iter1 = uv.getIter()
+    	iter2 = uv.getConstIter()
+    	for iter in [iter1, iter2]:
+    		first = getattr(iter, 'operator*')()
+    		self.assertEquals(first, values[0])
+    		getattr(iter, 'operator++')()
+    		second = getattr(iter, 'operator*')()
+    		self.assertEquals(second, values[1])
+    
+    def testVectorIter2(self):
+    	import robin, stl
+    	values = [0.1,0.2,0.3]
+    	v = stl.vector[robin.double](values)
+    	self.assertEquals(list(stl.gen(v)), values)
+    
+    def testStringStream(self):
+        import stl
+        o = language.StandardLibrary.UsingStreams()
         d = language.StandardLibrary.UsingStreams.Datum()
         d.setText("robin"); d.num = 9038
-		expected = "%s, %i" % (d.text, d.num)
-		# Using ostringstream
-		go = stl.ostringstream()
-		o.write(go, d)
-		self.assertEquals(go.str(), expected)
-		self.assertEquals(go.tellp(), len(expected))
-		o.read_or_write(go, d)
-		self.assertEquals(go.str(), expected * 2)
-		self.assertEquals(go.tellp(), len(expected) * 2)
-		# Using istringstream
-		expected = ("kimiko", 30094); inp = "%s %i" % expected
-		gi = stl.istringstream(inp)
-		o.read(gi, d)
-		self.assertEquals((d.text, d.num), expected)
-		self.assertEquals(gi.tellg(), len(inp))
+        expected = "%s, %i" % (d.text, d.num)
+        # Using ostringstream
+        go = stl.ostringstream()
+        o.write(go, d)
+        self.assertEquals(go.str(), expected)
+        self.assertEquals(go.tellp(), len(expected))
+        o.read_or_write(go, d)
+        self.assertEquals(go.str(), expected * 2)
+        self.assertEquals(go.tellp(), len(expected) * 2)
+        # Using istringstream
+        expected = ("kimiko", 30094); inp = "%s %i" % expected
+        gi = stl.istringstream(inp*2)
+        o.read(gi, d)
+        self.assertEquals((d.text, d.num), expected)
+        self.assertEquals(gi.tellg(), len(inp))
 
     def testPythonStreams(self):
-    	import StringIO, stl
-    	o = language.StandardLibrary.UsingStreams()
-    	def samples():
-    	    return StringIO.StringIO(), StringIO.StringIO("word 99871")
-    	# Using stl.ifile and stl.ofile
+        import language
+        import StringIO, stl
+        o = language.StandardLibrary.UsingStreams()
+        def samples():
+            return StringIO.StringIO(), StringIO.StringIO("word 99871")
+        # Using stl.ifile and stl.ofile
         go, gi = samples()
         d = language.StandardLibrary.UsingStreams.Datum()
         d.setText("robin"); d.num = 104
@@ -681,69 +674,6 @@ class MemoryManagementTest(TestCase):
 		self.assertEquals(memprof.getCounter(), 0)
 
 
-class ZCompanionTest(TestCase):
-
-	def setUp(self):
-		import site
-		global companion
-		import companion
-
-	def testNumericalPython(self):
-		"""testNumericalPython - checks integration with numpy"""
-		import Numeric
-		import numpy
-
-		MAX_VALUE = 30
-		MAX_LENGTH = 120
-
-		sz = random.choice(xrange(MAX_LENGTH))
-		l = [random.choice(xrange(MAX_VALUE)) for x in xrange(sz)]
-		narray = Numeric.array(l)
-		mt = companion.ManyTimes()
-
-		sum = mt.sum_1D(narray)
-		self.assertEquals(sum, reduce(lambda x,y: x+y, l))
-		zeros = mt.new_1D(sz)
-	
-
-class xParamTest(TestCase):
-
-	def testxParse(self):
-		import language
-		import with_xparam
-		import xparam
-
-		arg = 71
-		dm = xparam.xParse("DataMembers(%i)" % arg)
-		self.assertEquals(type(dm), language.DataMembers)
-		self.assertEquals(dm.square, arg * arg)
-
-	def testSaver(self):
-		import language
-		import with_xparam
-		import xparam
-		import StringIO
-
-		arg = 71
-		dm = language.DataMembers(arg)
-		out = StringIO.StringIO()
-		xparam.Saver(out).save(dm)
-		self.assertEquals(out.getvalue().strip(),
-						  "DataMembers(%i)" % (arg * arg))
-		
-
-class DocumentationTest(TestCase):
-
-	def testFindDatafile(self):
-		import robinhelp
-		# Search for a plain standard module in sys.path (this way we do not
-		# have to create too many files)
-		ospyfile = robinhelp._find_datafile("os", [], FILE_EXTS = [".py"])
-		self.failUnless(ospyfile.name.endswith("/os.py"))
-		# Search for John Smith
-		johnsmithfile = robinhelp._find_datafile("smith.john")
-		self.failUnless(johnsmithfile.read().startswith("MAGIC-PREFACE\n"))
-
 
 class KwargsTest(TestCase):
     
@@ -786,13 +716,18 @@ class KwargsTest(TestCase):
 
         	
 
-# If the tests are run in debug mode, don't include xParam tests which are for release
-import os
-if os.environ.has_key("ROBIN_DEBUG"):
-    del xParamTest
-    del ZCompanionTest
-del os
-
 # If the file was executed as it is, run the tests.
 if __name__ == '__main__':
-	main()
+    import unittest
+    import sys
+    import os
+    testSuite = unittest.TestLoader().loadTestsFromModule(sys.modules["__main__"])
+    if os.environ.has_key('BUILD_NUMBER'):
+	# running from Hudson continous integration engine
+        import xmlrunner
+        fileopened = file('robin_unit_tests_output.xml', 'w')
+        runner = xmlrunner.XMLTestRunner(fileopened)
+        runner.run(testSuite)
+    else:
+        unittest.TextTestRunner().run(testSuite)
+

@@ -22,7 +22,7 @@
 #include <exception>
 
 // Package includes
-#include "typeofargument.h"
+#include "robintype.h"
 #include "callable.h"
 
 
@@ -36,14 +36,14 @@ namespace Robin {
 class Address
 {
 public:
-    Address(Handle<TypeOfArgument> pointedType, void *address);
+    Address(Handle<RobinType> pointedType, void *address);
 
     /**
      * @name Access
      */
     //@{
-    Handle<TypeOfArgument> getPointedType() const;
-    Handle<TypeOfArgument> getPointerType() const;
+    Handle<RobinType> getPointedType() const;
+    Handle<RobinType> getPointerType() const;
     void *asPointer() const;
     //@}
 
@@ -57,7 +57,7 @@ public:
     //@}
 
 private:
-    Handle<TypeOfArgument> m_pointedType;
+    Handle<RobinType> m_pointedType;
     void *m_address;
 };
 

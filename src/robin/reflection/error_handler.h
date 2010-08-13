@@ -2,7 +2,7 @@
 #define ROBIN_REFLECTION_ERROR_HANDLER
 
 // Robin includes
-#include "typeofargument.h"
+#include "robintype.h"
 #include "backtrace.h"
 
 namespace Robin {

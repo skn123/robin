@@ -41,9 +41,6 @@ namespace Robin {
 class Instance
 {
 public:
-    // - these enums are used for syntax sugaring of Instance::scriptify
-    enum Owner { OWNER };
-    enum Borrower { BORROWER };
 
     /**
      * @name Constructors
@@ -82,10 +79,10 @@ public:
 
     //@{
     Handle<Instance> clone() const;
-    Handle<Callable> bindMethod(std::string methodname) const;
 
-    scripting_element scriptify(Owner);
-    scripting_element scriptify(Borrower);
+
+
+    scripting_element scriptify();
 
     void own();
     void disown();

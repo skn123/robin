@@ -30,15 +30,65 @@
 #include "overloadedset.h"
 #include "method.h"
 
+//needed by the preresolving mechanism
+#include "preresolveoverloadedset.h"
+#include "callresolution.h"
 
 namespace Robin {
 
 class Instance;
 class Namespace;
 class CFunction;
-class TypeOfArgument;
+class RobinType;
 
-typedef RegularMethod<OverloadedSet> StandardMethod;
+class StandardMethod : public RegularMethod<OverloadedSet>
+{
+public:
+	/**
+	 * Constructor from method name
+	 */
+	StandardMethod(const char *name);
+
+	/**
+	 * It returns a CachingStandardMethod of this method.
+	 */
+    virtual Handle<CallableWithInstance> preResolveCallableWithInstance() const;
+};
+
+
+/**
+ * It is like a StandardMethod but it caches callsResolutions, suitable for returning
+ * by preResolveCallableWithInstance methods.
+ * It is implemented using PreResolveOverloadedSet
+ */
+class CachingStandardMethod : public RegularMethod<PreResolveOverloadedSet>
+{
+public:
+	/**
+	 * It constructs a CachingStandardMethod by selecting the method to cache.
+	 */
+	CachingStandardMethod(const StandardMethod *standardMethod);
+
+	/**
+	 * The copy constructor makes a new CachingStandardMethod which
+	 * copies the already cached values, but can continue in a different direction.
+	 */
+	CachingStandardMethod(const CachingStandardMethod &cachingStandardMethod);
+
+	/**
+	 * Will return a copy of this CAchingStandardMethod
+	 * using the copy constructor.
+	 * In spite of that, ask yourself why would you cache an already cached method/
+	 */
+    virtual Handle<CallableWithInstance> preResolveCallableWithInstance() const;
+
+};
+
+
+
+
+
+
 
 /**
  * @class Class
@@ -51,18 +101,48 @@ typedef RegularMethod<OverloadedSet> StandardMethod;
  */
 class Class
 {
-public:
+
     /**
      * @name Constructors
      */
 
     //@{
     Class(std::string fullname);
-    void activate(Handle<Class> self);
+
+
+    /**
+     * A reference counter to 'this', it reflects how many Handles
+     * point to this object.
+     *
+	 * It is used so this class can generate handlers to itself
+	 *
+	 * Notice1: that memory used by m_refcount does not need to be released (deleted)
+	 * from this class, Handle itself will delete it when it will be needed.
+	 *
+	 * Notice2: a constructor of this class will initialize the value of
+	 *         the reference counting to 1
+	 *        and at the end of the function create_new the value has to
+	 *        be decreased by one (to make sure the object will not be
+	 *        released accidentally during the construction).
+	 */
+	mutable int *m_refcount;
+    //@}
+
+public:
+	/**
+	 * Does the job of the constructor, but returns a handle
+	 */
+	static Handle<Class> create_new(std::string fullname);
 
     ~Class();
 
-    //@}
+	/**
+	 * Get a handle to this object.
+	 * The handle works coordinated with the rest of the handles created here.
+	 */
+	Handle<Class> get_handler();
+	Handle<Class>  get_handler() const; //some day will have to add a const handler for const correctness
+
     /**
      * @name Access
      */
@@ -87,8 +167,8 @@ public:
 
     //@{
     void addConstructor(Handle<CFunction> ctorimp);
-    void addInstanceMethod(std::string methodname, 
-			   Handle<CFunction> methodimp, bool allow_edge=true);
+    void addInstanceMethod(std::string methodname,
+			   Handle<CFunction> methodimp);
 	void setDestructor(Handle<CFunction> dtorimp);
     void inherit(Handle<Class> baseclass);
 
@@ -104,7 +184,7 @@ public:
     //@{
     Handle<Instance> createInstance() const;
     Handle<Instance> createInstance(const Instance& other) const;
-    Handle<Instance> createInstance(const ActualArgumentList& ctor_args, const KeywordArgumentMap& kwargs)
+    Handle<Instance> createInstance(const Handle<ActualArgumentList>& ctor_args, const KeywordArgumentMap& kwargs)
 		const;
 
 	void destroyInstance(Instance& instance) const;
@@ -114,20 +194,21 @@ public:
      * @name Arguments
      *
      * In order to use this class in other functions'
-     * prototypes, an approperiate <classref>TypeOfArgument</classref>
+     * prototypes, an approperiate <classref>RobinType</classref>
      * object is supplied.
      */
 
     //@{
-    Handle<TypeOfArgument> getPtrArg() const;
-    Handle<TypeOfArgument> getRefArg() const;
-	Handle<TypeOfArgument> getOutArg() const;
+    Handle<RobinType> getPtrType() const;
+    Handle<RobinType> getConstType() const;
+	Handle<RobinType> getType() const;
 	//@}
 
 private:
     Handle<StandardMethod> lookupInstanceMethod(const std::string& methodname)
 		const;
-
+    Handle<StandardMethod> lookupInstanceMethodHere(const std::string& methodname)
+		const;
 protected:
     std::string       m_fullname;
     Handle<Namespace> m_inner;
@@ -140,12 +221,12 @@ protected:
 
     std::vector<Handle<Class> > m_baseClasses;
 
-    Handle<TypeOfArgument> m_ptrarg;
-    Handle<TypeOfArgument> m_refarg;
-    Handle<TypeOfArgument> m_outarg;
-    Handle<TypeOfArgument> m_createdarg;
+    Handle<RobinType> m_ptrtype;
+    Handle<RobinType> m_consttype;
+    Handle<RobinType> m_type;
+    Handle<RobinType> m_createdtype;
 
-    Handle<Class> m_handle_to_self;  // @@@ YUCK
+
 };
 
 /**
@@ -155,7 +236,7 @@ protected:
  * Thrown when trying to invoke a method which does not
  * exist in the class.
  */
-class NoSuchMethodException : public std::exception
+class NoSuchMethodException : public CannotCallException
 {
 public:
     const char *what() const throw();
@@ -174,7 +255,12 @@ public:
 class NoSuchConstructorException : public NoSuchMethodException
 {
 public:
-    const char *what() const throw();
+	const char *what() const throw();
+	NoSuchConstructorException() throw();
+	NoSuchConstructorException(const OverloadingNoMatchException &exp) throw();
+	~NoSuchConstructorException() throw();
+private:
+	std::string m_message;
 };
 
 /**

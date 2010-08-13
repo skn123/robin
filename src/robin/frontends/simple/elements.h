@@ -22,7 +22,7 @@
 #define SIMPLE_INTERPRETER_ELEMENTS_H
 
 #include <string>
-
+#include <ostream>
 
 typedef unsigned long ulong;
 
@@ -52,8 +52,14 @@ namespace Simple {
     public:
 		virtual ~Element();
 
-		virtual void dbgout() const;
+		virtual void dbgout(std::ostream &out) const;
     };
+
+    std::ostream& operator<<(std::ostream& os, const Simple::Element& e);
+
+
+
+
 
     /**
      * @class Integer
@@ -66,7 +72,7 @@ namespace Simple {
     public:
 		int value;
 
-		virtual void dbgout() const;
+		virtual void dbgout(std::ostream &out) const;
     };
 
     /**
@@ -80,7 +86,7 @@ namespace Simple {
     public:
 		long value;
 
-		virtual void dbgout() const;
+		virtual void dbgout(std::ostream &out) const;
     };
 
     /**
@@ -94,7 +100,7 @@ namespace Simple {
     public:
 		float value;
 
-		virtual void dbgout() const;
+		virtual void dbgout(std::ostream &out) const;
     };
 
     /**
@@ -107,6 +113,8 @@ namespace Simple {
     {
     public:
 		char value;
+
+		virtual void dbgout(std::ostream &out) const;
     };
 
     /**
@@ -121,6 +129,8 @@ namespace Simple {
     public:
 		~Object() { }
 		void *value;
+
+		virtual void dbgout(std::ostream &out) const;
     };
 
     /**
@@ -134,7 +144,7 @@ namespace Simple {
     public:
 		std::string value;
 
-		virtual void dbgout() const;
+		virtual void dbgout(std::ostream &out) const;
     };
 
     /**

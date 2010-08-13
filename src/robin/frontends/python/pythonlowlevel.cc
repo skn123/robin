@@ -38,7 +38,7 @@ namespace Python {
 
 
 namespace {
-	std::map<int, PyThreadState *> saved_threads;
+	std::map<long, PyThreadState *> saved_threads;
 }
 
 

@@ -44,15 +44,19 @@ public:
         m_heap.reserve(GARBAGE_HEAP_SIZE);
     }
 
+	inline ~GarbageCollection()
+	{
+		cleanUp();
+	}
+
 	void markForDestruction(scripting_element element);
 	void cleanUp();
 
 private:
 	static const int GARBAGE_HEAP_SIZE = 40;
-	
+
     std::vector<scripting_element> m_heap;
 };
-
 
 } // end of namespace Robin
 

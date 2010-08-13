@@ -1,6 +1,6 @@
-import robin, stl
+import robin_v1_1, stl
 
-robin.loadLibrary(__name__, "./libscribble.so")
+robin_v1_1.loadLibrary(__name__, "./libscribble.so")
 
 s = Scribble()
 import thread

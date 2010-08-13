@@ -30,7 +30,7 @@ public:
 	
 	int erase(const KEY &key);
 	void insert(const pair<KEY,VALUE> &val);
-
+	bool operator==(const map  &) const;
 	~map();
 };
 

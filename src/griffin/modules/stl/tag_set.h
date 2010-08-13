@@ -29,8 +29,9 @@ public:
 	void erase(const T &element);
 
 	iterator find(const T &element);
-	
+	bool operator==(const set &) const;
 	~set();
+	void clear();
 };
 
 }

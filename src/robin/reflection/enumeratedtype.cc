@@ -12,7 +12,7 @@
 
 #include "enumeratedtype.h"
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include "namespace.h"
 
 namespace Robin {
@@ -43,7 +43,7 @@ EnumeratedType::EnumeratedType(std::string name)
 void EnumeratedType::activate(Handle<EnumeratedType> self)
 {
 	// Create the argument object
-	m_arg = Handle<TypeOfArgument>(new TypeOfArgument(self));
+	m_type = RobinType::create_new(self,RobinType::constReferenceKind);
 }
 
 
@@ -158,15 +158,14 @@ std::vector<Handle<EnumeratedConstant> > listOfConstants(Handle<EnumeratedType>
 
 
 /**
- * Returns the <classref>TypeOfArgument</classref>
+ * Returns the <classref>RobinType</classref>
  * applicable for arguments of this enumerated type (without any
  * indirection).
  */
-Handle<TypeOfArgument> EnumeratedType::getArg() const
+Handle<RobinType> EnumeratedType::getType() const
 {
-	bool enum_type_activated = m_arg;
-	assert(enum_type_activated);
-	return m_arg;
+	assert_true(bool(m_type));
+	return m_type;
 }
 
 

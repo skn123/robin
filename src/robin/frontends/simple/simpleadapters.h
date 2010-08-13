@@ -143,13 +143,13 @@ private:
 class SimpleAddressAdapter : public Adapter
 {
 public:
-	SimpleAddressAdapter(Handle<TypeOfArgument> pointedType);
+	SimpleAddressAdapter(Handle<RobinType> pointedType);
 
 	virtual void put(ArgumentsBuffer& argsbuf, scripting_element value);
     virtual scripting_element get(basic_block data);
 
 private:
-	Handle<TypeOfArgument> m_domain;
+	Handle<RobinType> m_domain;
 };
 
 /**

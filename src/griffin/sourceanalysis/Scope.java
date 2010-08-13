@@ -1,7 +1,7 @@
 package sourceanalysis;
 
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.LinkedList;
 
 /**
@@ -47,7 +47,8 @@ public class Scope {
 		m_aliases = new LinkedList();
 		m_friends = new LinkedList();
 	}
-
+	
+	
 	/** @name Push API
 	 * Methods for setting information in the Scope
 	 */
@@ -183,7 +184,7 @@ public class Scope {
 		// Connect member to the owner of this scope
 		mirrorRelationToMember(group, connection);
 	}
-
+	
 	/**
 	 * Adds the Entity 'friend' as a friend of the Entity owning this scope.
 	 * @param friend an entity declared as <code>friend</code> inside the
@@ -201,6 +202,23 @@ public class Scope {
 
 	/*@}*/
 
+	
+	/** @name Extension api
+	 * Methods for declaring that a scope is an extension of another scope.
+	 * Extensions of scopes is used in order not to declare all the elements of the
+	 * old scope again in the new scope (if it is not required).
+	 * 
+	 * A scope which belongs to an Aggregate extends another scope as a result of
+	 * aggregate inhertance.
+	 * 
+	 * A scope which belongs to a group extends another scope as a result of inhertance
+	 * between the aggregates containing the groups. For example a group called "group1"
+	 * which belongs to class A, A extends B and there is a group called "group1" also in B. 
+	 * 
+	 */
+	/*@{*/
+		
+	/*@}*/
 
 	/** @name Pull API
 	 * Methods for accessing the contents of the Scope. Members of the
@@ -220,6 +238,14 @@ public class Scope {
 		return m_routines.iterator();
 	}
 
+	/**
+	 * @return all the routines defined in this scope
+	 */
+	public Collection<ContainedConnection> getRoutines() 
+	{
+		return m_routines;
+	}
+	
 	/**
 	 * Access fields of the Scope.
 	 * @return Iterator and iterator over ContainedConnection, referring to
@@ -281,6 +307,11 @@ public class Scope {
 	public Iterator groupIterator()
 	{
 		return m_groups.iterator();
+	}
+	
+	public Collection<ContainedConnection> getGroups()
+	{
+		return m_groups;
 	}
 	
 	/**
@@ -356,12 +387,12 @@ public class Scope {
 	private Entity m_owner;
 
 	// Private members - internal representation of Scope's contents
-	private List m_routines;
-	private List m_fields;
-	private List m_aggregates;
-	private List m_namespaces;
-	private List m_enums;
-	private List m_aliases;
-	private List m_groups;
-	private List m_friends;
+	private Collection<ContainedConnection> m_routines;
+	private Collection<ContainedConnection> m_fields;
+	private Collection<ContainedConnection> m_aggregates;
+	private Collection<ContainedConnection> m_namespaces;
+	private Collection<ContainedConnection> m_enums;
+	private Collection<ContainedConnection> m_aliases;
+	private Collection<ContainedConnection> m_groups;
+	private Collection<FriendConnection> m_friends;
 }

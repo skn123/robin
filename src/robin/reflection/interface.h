@@ -10,7 +10,7 @@
 #include <pattern/handle.h>
 
 // Robin includes
-#include "typeofargument.h"
+#include "robintype.h"
 
 
 namespace Robin {
@@ -19,8 +19,8 @@ namespace Robin {
 struct Signature
 {
 	std::string name;
-	Handle<TypeOfArgument> returnType;
-	std::vector< Handle<TypeOfArgument> > argumentTypes;
+	Handle<RobinType> returnType;
+	std::vector< Handle<RobinType> > argumentTypes;
 };
 
 /**

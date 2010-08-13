@@ -49,6 +49,13 @@ public:
 	//@}
 
 	/**
+	 * @name Access
+	 */
+
+	//@{
+	virtual bool isZeroWorkConversion() const;
+	//@}
+	/**
 	 * @name Activity
 	 */
 

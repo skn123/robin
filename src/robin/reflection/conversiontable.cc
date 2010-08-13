@@ -16,11 +16,13 @@
 
 // Package includes
 #include "conversiontable.h"
+#include "conversiontree.h"
 #include "class.h"
 #include "enumeratedtype.h"
 #include "overloadedset.h"
 #include "fundamental_conversions.h"
 #include "intrinsic_type_arguments.h"
+#include "const.h"
 
 #include "../debug/trace.h"
 
@@ -34,81 +36,93 @@ namespace Robin {
  */
 class ConversionTable::Cache
 {
+private:
+	struct Key {
+		const RobinType *pSource;
+		const RobinType *pTarget;
+	};
+
+	/**
+	 * CacheTraits is a template parameter for Pattern::Cache
+	 */
+	struct CacheTraits {
+		typedef Cache::Key Key;
+		typedef Handle<ConversionRoute> Value;
+		struct KeyCompareFunctor
+		{
+			bool operator()(const Key& key1, const Key& key2) const
+			{
+				return (key1.pSource < key2.pSource) ||
+					( (key1.pSource == key2.pSource) &&
+					  (key1.pTarget < key2.pTarget) ) ||
+					( (key1.pSource == key2.pSource) &&
+					  (key1.pTarget == key2.pTarget)  );
+			}
+		};
+
+		struct KeyIdentityFunctor
+		{
+			bool operator()(const Key& key1,
+							const Key& key2) const
+			{
+				return (key1.pSource == key2.pSource) &&
+				       (key1.pTarget == key2.pTarget);
+			}
+		};
+
+		struct KeyHashFunctor
+		{
+			size_t operator()(const Key& key) const {
+				return (size_t)key.pSource + (size_t)key.pTarget;
+			}
+		};
+
+
+
+		static inline void dispose(const Key& key)
+		{
+
+		}
+
+		static inline const Handle<ConversionRoute> &getMissedElement()
+		{
+			return Cache::MISSED;
+		}
+
+	}; // end of CacheTraitrs
+
 public:
-	struct Key { 
-		const TypeOfArgument *pSource; 
-		const TypeOfArgument *pTarget;
-		void *insight;
-	};
-
-	class KeyHashFunctor
-	{
-	public:
-		size_t operator()(const Key& key) const {
-			return (size_t)key.pSource + (size_t)key.pTarget + 
-				(size_t)key.insight; 
-		}
-	};
-
-	class KeyIdentityFunctor
-	{
-	public:
-		bool operator()(const ConversionTable::Cache::Key& key1,
-						const ConversionTable::Cache::Key& key2) const
-		{
-			return (key1.pSource == key2.pSource) &&
-			       (key1.pTarget == key2.pTarget) &&
-			       (key1.insight == key2.insight);
-		}
-	};
-
-	class KeyCompareFunctor
-	{
-	public:
-		bool operator()(const Key& key1, const Key& key2) const
-		{
-			return (key1.pSource < key2.pSource) ||
-				( (key1.pSource == key2.pSource) &&
-				  (key1.pTarget < key2.pTarget) ) ||
-				( (key1.pSource == key2.pSource) && 
-				  (key1.pTarget == key2.pTarget) && 
-				  (key1.insight < key2.insight) );
-		}
-	};
-
-	typedef Pattern::Cache<Key, Handle<ConversionRoute>, Cache> Internal;
-	Internal actual_cache;
+	Pattern::Cache<CacheTraits> actual_cache;
 
 	/**
 	 * Store an entry in the cache.
 	 */
-	inline void remember(const TypeOfArgument& source, 
-						 const TypeOfArgument& target,
-						 Insight insight,
+	inline void remember(const RobinType& source,
+						 const RobinType& target,
 						 Handle<ConversionRoute> chosenRoute)
 	{
-		const Key key = { &source, &target, insight.i_ptr };
+
+		const Key key = { &source, &target};
 		actual_cache.remember(key, chosenRoute);
 	}
 
 	/**
 	 * Fetch an entry from the cache.
 	 */
-	inline Handle<ConversionRoute> recall(const TypeOfArgument& source, 
-										  const TypeOfArgument& target,
-										  Insight insight) const
+	inline Handle<ConversionRoute> recall(const RobinType& source,
+										  const RobinType& target) const
 	{
-		const Key key = { &source, &target, insight.i_ptr };
+		const Key key = { &source, &target };
 		return actual_cache.recall(key);
 	}
 
 
 	inline void flush() { actual_cache.flush(); }
 
-	static inline void dispose(const Key& key) { }
-
-
+	//The path was stored in the cache as an impossible conversion
 	static const Handle<ConversionRoute> IMPOSSIBLE;
+
+	//It will be returned when the conversion is not found in the cache
 	static const Handle<ConversionRoute> MISSED;
 };
 
@@ -140,16 +154,40 @@ ConversionTable::~ConversionTable()
 }
 
 /**
- * Adds a connection between two types through a conversion. 
+ * Adds a connection between two types through a conversion.
  * The source and target types are both taken from the
  * Conversion object itself, as well as the weight which is stored there by
  * nature.
  */
 void ConversionTable::registerConversion(Handle<Conversion> edge)
 {
-	dbg::trace << "// @REGISTER: conversion from "
-			   << &*(edge->sourceType()) << " to " << &*(edge->targetType())
-			   << dbg::endl;
+
+	/*
+	 * Each conversion should have a source and a target RobinType.
+	 * Edges entering hypergeneric types are not allowed because of
+	 * danger of generating loops, anyway there is always a path which
+	 * goes first to a specific type and then does the conversions.
+	 * The only exception to the hypergenric rule is converting to
+	 * the const type of the source,
+	 */
+#	ifndef NDEBUG
+		RobinType *src = edge->sourceType().pointer();
+		RobinType *tgt = edge->targetType().pointer();
+		assert_true(src);
+		assert_true(tgt);
+		assert_true(!tgt->isHyperGeneric() ||
+				(dynamic_cast<ConstType*>(tgt) &&
+				 &dynamic_cast<ConstType*>(tgt)->basetype() == src)
+			);
+#	endif
+
+	dbg::trace << "Add conversion: '"
+			   << *(edge->sourceType()) << "' to '" << *(edge->targetType())
+			   << "'" << dbg::endl;
+
+
+
+
 	/* Create an adjacency record */
 	Adjacency adj;
 	adj.targetNode = edge->targetType();
@@ -170,7 +208,7 @@ void ConversionTable::registerConversion(Handle<Conversion> edge)
  * Adds an exit edge. An 'edge conversion' is a conversion with only one
  * incident node, the other end pointing to "empty space". An edge conversion
  * incident with a type implies that <b>every time</b> a value of this type
- * is returned from a function call, the associated conversion should be 
+ * is returned from a function call, the associated conversion should be
  * applied (with some exceptions allowed).
  */
 void ConversionTable::registerEdgeConversion(Handle<Conversion> exit)
@@ -187,7 +225,7 @@ void ConversionTable::registerEdgeConversion(Handle<Conversion> exit)
  * a lonely node with a degree of 0.
  */
 const ConversionTable::AdjacencyList&
-ConversionTable::getAdjacentTo(const TypeOfArgument& node) const
+ConversionTable::getAdjacentTo(const RobinType& node) const
 {
 	static AdjacencyList the_empty_adjacency_list;  /* returned by default */
 
@@ -205,8 +243,8 @@ ConversionTable::getAdjacentTo(const TypeOfArgument& node) const
  * Returns an edge conversion incident with the requested type.
  * A null handle is returned if no such conversion was previously registered.
  */
-Handle<Conversion> 
-ConversionTable::getEdgeConversion(const TypeOfArgument& node) const
+Handle<Conversion>
+ConversionTable::getEdgeConversion(const RobinType& node) const
 {
 	exitmap::const_iterator existing = m_edgeconv.find(&node);
 
@@ -219,206 +257,90 @@ ConversionTable::getEdgeConversion(const TypeOfArgument& node) const
 }
 
 
-/**
- * Returns the best path between two types, along edges
- * which refer to available conversions, in terms of conversion
- * weights (Conversion::Weight).
- *
- * @param from source type
- * @param to target type
- */
-Handle<ConversionRoute> 
-ConversionTable::bestSingleRoute(const TypeOfArgument& from,
-								 const TypeOfArgument& to) const
+Handle<ConversionRoute>
+ConversionTable::bestSingleRoute(const RobinType& from,
+								 const RobinType& to) const
 {
-	Insight insight;
-	insight.i_long = 0;
-	return bestSingleRoute(from, to, insight);
-}
 
-/**
- * Returns the best path between two types, along edges
- * which refer to available conversions, in terms of conversion
- * weights (Conversion::Weight).
- *
- * @param from source type
- * @param to target type
- * @param insight some information about the *value* which is being converted
- */
-Handle<ConversionRoute> 
-ConversionTable::bestSingleRoute(const TypeOfArgument& from,
-								 const TypeOfArgument& to,
-								 Insight insight) const
-{
+
+
+	dbg::trace << "Trying to convert from <" << from  << "> (" << &from << ")"
+								<< " to <" << to	   << "> (" << &to	<< ")"
+								<< dbg::endl;
+	dbg::IndentationGuard guard(dbg::trace);
+
 	/* - first we might have some luck and the requested route may be in
 	 *   the cache */
-	Handle<ConversionRoute> hcached;
-	if (hcached = m_cache->recall(from, to, insight))
+	Handle<ConversionRoute> hcached = m_cache->recall(from, to);
+	if (hcached != Cache::MISSED)
+	{
 		if (hcached == Cache::IMPOSSIBLE)
 			throw NoApplicableConversionException(&from, &to);
 		else
 			return hcached;
+	}
+
+	/*
+	 * If the route was not found in the cache, just generate the
+	 * conversion tree.
+	 */
+	Handle<ConversionTree> previousStepMap = generateConversionTree(from,&to,to.isConstant());
+
+
+	try {
+		/* Reconstruct the path from the source to the destination */
+		Handle<ConversionRoute> hroute( previousStepMap->generateRouteTo(to.get_handler()));
+
+#		ifndef NDEBUG
+			dbg::trace("@TYPE-DISTANCE: ", hroute->totalWeight());
+#		endif
+
+		m_cache->remember(from, to, hroute);
+		return hroute;
+	} catch(const NoApplicableConversionException &exc)
+	{
+		m_cache->remember(from, to,  Cache::IMPOSSIBLE);
+#		ifndef NDEBUG
+			dbg::trace << "@TYPE-DISTANCE: IMPOSSIBLE" << dbg::endl;
+#		endif
+		throw;
+	}
+}
+
+Handle<ConversionTree> ConversionTable::generateConversionTree(const RobinType &source,
+												const RobinType *stopType,
+												bool constConversionTree) const
+{
 
 	/* Use Dijkstra's shortest-path algorithm (modified).
 	 * Refer to Cormen's "Introduction to Algorithms", sub-topic 25.2
 	 * for details */
-	AssocHeap<Conversion::Weight, const TypeOfArgument *> Q;
-	std::map<const TypeOfArgument *, Handle<Conversion> > pred;
-	std::map<const TypeOfArgument *, Conversion::Weight>  d;
-	                                      // 'd' maps d[u] if d[u] < INFINITE.
+	AssocHeap<Conversion::Weight, const RobinType *> bestWeightHeap;
+	Handle<ConversionTree> previousStepMap(new ConversionTree(source));
+	TypeToWeightMap  distanceMap;
+										  // 'd' maps d[u] if d[u] < INFINITE.
 
-	dbg::trace << "// trying to go from " << &from << " to " << &to 
-			   << dbg::endl;
+	distanceMap[&source] = Conversion::Weight::ZERO;
+	bestWeightHeap.insert(Conversion::Weight::ZERO, &source);
 
-	/* Initialize-Single-Source(G, s) */
-	for (adjmap::const_iterator node_i = m_graph.begin();
-		 node_i != m_graph.end(); ++node_i) {
-		Q.insert(Conversion::Weight::INFINITE, node_i->first);
-	}
-	if (Q.containsElement(&from))
-		Q.decreaseKey(&from, Conversion::Weight::ZERO);
-	else
-		Q.insert(Conversion::Weight::ZERO, &from);
-	/* While Q not empty */
-	while (Q.size() != 0) {
-		/* u <- Extract-Min(Q) */
-		const TypeOfArgument *u;
-		Conversion::Weight du;
-		Q.extractMinimum(du, u);
-		d[u] = du;
-		/* for each vertex v in Adj[u] */
-		AdjacencyList adj_u = getAdjacentTo(*u);
-		addTrivialConversions(adj_u, u);
-		for (AdjacencyList::const_iterator v_i = adj_u.begin();
-			 v_i != adj_u.end(); ++v_i) {
-			const TypeOfArgument *v = &*(v_i->targetNode);
-			/* do Relax(u, v, w) */
-			Conversion::Weight dv;
-			dv = (d.find(v) != d.end()) ? d.find(v)->second 
-				                        : Conversion::Weight::INFINITE;
+	/* While bestWeightHeap not empty */
+	while (bestWeightHeap.size() != 0) {
+		/* u <- Extract-Min(bestWeightHeap) */
+		const RobinType *u;
+		Conversion::Weight reachedWeight;
+		bestWeightHeap.extractMinimum(reachedWeight, u);
 
-			Conversion::Weight w = (u == &from) ? v_i->edge->weight(insight)
-				                                : v_i->edge->weight();
-
-			if (du + w < dv) {
-				pred[v] = v_i->edge /* (u, v) */;
-				d[v] = dv = du + w;
-				// - adjust Q to reflect changes in key
-				if (Q.containsElement(v))		Q.decreaseKey(v, dv);
-				                     else		Q.insert(dv, v);
-			}
+		if(0 != stopType && u->getID() == stopType->getID())
+		{
+			break;
 		}
+
+		u->proposeConversionContinuations(reachedWeight,bestWeightHeap,constConversionTree,distanceMap,*previousStepMap);
 	}
-
-	/* Was any path found at all? */
-	if (&to != &from && pred.find(&to) == pred.end()) {
-		dbg::trace << "// @TYPE-DISTANCE: infinite" << dbg::endl;
-		m_cache->remember(from, to, insight, Cache::IMPOSSIBLE);
-		throw NoApplicableConversionException(&from, &to);
-	}
-
-	/* Reconstruct the path from the source to the destination */
-	Handle<ConversionRoute> hroute(new ConversionRoute);
-	ConversionRoute& route = *hroute;
-
-	for (const TypeOfArgument *tail = &to; tail != &from; 
-		 tail = &*(route[0]->sourceType())) {
-		/* Append edge (pi[tail], tail) at beginning of path */
-		route.insert(route.begin(), pred[tail]);
-	}
-
-#ifndef NDEBUG
-	dbg::trace("@TYPE-DISTANCE: ", route.totalWeight(insight));
-#endif
-
-	m_cache->remember(from, to, insight, hroute);
-	return hroute;
+	return previousStepMap;
 }
 
-/**
- * Finds best conversion paths to all the elements in
- * the source list, which end up in corresponding elements in the
- * target list. Elements are independant of each other.
- */
-void
-ConversionTable::bestSequenceRoute(const std::vector<Handle<TypeOfArgument> >&
-								   from_seq,
-								   const std::vector<Handle<TypeOfArgument> >&
-								   to_seq,
-								   std::vector<Handle<ConversionRoute> >&
-								   result_seq) const
-{
-	std::vector<Handle<TypeOfArgument> >::const_iterator from_it, to_it;
-	std::vector<Handle<ConversionRoute> >::iterator res_it;
 
-	result_seq.resize(std::min(from_seq.size(), to_seq.size()));
-	res_it = result_seq.begin();
-
-	for (from_it = from_seq.begin(), to_it = to_seq.begin();
-		 from_it != from_seq.end() && to_it != to_seq.end();
-		 ++from_it, ++to_it) {
-		/* Calculate each 'best' set of conversions */
-		*(res_it++) = bestSingleRoute(**from_it, **to_it);
-	}
-}
-
-/**
- * Finds best conversion paths to all the elements in
- * the source list, which end up in corresponding elements in the
- * target list. Elements are independant of each other.
- */
-void
-ConversionTable::bestSequenceRoute(const std::vector<Handle<TypeOfArgument> >&
-								   from_seq,
-								   const std::vector<Insight>& insight_seq,
-								   const std::vector<Handle<TypeOfArgument> >&
-								   to_seq,
-								   std::vector<Handle<ConversionRoute> >&
-								   result_seq) const
-{
-	std::vector<Handle<TypeOfArgument> >::const_iterator from_it, to_it;
-	std::vector<Insight>::const_iterator insight_it;
-	std::vector<Handle<ConversionRoute> >::iterator res_it;
-
-	result_seq.resize(std::min(from_seq.size(), to_seq.size()));
-	res_it = result_seq.begin();
-
-	for (from_it = from_seq.begin(), to_it = to_seq.begin(), 
-			 insight_it = insight_seq.begin();
-		 from_it != from_seq.end() && to_it != to_seq.end() &&
-			 insight_it != insight_seq.end();
-		 ++from_it, ++to_it, ++insight_it) {
-		/* Calculate each 'best' set of conversions */
-		*(res_it++) = bestSingleRoute(**from_it, **to_it, *insight_it);
-	}
-
-	assert(from_it == from_seq.end());
-	assert(to_it == to_seq.end());
-	assert(insight_it == insight_seq.end());
-}
-
-/**
- * Finds best conversion paths to all the elements in
- * the source list, which end up in corresponding elements in the
- * target list. Elements are independant of each other.
- * (this is an optimization version using less vector that the previous
- * one).
- */
-void ConversionTable::
-bestSequenceRoute(Handle<TypeOfArgument> from_seq[],
-				  const std::vector<Handle<TypeOfArgument> >& to_seq,
-				  Handle<ConversionRoute> result_seq[]) const
-{
-	std::vector<Handle<TypeOfArgument> >::const_iterator to_it;
-	Handle<TypeOfArgument> *from_it;
-	Handle<ConversionRoute> *res_it;
-
-	for (from_it = from_seq, to_it = to_seq.begin(), res_it = result_seq;
-		 to_it != to_seq.end(); ++from_it, ++to_it) {
-		/* Calculate each 'best' set of conversions */
-		*(res_it++) = bestSingleRoute(**from_it, **to_it);
-	}
-}
 
 /**
  * Flushes internal caches, so the next time a conversion is requested,
@@ -429,27 +351,14 @@ void ConversionTable::forceRecompute()
 	m_cache->flush();
 }
 
-/**
- * Adds trivial conversions to the given adjacency list.
- */
-void ConversionTable::addTrivialConversions(
-		AdjacencyList &list, const TypeOfArgument *from) const
-{
-	Adjacency adj;
-	adj.targetNode = ArgumentScriptingElementNewRef;
-	adj.edge = Handle<Conversion>(new TrivialConversion);
-	if (m_graph.find(from) != m_graph.end())
-		adj.edge->setSourceType(
-				m_graph.find(from)->second.begin()->edge->sourceType());
-	adj.edge->setTargetType(adj.targetNode);
-	list.push_back(adj);
-}
+
+
 
 
 /**
  */
 NoApplicableConversionException::NoApplicableConversionException
-(const TypeOfArgument *fr, const TypeOfArgument *t)
+(const RobinType *fr, const RobinType *t)
 	: from(fr), to(t) { }
 
 /**

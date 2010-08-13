@@ -23,7 +23,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <assert.h>
+#include <robin/debug/assert.h>
 
 /**
  * @class AssocHeap
@@ -47,7 +47,7 @@ public:
 
 	//@{
 	void insert(KeyType key, ElementType e);
-	void decreaseKey(ElementType e, KeyType newkey);
+	void updateWeight(ElementType e, KeyType newkey);
 	int size() const;
 
 	//@}
@@ -89,7 +89,7 @@ private:
 
 	heaparray m_heap;
 	elementassoc m_assoc;
-	int m_size;
+	size_t m_size;
 };
 
 
@@ -133,20 +133,31 @@ void AssocHeap<KeyType, ElementType>::insert(KeyType key, ElementType e)
 }
 
 /**
- * Modifies a key in the heap to a smaller value,
- * correcting the heap's structure to maintain consistency.
+ * It updates the weight of an element in the heap if the
+ * new proposed weight is lighter than the stored one or if
+ * there is no stored weight for the element.
+ *
  */
 template < class KeyType, class ElementType >
-void AssocHeap<KeyType, ElementType>::decreaseKey(ElementType e,
+void AssocHeap<KeyType, ElementType>::updateWeight(ElementType e,
 												  KeyType newkey)
 {
 	/* Find the node which key should be decreased */
 	typename elementassoc::iterator ei = m_assoc.find(e);
-	assert(ei != m_assoc.end());
+	if(ei == m_assoc.end())
+	{
+		insert(newkey,e);
+		return;
+	}
 	int node = ei->second;
 
+	/* make sure key is really smaller */
+	if(m_heap[node].first < newkey)
+	{
+		return;
+	}
+
 	/* Set the new key value */
-	assert(newkey < m_heap[node].first);  /* make sure key is really smaller */
 	m_heap[node].first = newkey;
 
 	/* Heapify up the heap to regain the heaporder */
@@ -162,7 +173,7 @@ void AssocHeap<KeyType, ElementType>::decreaseKey(ElementType e,
 template < class KeyType, class ElementType >
 KeyType AssocHeap<KeyType, ElementType>::minimum() const
 {
-	assert(size() > 0);
+	assert_true(size() > 0);
 	return m_heap[0].first;
 }
 
@@ -173,7 +184,7 @@ KeyType AssocHeap<KeyType, ElementType>::minimum() const
 template < class KeyType, class ElementType >
 ElementType AssocHeap<KeyType, ElementType>::minimal() const
 {
-	assert(size() > 0);
+	assert_true(size() > 0);
 	return m_heap[0].second;
 }
 
@@ -186,7 +197,7 @@ template < class KeyType, class ElementType >
 void AssocHeap<KeyType, ElementType>::minimum(KeyType& okey, ElementType& oe)
 	const
 {
-	assert(size() > 0);
+	assert_true(size() > 0);
 	okey = m_heap[0].first;
 	oe = m_heap[0].second;
 }
@@ -258,7 +269,7 @@ KeyType AssocHeap<KeyType, ElementType>::getAssociatedKey(ElementType e) const
 {
 	/* Find the node index containing that element */
 	typename elementassoc::const_iterator fi = m_assoc.find(e);
-	assert(fi != m_assoc.end());
+	assert_true(fi != m_assoc.end());
 	/* Fetch the key from the heap */
 	return m_heap[fi->second].first;
 }

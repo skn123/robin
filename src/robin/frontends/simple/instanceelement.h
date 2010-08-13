@@ -46,7 +46,7 @@ public:
 	SimpleInstanceObjectElement();
 	SimpleInstanceObjectElement(Handle<Instance> instance);
 
-	virtual void dbgout() const;
+	virtual void dbgout(std::ostream &out) const;
 
 	Handle<Instance> value;
 };
@@ -61,7 +61,7 @@ class SimpleAddressElement : public Simple::Element
 public:
 	SimpleAddressElement(Handle<Address> address);
 
-	virtual void dbgout() const;
+	virtual void dbgout(std::ostream &out) const;
 
 	Handle<Address> value;
 };

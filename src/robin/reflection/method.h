@@ -23,22 +23,30 @@ namespace Robin {
  * @class RegularMethod
  * @nosubgrouping
  *
- * A simple template; based on a Callable class, provides
- * a trivial extension into a CallableWithInstance. Being given an
- * instance object, it prepends it to the argument list. The underlying
- * function is assumed to accept an instance object as the first
+ * RegularMethod is a CallableWithInstance based on a underlying Callable
+ * object. To perform the call with an instance object, it prepends it to the argument list.
+ * The underlying function is assumed to accept an instance object as the first
  * argument.
+ * It is templated because it can extend any callable, the class CallableType is
+ * supposed to inherit from Callable.
+ *
  */
-template < class CallableBase >
-class RegularMethod : public CallableBase, public CallableWithInstance
+template < class CallableType >
+class RegularMethod :  public CallableWithInstance
 {
 public:
+	/**
+	 * The underlying callable object
+	 */
+	Handle<CallableType> m_callable;
+
 	/**
 	 * @name Constructors
 	 */
 
 	//@{
-	RegularMethod();
+
+		inline RegularMethod(const Handle<CallableType> &callable);
 	//@}
 
 	virtual ~RegularMethod();
@@ -48,17 +56,17 @@ public:
 	 */
 
 	//@{
-	virtual scripting_element callUpon(Instance& self,
-									   const ActualArgumentList& args, 
+	virtual scripting_element callUpon(scripting_element myself,
+									   const ActualArgumentList& args,
                                        const KeywordArgumentMap &kwargs,
                                        scripting_element owner=0) const;
+
+    virtual Handle<WeightList> weightUpon(scripting_element self,
+										const Handle<ActualArgumentList>& args,
+										const KeywordArgumentMap &kwargs) const;
+
 	//@}
 };
-
-namespace RegularMethodInternals {
-	void release(scripting_element element);
-	scripting_element instanceElement(Instance& self);
-}
 
 
 } // end of namespace Robin

@@ -1,11 +1,11 @@
 INPUT = tag_vector.h tag_pair.h tag_map.h tag_list.h tag_set.h tag_complex.h \
-        tag_stdint.h
+        tag_stdint.h tag_bitset.h
 
 GENERATE_HTML = No
+SEARCHENGINE = No
 GENERATE_LATEX = No
 GENERATE_XML = Yes
 XML_OUTPUT = ../../../../build/dox-xml
 GENERATE_TAGFILE = ../../../../build/stl.tag
 
 EXTRACT_ALL = Yes
-

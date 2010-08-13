@@ -13,11 +13,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include <iostream>
 
 // Robin includes
+#include <robin/debug/assert.h>
 #include <robin/reflection/callable.h>
 #include <robin/reflection/cfunction.h>
 #include <robin/reflection/namespace.h>
@@ -33,6 +33,9 @@
 
 
 #include <robin/debug/trace.h>
+
+
+using namespace Robin;
 
 extern "C" void yylex();
 extern "C" void yyrestart(FILE *);
@@ -69,7 +72,7 @@ namespace {
 	}
 
 	template < class ELEM, class LOOK, class ITER >
-	Handle<ELEM> multipleLookup(ITER begin, ITER end, LOOK lookUp, 
+	Handle<ELEM> multipleLookup(ITER begin, ITER end, LOOK lookUp,
 								const std::string& name)
 	{
 		for (ITER iter = begin; iter != end; ++iter) {
@@ -84,12 +87,6 @@ namespace {
 	}
 
 	const std::string libdir = "lib/linux/";
-}
-
-std::ostream& operator<<(std::ostream& os, const Simple::Element& e)
-{
-	e.dbgout();
-	return os;
 }
 
 
@@ -145,7 +142,7 @@ int InteractiveSyntaxAnalyzer::var_lookup(const char *name)
 class NotAnInstanceException : public std::exception
 {
 public:
-	const char *what() const throw() 
+	const char *what() const throw()
 	{ return "instance required for method invocation."; }
 };
 
@@ -153,13 +150,13 @@ public:
 
 typedef std::vector<Simple::Element*> PersonalArgumentList;
 
-struct InteractiveSyntaxAnalyzer::Imp 
+struct InteractiveSyntaxAnalyzer::Imp
 {
 	enum Activity { ACT_NOTHING, ACT_FUNCALL, ACT_IMPORT } activity;
 
 	bool args_mode;
 	char *function;
-	Robin::ActualArgumentList args;
+	Handle<Robin::ActualArgumentList> args;
 	PersonalArgumentList personal_args;
 	Simple::Element *personal_instance;
 	int destination;
@@ -168,12 +165,18 @@ struct InteractiveSyntaxAnalyzer::Imp
 	Handle<Robin::EnumeratedType> locals;
 	Simple::Element *cells[STORAGE_CELLS];   /* these are like variables */
 
-	Simple::Element * _;  /* result of last non-void call 
+	Simple::Element * _;  /* result of last non-void call
 							 (name inspired by Python and Perl) */
 
 	InteractiveSyntaxAnalyzer::Imp *parent;
 
 	void argument(Simple::Element *);
+
+	inline Imp()
+		: args(new Robin::ActualArgumentList())
+	{
+
+	}
 };
 
 /**
@@ -227,7 +230,7 @@ void InteractiveSyntaxAnalyzer::identifier(const char *name)
 			else {
 				// This is the name of an enum
 				imp->locals = multipleLookup<Robin::EnumeratedType>
-					(imp->globals.begin(), imp->globals.end(), lookupEnumIn, 
+					(imp->globals.begin(), imp->globals.end(), lookupEnumIn,
 					 name);
 			}
 		}
@@ -241,7 +244,7 @@ void InteractiveSyntaxAnalyzer::identifier(const char *name)
 void InteractiveSyntaxAnalyzer::Imp::argument(Simple::Element *arg)
 {
 	if (args_mode) {
-		args.push_back((Robin::scripting_element)arg);
+		args->push_back((Robin::scripting_element)arg);
 		personal_args.push_back(arg);
 	}
 	else {
@@ -305,9 +308,9 @@ void InteractiveSyntaxAnalyzer::reuse_address(int cell)
 	Simple::String *lvalue_string;
 	Robin::Address *address = NULL;
 
-	if (lvalue_int = dynamic_cast<Simple::Integer*>(lvalue))
+	if ((lvalue_int = dynamic_cast<Simple::Integer*>(lvalue)))
 		address = new Robin::Address(Robin::ArgumentInt, &(lvalue_int->value));
-	else if (lvalue_string = dynamic_cast<Simple::String*>(lvalue))
+	else if ((lvalue_string = dynamic_cast<Simple::String*>(lvalue)))
 		address = new Robin::Address(Robin::ArgumentCString,
 									 new const char *(lvalue_string->value.c_str()));
 
@@ -348,7 +351,7 @@ void InteractiveSyntaxAnalyzer::enter()
 	if (imp) *nimp = *imp;
 	nimp->parent = imp;
 	nimp->activity = Imp::ACT_NOTHING;
-	nimp->args.resize(0);
+	nimp->args->resize(0);
 	nimp->personal_args.resize(0);
 	nimp->args_mode = false;
 	nimp->personal_instance = NULL;
@@ -388,7 +391,7 @@ void InteractiveSyntaxAnalyzer::period()
 	imp->destination = -1;
 	if (imp->function) { free(imp->function); imp->function = NULL; }
 	imp->args_mode = false;
-	imp->args.resize(0);
+	imp->args->resize(0);
 	imp->personal_args.resize(0);
 	imp->personal_instance = NULL;
 }
@@ -398,6 +401,7 @@ if (imp->parent) \
 dbg::trace << "// @" << label << ": " << (V) << dbg::endl; \
 else \
 std::cerr << "// @" << label << ": " << (V) << std::endl;
+
 
 /**
  * Merely returns the value given without manipulation.
@@ -417,6 +421,7 @@ void InteractiveSyntaxAnalyzer::actNothing()
  */
 void InteractiveSyntaxAnalyzer::actFunctionCall()
 {
+	Robin::KeywordArgumentMap empty;
 	if (imp->function) {
 		// Debug trace
 		dbg::trace << "// @CALLING: '" << imp->function << "'";
@@ -433,12 +438,12 @@ void InteractiveSyntaxAnalyzer::actFunctionCall()
 			if (!imp->personal_instance) {
 				try {
 					// Lookup class
-					Handle<Robin::Class> klass = 
+					Handle<Robin::Class> klass =
 						multipleLookup<Robin::Class>
 						(imp->globals.begin(), imp->globals.end(),
 						 lookupClassIn, imp->function);
 					// Create instance!
-					result = wrapInstance(klass->createInstance(imp->args));
+					result = wrapInstance(klass->createInstance(imp->args,empty));
 				}
 				catch (Robin::LookupFailureException& e) {
 					// Lookup function
@@ -447,7 +452,7 @@ void InteractiveSyntaxAnalyzer::actFunctionCall()
 						(imp->globals.begin(), imp->globals.end(),
 						 lookupRoutineIn, imp->function);
 					// Invoke!
-					result = func->call(imp->args);
+					result = func->call(imp->args,empty);
 				}
 			}
 			else {
@@ -456,11 +461,10 @@ void InteractiveSyntaxAnalyzer::actFunctionCall()
 					dynamic_cast<Robin::SimpleInstanceObjectElement*>
 					     (imp->personal_instance);
 				if (!instelem) throw NotAnInstanceException();
-				// Bound method from class
-				Handle<Robin::Callable> bmethod =
-					instelem->value->bindMethod(imp->function);
-				// Invoke!
-				result = bmethod->call(imp->args);
+				Handle<Class> klass = instelem->value->getClass();
+				Handle<Robin::CallableWithInstance> bmethod =
+					klass->findInstanceMethod(imp->function);
+				result = bmethod->callUpon(instelem,*imp->args,empty);
 			}
 			// Print outcome
 			if (result != NONE) {
@@ -497,7 +501,7 @@ void InteractiveSyntaxAnalyzer::actImportModule()
 	try {
 		std::string libfile = imp->function;
 		// Load library using the registration mechanism
-		Handle<Robin::Library> lib = 
+		Handle<Robin::Library> lib =
 			Robin::RegistrationMechanismSingleton::getInstance()
 			->import(libfile + ".so");
 		have(lib->globalNamespace());

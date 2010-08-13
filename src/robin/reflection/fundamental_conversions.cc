@@ -15,10 +15,10 @@
 
 #include "fundamental_conversions.h"
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include "class.h"
 #include "instance.h"
-#include "typeofargument.h"
+#include "robintype.h"
 #include "memorymanager.h"
 #include "../frontends/framework.h"
 
@@ -39,6 +39,11 @@ TrivialConversion::TrivialConversion()
 	setWeight(Conversion::Weight::ZERO);
 }
 
+
+bool TrivialConversion::isZeroWorkConversion() const
+{
+	return true;
+}
 
 
 /**
@@ -77,19 +82,18 @@ scripting_element ConversionViaConstruction::apply(scripting_element value)
 	const
 {
 	// Build argument list = [ value ]
-	ActualArgumentList single_arg;
+	Handle<ActualArgumentList> single_arg(new ActualArgumentList);
     KeywordArgumentMap nokwargs;
-	single_arg.push_back(value);
+	single_arg->push_back(value);
 
 	// Call constructor
-	assert(targetType()->basetype().spec == TYPE_USERDEFINED_OBJECT);
+	assert_true(targetType()->basetype().spec == TYPE_USERDEFINED_OBJECT);
 	Handle<Instance> converted =
 		targetType()->basetype().objclass->createInstance(single_arg, nokwargs);
 
 	// Create a scripting wrapper
-	return converted->scriptify(Instance::OWNER);
+	return converted->scriptify();
 }
-
 
 
 
@@ -117,7 +121,7 @@ scripting_element UpCastConversion::apply(scripting_element value) const
 {
 	// Construct a C function which processes the source type and
 	// outputs the target type
-	CFunction func((symbol)m_transform);
+	CFunction func((symbol)m_transform,"upcast",CFunction::GlobalFunction);
 	func.addFormalArgument(sourceType());
 	func.specifyReturnType(targetType());
 	// Call this function to produce converted element

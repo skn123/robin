@@ -1,6 +1,6 @@
 #define NO_IMPORT_ARRAY
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include <robin/frontends/python/facade.h>
 #include <robin/frontends/frontend.h>
 #include <Numeric/arrayobject.h>
@@ -24,12 +24,15 @@ namespace {
 class NumericTranslator : public Robin::UserDefinedTranslator
 {
 public:
-	Handle<Robin::TypeOfArgument> detectType(Robin::scripting_element element)
+	virtual ~NumericTranslator() {
+
+	}
+	Handle<Robin::RobinType> detectType(Robin::scripting_element element)
 	{
 		if (PyArray_Check((PyObject*)element))
 			return robin_PyArrayObject->getRefArg();
 		else
-			return Handle<Robin::TypeOfArgument>();
+			return Handle<Robin::RobinType>();
 	}
 };
 
@@ -65,11 +68,11 @@ void numpy_engage()
 	import_array();
 
 	robin_PyArrayObject = Robin::Python::Facade::asClass("PyArrayObject");
-	assert(robin_PyArrayObject);
+	assert_true(robin_PyArrayObject);
 
 	Handle<Robin::Adapter> adapter(new NumericAdapter);
 
-	robin_PyArrayObject->getPtrArg()->assignAdapter(adapter);
+	robin_PyArrayObject->getPtrType()->assignAdapter(adapter);
 	robin_PyArrayObject->getRefArg()->assignAdapter(adapter);
 
 	// Register a numeric translator
@@ -90,7 +93,7 @@ PyArrayObject *pytest(PyArrayObject *array)
 
 	PyObject *arrayobj = (PyObject*)array;
 	char *data;
-	int len;
+	Py_ssize_t len;
 
 	if (PyArray_As1D(&arrayobj, &data, &len, PyArray_INT) == 0) {
 		fprintf(stderr, "// Array length = %d\n", len);

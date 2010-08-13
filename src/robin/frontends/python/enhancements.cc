@@ -12,7 +12,7 @@
  * @par PACKAGE
  * Robin
  */
-
+#include "port.h"
 #include "enhancements.h"
 
 // STL includes
@@ -22,11 +22,16 @@
 #include <robin/reflection/class.h>
 #include <robin/reflection/instance.h>
 #include "pythonobjects.h"
-
-
+#include "pythonerror.h"
+#include <robin/frontends/frontend.h>
+#include <robin/frontends/framework.h>
 namespace Robin {
 
 namespace Python {
+
+PyCallableWithInstance::~PyCallableWithInstance() {
+
+}
 
 	namespace {
 
@@ -44,7 +49,7 @@ namespace Python {
 		 */
 		ClassObject *self_class(PyObject *self) {
 			PyObject *type = PyObject_Type(self);
-			assert(ClassObject_Check(type));
+			assert_true(ClassObject_Check(type));
 			return (ClassObject *)type;
 		}
 
@@ -316,7 +321,8 @@ public:
 		if (r == NULL) return -1;
 		// r should now be an integer
 		if (PyInt_Check(r)) {
-			int len = PyInt_AsLong(r);			Py_XDECREF(r);
+			Py_ssize_t len = PyInt_AsSsize_t(r);
+			Py_XDECREF(r);
 			return len;
 		}
 		else {
@@ -343,7 +349,7 @@ public:
 	{
 		// If a LENGTH handler exists, validate index
 		if (self_supports(EnhancementsPack::LENGTH, self)) {
-			int len = LengthProtocol::__len__(self);
+			Py_ssize_t len = LengthProtocol::__len__(self);
 			if (len < 0) return NULL;
 			if (index >= len) {
 				PyErr_SetString(PyExc_IndexError, "index out of bounds.");
@@ -419,7 +425,7 @@ public:
 
 	typedef Py_ssize_t index;
 
-	static inline void normalizeSliceIndex(int len, index& index)
+	static inline void normalizeSliceIndex(Py_ssize_t len, index& index)
 	{
 		if (index < 0)
 			index = 0;
@@ -438,7 +444,7 @@ public:
 	{
 		// If a LENGTH handler exists, validate indices
 		if (self_supports(EnhancementsPack::LENGTH, self)) {
-			int len = LengthProtocol::__len__(self);
+			Py_ssize_t len = LengthProtocol::__len__(self);
 			if (len < 0) return NULL;
 			normalizeSlice(len, from, to);
 		}
@@ -471,7 +477,7 @@ public:
 	{
 		// If a LENGTH handler exists, validate indices
 		if (self_supports(EnhancementsPack::LENGTH, self)) {
-			int len = LengthProtocol::__len__(self);
+			Py_ssize_t len = LengthProtocol::__len__(self);
 			if (len < 0) return -1;
 			GetSliceProtocol::normalizeSlice(len, from, to);
 		}
@@ -566,6 +572,8 @@ public:
 		return binaryOperation(EnhancementsPack::ADD, self, other);
 	}
 };
+
+
 
 /**
  * Deploys the numeric SUBTRACT protocol.
@@ -728,6 +736,8 @@ public:
 		return unaryOperation(EnhancementsPack::BW_NOT, self);
 	}
 };
+
+
 
 /**
  * Deploys the numeric LSHIFT protocol.
@@ -912,6 +922,24 @@ public:
 };
 
 /**
+ * Deploys the numeric bitwise NOT protocol.
+ */
+class NegProtocol : public UnaryOperationProtocol
+{
+public:
+	virtual void deploy(ClassObject *type, SlotID slot, Handler handler) {
+		type_as_number(type);
+		type->tp_as_number->nb_negative = &__neg__;
+		type->getEnhancements().setSlot(slot, handler);
+	}
+
+	static PyObject *__neg__(PyObject *self)
+	{
+		return unaryOperation(EnhancementsPack::NEG, self);
+	}
+};
+
+/**
  * Deploys the MAPSIZE protocol for mapping objects.
  */
 class MapSizeProtocol : public UnaryOperationProtocol
@@ -927,7 +955,7 @@ public:
 	{
 		PyObject *pysize = unaryOperation(EnhancementsPack::MAPSIZE, self);
 		if (pysize) {
-			Py_ssize_t size = PyInt_AsLong(pysize);
+			Py_ssize_t size = PyInt_AsSsize_t(pysize);
 			Py_DECREF(pysize);
 			return size;
 		}
@@ -993,32 +1021,142 @@ public:
 	static PyObject *__richcmp__(PyObject *self, PyObject *other,
 								 int opid)
 	{
-		if (PyObject_Type(self) != PyObject_Type(other))
-			return pyowned(Py_NotImplemented);
 
 		EnhancementsPack::SlotID slot;
-		// Deduce slot number from opid
-		switch (opid) {
-		case Py_EQ: slot = EnhancementsPack::EQUALS;        break;
-		case Py_NE: slot = EnhancementsPack::NEQUAL;        break;
-		case Py_GT: slot = EnhancementsPack::GREATER_THAN;  break;
-		case Py_LT: slot = EnhancementsPack::LESS_THAN;     break;
-		case Py_GE: slot = EnhancementsPack::GREATER_OR_EQ; break;
-		case Py_LE: slot = EnhancementsPack::LESS_OR_EQ;    break;
-		default:
+
+		Handle<RobinType> selfType;
+		Handle<RobinType> otherType;
+		try {
+			selfType = FrontendsFramework::activeFrontend()->detectType_mostSpecific(self);
+			otherType = FrontendsFramework::activeFrontend()->detectType_mostSpecific(other);
+		} catch (const UnsupportedInterfaceException& e) {
+			// UIE gets thrown if the type cannot be converted (e.g. if it is
+			// a function etc.)
 			return pyowned(Py_NotImplemented);
 		}
+
+		// Deduce slot number from opid
+		dbg::trace << "Requested ";
+		switch (opid) {
+		case Py_EQ: slot = EnhancementsPack::EQUALS;
+					dbg::trace <<"__eq__";
+					break;
+		case Py_NE: slot = EnhancementsPack::NEQUAL;
+					dbg::trace <<"__ne__";
+					break;
+		case Py_GT: slot = EnhancementsPack::GREATER_THAN;
+					dbg::trace <<"__gt__";
+					break;
+		case Py_LT: slot = EnhancementsPack::LESS_THAN;
+					dbg::trace <<"__lt__";
+					break;
+		case Py_GE: slot = EnhancementsPack::GREATER_OR_EQ;
+					dbg::trace <<"__ge__";
+					break;
+		case Py_LE: slot = EnhancementsPack::LESS_OR_EQ;
+					dbg::trace <<"__le__";
+					break;
+		default:
+			dbg::trace << "unknown comparision." <<dbg::endl;
+			return pyowned(Py_NotImplemented);
+		}
+		dbg::trace << "on types " <<
+			*selfType << " and " << *otherType <<dbg::endl;
+		dbg::IndentationGuard guard(dbg::trace);
+
+		PyObject *result;
 		// Invoke binary operation
-		PyObject *result = NULL;
-		if (self_supports(slot, self))
+		if (self_supports(slot, self)) {
 			result = binaryOperation(slot, self, other);
-		else if (self_supports(complement(slot), self))
-			result = binaryOperation(complement(slot), self, other);
-		else if (isFamiliar(other) && self_supports(symmetry(slot), other))
+		}
+		else if (isFamiliar(other) && self_supports(symmetry(slot), other)) {
+			/*
+			 * A symmetric operation is one which computes exactly
+			 * the same as the desired one but with changed parameters.
+			 *
+			 * example 'a <= b' is the symmetric of 'b <= a' (or 'a >= b'
+			 *  which is basically the same')
+			 */
 			result = binaryOperation(symmetry(slot), other, self);
+		}
+		else if (self_supports(complement(slot), self)) {
+			/*
+			 *  A complementing operation is one which
+			 *  computes exactly the opposite of the desired one.
+			 *
+			 *  example 'a <= b' is the complementing of 'a > b'
+			 *
+			 *  If we have the complemented operation but not the requested
+			 *  operation we use it and change the result.
+			 *  Unfortunately we now only know how to invert the
+			 *  result if the operation returns a boolean value.
+			 *  Other results for the comparison are not currently
+			 *  supported.
+			 *
+			 *  WARNING: Python explicitly recommends against this automatic
+			 *  rule because not always the complementing rules are ok.
+			 *  For example in floating point numbers, two variables
+			 *  might have the values: a=Inf , b=Inf
+			 *  Now neither a==b nor a!=b are ok.
+			 */
+			PyReferenceSteal<PyObject> complementResult(binaryOperation(complement(slot), self, other));
+			if(complementResult)
+			{
+				//If there are none errors
+				if(PyBool_Check(complementResult.pointer()) )
+				{
+					result = (complementResult.pointer()==Py_True)?Py_False:Py_True;
+					Py_XINCREF(result);
+				} else {
+					return pyowned(Py_NotImplemented);
+				}
+			} else {
+					result = NULL;
+			}
+		}
+		else if(isFamiliar(other) && self_supports(complement(symmetry(slot)), other)) {
+			/*
+			 * Using also the symmetric to the complement.
+			 */
+			PyReferenceSteal<PyObject> complementResult(binaryOperation(complement(symmetry(slot)), other,self));
+			if(complementResult)
+			{
+				//If there are none errors
+				if(PyBool_Check(complementResult.pointer()) )
+				{
+					result = (complementResult.pointer()==Py_True)?Py_False:Py_True;
+					Py_XINCREF(result);
+				} else {
+					return pyowned(Py_NotImplemented);
+				}
+			} else {
+					result = NULL;
+			}
+		}
 		else
+		{
+			return pyowned(Py_NotImplemented);
+		}
+
+		if(result==NULL)
+		{
+			// If there was an exception report that the protocol
+			// is not implemented.
+			try {
+				dbg::trace << getPythonErrorAsString("ComparingException", "calling a python comparison function") <<dbg::endl;
+			} catch(const std::exception &e) {
+				//If failed to get the error message we have a real issue
+				PyErr_SetString(PyExc_RuntimeError,e.what());
+				return NULL;
+			}
 			return pyowned(Py_NotImplemented);
 
+
+			// TODO: there has to be some kind of separation between
+			// all the exception types of robin when converted to python
+			// in that case we will be able to stop here only "CannotCallExceptions"
+			// which are exceptions that talk about incorrect exceptions.
+		}
 		return result;
 	}
 
@@ -1104,6 +1242,7 @@ EnhancementsPack::SlotID EnhancementsPack::slotByName(const std::string&
 	else if (slotname == "__hex__")          return TO_HEX;
 	else if (slotname == "__int__")          return TO_INT;
 	else if (slotname == "__float__")        return TO_FLOAT;
+	else if (slotname == "__neg__") 	         return  NEG;
 	else if (slotname == "__getsubscript__") return GETSUBSCRIPT;
 	else if (slotname == "__setsubscript__") return SETSUBSCRIPT;
 	else if (slotname == "__delsubscript__") return DELSUBSCRIPT;
@@ -1145,7 +1284,10 @@ InstanceMethodFunctor::InstanceMethodFunctor(const std::string& methodname)
 	: m_methodname(methodname)
 {
 }
+InstanceMethodFunctor::~InstanceMethodFunctor()
+{
 
+}
 /**
  * Invoke an instance method with given arguments.
  */
@@ -1187,7 +1329,7 @@ PyObject *PyObjectNativeFunctor::callUpon(InstanceObject *self, PyObject *args)
 	// Set 'self' instance as first argument in fwdargs
 	PyTuple_SET_ITEM(fwdargs, 0, pyowned(self));
 	// Copy the rest of the arguments
-	for (int argindex = 0; argindex < PyTuple_Size(args); ++argindex) {
+	for (Py_ssize_t argindex = 0; argindex < PyTuple_Size(args); ++argindex) {
 		PyObject *arg = PyTuple_GET_ITEM(args, argindex);
 		PyTuple_SET_ITEM(fwdargs, argindex + 1, pyowned(arg));
 	}
@@ -1232,6 +1374,7 @@ Protocol& Protocol::deployerBySlot(EnhancementsPack::SlotID slot)
 	static HexProtocol          hex;
 	static IntProtocol          cint;
 	static FloatProtocol        cfloat;
+	static NegProtocol          negative;
 	static GetSubscriptProtocol getsubscript;
 	static SetSubscriptProtocol setsubscript;
 	static DelSubscriptProtocol delsubscript;
@@ -1251,6 +1394,7 @@ Protocol& Protocol::deployerBySlot(EnhancementsPack::SlotID slot)
 		  &pow, &pow,
 		  &bwand, &bwand, &bwor, &bwor, &bwxor, &bwxor, &bwnot,
 		  &lshift, &lshift, &rshift, &rshift, &oct, &hex, &cint, &cfloat,
+		  &negative,
 		  &getsubscript, &setsubscript, &delsubscript, &mapsize,
 		  &eq, &eq, &ne, &ne, &lt, &lt, &gt, &gt, &le, &le, &ge, &ge
 		};
@@ -1292,6 +1436,11 @@ void Protocol::autoEnhance(ClassObject *type)
 }
 
 
+Protocol::~Protocol()
+{
+
+}
+
 /**
  * PythonConversion constructor. The 'functor' given here is stored and
  * invoked when the conversion is applied.
@@ -1304,6 +1453,7 @@ PythonConversion::PythonConversion(Handle<PyCallableWithInstance> functor)
 scripting_element PythonConversion::apply(scripting_element value) const
 {
 	PyObject *args = PyTuple_New(0);
+
 	PyObject *result = m_functor->callUpon((InstanceObject*)value, args);
 	Py_DECREF(args);
 	if (!result)
@@ -1312,84 +1462,14 @@ scripting_element PythonConversion::apply(scripting_element value) const
 	return result;
 }
 
+
 /**
  * Throws std::runtime_error with a description of the Python error that
  * just occurred.
  */
 void PythonConversion::reportConversionError() const
 {
-	// Ouch! Exception raised by conversion function.
-	// Translate Python error into a C++ exception.
-	PyObject *exc_type, *exc_value, *exc_tb;
-	PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
-	PyObject *exc_type_repr = PyObject_GetAttrString(exc_type, "__name__");
-	PyObject *exc_value_repr = PyObject_Str(exc_value);
-	// - format an error string
-	std::string error_string = "Python conversion failed - ";
-	error_string += PyString_AsString(exc_type_repr);
-	(error_string += ": ") += PyString_AsString(exc_value_repr);
-	// - cleanup
-	Py_XDECREF(exc_type); Py_XDECREF(exc_value); Py_XDECREF(exc_tb);
-	Py_XDECREF(exc_type_repr); Py_XDECREF(exc_value_repr);
-	PyErr_Clear();
-	// - throw
-	throw std::runtime_error(error_string);
-}
-
-
-/**
- * PythonConversionWithWeigher constructor. The 'functor' is the same as
- * in PythonConversion, the 'weigher' is stored and invoked when the weight
- * is requested based on the insight.
- */
-PythonConversionWithWeigher::
-PythonConversionWithWeigher(Handle<PyCallableWithInstance> functor,
-							PyObject *weigher)
-	: PythonConversion(functor), m_weigher(weigher)
-{
-	Py_XINCREF(m_weigher);
-}
-
-PythonConversionWithWeigher::~PythonConversionWithWeigher()
-{
-	Py_XDECREF(m_weigher);
-}
-
-/**
- * Calculates the weight by calling 
- */
-Conversion::Weight PythonConversionWithWeigher::weight(Insight insight) const
-{
-	PyObject *pyinsight = reinterpret_cast<PyObject *>(insight.i_ptr);
-	if (!pyinsight)
-		return weight();
-
-	// Invoke the weigher function
-	PyObject *result = PyObject_CallFunction(m_weigher, "(O)", pyinsight);
-	if (result) {
-		if (PyTuple_Check(result) && PyTuple_Size(result) == 4) {
-			// Break the tuple into 4 integral elements
-			int eps, prom, up, user;
-			if (PyArg_ParseTuple(result, "iiii", &eps, &prom, &up, &user)) {
-				Py_XDECREF(result);
-				Conversion::Weight cweight(eps, prom, up, user);
-				return cweight;
-			}
-			else {
-				Py_XDECREF(result);
-				reportConversionError();
-			}
-		}
-		else if (result == Py_None) {
-			return weight();
-		}
-		throw std::runtime_error("invalid value returned by weigher");
-	}
-	else {
-		reportConversionError();
-	}	
-
-	return weight();
+	reportPythonError("PythonConversionError", "converting between types in robin");
 }
 
 

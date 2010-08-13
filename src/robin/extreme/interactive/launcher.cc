@@ -16,7 +16,7 @@
 
 #include "syntax.h"
 #include "../test_reflection_arena.h"
-
+#include "../../debug/trace.h"
 
 int my_do()
 {
@@ -36,16 +36,22 @@ void my_other_do(const char **c)
 Handle<Robin::Namespace> sample_ns()
 {
 	Handle<Robin::CFunction> 
-		hdo(new Robin::CFunction((Robin::symbol)&my_do));
+		hdo(new Robin::CFunction((Robin::symbol)&my_do,"my_do",Robin::CFunction::GlobalFunction));
+	Handle<Robin::OverloadedSet> hdo_overloaded(Robin::OverloadedSet::create_new("do"));
+	hdo_overloaded->addAlternative(hdo);
+
 	hdo->specifyReturnType(Robin::ArgumentInt);
 
 	Handle<Robin::CFunction>
-		hotdo(new Robin::CFunction((Robin::symbol)&my_other_do));
+		hotdo(new Robin::CFunction((Robin::symbol)&my_other_do,"my_other_do",Robin::CFunction::GlobalFunction));
 	hotdo->addFormalArgument(Robin::ArgumentCString->pointer());
+	Handle<Robin::OverloadedSet> hotdo_overloaded(Robin::OverloadedSet::create_new("other_do"));
+	hotdo_overloaded->addAlternative(hotdo);
 
-	Handle<Robin::Namespace> ns(new Robin::Namespace);
-	ns->declare("do", static_hcast<Robin::Callable>(hdo));
-	ns->declare("other_do", static_hcast<Robin::Callable>(hotdo));
+
+	Handle<Robin::Namespace> ns(new Robin::Namespace("<sample>"));
+	ns->declare("do", static_hcast<Robin::Callable>(hdo_overloaded));
+	ns->declare("other_do", static_hcast<Robin::Callable>(hotdo_overloaded));
 
 	Robin::FrontendsFramework::fillAdapter(Robin::ArgumentCString->pointer());
 
@@ -58,7 +64,7 @@ Handle<Robin::Namespace> sample_ns()
 int main(int argc, char *argv[])
 {
 	if (argc > 1 && argv[1][0] == '+') {
-		dbg::trace.enable();
+		Robin::dbg::trace.enable();
 		--argc; ++argv; /* shift */
 	}
 

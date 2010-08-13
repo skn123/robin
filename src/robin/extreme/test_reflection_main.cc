@@ -18,15 +18,26 @@ int main(int argc, char *argv[])
 
     /* A '+' as a command line argument enables debug tracing */
     if (argc >= 2 && argv[1][0] == '+') {
-		dbg::trace.enable();
+		Robin::dbg::trace.enable();
 		--argc; ++argv; /* shift */
     }
 
     /* The name of a test indicates: run this test only.
      * If none specified - run all tests. */
+    bool allok;
     if (argc < 2)
-        Extreme::TestingProgram::engage();
+    {
+    	allok = Extreme::TestingProgram::engage();
+    }
     else
-        Extreme::TestingProgram::engage(argv[1]);
+    {
+    	allok =Extreme::TestingProgram::engage(argv[1]);
+    }
+
+    if(allok) {
+    	return 0;
+    } else {
+    	return 1;
+    }
 }
 

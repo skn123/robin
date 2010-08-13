@@ -12,7 +12,7 @@
 
 #include "argumentsbuffer.h"
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include <string.h>
 
 

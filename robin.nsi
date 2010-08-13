@@ -13,7 +13,7 @@ SetCompressor /SOLID lzma
 ; General
 Name "Robin python-wrapper"
 !ifndef VERSION
-    !define VERSION '1.0'
+    !define VERSION '1.1'
 !endif
 
 Icon "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
@@ -74,8 +74,8 @@ Section "Robin library files (Required)" SecRobin
     File "src\robin\modules\html\textformat.py"
 
     setOutPath "$0\DLLs"
-    File "robin-1.0.dll"
-    File "robin_pyfe-1.0.dll"
+    File "robin-1.1.dll"
+    File "robin_pyfe-1.1.dll"
     File "robin_stl.dll"
 
     SetOutPath "$INSTDIR"
@@ -145,8 +145,8 @@ Section /o un.Robin unSecRobin
     RMDir  "$0\Lib\robin\html"
     Delete "$0\Lib\robin\*.*"
     RMDir  "$0\Lib\robin"
-    Delete "$0\DLLs\robin-1.0.dll"
-    Delete "$0\DLLs\robin_pyfe-1.0.dll"
+    Delete "$0\DLLs\robin-1.1.dll"
+    Delete "$0\DLLs\robin_pyfe-1.1.dll"
     Delete "$0\DLLs\robin_stl.dll"
     Delete "$INSTDIR\*.*"
     RMDir  "$INSTDIR"

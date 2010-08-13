@@ -9,7 +9,7 @@
  * @par TITLE
  * Arguments of Intrinsic Types
  *
- * Defines the basic instances of TypeOfArgument in which the
+ * Defines the basic instances of RobinType in which the
  * base type is intrinsic (category == TYPE_CATEGORY_INTRINSIC or
  * category == TYPE_CATEGORY_EXTENDED) and no redirection / reference is
  * used.
@@ -22,32 +22,32 @@
  */
 
 #include <pattern/handle.h>
-#include "typeofargument.h"
+#include "robintype.h"
 
 namespace Robin {
 
 	/**
 	 * \@VARIABLE DECLARATIONS
 	 */
-	extern Handle<TypeOfArgument> ArgumentInt;
-	extern Handle<TypeOfArgument> ArgumentLong;
-	extern Handle<TypeOfArgument> ArgumentLongLong;
-	extern Handle<TypeOfArgument> ArgumentShort;
-	extern Handle<TypeOfArgument> ArgumentUInt;
-	extern Handle<TypeOfArgument> ArgumentULong;
-	extern Handle<TypeOfArgument> ArgumentULongLong;
-	extern Handle<TypeOfArgument> ArgumentUShort;
-	extern Handle<TypeOfArgument> ArgumentChar;
-	extern Handle<TypeOfArgument> ArgumentUChar;
-	extern Handle<TypeOfArgument> ArgumentSChar;
-	extern Handle<TypeOfArgument> ArgumentFloat;
-	extern Handle<TypeOfArgument> ArgumentDouble;
-	extern Handle<TypeOfArgument> ArgumentBoolean;
-	extern Handle<TypeOfArgument> ArgumentVoid;
-	extern Handle<TypeOfArgument> ArgumentCString;
-	extern Handle<TypeOfArgument> ArgumentPascalString;
+	extern Handle<RobinType> ArgumentInt;
+	extern Handle<RobinType> ArgumentLong;
+	extern Handle<RobinType> ArgumentLongLong;
+	extern Handle<RobinType> ArgumentShort;
+	extern Handle<RobinType> ArgumentUInt;
+	extern Handle<RobinType> ArgumentULong;
+	extern Handle<RobinType> ArgumentULongLong;
+	extern Handle<RobinType> ArgumentUShort;
+	extern Handle<RobinType> ArgumentChar;
+	extern Handle<RobinType> ArgumentUChar;
+	extern Handle<RobinType> ArgumentSChar;
+	extern Handle<RobinType> ArgumentFloat;
+	extern Handle<RobinType> ArgumentDouble;
+	extern Handle<RobinType> ArgumentBoolean;
+	extern Handle<RobinType> ArgumentVoid;
+	extern Handle<RobinType> ArgumentCString;
+	extern Handle<RobinType> ArgumentPascalString;
 
-	extern Handle<TypeOfArgument> ArgumentScriptingElementNewRef;
-	extern Handle<TypeOfArgument> ArgumentScriptingElementBorrowedRef;
+	extern Handle<RobinType> ArgumentScriptingElementNewRef;
+	extern Handle<RobinType> ArgumentScriptingElementBorrowedRef;
 
 } // end of namespace Robin

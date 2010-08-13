@@ -55,7 +55,7 @@ HybridObject::~HybridObject()
  
     PyObject *keys = PyDict_Keys(m_dict);
 
-    for(int i=0; i<PyList_GET_SIZE(keys); i++) {
+    for(Py_ssize_t i=0; i<PyList_GET_SIZE(keys); i++) {
         PyDict_DelItem(m_dict, PyList_GET_ITEM(keys, i));
     }
 
@@ -68,7 +68,7 @@ PyObject *with_self(PyObject *self, PyObject *args)
 	PyObject *self_args = PyTuple_New(PyTuple_Size(args) + 1);
 	Py_INCREF(self);
 	PyTuple_SET_ITEM(self_args, 0, self);
-	for (int i = 0; i < PyTuple_Size(args); ++i) {
+	for (Py_ssize_t i = 0; i < PyTuple_Size(args); ++i) {
 		PyObject *arg = PyTuple_GET_ITEM(args, i);
 		Py_INCREF(arg);
 		PyTuple_SET_ITEM(self_args, i+1, arg);
@@ -88,7 +88,7 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
 	PyObject *rc;
 
 	// - try to invoke derived class __init__, fall back to C++ constructor
-	if (value = PyDict_GetItemString(classtype->tp_dict, "__init__")) {
+	if ((value = PyDict_GetItemString(classtype->tp_dict, "__init__"))) {
 		PyObject *self_args = with_self(hybrid, args);
 		rc = PyObject_Call(value, self_args, NULL);
 		Py_DECREF(self_args);
@@ -105,7 +105,7 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
 
 	// - try to invoke _init (interceptors' facility)
 	if (rc) {
-		if (value = hybrid->getBoundMethodOrDataMember("_init")) {
+		if ((value = hybrid->getBoundMethodOrDataMember("_init"))) {
 			PyObject *twin = PyTuple_New(1);
 			PyTuple_SetItem(twin, 0, hybrid);
 			Py_DECREF(rc);
@@ -169,13 +169,13 @@ PyObject *HybridObject::__getattr__(char *nm)
 {
 	PyObject *value;
 
-	if (value = PyDict_GetItemString(m_dict, nm)) {
+	if ((value = PyDict_GetItemString(m_dict, nm))) {
 		Py_XINCREF(value);
 		return value;
 	}
 	else {
 		PyErr_Clear();
-		if (value = PyDict_GetItemString(ob_type->tp_dict, nm)) {
+		if ((value = PyDict_GetItemString(ob_type->tp_dict, nm))) {
             if(PyMethod_Check(value) || PyFunction_Check(value)) {
     			return PyMethod_New(value, this, PyObject_Type(this));
             }
@@ -221,10 +221,10 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 	PyArg_ParseTupleAndKeywords(args, kw, "sOO", kwlist,
 								&name, &bases, &dict);
 
-	int nbases = PyTuple_Size(bases);
+	Py_ssize_t nbases = PyTuple_Size(bases);
 	Handle<Class> underlyingBase;
-	ClassObject *baseClass;
-	for (int i = 0; i < nbases; ++i) {
+	ClassObject *baseClass = NULL;
+	for (Py_ssize_t i = 0; i < nbases; ++i) {
 		PyObject *base = PyTuple_GET_ITEM(bases, i);
 		if (ClassObject_Check(base)) {
 			if (underlyingBase) {
@@ -237,7 +237,7 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 		}
 	}
 
-	assert(underlyingBase);
+	assert_true(underlyingBase);
 
     PyTypeObject *newtype = new ClassObject(*baseClass);
     if (newtype == NULL) return NULL;

@@ -32,7 +32,7 @@ namespace Robin {
  * The Active Translation interface; a frontend should
  * implement this interface for every basic type used. The implemented
  * objects are then placed in the approperiate 
- * <classref>TypeOfArgument</classref>s.
+ * <classref>RobinType</classref>s.
  */
 class Adapter
 {
@@ -50,8 +50,10 @@ public:
      * a function or method call returns.
      */
     virtual scripting_element get(basic_block data) = 0;
-};
 
+
+    virtual ~Adapter() = 0;
+};
 
 }
 

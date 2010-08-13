@@ -11,7 +11,7 @@
 
 // System includes
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include <errno.h>
 #include <stdexcept>
 
@@ -31,8 +31,8 @@ namespace Pattern {
 template < class charT, class traits >
 basic_attached_filebuf<charT, traits>::
 basic_attached_filebuf(FILE *file, ios_base::openmode om, int buffer_size)
-	: m_file(file), m_mode(om), m_ended(false), 
-	  m_buffer_size(buffer_size), m_buffer(0)
+	:  m_mode(om), m_buffer(0),
+	  m_buffer_size(buffer_size),m_file(file),  m_ended(false)
 {
 	assert(file != 0);
 }

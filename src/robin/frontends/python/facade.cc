@@ -40,7 +40,7 @@ Handle<Class> Facade::asClass(const std::string& classname)
 {
 	PythonFrontend *pyfe =
 		dynamic_cast<PythonFrontend*>(FrontendsFramework::activeFrontend());
-	assert(pyfe != NULL);
+	assert_true(pyfe != NULL);
 
 	ClassObject *pyclass = pyfe->getClassObject(classname);
 	if (pyclass) {
@@ -82,9 +82,9 @@ PyTypeObject *Facade::type(classdescriptor classname)
 {
 	// Fetch the currently active PythonFrontend
 	Frontend *fe = FrontendsFramework::activeFrontend();
-	assert(fe != NULL);
+	assert_true(fe != NULL);
 	PythonFrontend *pyfe = dynamic_cast<PythonFrontend *>(fe);
-	assert(pyfe != NULL);
+	assert_true(pyfe != NULL);
 
 	// Get the class from the frontend's internal maps
 	ClassObject *clas = pyfe->getClassObject(classname);
@@ -144,7 +144,7 @@ void Facade::userDefined(Handle<UserDefinedTranslator> translate)
 {
 	PythonFrontend *pyfe = 
 		dynamic_cast<PythonFrontend*>(FrontendsFramework::activeFrontend());
-	assert(pyfe != NULL);
+	assert_true(pyfe != NULL);
 
 	pyfe->addUserDefinedType(translate);
 }

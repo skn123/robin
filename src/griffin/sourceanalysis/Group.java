@@ -52,6 +52,30 @@ public class Group extends Entity {
 		m_scope = new GroupScope(this);
 	}
 	
+	@Override
+	protected void connectToGroup(Group containingGroup) {
+		super.connectToGroup(containingGroup);
+		if(getName()!= null) {
+			fullGroupHierarchyName = getGroup().getFullGroupHierarchyName() + "." + getName();
+		}
+		
+	}
+	
+	
+	@Override
+	public void setName(String name) {
+		super.setName(name);
+		if(getGroup() != null) {
+			fullGroupHierarchyName = getGroup().getFullGroupHierarchyName() + "." + name;
+		} else {
+			fullGroupHierarchyName = name;
+		}
+	}
+	
+	public String getFullGroupHierarchyName() {
+		return fullGroupHierarchyName;
+	}
+	
 	/**
 	 * @name Scoping API
 	 * Methods for accessing the contents of the Group.
@@ -68,6 +92,14 @@ public class Group extends Entity {
 		return m_scope;
 	}
 
+
+	/** Group full hierarchy name, it distinguishes subgroups with the same name but different
+	 *  father groups (it does not distinguishes groups that belong to different Agreggates).
+	 */
+	String fullGroupHierarchyName;
+	
 	// Private members
 	Scope m_scope;
+
+
 }

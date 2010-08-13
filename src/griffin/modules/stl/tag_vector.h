@@ -29,14 +29,25 @@ public:
 
 	iterator begin();
 	iterator end();
-	
+
+	void reserve(unsigned long n);	
 	unsigned long size() const;
 	bool empty() const;
 	T operator[](unsigned long index) const;
 
 	void push_back(const T &element);
 	void erase(iterator pos);
-	
+#if 0
+	/*
+	 * operator== should be wrapped but only when it is valid. 
+	 * 	( when T::operator== is also defined )
+	 * 
+	 * Currently there is no mechanism to decide the inclusion of operator== 
+	 * depending on T so we are forced not to wrap it.
+	 * 
+	 */
+	bool operator==(const vector &other) const;
+#endif
 	~vector();
 };
 

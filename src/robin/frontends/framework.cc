@@ -71,13 +71,12 @@ Frontend *FrontendsFramework::activeFrontend()
 
 /**
  * (internal) supplies an adapter to the specified
- * <classref>TypeOfArgument</classref> using the active frontend.
+ * <classref>RobinType</classref> using the active frontend.
  */
-void FrontendsFramework::fillAdapter(Handle<TypeOfArgument> toa)
+void FrontendsFramework::fillAdapter(Handle<RobinType> toa)
 {
 	if (toa) {
 		try {
-			TypeOfArgument::handleMap.registerHandle(toa);
 			toa->assignAdapter(active_frontend->giveAdapterFor(*toa));
 		}
 		catch (UnsupportedInterfaceException& ) {
@@ -93,9 +92,9 @@ void FrontendsFramework::fillAdapter(Handle<TypeOfArgument> toa)
  */
 void FrontendsFramework::fillAdapters(Handle<Class> cls)
 {
-	fillAdapter(cls->getRefArg());
-	fillAdapter(cls->getPtrArg());
-	fillAdapter(cls->getOutArg());
+	fillAdapter(cls->getConstType());
+	fillAdapter(cls->getPtrType());
+	fillAdapter(cls->getType());
 }
 
 

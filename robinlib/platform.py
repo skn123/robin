@@ -32,7 +32,7 @@ except ImportError:
 if hasattr(config, 'multi_platform'):
 	vpath = arch
 	platspec = ["_%i" % wordsize, ""][wordsize == 32]
-	pyspec = "-py" + sys.version[:3]
+	pyspec = "_py" + sys.version[0] + "_" + sys.version[2]
 else:
 	vpath = ""
 	platspec = ""
