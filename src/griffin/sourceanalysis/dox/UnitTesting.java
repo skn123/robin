@@ -4,13 +4,7 @@ import java.util.Random;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import sourceanalysis.Aggregate;
-import sourceanalysis.DataTemplateArgument;
-import sourceanalysis.Entity;
-import sourceanalysis.Specifiers;
-import sourceanalysis.TemplateArgument;
-import sourceanalysis.Type;
-import sourceanalysis.TypenameTemplateArgument;
+import sourceanalysis.*;
 
 public class UnitTesting {
 

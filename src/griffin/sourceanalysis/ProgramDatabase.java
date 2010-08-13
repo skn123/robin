@@ -1,8 +1,8 @@
 package sourceanalysis;
 
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.LinkedList;
+import java.util.Iterator;
 
 /**
  * <p>Saves a bunch of classes and other types in an acessible structure.</p>
@@ -65,8 +65,8 @@ public class ProgramDatabase extends Entity {
 	public ProgramDatabase()
 	{
 		super();
-		m_sources = new LinkedList<SourceFile>();
-		m_macros = new LinkedList<Macro>();
+		m_sources = new LinkedList();
+		m_macros = new LinkedList();
 		m_globalNamespace = new Namespace();
 		m_globalNamespace.setName("");
 		m_externalsNamespace = new Namespace();
@@ -119,7 +119,7 @@ public class ProgramDatabase extends Entity {
 	 * as libraries. 
 	 * @return a Scope which can be enumerated to access external entities
 	 */
-	public Scope<Namespace> getExternals()
+	public Scope getExternals()
 	{
 		return m_externalsNamespace.getScope();
 	}
@@ -128,7 +128,7 @@ public class ProgramDatabase extends Entity {
 	 * Access all the source files in the program.
 	 * @return Iterator iterates over SourceFile objects.
 	 */
-	public Iterator<SourceFile> sourceFileIterator()
+	public Iterator sourceFileIterator()
 	{
 		return m_sources.iterator();
 	}
@@ -143,7 +143,8 @@ public class ProgramDatabase extends Entity {
 	public SourceFile lookupSourceFile(String filename) 
 		throws ElementNotFoundException
 	{
-		for (SourceFile source: m_sources) {
+		for (Iterator sourceIter = sourceFileIterator(); sourceIter.hasNext(); ) {
+			SourceFile source = (SourceFile)sourceIter.next();
 			if (source.getName().equals(filename) 
 					|| source.getFullName().endsWith("/" + filename)) 
 				return source;
@@ -155,15 +156,15 @@ public class ProgramDatabase extends Entity {
 	 * Access the macro definitions in the program.
 	 * @return Iterator iterates over Macro objects/
 	 */
-	public Iterator<Macro> macroIterator()
+	public Iterator macroIterator()
 	{
 		return m_macros.iterator();
 	}
 
 	// Private members
 	private Namespace m_globalNamespace;
-	private List<SourceFile> m_sources;
-	private List<Macro> m_macros;
+	private List m_sources;
+	private List m_macros;
 
 	private Namespace m_externalsNamespace;
 }

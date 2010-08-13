@@ -4,9 +4,10 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
-import junit.framework.TestCase;
 import sourceanalysis.ProgramDatabase;
 import sourceanalysis.dox.DoxygenAnalyzer;
+
+import junit.framework.TestCase;
 
 /**
  * Tests the Front-end using an existing test-suite. The program database

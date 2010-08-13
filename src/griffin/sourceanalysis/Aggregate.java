@@ -1,7 +1,8 @@
 package sourceanalysis;
 
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.LinkedList;
 
 /**
  * Represents a class, struct, or union in problem space.
@@ -22,8 +23,8 @@ public class Aggregate extends TemplateEnabledEntity
 	 */
 	public Aggregate() {
 		super();
-		m_agScope = new Scope<Aggregate>(this);
-		m_bases = new LinkedList<InheritanceConnection>();
+		m_agScope = new Scope(this);
+		m_bases = new LinkedList();
 	}
 	
 	/** @name Push API
@@ -84,8 +85,9 @@ public class Aggregate extends TemplateEnabledEntity
 	 *  of the connection to reveal both the base class and the visibility of the
 	 *  inheritance.
 	 */
-	public ConstCollection<InheritanceConnection> getBases() {
-		return new ConstCollection<InheritanceConnection>(m_bases);
+	public Iterator baseIterator()
+	{
+		return m_bases.iterator();
 	}
 	
 	/*@}*/	
@@ -101,7 +103,7 @@ public class Aggregate extends TemplateEnabledEntity
 	 * @return Scope a Scope object which belongs to the Aggregate. Use
 	 * Push/Pull API of Scope to fill or retrieve members.
 	 */
-	public Scope<Aggregate> getScope()
+	public Scope getScope()
 	{
 		return m_agScope;
 	}
@@ -109,7 +111,7 @@ public class Aggregate extends TemplateEnabledEntity
 	/*@}*/
 
 	// Scoping
-	private Scope<Aggregate> m_agScope;
+	private Scope m_agScope;
 	// Inheritance
-	private List<InheritanceConnection> m_bases;
+	private List m_bases;
 }

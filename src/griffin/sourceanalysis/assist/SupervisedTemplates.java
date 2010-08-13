@@ -3,8 +3,7 @@ package sourceanalysis.assist;
 import java.io.File;
 import java.io.FilenameFilter;
 
-import sourceanalysis.Aggregate;
-import sourceanalysis.Entity;
+import sourceanalysis.*;
 import sourceanalysis.xml.XMLFormatException;
 
 /**

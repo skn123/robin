@@ -1,7 +1,7 @@
 package sourceanalysis.view;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
 
 import sourceanalysis.ElementNotFoundException;
 
@@ -18,7 +18,7 @@ public class TemplateBank {
 	 */
 	public TemplateBank() {
 		super();
-		m_held_templates = new HashMap<String, Template>();
+		m_held_templates = new HashMap();
 	}
 	
 	/**
@@ -43,7 +43,7 @@ public class TemplateBank {
 	public String fillTemplate(String keyname, AbstractScope context,
 		Perspective perspective) throws ElementNotFoundException
 	{
-		Template template = m_held_templates.get(keyname);
+		Template template = (Template) m_held_templates.get(keyname);
 		if (template == null) throw new ElementNotFoundException("template", keyname);
 		return template.fill(context, perspective);
 	}
@@ -71,6 +71,6 @@ public class TemplateBank {
 	}
 	
 	// Bank private members
-	private Map<String, Template> m_held_templates;
+	private Map m_held_templates;
 	private static TemplateBank m_singleton = null;
 }

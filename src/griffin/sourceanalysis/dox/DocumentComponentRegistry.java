@@ -153,9 +153,9 @@ public class DocumentComponentRegistry {
 	 */
 	public DocumentComponentRegistry()
 	{
-		m_id2entity = new HashMap<String, Entity>();
-		m_docname2dom = new HashMap<String, RequestedDocument>();
-		m_deferred = new HashSet<String>();
+		m_id2entity = new HashMap();
+		m_docname2dom = new HashMap();
+		m_deferred = new HashSet();
 		m_xmldir = "xml/";
 		// Get the alternative XML path from griffin.dox.path
 		String path = System.getProperty(XML_ALTERNATIVE_PATH_PROPERTY);
@@ -389,9 +389,9 @@ public class DocumentComponentRegistry {
 	/*@}*/
 
 	// Private
-	private Map<String, Entity> m_id2entity;
-	private Map<String, RequestedDocument> m_docname2dom;
-	private Set<String> m_deferred;  // XML documents which contained errors
+	private Map m_id2entity;
+	private Map m_docname2dom;
+	private Set m_deferred;  // XML documents which contained errors
 	
 	private String m_xmldir;
 	private String m_xmlpath[];

@@ -7,26 +7,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Iterator;
 
-import sourceanalysis.Aggregate;
-import sourceanalysis.ContainedConnection;
-import sourceanalysis.DataTemplateParameter;
-import sourceanalysis.ElementNotFoundException;
-import sourceanalysis.Entity;
-import sourceanalysis.Field;
-import sourceanalysis.InheritanceConnection;
-import sourceanalysis.MissingInformationException;
-import sourceanalysis.Namespace;
-import sourceanalysis.Parameter;
-import sourceanalysis.ProgramDatabase;
-import sourceanalysis.Routine;
-import sourceanalysis.Scope;
-import sourceanalysis.Specifiers;
-import sourceanalysis.TemplateArgument;
-import sourceanalysis.TemplateEnabledEntity;
-import sourceanalysis.TemplateParameter;
-import sourceanalysis.Type;
-import sourceanalysis.TypenameTemplateArgument;
-import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.*;
 import sourceanalysis.view.TemplateBank;
 import backend.GenericCodeGenerator;
 import backend.Utils;
@@ -69,7 +50,8 @@ public class CodeGenerator extends GenericCodeGenerator {
 		
 		// Count the number of parameters, esp. the number of parameters with
 		// default arguments
-		for (Parameter parameter: routine.getParameters()) {
+		for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
+			Parameter parameter = (Parameter)pi.next();
 			// If parameter has a default value, it is added to max and not
 			// to min; otherwise, it is added to both
 			maxParams++;
@@ -135,9 +117,9 @@ public class CodeGenerator extends GenericCodeGenerator {
 		int paramCount = 0;
 		sb.append("(");
 		
-		for (Iterator<Parameter> pi = routine.getParameters().iterator();
+		for (Iterator pi = routine.parameterIterator();
 					pi.hasNext() && paramCount < nParams; ) {
-			Parameter parameter = pi.next();	
+			Parameter parameter = (Parameter)pi.next();	
 			// Obtain parameter information		
 			String name = parameter.getName(); 			
 			Type type = parameter.getType();
@@ -175,9 +157,12 @@ public class CodeGenerator extends GenericCodeGenerator {
 			StringBuffer sb = new StringBuffer("template < ");
 			boolean first = true;
 			
-			for (TemplateParameter templateParameter: entity.getTemplateParameters()) {
+			for (Iterator tpi = entity.templateParameterIterator(); 
+				tpi.hasNext(); ) {
 				if (!first) sb.append(", ");
 				// Get next template parameter
+				TemplateParameter templateParameter =
+					(TemplateParameter)tpi.next();
 				// Observe whether template parameter is typename or data
 				if (templateParameter instanceof TypenameTemplateParameter) {
 					sb.append("class " + templateParameter.getName());
@@ -212,7 +197,9 @@ public class CodeGenerator extends GenericCodeGenerator {
 		boolean first = true;
 		
 		// Go over base classes
-		for (InheritanceConnection connection: clas.getBases()) {
+		for (Iterator bi = clas.baseIterator(); bi.hasNext(); ) {
+			InheritanceConnection connection =
+				(InheritanceConnection)bi.next();
 			// Print delimiter
 			if (first) sb.append(": "); else sb.append(", ");
 			// Print the visibility
@@ -253,7 +240,10 @@ public class CodeGenerator extends GenericCodeGenerator {
 		StringBuffer sb = new StringBuffer();
 		
 		// Go over base classes
-		for (InheritanceConnection connection: clas.getBases()) {
+		for (Iterator bi = clas.baseIterator(); bi.hasNext(); ) {
+			InheritanceConnection connection =
+				(InheritanceConnection)bi.next();
+				
 			Aggregate baseClass = connection.getBase();
 			if (baseClass.isTemplated()) {
 				sb.append("%template(ti_"
@@ -339,8 +329,11 @@ public class CodeGenerator extends GenericCodeGenerator {
 	public void generateGlobalVariableInterface()
 		throws IOException, ElementNotFoundException, MissingInformationException
 	{
-		Scope<Namespace> global =  m_program.getGlobalNamespace().getScope();
-		for (ContainedConnection<Namespace, Field> connection: global.getFields()) {
+		Scope global =  m_program.getGlobalNamespace().getScope();
+		for (Iterator gfi = global.fieldIterator(); gfi.hasNext(); ) {
+			// Get field
+			ContainedConnection connection =
+				(ContainedConnection)gfi.next();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 				&& connection.getStorage() != Specifiers.Storage.STATIC) {
 				Entity field = connection.getContained();

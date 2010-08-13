@@ -1,7 +1,5 @@
 package sourceanalysis.view;
 
-import sourceanalysis.ConstCollection;
-
 /**
  * To change this generated comment edit the template variable "typecomment":
  * Window>Preferences>Java>Templates.
@@ -15,7 +13,7 @@ public class Template {
 	 */
 	public Template() {
 		super();
-		m_elements = new java.util.Vector<TemplateElement>();
+		m_elements = new java.util.Vector();
 	}
 
 	public void addElement(TemplateElement element)
@@ -23,8 +21,9 @@ public class Template {
 		m_elements.add(element);
 	}
 	
-	public ConstCollection<TemplateElement> getElements() {
-		return new ConstCollection<TemplateElement>(m_elements);
+	public java.util.Iterator getElementIterator()
+	{
+		return m_elements.iterator();
 	}
 
 	/**
@@ -36,14 +35,16 @@ public class Template {
 	 */
 	public String fill(AbstractScope context, Perspective perspective)
 	{
+		java.util.Iterator element = getElementIterator();
 		StringBuffer text = new StringBuffer();
 		// Extract the text from all elements	
-		for (TemplateElement templateelement: getElements()) {
+		while (element.hasNext()) {
+			TemplateElement templateelement = (TemplateElement)element.next();
 			text.append(templateelement.extractText(context, perspective));
 		}
 		return text.substring(0);
 	}
 
 	// Elements
-	private java.util.Vector<TemplateElement> m_elements;
+	private java.util.Vector m_elements;
 }

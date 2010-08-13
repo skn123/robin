@@ -145,7 +145,7 @@ LIBPY = None
 AUXLIBS = []
 
 # - Start configuring
-pyenv = env.Clone()
+pyenv = env.Copy()
 configure = Configure(pyenv, custom_tests = {'CheckTemplate': CheckTemplate,
                                              'CheckLibPIC': CheckLibPIC})
 
@@ -153,7 +153,7 @@ pyenv.Append(CPPPATH = [INCLUDEPY, CONFINCLUDEPY])
 pyenv.Append(LIBPATH = [".", LIBPYCFG])
 pyenv.Append(CXXFLAGS = "-D_VERSION=" + fullver)
 
-rbenv = env.Clone()
+rbenv = env.Copy()
 rbenv.Append(CPPPATH = ["/usr/lib/ruby/1.8/i486-linux", "/sw/lib/ruby/1.8/i686-darwin"])
 
 PythonModule = pyenv.SharedLibrary
@@ -254,7 +254,7 @@ LIBINTERACTIVE_SRC = """build/robin/extreme/interactive/syntax.cc
 build/robin/extreme/interactive/simple.cc
 build/robin/extreme/interactive/inclusion.cc"""
 
-testenv = env.Clone()
+testenv = env.Copy()
 testenv.Append(LIBPATH=["."])
 
 sfe = testenv.SharedLibrary("robin_sfe"+spec, Split(SIMPLE_FRONTEND_SRC),

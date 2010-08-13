@@ -3,10 +3,10 @@
  */
 package unittest.backend;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import unittest.backend.configuration.TestBackendData;
 import unittest.backend.configuration.TestPackageFinder;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 /**
  * Tests the backend launcher

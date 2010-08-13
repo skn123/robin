@@ -1,5 +1,6 @@
 package sourceanalysis;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class Enum extends Entity {
 	 */
 	public Enum() {
 		super();
-		m_constants = new LinkedList<Constant>(); // create empty list
+		m_constants = new LinkedList(); // create empty list
 	}
 
 	/**
@@ -83,14 +84,14 @@ public class Enum extends Entity {
 	 * Creates an exact copy of this enum.
 	 * @return a replica
 	 */
-	@Override
 	public Object clone()
 	{
 		Enum replica = new Enum();
 		replica.setName(getName());
 		// Replicate constants. Don't need to actually create new
 		// Constant instances since they are immutable anyway.
-		for (Constant constant: m_constants) {
+		for (Iterator iter = constantIterator(); iter.hasNext();) {
+			Constant constant = (Constant)iter.next();
 			replica.introduceConstant(constant);
 		}
 		return replica;
@@ -109,12 +110,13 @@ public class Enum extends Entity {
 	 * order in which they were introduced.
 	 * @return Iterator an iteration over Enum.Constant
 	 */
-	public ConstCollection<Constant> getConstants() {
-		return new ConstCollection<Constant>(m_constants);
+	public Iterator constantIterator()
+	{
+		return m_constants.iterator();
 	}
 	
 	/*@}*/
 
 	// Private representation
-	List<Constant> m_constants;
+	List m_constants;
 }

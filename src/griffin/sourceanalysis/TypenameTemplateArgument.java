@@ -32,7 +32,6 @@ public class TypenameTemplateArgument extends TemplateArgument {
 	 * Returns the C++ representation of the type held in this
 	 * TemplateArgument.
 	 */
-	@Override
 	public String toCpp()
 	{
 		return m_value.formatCpp();
@@ -42,7 +41,6 @@ public class TypenameTemplateArgument extends TemplateArgument {
 	 * Returns the string representation of the type held in this
 	 * TemplateArgument.
 	 */
-	@Override
 	public String toString()
 	{
 		return m_value.toString();

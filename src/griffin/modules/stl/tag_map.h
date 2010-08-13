@@ -6,6 +6,8 @@ template <class KEY, class VALUE>
 class map
 {
 public:
+	typedef pair<KEY,VALUE> value_type;
+	
 	class iterator
 	{
 	public:
@@ -13,15 +15,6 @@ public:
 		iterator& operator++();
 		bool operator==(const iterator &i) const;
 		bool operator!=(const iterator &i) const;
-	};
-
-	class const_iterator
-	{
-	public:
-		const pair<KEY,VALUE> operator*();
-		const_iterator& operator++();
-		bool operator==(const const_iterator &i) const;
-		bool operator!=(const const_iterator &i) const;
 	};
 		
 	map();

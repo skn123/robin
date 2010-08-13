@@ -9,7 +9,7 @@ public class Group extends Entity {
 	 * A Scope which sets the "GroupedIn" attribute of elements inserted
 	 * into it rather than "ContainedIn".
 	 */
-	private class GroupScope extends Scope<Group>
+	private class GroupScope extends Scope
 	{
 		/**
 		 * Convenience constructor - creates a GroupScope and immediately
@@ -31,9 +31,8 @@ public class Group extends Entity {
 		 * @see sourceanalysis.Scope#mirrorRelationToMember(Entity, ContainedConnection)
 		 * @see sourceanalysis.Entity#connectToGroup()
 		 */
-		@Override
 		protected void mirrorRelationToMember(Entity contained,
-			ContainedConnection<Group, ? extends Entity> connection) {
+			ContainedConnection connection) {
 			// Connect to group
 			contained.connectToGroup(m_groupScopeOwner);
 		}
@@ -64,11 +63,11 @@ public class Group extends Entity {
 	 * @return Scope a scope (actually a Group.GroupScope instance)
 	 * @see sourceanalysis.Entity#getScope()
 	 */
-	public Scope<Group> getScope()
+	public Scope getScope()
 	{
 		return m_scope;
 	}
 
 	// Private members
-	Scope<Group> m_scope;
+	Scope m_scope;
 }

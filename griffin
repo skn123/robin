@@ -73,10 +73,7 @@ class Griffin:
         open(".griffin-doxyfile", "w").write(fmtd_doxyfile)
         Dots(self.verbose).run("doxygen .griffin-doxyfile")
         if self.verbose: print "unlink .griffin-doxyfile"
-        try:
-          os.unlink(".griffin-doxyfile")
-        except OSError, e:
-          print "Couldn't remove .griffin-doxyfile"
+        os.unlink(".griffin-doxyfile")
 
     def _command(self, modules):
         from os.path import join

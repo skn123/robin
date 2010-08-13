@@ -127,7 +127,6 @@ public class Field extends Entity implements Cloneable {
 	/**
 	 * @see java.lang.Object#clone()
 	 */
-	@Override
 	public Object clone() {
 		try {
 			return super.clone();

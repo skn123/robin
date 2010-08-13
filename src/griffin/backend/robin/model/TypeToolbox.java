@@ -1,5 +1,7 @@
 package backend.robin.model;
 
+import backend.robin.Filters;
+
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.Entity;
@@ -7,7 +9,6 @@ import sourceanalysis.InappropriateKindException;
 import sourceanalysis.Namespace;
 import sourceanalysis.Specifiers;
 import sourceanalysis.Type;
-import backend.robin.Filters;
 
 public class TypeToolbox {
 
@@ -148,6 +149,7 @@ public class TypeToolbox {
 	
 	private static Type getOriginalTypeDeep(Type.TypeNode root)
 	{
+		Type child = null;
 		Type original = null;
 		
 		switch (root.getKind()) {
@@ -208,7 +210,7 @@ public class TypeToolbox {
 	 */
 	public static boolean isVisible(Entity entity)
 	{
-		ContainedConnection<? extends Entity, ? extends Entity> uplink = entity.getContainerConnection();
+		ContainedConnection uplink = entity.getContainerConnection();
 		return uplink == null
 				|| uplink.getContainer() instanceof Namespace
 				|| uplink.getVisibility() == Specifiers.Visibility.PUBLIC;

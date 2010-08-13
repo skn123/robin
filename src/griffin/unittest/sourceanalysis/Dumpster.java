@@ -2,31 +2,12 @@ package unittest.sourceanalysis;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import sourceanalysis.Aggregate;
-import sourceanalysis.Alias;
-import sourceanalysis.ContainedConnection;
-import sourceanalysis.DataTemplateParameter;
-import sourceanalysis.Entity;
-import sourceanalysis.Field;
-import sourceanalysis.Group;
-import sourceanalysis.InappropriateKindException;
-import sourceanalysis.InheritanceConnection;
-import sourceanalysis.MissingInformationException;
-import sourceanalysis.Namespace;
-import sourceanalysis.Parameter;
-import sourceanalysis.Routine;
-import sourceanalysis.Scope;
-import sourceanalysis.SourceFile;
-import sourceanalysis.Specifiers;
-import sourceanalysis.TemplateArgument;
-import sourceanalysis.TemplateParameter;
-import sourceanalysis.Type;
-import sourceanalysis.TypenameTemplateArgument;
-import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.*;
 
 /**
  * The Dumpster knows to create textual dumps of the program database.
@@ -70,8 +51,9 @@ public class Dumpster {
 		throws IOException, MissingInformationException
 	{
 		if (entity.isTemplated()) {
-			out.write(" (templated upon");		
-			for (TemplateParameter tparam: entity.getTemplateParameters()) {
+			out.write(" (templated upon");			
+			for (Iterator tpi = entity.templateParameterIterator(); tpi.hasNext(); ) {
+				TemplateParameter tparam = (TemplateParameter)tpi.next();
 				// Branch according to type of template paramter (typename/data)
 				if (tparam instanceof TypenameTemplateParameter) {
 					TypenameTemplateParameter ttp = (TypenameTemplateParameter)tparam;
@@ -144,7 +126,7 @@ public class Dumpster {
 	{
 		out.write("[routine]");
 		if (routine.hasContainer()) {
-            ContainedConnection<? extends Entity, ? extends Entity> connection = routine.getContainerConnection();
+            ContainedConnection connection = routine.getContainerConnection();
 			dumpVisibility(connection.getVisibility(), out);
 			dumpStorage(connection.getStorage(), out);
 			dumpVirtuality(connection.getVirtuality(), out);
@@ -163,8 +145,8 @@ public class Dumpster {
 		}
 		out.write("\n"); out.flush();
 		// Dump parameters
-		for (Parameter param: routine.getParameters()) {
-			dump(param, out);
+		for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
+			dump((Parameter)pi.next(), out);
 		}
 		// Dump grouping
 		dumpGroupingOf(routine, out);
@@ -202,7 +184,7 @@ public class Dumpster {
 	{
 		out.write("[field]");
 		if (field.hasContainer()) {
-            ContainedConnection<? extends Entity, ? extends Entity> connection = field.getContainerConnection();
+            ContainedConnection connection = field.getContainerConnection();
 			dumpVisibility(connection.getVisibility(), out);
 			dumpStorage(connection.getStorage(), out);
 		}
@@ -248,7 +230,8 @@ public class Dumpster {
 		out.write("\n");
 		dumpLocations(enume, out);
 		// Dump constants
-		for (sourceanalysis.Enum.Constant constant: enume.getConstants()) {
+		for (Iterator ci = enume.constantIterator(); ci.hasNext(); ) {
+			sourceanalysis.Enum.Constant constant = (sourceanalysis.Enum.Constant)ci.next();
 			out.write("[info] '");
 			out.write(constant.getLiteral());
 			out.write("' in ");
@@ -288,7 +271,8 @@ public class Dumpster {
 		out.write("\n"); out.flush();
 		dumpLocations(aggregate, out);
 		// Dump base classes
-		for (InheritanceConnection connection: aggregate.getBases()) {
+		for (Iterator bi = aggregate.baseIterator(); bi.hasNext(); ) {
+			InheritanceConnection connection = (InheritanceConnection)bi.next();
 			out.write("[info] ");
 			dumpNameOf(aggregate, out);
 			out.write(" extends ");
@@ -317,32 +301,38 @@ public class Dumpster {
 	 * @param scope contained scope to be dumped
 	 * @param out output stream
 	 */
-	public void dump(Scope<? extends Entity> scope, Writer out)
+	public void dump(Scope scope, Writer out)
 		throws IOException, MissingInformationException
 	{
 		// - dump routines
-		for (ContainedConnection<? extends Entity, Routine> connection: scope.getRoutines()) {
-			dump(connection.getContained(), out);
+		for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)ri.next();
+			dump((Routine)connection.getContained(), out);
 		}
 		// - dump classes
-		for (ContainedConnection<? extends Entity, Aggregate> connection: scope.getAggregates()) {
-			dump(connection.getContained(), out);
+		for (Iterator ci = scope.aggregateIterator(); ci.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)ci.next();
+			dump((Aggregate)connection.getContained(), out);
 		}
 		// - dump namespaces
-		for (ContainedConnection<? extends Entity, Namespace> connection: scope.getNamespaces()) {
-			dump(connection.getContained(), out);
+		for (Iterator ni = scope.namespaceIterator(); ni.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)ni.next();
+			dump((Namespace)connection.getContained(), out);
 		}
 		// - dump field members
-		for (ContainedConnection<? extends Entity, Field> connection: scope.getFields()) {
-			dump(connection.getContained(), out);
+		for (Iterator fi = scope.fieldIterator(); fi.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)fi.next();
+			dump((Field)connection.getContained(), out);
 		}
 		// - dump contained aliases
-		for (ContainedConnection<? extends Entity, Alias> connection: scope.getAliass()) {
-			dump(connection.getContained(), out);
+		for (Iterator ai = scope.aliasIterator(); ai.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)ai.next();
+			dump((Alias)connection.getContained(), out);
 		}
 		// - dump enumerated types
-		for (ContainedConnection<? extends Entity, sourceanalysis.Enum> connection: scope.getEnums()) {
-			dump(connection.getContained(), out);
+		for (Iterator ei = scope.enumIterator(); ei.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)ei.next();
+			dump((sourceanalysis.Enum)connection.getContained(), out);
 		}
 		out.flush();
 	}
@@ -351,11 +341,12 @@ public class Dumpster {
 	 * @param scope group scope
 	 * @param out output stream
 	 */
-	public void dumpGroups(Scope<? extends Entity> scope, Writer out) throws IOException
+	public void dumpGroups(Scope scope, Writer out) throws IOException
 	{
 		// - dump contained groups
-		for (ContainedConnection<? extends Entity, Group> connection: scope.getGroups()) {
-			dump(connection.getContained(), out);
+		for (Iterator gi = scope.groupIterator(); gi.hasNext(); ) {
+			ContainedConnection connection = (ContainedConnection)gi.next();
+			dump((Group)connection.getContained(), out);
 		}
 	}	
 

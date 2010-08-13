@@ -170,10 +170,10 @@ public class SourceFile extends Entity {
 	public SourceFile() {
 		super();
 		// Initialize all relations to empty
-		m_declarations = new LinkedList<DeclDefConnection>();
-		m_definitions = new LinkedList<DeclDefConnection>();
-		m_includes = new LinkedList<SourceFile>();
-		m_includedIn = new LinkedList<SourceFile>();
+		m_declarations = new LinkedList();
+		m_definitions = new LinkedList();
+		m_includes = new LinkedList();
+		m_includedIn = new LinkedList();
 		m_fullPath = null;
 	}
 
@@ -258,7 +258,7 @@ public class SourceFile extends Entity {
 	 * Access files included by this file.
 	 * @return Iterator iterates over files which this file includes
 	 */
-	public Iterator<SourceFile> includesIterator()
+	public Iterator includesIterator()
 	{
 		return m_includes.iterator();
 	}
@@ -267,7 +267,7 @@ public class SourceFile extends Entity {
 	 * Access files including this file.
 	 * @return Iterator iterates over files which include this file
 	 */
-	public Iterator<SourceFile> includedInIterator()
+	public Iterator includedInIterator()
 	{
 		return m_includedIn.iterator();
 	}
@@ -276,15 +276,16 @@ public class SourceFile extends Entity {
 	 * Access the declarations in this file.
 	 * @return Iterator iterates over DeclDefConnection
 	 */
-	public ConstCollection<DeclDefConnection> getDeclarations() {
-		return new ConstCollection<DeclDefConnection>(m_declarations);
+	public Iterator declarationIterator()
+	{
+		return m_declarations.iterator();
 	}
 
 	/**
 	 * Access the definitions in this file.
 	 * @return Iterator iterates over DeclDefConnection
 	 */
-	public Iterator<DeclDefConnection> definitionIterator()
+	public Iterator definitionIterator()
 	{
 		return m_definitions.iterator();
 	}
@@ -295,7 +296,6 @@ public class SourceFile extends Entity {
 	 * the return value is the same as from getName().
 	 * @return String full path (e.g., /tmp/karateka/punch.h)
 	 */
-	@Override
 	public String getFullName()
 	{
 		return m_fullPath == null ? super.getFullName() : m_fullPath;
@@ -305,11 +305,11 @@ public class SourceFile extends Entity {
 	
 
 	// Private members
-	private List<DeclDefConnection> m_declarations;
-	private List<DeclDefConnection> m_definitions;
+	private List m_declarations;
+	private List m_definitions;
 	
-	private List<SourceFile> m_includes;
-	private List<SourceFile> m_includedIn;
+	private List m_includes;
+	private List m_includedIn;
 	
 	private String m_fullPath;
 }

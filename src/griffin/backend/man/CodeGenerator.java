@@ -1,25 +1,13 @@
 package backend.man;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.StringTokenizer;
+import java.io.*;
+import java.util.*;
 
-import sourceanalysis.Aggregate;
-import sourceanalysis.ContainedConnection;
-import sourceanalysis.ElementNotFoundException;
-import sourceanalysis.Entity;
-import sourceanalysis.Group;
-import sourceanalysis.MissingInformationException;
-import sourceanalysis.Namespace;
-import sourceanalysis.ProgramDatabase;
-import sourceanalysis.Routine;
+
+import sourceanalysis.*;
 import sourceanalysis.Scope;
-import sourceanalysis.view.TemplateBank;
-import backend.GenericCodeGenerator;
-import backend.Utils;
+import sourceanalysis.view.*;
+import backend.*;
 
 public class CodeGenerator extends GenericCodeGenerator {
 	String m_dir;
@@ -55,10 +43,12 @@ public class CodeGenerator extends GenericCodeGenerator {
 	
 	public void generateClassesDocumentation() {
 		Namespace globalNS = m_program.getGlobalNamespace();
-		Scope<Namespace> globalScope = globalNS.getScope();
-		for (ContainedConnection<Namespace, Aggregate> con: globalScope.getAggregates()) {
+		Scope globalScope = globalNS.getScope();	
+		Iterator i = globalScope.aggregateIterator();
+		while (i.hasNext()) {
+			ContainedConnection con = (ContainedConnection) i.next();
 			try {
-				generateSingleClassDocumentation(con.getContained());
+				generateSingleClassDocumentation((Aggregate)con.getContained());
 			} catch (IOException e) {
 				System.err.println("*** ERROR: failed to create man: " + e);
 				e.printStackTrace();
@@ -90,8 +80,10 @@ public class CodeGenerator extends GenericCodeGenerator {
 	 * @param w
 	 */
 	private void writeGroups(Aggregate agg, Writer w) throws IOException {
-		for (ContainedConnection<Aggregate, Group> c: agg.getScope().getGroups()) {
-			Group g = c.getContained();
+		Iterator i = agg.getScope().groupIterator();
+		while (i.hasNext()) {
+			ContainedConnection c = (ContainedConnection)i.next();
+			Group g = (Group)c.getContained();
 			writeGroup(g, w);
 		}
 		
@@ -104,7 +96,7 @@ public class CodeGenerator extends GenericCodeGenerator {
 	private void writeGroup(Group g, Writer w) throws IOException {
 		w.write(".SH "+g.getName()+"\n"+
 				".BR\n");
-		Scope<Group> s = g.getScope();
+		Scope s = g.getScope();
 		writeMethods(s, w);				
 	}
 
@@ -112,9 +104,12 @@ public class CodeGenerator extends GenericCodeGenerator {
 	 * @param entity
 	 * @param w
 	 */
-	private void writeMethods(Scope<Group> scope, Writer w) throws IOException  {	
-		for (ContainedConnection<Group, Routine> c: scope.getRoutines()) {
-			Routine r = c.getContained();						
+	private void writeMethods(Scope scope, Writer w) throws IOException  {		
+		Iterator i = scope.routineIterator();			
+		while(i.hasNext()) {
+	
+			ContainedConnection c = (ContainedConnection)i.next();
+			Routine r = (Routine)c.getContained();						
 			try {
 				writeMethod(r, w);
 			

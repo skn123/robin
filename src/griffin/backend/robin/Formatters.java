@@ -2,15 +2,6 @@ package backend.robin;
 
 import java.util.List;
 
-import sourceanalysis.Aggregate;
-import sourceanalysis.Entity;
-import sourceanalysis.Field;
-import sourceanalysis.MissingInformationException;
-import sourceanalysis.Parameter;
-import sourceanalysis.TemplateArgument;
-import sourceanalysis.Type;
-import sourceanalysis.TypenameTemplateArgument;
-import sourceanalysis.SourceFile.DeclDefConnection;
 import backend.Utils;
 import backend.robin.model.CppExpression;
 import backend.robin.model.ElementKind;
@@ -19,6 +10,8 @@ import backend.robin.model.RoutineDeduction;
 import backend.robin.model.SimpleType;
 import backend.robin.model.TypeToolbox;
 import backend.robin.model.RoutineDeduction.ParameterTransformer;
+import sourceanalysis.*;
+import sourceanalysis.SourceFile.DeclDefConnection;
 
 public class Formatters {
 

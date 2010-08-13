@@ -14,7 +14,7 @@ public class Macro extends Entity {
 	 */
 	public Macro() {
 		super();
-		m_parameters = new LinkedList<String>();
+		m_parameters = new LinkedList();
 	}
 
 	/**
@@ -57,7 +57,7 @@ public class Macro extends Entity {
 	 * Access all the preprocessing parameters this macro accepts.
 	 * @return an iterator which iterates over Strings
 	 */
-	public Iterator<String> preprocesingParameterIterator()
+	public Iterator preprocesingParameterIterator()
 	{
 		return m_parameters.iterator();
 	}
@@ -75,5 +75,5 @@ public class Macro extends Entity {
 	
 	// Private members - macro attributes
 	private String m_expansion;
-	private List<String> m_parameters;
+	private List m_parameters;
 }

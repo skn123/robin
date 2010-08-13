@@ -10,6 +10,9 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
+/*
+ * Created on 12/10/2005 by Misha.
+ */
 
 public class ClassesPage extends WizardPage {
     public static final String DESCRIPTION_STR = "Choose what classes to wrap";

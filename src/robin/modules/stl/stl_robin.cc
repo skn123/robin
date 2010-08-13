@@ -5,7 +5,7 @@
 #include <fstream>
 #include <memory>
 #include <stdio.h>
-#include <stdlib.h>
+
 #include "streams.h"
 
 struct RegData { const char *name; const char *type; RegData *i; void *sym; };
@@ -16,7 +16,7 @@ typedef void *basic_block;
 #define F (void*)&
 
 typedef bool (*__interceptor)(scripting_element twin,
-			      RegData *signature, basic_block args[],
+			      RegData *signature, basic_block args[], 
 			      basic_block *result, bool isPure);
 extern __interceptor __robin_callback;
 __interceptor __robin_callback = 0;
@@ -144,7 +144,7 @@ std::string *stdostringstream_str(const std::ostringstream& self)
 
 void stdostringstream_dtor(std::ostringstream *self)
 {
-	delete self;
+	delete self; 
 }
 
 /*
@@ -245,7 +245,7 @@ public:
 		__robin_callback(twin, Igluebuf_proto+2, args, &result, true);
 	}
 
-	virtual std::string read(int n) {
+	virtual std::string read(int n) { 
 		void *args[] = { (void*)n };
 		void *result;
 		__robin_callback(twin, Igluebuf_proto+3, args, &result, true);

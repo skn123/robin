@@ -3,13 +3,13 @@
  */
 package unittest.backend;
 
-import junit.framework.TestCase;
-import unittest.backend.testlauncher.LauncherTest;
 import backend.PropertyPage;
 import backend.exceptions.BackendException;
 import backend.exceptions.InvalidCommandLineException;
 import backend.exceptions.configuration.BackendNotFoundException;
 import backend.exceptions.configuration.ConfigurationParseException;
+import unittest.backend.testlauncher.LauncherTest;
+import junit.framework.TestCase;
 
 /**
  * @author Alex Shapira
@@ -20,16 +20,14 @@ public class TestLauncher extends TestCase {
    /* (non-Javadoc)
     * @see junit.framework.TestCase#setUp()
     */
-   @Override
-protected void setUp() throws Exception {
+   protected void setUp() throws Exception {
        super.setUp();
    }
 
    /* (non-Javadoc)
     * @see junit.framework.TestCase#tearDown()
     */
-   @Override
-protected void tearDown() throws Exception {
+   protected void tearDown() throws Exception {
        super.tearDown();
    }
 
@@ -82,7 +80,7 @@ protected void tearDown() throws Exception {
    public void testNotEnoughArgs() throws ConfigurationParseException, BackendException, BackendNotFoundException, InvalidCommandLineException {
        LauncherTest lc = new LauncherTest();
        try {
-           lc.parseCommandLine("Test --barProperty foo".split(" "));
+           PropertyPage pp = lc.parseCommandLine("Test --barProperty foo".split(" "));
        } catch(InvalidCommandLineException e) {
            // good boy
            return;
@@ -100,7 +98,7 @@ protected void tearDown() throws Exception {
    public void testTooManyArgs() throws ConfigurationParseException, BackendException, BackendNotFoundException {
        LauncherTest lc = new LauncherTest();
        try {
-           lc.parseCommandLine("Test --input '.' --fooProperty foo bar".split(" "));
+           PropertyPage pp = lc.parseCommandLine("Test --input '.' --fooProperty foo bar".split(" "));
        } catch(InvalidCommandLineException e) {
            // good boy
            return;
@@ -119,7 +117,7 @@ protected void tearDown() throws Exception {
    public void testLauncherUnknownArgs() throws ConfigurationParseException, BackendException, BackendNotFoundException, InvalidCommandLineException {
        LauncherTest lc = new LauncherTest();
        try {
-           lc.parseCommandLine("Test --input '.' --blah foo --fooProperty A --barProperty foo".split(" "));
+           PropertyPage pp = lc.parseCommandLine("Test --input '.' --blah foo --fooProperty A --barProperty foo".split(" "));
        } catch(InvalidCommandLineException e) {
            // good boy
            return;
@@ -136,7 +134,8 @@ protected void tearDown() throws Exception {
     */
    public void testAnyNumberOfArguments() throws ConfigurationParseException, BackendException, BackendNotFoundException, InvalidCommandLineException {
        LauncherTest lc = new LauncherTest();
-       lc.parseCommandLine("Test --input '.' --barProperty foo bar".split(" "));   
+       PropertyPage pp = lc.parseCommandLine("Test --input '.' --barProperty foo bar".split(" "));
+       
    }
 
 }

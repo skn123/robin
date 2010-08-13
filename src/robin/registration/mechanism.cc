@@ -26,7 +26,6 @@
 
 #include <errno.h>
 #include <assert.h>
-#include <cstring>
 
 #include "../reflection/library.h"
 #include "../reflection/class.h"
@@ -114,9 +113,9 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 	if (!rbase) return;
 	if (klass && !klass->isEmpty()) return;  /* avoid double loading */
 
-	for (RegData *pdata = rbase;
+	for (RegData *pdata = rbase; 
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
-
+		
 		normalizeName(pdata);
 
 		if (strcmp(pdata->type, "enum") == 0) {             /* type = enum */
@@ -149,7 +148,7 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 			//   '%' = no conversion ("explicit")
 			//   '*' = user-defined conversion
 			//   '^' = promotion
-			if (cfun->signature().size() == 1 && symbol != '%')
+			if (cfun->signature().size() == 1 && symbol != '%') 
 				admitUserDefinedConversion(cfun, klass,
 										   symbol == '^');
 			assert(klass);
@@ -204,7 +203,7 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 					OverloadedSet *ols;
 					// See if any overloaded set exists with this name
 					try {
-						Handle<Callable> existing =
+						Handle<Callable> existing = 
 							container.lookupFunction(pdata->name);
 						ols = dynamic_cast<OverloadedSet*>(&*existing);
 					}
@@ -215,7 +214,7 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 					}
 					// now add cfun
 					dbg::trace << "// @FUNC: " << pdata->name << " with "
-							   << int(cfun->signature().size())
+							   << int(cfun->signature().size()) 
 							   << " arguments." << dbg::endl;
 					ols->addAlternative(cfun);
 				}
@@ -238,18 +237,18 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 /**
  * Registers the formal arguments of a function.
  */
-void RegistrationMechanism::admitArguments(const RegData *rbase,
+void RegistrationMechanism::admitArguments(const RegData *rbase, 
 										   Handle<CFunction> cfun,
 										   Namespace &container)
 {
 	if (!rbase) return;
 
-	for (const RegData *pdata = rbase;
+	for (const RegData *pdata = rbase; 
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
 		// Create an argument of this type
 		Handle<TypeOfArgument> argtype = interpretType(pdata->type, container);
 		cfun->addFormalArgument(pdata->name, argtype);
-	}
+	}	
 }
 
 /**
@@ -261,12 +260,12 @@ void RegistrationMechanism::admitArguments(const RegData *rbase,
 {
 	if (!rbase) return;
 
-	for (const RegData *pdata = rbase;
+	for (const RegData *pdata = rbase; 
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
 		// Create an argument of this type
 		Handle<TypeOfArgument> argtype = interpretType(pdata->type, container);
 		signature.argumentTypes.push_back(argtype);
-	}
+	}	
 }
 
 /**
@@ -278,7 +277,7 @@ void RegistrationMechanism::admitEnum(const RegData *rbase,
 {
 	if (!rbase) return;
 
-	for (const RegData *pdata = rbase;
+	for (const RegData *pdata = rbase; 
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
 		// Refer to current item as constant definition (name and value)
 		const int *pvalue = reinterpret_cast<const int*>(pdata->sym);
@@ -333,7 +332,7 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 		// Is an intrinsic type?
 		for (entry *ei = intrinsics; ei->keyword != 0; ++ei)
 			if (strcmp(ei->keyword, type) == 0) rtype = ei->toa;
-
+	
 		// Enumerated type?
 		if (!rtype && type[0] == '#')
 			rtype = touchEnum(type + 1, container)->getArg();
@@ -344,7 +343,7 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 			else if (type[0] == '&') { modif = REFARG; redir_count++; }
 			else if (type[0] == '>') modif = OUTARG;
 			else break;
-
+	
 			type++;  /* skip ref/ptr symbol */
 		}
 	}
@@ -416,7 +415,7 @@ void RegistrationMechanism::admitUpCastConversion(Handle<Class> derived,
 												  Handle<Class> base,
 												  void *transformsym)
 {
-	UpCastConversion::transformfunc upfunc =
+	UpCastConversion::transformfunc upfunc = 
 		(UpCastConversion::transformfunc)transformsym;
 	upfunc(0);
 	// Construct conversion object with given transform func
@@ -513,9 +512,9 @@ RegData *RegistrationMechanism::acquireRegData_impl(std::string library)
 	}
 	catch (DynamicLibraryOpenException& e) {
 		LPVOID lpMsgBuf;
-		if (FormatMessage(
-		    FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		    FORMAT_MESSAGE_FROM_SYSTEM |
+		if (FormatMessage( 
+		    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+		    FORMAT_MESSAGE_FROM_SYSTEM | 
 		    FORMAT_MESSAGE_IGNORE_INSERTS,
 		    NULL,
 		    GetLastError(),
@@ -549,7 +548,7 @@ RegData *RegistrationMechanism::acquireRegData_impl(std::string library)
 		void *libhandle = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 		if (libhandle == 0) throw DynamicLibraryOpenException(errno);
 		// fetch callback symbol
-		Interface::callback_t *__callback =
+		Interface::callback_t *__callback = 
 			(Interface::callback_t*)dlsym(libhandle, "__robin_callback");
 		if (__callback)
 			*__callback = &Interface::global_callback;

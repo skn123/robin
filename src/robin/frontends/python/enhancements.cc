@@ -1365,7 +1365,7 @@ Conversion::Weight PythonConversionWithWeigher::weight(Insight insight) const
 		return weight();
 
 	// Invoke the weigher function
-	PyObject *result = PyObject_CallFunction(m_weigher, (char*)"(O)", pyinsight);
+	PyObject *result = PyObject_CallFunction(m_weigher, "(O)", pyinsight);
 	if (result) {
 		if (PyTuple_Check(result) && PyTuple_Size(result) == 4) {
 			// Break the tuple into 4 integral elements
@@ -1396,3 +1396,4 @@ Conversion::Weight PythonConversionWithWeigher::weight(Insight insight) const
 } // end of namespace Python
 
 } // end of namespace Robin
+

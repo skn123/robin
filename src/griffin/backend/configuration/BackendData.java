@@ -27,7 +27,7 @@ public class BackendData {
     * @param properties backend properties
     * @throws InvalidBackendException 
     */
-   public BackendData(Class<? extends Backend> implementingClass) throws InvalidBackendException 
+   public BackendData(Class implementingClass) throws InvalidBackendException 
    {
        this.implementingClassName = implementingClass.getCanonicalName();
        
@@ -65,7 +65,7 @@ public class BackendData {
    /**
     * @return the backend interface class
     */
-   public Class<? extends Backend> getBackendInterface() {
+   public Class<Backend> getBackendInterface() {
        return backendInterface;
    }
    
@@ -96,7 +96,7 @@ public class BackendData {
     * @throws InvalidBackendException implementingClass does not implement Backend
     */
    @SuppressWarnings("unchecked")
-   private Class<? extends Backend> getBackendClass(Class<? extends Backend> implementingClass) throws InvalidBackendException {
+   private Class<Backend> getBackendClass(Class implementingClass) throws InvalidBackendException {
                    
        Class[] cInterfaces = implementingClass.getInterfaces();
        
@@ -120,7 +120,7 @@ public class BackendData {
     * @param implementingClass class that implements a backend
     * @throws InvalidBackendException Backend does not have a BackendDescription
     */
-   private void parseClassAnnotations(Class<? extends Backend> implementingClass) throws InvalidBackendException {
+   private void parseClassAnnotations(Class implementingClass) throws InvalidBackendException {
        // load class
        try {
            Class.forName(implementingClass.getCanonicalName());
@@ -231,7 +231,7 @@ public class BackendData {
    /**
     * Backend interface
     */
-   private Class<? extends Backend> backendInterface;
+   private Class<Backend> backendInterface;
    
    
    /**

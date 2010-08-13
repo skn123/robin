@@ -65,7 +65,6 @@ public class XMLFormatException extends Exception {
 	 * Returns the error string plus the error path.
 	 * @return String a printable string
 	 */
-	@Override
 	public String toString()
 	{
 		return super.toString() + " (at " + getErrorPath() + ")";

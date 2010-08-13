@@ -4,9 +4,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
-
-import sourceanalysis.hints.Artificial;
-import sourceanalysis.hints.IncludedViaHeader;
+import java.util.Iterator;
 
 /**
  * <p>Base class for all source-analysis components.</p>
@@ -67,12 +65,12 @@ public abstract class Entity {
 	{
 		super();
 		m_name = "anonymous";
-		m_properties = new Vector<Property>();
-		m_hints = new LinkedList<Hint>();
+		m_properties = new Vector();
+		m_hints = new LinkedList();
 		m_uplink = null;
 		m_group = null;
-		m_affiliates = new LinkedList<FriendConnection>();
-		m_templateParameters = new Vector<TemplateParameter>();
+		m_affiliates = new LinkedList();
+		m_templateParameters = new Vector();
 		m_external = false;
 	}
 
@@ -139,15 +137,23 @@ public abstract class Entity {
 	 * @throws InappropriateKindException one or more of the elements in
 	 * 'parameters' is not a TemplateParameter.
 	 */
-	public void setTemplateParameters(Vector<TemplateParameter> parameters) 
+	public void setTemplateParameters(Vector parameters) 
 		throws InappropriateKindException
 	{
 		m_templateParameters = parameters;
 		// Connect all members of the parameters' vector to the Entity
 		// as "contained"
-		for (TemplateParameter parameter: parameters) {
-			// - carry out connection
-			parameter.connectToContainer(this, parameter);
+		Iterator pi = parameters.iterator();
+		while (pi.hasNext()) {
+			Object pvalue = pi.next();
+			// Check that element really is a template parameter
+			if (pvalue instanceof TemplateParameter) {
+				TemplateParameter parameter = (TemplateParameter)pvalue;
+				// - carry out connection
+				parameter.connectToContainer(this, parameter);
+			}
+			else
+				throw new InappropriateKindException("expected: TemplateParameter");
 		}
 	}
 	
@@ -216,7 +222,7 @@ public abstract class Entity {
 	 * containing Entity, and must not be called directly on other occasions.
 	 * @param connection uplink connection to container
 	 */
-	protected void connectToContainer(ContainedConnection<? extends Entity, ? extends Entity> connection)
+	protected void connectToContainer(ContainedConnection connection)
 	{
 		m_uplink = connection;
 	}
@@ -228,7 +234,7 @@ public abstract class Entity {
     protected void connectToContainer(Entity container, Entity contained)
     {
         this.connectToContainer(
-            new ContainedConnection<Entity, Entity>(
+            new ContainedConnection(
                 container,
                 Specifiers.DONT_CARE,
                 Specifiers.DONT_CARE,
@@ -300,7 +306,8 @@ public abstract class Entity {
 	 */
 	public Property findProperty(String name) throws ElementNotFoundException
 	{
-		for (Property property: m_properties) {
+		for (Iterator i = m_properties.iterator(); i.hasNext(); ) {
+			Property property = (Property)i.next();
 			if (property.getName().equals(name)) return property;
 		}
 		throw new ElementNotFoundException();
@@ -311,16 +318,18 @@ public abstract class Entity {
 	 * which iterates over Entity.Property items.
 	 * @return Iterator
 	 */
-	public ConstCollection<Property> getProperties() {
-		return new ConstCollection<Property>(m_properties);
+	public Iterator propertyIterator()
+	{
+		return m_properties.iterator();
 	}
 	
 	/**
 	 * Access to all of the Entity's attached hints. 
 	 * @return a java.util.Iterator which iterates over Hint items.
 	 */
-	public ConstCollection<Hint> getHints() {
-		return new ConstCollection<Hint>(m_hints);
+	public Iterator hintIterator()
+	{
+		return m_hints.iterator();
 	}
 	
 	/**
@@ -328,9 +337,10 @@ public abstract class Entity {
 	 * @param kind the Hint subclass to look for
 	 * @return true if a hint of this type was found. 
 	 */
-	public boolean hasHint(Class<Artificial> kind)
+	public boolean hasHint(Class kind)
 	{
-		for (Hint hint: m_hints) {
+		for (Iterator hi = hintIterator(); hi.hasNext();) {
+			Hint hint = (Hint) hi.next();
 			if (kind.isInstance(hint)) return true;
 		}
 		return false;
@@ -342,9 +352,10 @@ public abstract class Entity {
 	 * @return a Hint object which is an instance of hintClass if
 	 * such exists. Otherwise, <b>null</b>.
 	 */
-	public Hint lookForHint(Class<IncludedViaHeader> hintClass)
+	public Hint lookForHint(Class hintClass)
 	{
-		for (Hint hint: m_hints) {
+		for (Iterator hintIter = hintIterator(); hintIter.hasNext(); ) {
+			Hint hint = (Hint)hintIter.next();
 			if (hintClass.isInstance(hint))
 				return hint;
 		}
@@ -356,7 +367,6 @@ public abstract class Entity {
 	 * contains Entity kind and name.
 	 * @return String
 	 */
-	@Override
 	public String toString()
 	{
 		return getClass().getName() + "(" + getName() + ")";
@@ -378,7 +388,7 @@ public abstract class Entity {
 	 * ContainedConnection.getContainer and other methods.
 	 * @return ContainedConnection
 	 */
-	public ContainedConnection<? extends Entity, ? extends Entity> getContainerConnection()
+	public ContainedConnection getContainerConnection()
 	{
 		return m_uplink;
 	}
@@ -432,8 +442,9 @@ public abstract class Entity {
 	 * Access all the template parameters.
 	 * @return Iterator iterates over TemplateParameters
 	 */
-	public ConstCollection<TemplateParameter> getTemplateParameters() {
-		return new ConstCollection<TemplateParameter>(m_templateParameters);
+	public Iterator templateParameterIterator()
+	{
+		return m_templateParameters.iterator();
 	}
 
 	/*@}*/	
@@ -449,8 +460,9 @@ public abstract class Entity {
 	 * Get entities which declare this entity as a friend.
 	 * @return an Iterator over FriendConnection.
 	 */
-	public ConstCollection<FriendConnection> getAffiliates() {
-		return new ConstCollection<FriendConnection>(m_affiliates);
+	public Iterator affiliatesIterator()
+	{
+		return m_affiliates.iterator();
 	}
 	
 	/**
@@ -489,14 +501,14 @@ public abstract class Entity {
 
 	// Private members
 	private String m_name;
-	private Vector<Property> m_properties;
-	private Collection<Hint> m_hints;
+	private Vector m_properties;
+	private Collection m_hints;
 	
-	private ContainedConnection<? extends Entity, ? extends Entity> m_uplink;
+	private ContainedConnection m_uplink;
 	private Group m_group;
-	private List<FriendConnection> m_affiliates;
+	private List m_affiliates;
 	
-	private Vector<TemplateParameter> m_templateParameters;
+	private Vector m_templateParameters;
 	
 	private SourceFile.DeclDefConnection m_declarationAt;
 	private SourceFile.DeclDefConnection m_definitionAt;
