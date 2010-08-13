@@ -8,6 +8,17 @@
 #include <FlexLexer.h>
 #endif
 
+/* This defined is needed in flex2.5.33 and it provides
+ * access to what in flex2.5.3 was yy_current_buffer
+ * (notice yy_buffer_stack is a member of yyFlexLexer
+ * so the macro is valid from methods of classes
+ * inheriting from it).
+ */
+#define YY_CURRENT_BUFFER ( (yy_buffer_stack) \
+                          ? (yy_buffer_stack)[(yy_buffer_stack_top)] \
+                          : NULL)
+
+
 
 #include <pattern/handle.h>
 #include <string>

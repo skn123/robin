@@ -10,19 +10,11 @@
  * Generic Cache
  */
 
-#if defined(WITH_STD_HASHMAP)
-#include <ext/hash_map>
-#elif defined(WITH_EXT_HASHMAP)
-#include <ext/hash_map>
-namespace std {
-	using __gnu_cxx::hash_map;
-}
-#else
-#include <map>
-#endif
 
 #ifndef PATTERN_CACHE_H
 #define PATTERN_CACHE_H
+
+#include "map.h"
 
 namespace Pattern {
 
@@ -33,22 +25,28 @@ namespace Pattern {
  * from doing them over and over again. When computations take place, the
  * cache stores the results (using Cache::remember). When a processing
  * is requested later, the result can be fetched (using Cache::recall).
+ *
+ * CacheTraits is the only template parameter received by the Cache
+ * class. It extends the notion of MapTraits from the file pattern/map.h.
+ * It is a class that has all the members of MapTraits plus:
+ *  - CacheTraits::getMissedElement - returns a member of the type CacheTraits::Value
+ *  	which will be returned when the key is not present in the
+ *  	cache (of course it might throw an exception too).
+ *  	The signature is 'static const Value &CacheTraits::getMissedElement()'
+ *  - CacheTraits::dispose - a function of signature
+ *  		'static void dispose(const Key& key)'
+ *  	which will be called when an element is removed from the cache
+ *  	(maybe because there was no space to hold it)
+ *  	It is a good place to add resource freeing if the destructor
+ *  	of Key does not do it by itself.
  */
-template < class Key, class Result, class HashTraits >
+template < class CacheTraits >
 class Cache
 {
 private:
-	typedef typename HashTraits::KeyHashFunctor KeyHashFunctor;
-	typedef typename HashTraits::KeyIdentityFunctor KeyIdentityFunctor;
-	typedef typename HashTraits::KeyCompareFunctor KeyCompareFunctor;
-
-#if defined(WITH_STD_HASHMAP) || defined(WITH_EXT_HASHMAP)
-	typedef std::hash_map<Key, Result, 
-					 KeyHashFunctor, KeyIdentityFunctor> cache_map;
-#else
-	typedef std::map<Key, Result, KeyCompareFunctor> cache_map;
-#endif
-
+	typedef typename CacheTraits::Key Key;
+	typedef typename CacheTraits::Value Result;
+	typedef Map<CacheTraits> cache_map;
 	cache_map latest;
 
 public:
@@ -80,7 +78,7 @@ public:
 #ifdef HARD_PROFILE
 			++misses;
 #endif
-			return HashTraits::MISSED;
+			return CacheTraits::getMissedElement();
 		}
 		else {
 #ifdef HARD_PROFILE
@@ -97,7 +95,7 @@ public:
 	{
 		for (typename cache_map::iterator ci = latest.begin(); 
 			 ci != latest.end(); )
-			HashTraits::dispose((ci++)->first);
+			CacheTraits::dispose((ci++)->first);
 		latest.clear();
 	}
 
@@ -107,10 +105,10 @@ private:
 };
 
 #ifdef HARD_PROFILE
-template < class Key, class Result, class HashTraits >
-int Cache<Key, Result, HashTraits>::hits = 0;
-template < class Key, class Result, class HashTraits >
-int Cache<Key, Result, HashTraits>::misses = 0;
+template < class CacheTraits >
+int Cache<CacheTraits>::hits = 0;
+template < class CacheTraits >
+int Cache<CacheTraits>::misses = 0;
 #endif
 
 } // end of namespace Pattern

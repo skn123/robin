@@ -20,61 +20,61 @@ namespace Robin {
 
 #ifndef __doxygen
 
-Handle<TypeOfArgument> ArgumentInt (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_INT));
-Handle<TypeOfArgument> ArgumentLong(new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_LONG));
-Handle<TypeOfArgument> ArgumentLongLong
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_LONG_LONG));
-Handle<TypeOfArgument> ArgumentShort
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_SHORT));
-Handle<TypeOfArgument> ArgumentUInt(new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_UINT));
-Handle<TypeOfArgument> ArgumentULong
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_ULONG));
-Handle<TypeOfArgument> ArgumentULongLong
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_ULONG_LONG));
-Handle<TypeOfArgument> ArgumentUShort
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_USHORT));
-Handle<TypeOfArgument> ArgumentChar(new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_CHAR));
-Handle<TypeOfArgument> ArgumentSChar
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_SCHAR));
-Handle<TypeOfArgument> ArgumentUChar
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_UCHAR));
-Handle<TypeOfArgument> ArgumentFloat
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_FLOAT));
-Handle<TypeOfArgument> ArgumentDouble
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_DOUBLE));
-Handle<TypeOfArgument> ArgumentBoolean
-                                   (new TypeOfArgument(TYPE_CATEGORY_INTRINSIC,
-						            TYPE_INTRINSIC_BOOL));
-Handle<TypeOfArgument> ArgumentVoid(new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
-						            TYPE_EXTENDED_VOID));
+Handle<RobinType> ArgumentInt (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_INT,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentLong(RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_LONG,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentLongLong
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_LONG_LONG,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentShort
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_SHORT,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentUInt(RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_UINT,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentULong
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_ULONG,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentULongLong
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_ULONG_LONG,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentUShort
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_USHORT,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentChar(RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_CHAR,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentSChar
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_SCHAR,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentUChar
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_UCHAR,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentFloat
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_FLOAT,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentDouble
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_DOUBLE,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentBoolean
+                                   (RobinType::create_new(TYPE_CATEGORY_INTRINSIC,
+						            TYPE_INTRINSIC_BOOL,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentVoid(RobinType::create_new(TYPE_CATEGORY_EXTENDED,
+						            TYPE_EXTENDED_VOID,RobinType::constReferenceKind));
 
-Handle<TypeOfArgument> ArgumentCString
-                                   (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
-						            TYPE_EXTENDED_CSTRING));
-Handle<TypeOfArgument> ArgumentPascalString
-                                   (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
-						            TYPE_EXTENDED_PASCALSTRING));
+Handle<RobinType> ArgumentCString
+                                   (RobinType::create_new(TYPE_CATEGORY_EXTENDED,
+						            TYPE_EXTENDED_CSTRING,RobinType::constReferenceKind));
+Handle<RobinType> ArgumentPascalString
+                                   (RobinType::create_new(TYPE_CATEGORY_EXTENDED,
+						            TYPE_EXTENDED_PASCALSTRING,RobinType::constReferenceKind));
 
-Handle<TypeOfArgument> ArgumentScriptingElementNewRef
-                                   (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
-						            TYPE_EXTENDED_ELEMENT));
+Handle<RobinType> ArgumentScriptingElementNewRef
+                                   (RobinType::create_new(TYPE_CATEGORY_EXTENDED,
+						            TYPE_EXTENDED_ELEMENT, "*scripting_element",RobinType::regularKind));
 
-Handle<TypeOfArgument> ArgumentScriptingElementBorrowedRef
-                                   (new TypeOfArgument(TYPE_CATEGORY_EXTENDED,
-						            TYPE_EXTENDED_ELEMENT, /* borrowed = */true));
+Handle<RobinType> ArgumentScriptingElementBorrowedRef
+                                   (RobinType::create_new(TYPE_CATEGORY_EXTENDED,
+						            TYPE_EXTENDED_ELEMENT, "&scripting_element",RobinType::regularKind,/* borrowed = */true));
 
 #endif
 

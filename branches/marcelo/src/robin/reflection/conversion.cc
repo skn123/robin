@@ -12,9 +12,11 @@
 
 #include "conversion.h"
 #include "memorymanager.h"
+#include "robintype.h"
+#include "../debug/trace.h"
 
 #include <iostream>
-
+#include <robin/debug/assert.h>
 
 namespace Robin {
 
@@ -22,7 +24,7 @@ namespace Robin {
 
 const Conversion::Weight Conversion::Weight::ZERO(0, 0, 0, 0);
 const Conversion::Weight Conversion::Weight::INFINITE(INF, INF, INF, INF);
-const Conversion::Weight Conversion::Weight::UNKNOWN(9, 9, 9, 9);
+const Conversion::Weight Conversion::Weight::UNKNOWN;
 
 
 
@@ -34,12 +36,12 @@ const Conversion::Weight Conversion::Weight::UNKNOWN(9, 9, 9, 9);
 Conversion::Conversion() { }
 
 
-
+Conversion::~Conversion() { }
 /**
  * Specifies the source type for the conversion, which
  * is the source of the actual data elements being converted.
  */
-void Conversion::setSourceType(Handle<TypeOfArgument> type)
+void Conversion::setSourceType(Handle<RobinType> type)
 {
 	m_source = type;
 }
@@ -49,7 +51,7 @@ void Conversion::setSourceType(Handle<TypeOfArgument> type)
  * is the type of output data elements resulted from applying the
  * conversion.
  */
-void Conversion::setTargetType(Handle<TypeOfArgument> type)
+void Conversion::setTargetType(Handle<RobinType> type)
 {
 	m_target = type;
 }
@@ -67,7 +69,7 @@ void Conversion::setWeight(const Conversion::Weight& w)
 /**
  * Returns the source type of this conversion.
  */
-Handle<TypeOfArgument> Conversion::sourceType() const
+Handle<RobinType> Conversion::sourceType() const
 {
 	return m_source;
 }
@@ -75,7 +77,7 @@ Handle<TypeOfArgument> Conversion::sourceType() const
 /**
  * Returns the target type of this conversion.
  */
-Handle<TypeOfArgument> Conversion::targetType() const
+Handle<RobinType> Conversion::targetType() const
 {
 	return m_target;
 }
@@ -88,18 +90,24 @@ const Conversion::Weight& Conversion::weight() const
 	return m_weight;
 }
 
+
 /**
- * Returns this conversion's weight (price) being given an insight on the
- * value.
+ * Return if this conversion returns the same object as it
+ * receives (adding a new reference to the object
+ * with the frontend).
  *
- * @param insight a code providing some information about a value to be
- * converted. The value is implementation defined, and its meaning may change
- * from type to type.
- * @note the default implementation just returns weight().
+ * Several conversions which do zero work might be
+ * compressed to one by the conversion table and
+ * even be removed completly.
+ *
+ * Some examples of conversions which do zero work:
+ * 	- from a type to its const type
+ *  - casting from a specific type to a general type (like a subrange
+ *    of c_longs to c_longs).
  */
-Conversion::Weight Conversion::weight(Insight insight) const
+bool Conversion::isZeroWorkConversion() const
 {
-	return weight();
+	return false;
 }
 
 
@@ -107,14 +115,22 @@ Conversion::Weight Conversion::weight(Insight insight) const
  */
 Conversion::Weight::Weight()
   : m_n_epsilon(0), m_n_promotion(0), m_n_upcast(0), m_n_userDefined(0)
-{ }
+{
+#ifndef NDEBUG
+	m_set = false;
+#endif
+}
 
 /**
  */
 Conversion::Weight::Weight(int eps, int prom, int up, int user)
-  : m_n_epsilon(eps), m_n_promotion(prom), 
+  : m_n_epsilon(eps), m_n_promotion(prom),
     m_n_upcast(up), m_n_userDefined(user)
-{ }
+{
+#ifndef NDEBUG
+	m_set = true;
+#endif
+}
 
 /**
  * Compares two conversion weights to discover which
@@ -125,6 +141,8 @@ Conversion::Weight::Weight(int eps, int prom, int up, int user)
  */
 bool Conversion::Weight::operator < (const Weight &other) const
 {
+	assert_true(m_set && other.m_set);
+
 #define NE(F) (F != other.F)
 #define CMP(F) (F < other.F)
   if (NE(m_n_userDefined))        return CMP(m_n_userDefined);
@@ -135,15 +153,37 @@ bool Conversion::Weight::operator < (const Weight &other) const
 #undef CMP
 }
 
+bool Conversion::Weight::operator <= (const Weight &other) const
+{
+	assert_true(m_set && other.m_set);
+
+#define NE(F) (F != other.F)
+#define CMP(F) (F <= other.F)
+  if (NE(m_n_userDefined))        return CMP(m_n_userDefined);
+  else if (NE(m_n_promotion))     return CMP(m_n_promotion);
+  else if (NE(m_n_upcast))        return CMP(m_n_upcast);
+  else                            return CMP(m_n_epsilon);
+#undef NE
+#undef CMP
+}
+
+
+
+
+
+
+
 /**
  * Returns the cost of two consequent conversions with
  * the weights given as operands.
  */
-Conversion::Weight Conversion::Weight::operator + (const Conversion::Weight& 
+Conversion::Weight Conversion::Weight::operator + (const Conversion::Weight&
 												   other) const
 {
-	Conversion::Weight s;
-#define SUM(F) s.F = F + other.F
+	assert_true(m_set && other.m_set);
+
+	Conversion::Weight s(other);
+#define SUM(F) s.F += F
 	SUM(m_n_userDefined);
 	SUM(m_n_promotion);
 	SUM(m_n_upcast);
@@ -159,6 +199,8 @@ Conversion::Weight Conversion::Weight::operator + (const Conversion::Weight&
 Conversion::Weight& Conversion::Weight::operator += (const Conversion::Weight&
 													 other)
 {
+	assert_true(m_set);
+
 #define SUM(F) F += other.F;
 	SUM(m_n_userDefined);
 	SUM(m_n_promotion);
@@ -174,12 +216,22 @@ Conversion::Weight& Conversion::Weight::operator += (const Conversion::Weight&
  */
 bool Conversion::Weight::isPossible() const
 {
+	assert_true(m_set);
+
 	return (m_n_userDefined < 2);
+}
+
+
+Robin::dbg::TraceSink &operator<<(Robin::dbg::TraceSink &out, const Conversion::Weight&weight) {
+	out << "(" << weight.m_n_userDefined << "u,"
+				  << weight.m_n_promotion << "p," << weight.m_n_upcast << "c," << weight.m_n_epsilon
+				  << "e)";
+	return out;
 }
 
 void Conversion::Weight::dbgout() const
 {
-	std::cerr << "(" << m_n_userDefined << "u,"
+	dbg::trace << "(" << m_n_userDefined << "u,"
 			  << m_n_promotion << "p," << m_n_upcast << "c," << m_n_epsilon
 			  << "e)";
 }
@@ -199,30 +251,45 @@ Conversion::Weight ConversionRoute::totalWeight() const
 	for (const_iterator iter = begin(); iter != end(); ++iter)
 		sum += (*iter)->weight();
 
-	return sum;
+	return sum+m_extra;
 }
 
-/**
- * Returns the sum of edge weights along the path of
- * conversions building up this route, enriching the first
- * edge with the knowledge of the insight.
- */
-Conversion::Weight ConversionRoute::totalWeight(Insight insight) const
+
+
+
+void ConversionRoute::addExtraWeight(const Conversion::Weight &amount)
 {
-	Conversion::Weight sum = Conversion::Weight::ZERO;
-	const_iterator iter = begin();
-
-	if (iter != end()) {
-		sum += (*iter)->weight(insight);
-
-		for (++iter; iter != end(); ++iter)
-			sum += (*iter)->weight();
-	}
-
-	return sum;
+	m_extra = m_extra + amount;
 }
 
 
+
+bool ConversionRoute::hasOnlyConstantConversions() const
+{
+	ConversionRoute::const_iterator it = begin();
+	ConversionRoute::const_iterator fin = end();
+	for(;it!=fin;it++) {
+		if( (*it)->targetType()->isConstant()
+				!= RobinType::constReferenceKind )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool ConversionRoute::isZeroWorkConversionRoute() const
+{
+	ConversionRoute::const_iterator it = begin();
+	ConversionRoute::const_iterator fin = end();
+	for(;it!=fin;it++) {
+		if( ! (*it)->isZeroWorkConversion() )
+		{
+			return false;
+		}
+	}
+	return true;
+}
 
 /**
  * Activates the conversions in a pipe on the element
@@ -240,12 +307,28 @@ scripting_element ConversionRoute::apply(scripting_element value,
 										 GarbageCollection& temporaryHeap)
 	const
 {
+
 	for (const_iterator iter = begin(); iter != end(); ++iter) {
+		dbg::trace << "conv from: " << *(*iter)->sourceType() <<   " to: " <<*(*iter)->targetType();
 		value = (*iter)->apply(value);
 		temporaryHeap.markForDestruction(value);
 	}
 
 	return value;
+}
+
+
+bool ConversionRoutes::areAllEmptyConversions() {
+	iterator itera = begin();
+	iterator it_end = end();
+	for(; itera!=it_end;itera++) {
+		size_type numberOfConversions =  (*itera)->size();
+		if(numberOfConversions!=0)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 

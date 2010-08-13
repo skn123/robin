@@ -10,7 +10,7 @@
 from distutils.core import setup, Extension
 
 setup(name='robin',
-      version='1.0.4',
+      version='1.1',
       url='robin.python-hosting.com',
       author='corwin',
       author_email='corwin.amber@gmail.com',
@@ -18,7 +18,7 @@ setup(name='robin',
       py_modules=['robin', 'griffin', 'stl'],
       packages=['robinlib', 'robinlib.html'],
       package_dir={'': 'src/robin/modules'},
-      data_files=[('DLLs', ['robin_pyfe-1.0.dll', 'robin_stl-1.0.dll']),
+      data_files=[('DLLs', ['robin_pyfe-1.1.dll', 'robin_stl-1.1.dll']),
 	          ('Scripts/premises', ['premises/antlr.jar',
 			  'premises/xmlParserAPIs.jar',
 			  'premises/xercesImpl.jar',

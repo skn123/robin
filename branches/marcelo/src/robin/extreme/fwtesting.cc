@@ -70,7 +70,7 @@ void TestingProgram::registerUnit(AbstractTest *test)
 /**
  * Runs all the registered tests.
  */
-void TestingProgram::engage(const char *criteria)
+bool TestingProgram::engage(const char *criteria)
 {
     static const char *sep = "//============================================"
 	"==============================";
@@ -135,6 +135,11 @@ void TestingProgram::engage(const char *criteria)
 	      << "// @OK:     " << count_ok << std::endl
 	      << "// @FAILED: " << count_failed << std::endl
 	      << sep << std::endl;
+    if(count_ok == 0 and count_failed == 0) {
+    	return true;
+    } else {
+    	return false;
+    }
 }
 
 } // end of namespace Extreme

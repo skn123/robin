@@ -35,16 +35,26 @@ SimpleInstanceObjectElement::SimpleInstanceObjectElement(Handle<Instance>
  * Uses the 'print' method of the instance (if there is
  * such) to provide a concise debug print.
  */
-void SimpleInstanceObjectElement::dbgout() const
+void SimpleInstanceObjectElement::dbgout(std::ostream &out) const
 {
-	try {
-		Handle<Callable> print = value->bindMethod("print");
+	Handle<CallableWithInstance> print =
+			value->getClass()->findInstanceMethod("print");
+	if(print)
+	{
 		ActualArgumentList args;
 		dbg::Guard dg(dbg::trace);
-		print->call(args);
-	}
-	catch (NoSuchMethodException& ) {
-		std::cerr << "<" << value->getClass()->name() << ">";
+		KeywordArgumentMap kwargs;
+		/*
+		 * C++ has the concept of constness but most scripting classes do not.
+		 * Because of that robin does not implement calling functions with const
+		 * parameters.
+		 * dbgout is a const function, it does not modifies the element, only
+		 * prints its representation, but it is implemented through a robin
+		 * function call which means a const cast needs to be done.
+		 */
+		print->callUpon(const_cast<SimpleInstanceObjectElement *>(this),args,kwargs);
+	} else {
+		out << "<" << value->getClass()->name() << ">";
 	}
 }
 
@@ -60,9 +70,9 @@ SimpleAddressElement::SimpleAddressElement(Handle<Address> address)
 /**
  * stub
  */
-void SimpleAddressElement::dbgout() const
+void SimpleAddressElement::dbgout(std::ostream &out) const
 {
-	std::cerr << "<address>";
+	out << "<address>";
 }
 
 

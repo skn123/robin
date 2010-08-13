@@ -31,7 +31,7 @@ options {
     
 protected
 KEY : "virtual" | "static" | "mutable" | "MUTABLE" | "register" | "DLLTAG"
-	 | "inline" | "friend" | "typename" | "struct" | "class" | "enum" ;
+	 | "inline" | "friend" | "typename" | "struct" | "class" | "enum" | "template";
 
 OPEN_PAREN: '(' ;
 CLOSE_PAREN: ')' ;

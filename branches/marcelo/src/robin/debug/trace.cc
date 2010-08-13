@@ -21,6 +21,8 @@ namespace Robin {
 namespace dbg {
 
 TraceSink trace;
+TraceSink traceRegistration(trace);
+TraceSink traceClassRegistration(traceRegistration);
 TraceSink::EndLine endl;
 
 
@@ -28,11 +30,15 @@ TraceSink::EndLine endl;
 /**
  */
 TraceSink::TraceSink()
-	: m_active(false)
+	: m_active(false), m_indentation(0), m_recentNewLine(false), m_general(0)
 { }
 
+TraceSink::TraceSink(TraceSink &general)
+	: m_active(false), m_indentation(0), m_recentNewLine(false), m_general(&general)
+{
 
 
+}
 /**
  * Turns on trace output to this sink.
  */
@@ -49,24 +55,14 @@ void TraceSink::disable()
 	m_active = false;
 }
 
-/**
- * Reports the state of the facet.
- */
-bool TraceSink::on() const
-{
-	return m_active;
+
+
+void TraceSink::increaseIndent() {
+	m_indentation++;
 }
-
-
-
-TraceSink& TraceSink::operator << (const EndLine& endl)
-{
-	if (m_active)
-		std::cerr << std::endl;
-	return *this;
+void TraceSink::decreaseIndent() {
+	m_indentation--;
 }
-
-
 
 
 /**
@@ -84,6 +80,18 @@ Guard::Guard(TraceSink& sink)
 Guard::~Guard()
 {
 	if (m_restore) m_sink.enable();
+}
+
+
+IndentationGuard::IndentationGuard(TraceSink &sink)
+	: m_sink(sink)
+{
+	m_sink.increaseIndent();
+}
+
+IndentationGuard::~IndentationGuard()
+{
+	m_sink.decreaseIndent();
 }
 
 } // end of namespace dbg

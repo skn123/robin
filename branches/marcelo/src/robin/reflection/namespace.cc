@@ -16,7 +16,7 @@
 #include "enumeratedtype.h"
 
 #include <map>
-#include <assert.h>
+#include <robin/debug/assert.h>
 
 
 namespace Robin {
@@ -39,8 +39,8 @@ struct Namespace::Imp
 
 
 
-Namespace::Namespace() : imp(new Imp) { }
-Namespace::~Namespace() { }
+Namespace::Namespace(const std::string &name) : imp(new Imp), m_name(name) { }
+Namespace::~Namespace() { delete imp;}
 
 
 
@@ -56,7 +56,7 @@ void Namespace::declare(std::string name, Handle<Class> element)
 
 /**
  * Adds an enumerated type to the current namespace. If
- * a type with this name is already declared in the namespace, the 
+ * a type with this name is already declared in the namespace, the
  * previous declaration is discarded.
  */
 void Namespace::declare(std::string name, Handle<EnumeratedType> element)
@@ -102,7 +102,9 @@ void Namespace::unalias(std::string& name) const
 	Imp::aliasmap::const_iterator lui = imp->m_aliases.find(name);
 
 	while (lui != imp->m_aliases.end()) {
-		lui = imp->m_aliases.find( name = lui->second );
+		name = lui->second;
+		dbg::traceClassRegistration << "was aliased to class " << name << dbg::endl;
+		lui = imp->m_aliases.find( name );
 	}
 }
 
@@ -114,17 +116,19 @@ void Namespace::unalias(std::string& name) const
  */
 Handle<Class> Namespace::lookupClass(std::string name) const
 {
+	dbg::traceClassRegistration << "looking up class " << name << " in namespace '" << m_name << "'" << dbg::endl;
 	unalias(name);
 	Imp::classmap::const_iterator lui = imp->m_classes.find(name);
 
 	if (lui == imp->m_classes.end())
 		throw LookupFailureException(name);
-	else
+	else {
 		return lui->second;
+	}
 }
 
 /**
- * Searches for an enumerated type contained in this 
+ * Searches for an enumerated type contained in this
  * namespace.
  *
  * @throws LookupFailureException if the class is not found.
@@ -165,8 +169,7 @@ Handle<Callable> Namespace::lookupFunction(std::string name) const
  */
 Handle<Namespace> Namespace::lookupInner(std::string name) const
 {
-	bool yet_implemented = false;
-	assert(yet_implemented);
+	assert_true(false); //Still not implemented!
 	return Handle<Namespace>();
 }
 
@@ -175,7 +178,7 @@ Handle<Namespace> Namespace::lookupInner(std::string name) const
  */
 Handle<Namespace::NameIterator> Namespace::enumerateClasses() const
 {
-	return Handle<NameIterator>(new 
+	return Handle<NameIterator>(new
 	  Pattern::MapKeyIterator<std::string,Imp::classmap>(imp->m_classes));
 }
 
@@ -237,5 +240,12 @@ const char *LookupFailureException::what() const throw()
 	}
 }
 
+
+std::ostream &operator<<(std::ostream &out, const Namespace &nameSpace) {
+	out << "Namespace with " << nameSpace.imp->m_classes.size()
+	<< " classes and " <<  nameSpace.imp->m_aliases.size()
+	<< " aliases.";
+	return out;
+}
 
 } // end of namespace Robin

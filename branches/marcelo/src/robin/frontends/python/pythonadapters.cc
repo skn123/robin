@@ -13,10 +13,15 @@
  * Robin
  */
 
+#include <Python.h>
+
+#include <sstream>
+
 #include "pythonadapters.h"
 #include "pythonobjects.h"
 
-#include <assert.h>
+#include <robin/debug/assert.h>
+
 
 // Robin includes
 #include <robin/reflection/class.h>
@@ -24,23 +29,23 @@
 #include <robin/reflection/address.h>
 #include <robin/reflection/enumeratedtype.h>
 #include <robin/reflection/pascalstring.h>
+#include <robin/reflection/conversion.h>
+#include <robin/reflection/fundamental_conversions.h>
+#include <robin/reflection/intrinsic_type_arguments.h>
+#include <robin/reflection/conversiontable.h>
+
+#include <pattern/map.h>
+#include <pattern/handle.h>
 
 
 namespace Robin {
 
 namespace Python {
 
-
-
-Handle<TypeOfArgument> ArgumentPythonList
-	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
-Handle<TypeOfArgument> ArgumentPythonTuple
-	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
-Handle<TypeOfArgument> ArgumentPythonDict
-	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
-Handle<TypeOfArgument> ArgumentPythonLong
-	(new TypeOfArgument(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID));
-
+Handle<RobinType> ArgumentPythonTuple
+	= RobinType::create_new(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID, "python tuple",RobinType::constReferenceKind);
+Handle<RobinType> ArgumentPythonLong
+	= RobinType::create_new(TYPE_CATEGORY_EXTENDED, TYPE_EXTENDED_VOID, "python long",RobinType::constReferenceKind);
 
 
 bool PyBoolTraits::as(PyObject *pyobj)
@@ -105,7 +110,7 @@ scripting_element InstanceAdapter::get(basic_block data)
  *
  * @param domain the type of the pointed datum (i.e. int).
  */
-AddressAdapter::AddressAdapter(Handle<TypeOfArgument> domain)
+AddressAdapter::AddressAdapter(Handle<RobinType> domain)
 	: m_domain(domain)
 { 
 }
@@ -146,7 +151,7 @@ void EnumeratedAdapter::put(ArgumentsBuffer& argsbuf, scripting_element value)
 
 scripting_element EnumeratedAdapter::get(basic_block data)
 {
-	int enumvalue = LowLevel::reinterpret_lowlevel<int>(data);
+	long enumvalue = LowLevel::reinterpret_lowlevel<long>(data);
 	Handle<EnumeratedConstant> constant
 		(new EnumeratedConstant(m_type->getUnderlying(), enumvalue));
 	PyObject *object = new EnumeratedConstantObject(m_type, constant);
@@ -174,7 +179,13 @@ scripting_element PascalStringAdapter::get(basic_block data)
 {
 	PascalString *pascal = reinterpret_cast<PascalString*>(data);
 	PyObject *python = PyString_FromStringAndSize(pascal->chars, pascal->size);
-	//	free(pascal);
+#ifndef _WIN32
+	// TODO: should wrap 'delete' in the library side.
+	// @@@ win32: the loader does not allow an object allocated in one DLL
+	// to be deleted in another. Currently this results in a memory leak
+	// in the win32 runtime.
+	delete pascal;
+#endif
 	return python;
 }
 

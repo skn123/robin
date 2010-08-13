@@ -22,10 +22,8 @@
 #ifndef ROBIN_FRONTENDS_SIMPLE_CONVERSION_SIMPLE_H_MONDAYS
 #define ROBIN_FRONTENDS_SIMPLE_CONVERSION_SIMPLE_H_MONDAYS
 
-// System includes
-#include <assert.h>
-
 // Package includes
+#include <robin/debug/assert.h>
 #include <robin/reflection/conversion.h>
 #include "elements.h"
 #include "instanceelement.h"

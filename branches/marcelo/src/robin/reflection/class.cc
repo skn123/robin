@@ -13,7 +13,7 @@
  * Robin
  */
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include <set>
 #include <algorithm>
 
@@ -22,11 +22,41 @@
 #include "cfunction.h"
 #include "overloadedset.h"
 #include "namespace.h"
-#include "typeofargument.h"
+#include "robintype.h"
 #include "../frontends/adapter.h"
 #include "../debug/trace.h"
 
+
 namespace Robin {
+
+
+StandardMethod::StandardMethod(const char *name)
+: RegularMethod<OverloadedSet>(OverloadedSet::create_new(name))
+{
+
+}
+
+Handle<CallableWithInstance> StandardMethod::preResolveCallableWithInstance() const
+{
+	return Handle<CallableWithInstance>(new CachingStandardMethod(this));
+}
+
+CachingStandardMethod::CachingStandardMethod(const StandardMethod *standardMethod)
+: RegularMethod<PreResolveOverloadedSet>(Handle<PreResolveOverloadedSet>(new PreResolveOverloadedSet(standardMethod->m_callable)))
+{
+
+}
+
+CachingStandardMethod::CachingStandardMethod(const CachingStandardMethod &cachingStandardMethod)
+: RegularMethod<PreResolveOverloadedSet>(Handle<PreResolveOverloadedSet>(new PreResolveOverloadedSet(*cachingStandardMethod.m_callable)))
+{
+
+}
+Handle<CallableWithInstance> CachingStandardMethod::preResolveCallableWithInstance() const
+{
+	return Handle<CallableWithInstance>(new CachingStandardMethod(*this));
+}
+
 
 struct CreatedInstance
 {
@@ -38,7 +68,7 @@ struct CreatedInstance
  * argument type causes it to return a 'CreatedInstance' structure,
  * holding the pointer which is expected to be returned by the
  * function, making it a creator.<p>
- * It is meant for this adapter to be assign to a TypeOfArgument which
+ * It is meant for this adapter to be assign to a RobinType which
  * denotes a pointer to the class for which this function acts as a
  * creator.</p>
  */
@@ -46,7 +76,7 @@ class CreatedInstanceAdapter : public Adapter
 {
 public:
 	virtual void put(ArgumentsBuffer& argsbuf, scripting_element)
-	{ assert(false);  /* this adapter must be used in a return type */ }
+	{ assert_true(false);  /* this adapter must be used in a return type */ }
 
 	virtual scripting_element get(basic_block data)
 	{
@@ -69,38 +99,54 @@ public:
  * namespaces).
  */
 Class::Class(std::string fullname)
-  : m_fullname(fullname),
-    m_inner(new Namespace),
-	m_creators(new OverloadedSet),
-	m_hasConstructors(false)
-{
-}
+  : m_refcount(new int(1)),
+	m_fullname(fullname),
+    m_inner(new Namespace(fullname)),
+	m_hasConstructors(false),
+	m_creators(OverloadedSet::create_new(fullname.c_str()))
 
-/**
- * In order for the class to be able to generate
- * instances of itself, it must hold a reference to 'this' via
- * a handle. This is both an unfortunate design flaw and an incapability
- * of C++.
- */
-void Class::activate(Handle<Class> self)
 {
-	m_handle_to_self = self;
-	// Build the TypeOfArguments needed to create instances
+	Handle<Class>  self = get_handler();
+
+	// Build the RobinTypes needed to create instances
 	// and transfer them
-	m_ptrarg = Handle<TypeOfArgument>(new TypeOfArgument(self));
-	m_refarg = Handle<TypeOfArgument>(new TypeOfArgument(self));
-	m_outarg = Handle<TypeOfArgument>(new TypeOfArgument(self));
-	m_createdarg = Handle<TypeOfArgument>(new TypeOfArgument(self));
-	// The m_createdarg is internally used by the creators.
+	m_ptrtype = RobinType::create_new(self,RobinType::regularKind);
+	m_consttype = RobinType::create_new(self,RobinType::constReferenceKind);
+	m_type = RobinType::create_new(self,RobinType::regularKind);
+	m_type->m_constTypeAdditionAnnouncer->notifyTypeCreated(m_consttype);
+	m_createdtype = RobinType::create_new(self,RobinType::regularKind);
+	// The m_createdtype is internally used by the creators.
 	// Assign a tailored Adapter for it.
 	Handle<Adapter> created_adapter(new CreatedInstanceAdapter);
-	m_createdarg->assignAdapter(created_adapter);
+	m_createdtype->assignAdapter(created_adapter);
 
-	dbg::trace << "// @REGISTER: " << self->name() << "* == "
-			   << &*(m_ptrarg) << dbg::endl;
-	dbg::trace << "// @REGISTER: " << self->name() << "& == "
-			   << &*(m_refarg) << dbg::endl;
+	dbg::trace << "Adding " << self->name() << "* == "
+			   << &*(m_ptrtype) << dbg::endl;
+	dbg::trace << "Adding " << self->name() << "& == "
+			   << &*(m_consttype) << dbg::endl;
 }
+
+Handle<Class> Class::create_new(std::string name) {
+	Class *klass = new Class(name);
+
+	Handle<Class> self = klass->get_handler();
+	// m_refcount was first set to 1 to make sure the class
+	// is not deleted till we return the handler, but now
+	// that we have a handler we are safe
+	*klass->m_refcount -= 1;
+	return self;
+}
+
+inline Handle<Class> Class::get_handler()
+{
+	return Handle<Class>(this,this->m_refcount);
+}
+
+inline Handle<Class> Class::get_handler() const
+{
+	return Handle<Class>(const_cast<Class *>(this),this->m_refcount);
+}
+
 
 Class::~Class() { }
 
@@ -115,7 +161,7 @@ std::string Class::name() const
 	return m_fullname;
 }
 
-/** 
+/**
  * Returns the class's contained namespace. This namespace
  * is used to hold:
  * <ul>
@@ -132,7 +178,7 @@ Handle<Namespace> Class::innerNamespace() const
 
 /**
  * Finds the method with the specified name in the map
- * of instance methods. It is returned as a non-bound 
+ * of instance methods. It is returned as a non-bound
  * <classref>CallableWithInstance</classref> handle.<br />
  * NoSuchMethodException is thrown if there is no method with that
  * name in the collection.
@@ -151,7 +197,7 @@ Handle<CallableWithInstance> Class::findInstanceMethod(const std::string&
 }
 
 /**
- * Check for the existance of a specific instance method by name.
+ * Check for the existence of a specific instance method by name.
  * Returns <b>true</b> if an instance method by that name exists in the
  * class' instance method map, <b>false</b> otherwise - no exceptions are
  * thrown.
@@ -172,34 +218,44 @@ bool Class::hasInstanceMethod(const std::string& methodname) const
 Handle<StandardMethod> Class::lookupInstanceMethod(const std::string&
 												   methodname) const
 {
-	methodmap::const_iterator look = m_instanceMethods.find(methodname);
+	Handle<StandardMethod> result(new StandardMethod(methodname.c_str())); // The generated method
 
+	// Recursively look up in all the base classes
+	for (std::vector<Handle<Class> >::const_iterator base_iter = m_baseClasses.begin();
+		 base_iter != m_baseClasses.end();
+		 ++base_iter)
+	{
+		Handle<StandardMethod> from_base = (*base_iter)->lookupInstanceMethod(methodname);
+		if(from_base) {
+			result->m_callable->addAlternatives(*from_base->m_callable);
+		}
+	}
+
+	// add the implementations defined in this class
+	Handle<StandardMethod> localDefinedMethods = lookupInstanceMethodHere(methodname);
+	if(localDefinedMethods) {
+		result->m_callable->addAlternatives(*localDefinedMethods->m_callable);
+	}
+
+	if(result->m_callable->is_empty()){
+		return Handle<StandardMethod>(0);
+	} else {
+		return result;
+	}
+
+}
+/**
+ * It is like lookupInstanceMethod but only searches in this class
+ * It will not return methods defined in parent classes.
+ * @returns A StandardMethod object which includes all the implementations
+ * 	it can be also a null pointer if there is no implementation
+ */
+Handle<StandardMethod> Class::lookupInstanceMethodHere(const std::string&
+												   methodname) const
+{
+	methodmap::const_iterator look = m_instanceMethods.find(methodname);
 	if (look == m_instanceMethods.end()) {
-		// Don't give up! look method up in base classes
-		Handle<StandardMethod> up;
-		std::vector<Handle<StandardMethod> > ups;
-		
-		for (std::vector<Handle<Class> >::const_iterator 
-				 base_iter = m_baseClasses.begin();
-			 base_iter != m_baseClasses.end(); ++base_iter) {
-			// Recursively look up
-			up = (*base_iter)->lookupInstanceMethod(methodname);
-			if (up) ups.push_back(up);
-		}
-		if (ups.size() == 0)
-			// Now it's time to give up
-			return Handle<StandardMethod>();
-		else if (ups.size() == 1)
-			return ups[0];
-		else {
-			// Generate a new set containing *all* alternatives combined
-			up = Handle<StandardMethod>(new StandardMethod);
-			for (std::vector<Handle<StandardMethod> >::iterator ui = ups.begin()
-					 ; ui != ups.end(); ++ui) {
-				up->addAlternatives(**ui);
-			}
-			return up;
-		}
+		return Handle<StandardMethod>(0);
 	}
 	else {
 		return look->second;
@@ -239,14 +295,14 @@ std::vector<std::string> Class::listConciseMethods() const
 		 ++base_iter) {
 		std::vector<std::string> parenting =
 			(*base_iter)->listConciseMethods();
-		std::copy(parenting.begin(), parenting.end(), 
+		std::copy(parenting.begin(), parenting.end(),
 				  std::insert_iterator<std::set<std::string> >
 				  (collected, collected.begin()));
 	}
 
 	// Add my own methods to collected set
 	std::vector<std::string> compensating = listMethods();
-	std::copy(compensating.begin(), compensating.end(), 
+	std::copy(compensating.begin(), compensating.end(),
 			  std::insert_iterator<std::set<std::string> >
 			  (collected, collected.begin()));
 
@@ -278,7 +334,7 @@ bool Class::isEmpty() const
  */
 void Class::addConstructor(Handle<CFunction> ctorimp)
 {
-	ctorimp->specifyReturnType(m_createdarg);
+	ctorimp->specifyReturnType(m_createdtype);
 	m_creators->addAlternative(ctorimp);
 	m_hasConstructors = true;
 }
@@ -290,21 +346,19 @@ void Class::addConstructor(Handle<CFunction> ctorimp)
  * they should bare the same name - this way the Class object packs
  * them into one <classref>OverloadedSet</classref> object.
  */
-void Class::addInstanceMethod(std::string methodname, 
-							  Handle<CFunction> methodimp,
-							  bool allow_edge)
+void Class::addInstanceMethod(std::string methodname,
+							  Handle<CFunction> methodimp)
 {
-	Handle<StandardMethod> existing = lookupInstanceMethod(methodname);
+	Handle<StandardMethod> existing = lookupInstanceMethodHere(methodname);
 
 	if (existing) {
 		// Overload
-		existing->addAlternative(methodimp);
+		existing->m_callable->addAlternative(methodimp);
 	}
 	else {
 		// Add new name to method list
-		Handle<StandardMethod> newset(new StandardMethod);
-		newset->setAllowEdgeConversions(allow_edge);
-		newset->addAlternative(methodimp);
+		Handle<StandardMethod> newset(new StandardMethod(methodname.c_str()));
+		newset->m_callable->addAlternative(methodimp);
 		m_instanceMethods[methodname] = newset;
 	}
 }
@@ -340,17 +394,16 @@ void Class::inherit(Handle<Class> baseclass)
  */
 Handle<Instance> Class::createInstance() const
 {
-	assert(m_handle_to_self);
 	if (!m_hasConstructors) throw NoConstructorsAtAllException();
 	// Find the default constructor
-	FormalArgumentList noargs;
+	RobinTypes noargs;
 	Handle<CFunction> default_ctor = m_creators->seekAlternative(noargs);
 	// Call the default constructor, if it exists
 	if (default_ctor) {
 		ArgumentsBuffer args;
 		void *new_instance =
 			reinterpret_cast<void *>(default_ctor->call(args));
-		Handle<Instance> hnew(new Instance(m_handle_to_self, new_instance,
+		Handle<Instance> hnew(new Instance(get_handler(), new_instance,
 										   true));
 		return hnew;
 	}
@@ -368,19 +421,18 @@ Handle<Instance> Class::createInstance() const
  */
 Handle<Instance> Class::createInstance(const Instance& other) const
 {
-	assert(m_handle_to_self);
 	if (!m_hasConstructors) throw NoConstructorsAtAllException();
 	// Find the copy constructor using the expected prototype
-	FormalArgumentList otherarg;
-	otherarg.push_back(getRefArg());
+	RobinTypes otherarg;
+	otherarg.push_back(getConstType());
 	Handle<CFunction> copy_ctor = m_creators->seekAlternative(otherarg);
 	// Call the copy constructor with 'other' instance as argument
 	if (copy_ctor) {
 		ArgumentsBuffer args;
 		args.pushPointer(other.getObject());
-		void *new_instance = 
+		void *new_instance =
 			reinterpret_cast<void *>(copy_ctor->call(args));
-		Handle<Instance> hnew(new Instance(m_handle_to_self, new_instance, 
+		Handle<Instance> hnew(new Instance(get_handler(), new_instance,
 										   true));
 		return hnew;
 	}
@@ -395,10 +447,9 @@ Handle<Instance> Class::createInstance(const Instance& other) const
  * object is in charge of making that decision, so everything that
  * is possible for method invocations is also applicable here.<br />
  */
-Handle<Instance> Class::createInstance(const ActualArgumentList& ctor_args, const KeywordArgumentMap& kwargs)
+Handle<Instance> Class::createInstance(const Handle<ActualArgumentList>& ctor_args, const KeywordArgumentMap& kwargs)
     const
 {
-	assert(m_handle_to_self);
 	if (!m_hasConstructors) throw NoConstructorsAtAllException();
 	// Call the constructor through the m_creators array.
 	// The creator returns a new instance which is wrapped in a
@@ -406,14 +457,14 @@ Handle<Instance> Class::createInstance(const ActualArgumentList& ctor_args, cons
 	try {
 		CreatedInstance *product = (CreatedInstance*)m_creators->call(ctor_args, kwargs);
 		void *new_instance = product->object;
-		Handle<Instance> hnew(new Instance(m_handle_to_self, new_instance, 
+		Handle<Instance> hnew(new Instance(get_handler(), new_instance,
 										   true));
 		// Cleanup
 		delete product;
 		return hnew;
 	}
-	catch (OverloadingNoMatchException& ) {
-		throw NoSuchConstructorException();
+	catch (const OverloadingNoMatchException& ex) {
+		throw NoSuchConstructorException(ex);
 	}
 }
 
@@ -427,35 +478,35 @@ void Class::destroyInstance(Instance& instance) const
 		// - build the arguments buffer directly using the pointer for
 		//   optimization purposes
 		m_deallocator->call(instance.getObject());
-	}	
+	}
 }
 
 
 /**
- * Returns a <classref>TypeOfArgument</classref> which refers
+ * Returns a <classref>RobinType</classref> which refers
  * to a pointer to an object of this class type.
  */
-Handle<TypeOfArgument> Class::getPtrArg() const
+Handle<RobinType> Class::getPtrType() const
 {
-    return m_ptrarg;
+    return m_ptrtype;
 }
 
 /**
- * Returns a <classref>TypeOfArgument</classref> which refers
+ * Returns a <classref>RobinType</classref> which refers
  * to a reference to an object of this class type.
  */
-Handle<TypeOfArgument> Class::getRefArg() const
+Handle<RobinType> Class::getConstType() const
 {
-    return m_refarg;
+    return m_consttype;
 }
 
 /**
- * Returns a <classref>TypeOfArgument</classref> which refers
+ * Returns a <classref>RobinType</classref> which refers
  * to an output argument of this class type.
  */
-Handle<TypeOfArgument> Class::getOutArg() const
+Handle<RobinType> Class::getType() const
 {
-    return m_outarg;
+    return m_type;
 }
 
 
@@ -471,8 +522,26 @@ const char *NoSuchMethodException::what() const throw()
  */
 const char *NoSuchConstructorException::what() const throw()
 {
-	return "the requested constructor does not exist.";
+	return m_message.c_str();
 }
+
+NoSuchConstructorException::NoSuchConstructorException()  throw()
+	: m_message("The requested constructor does not exist.")
+{
+
+}
+
+NoSuchConstructorException::NoSuchConstructorException(const OverloadingNoMatchException &exp) throw()
+	: m_message(exp.what())
+{
+
+}
+
+NoSuchConstructorException::~NoSuchConstructorException() throw()
+{
+
+}
+
 
 /**
  */

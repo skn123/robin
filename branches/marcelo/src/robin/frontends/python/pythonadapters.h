@@ -20,8 +20,7 @@
 #include <Python.h>
 #include <robin/frontends/adapter.h>
 #include <robin/reflection/low_level.h>
-#include <robin/reflection/typeofargument.h>
-
+#include <robin/reflection/robintype.h>
 
 namespace Robin {
 
@@ -67,7 +66,7 @@ public:
 	}
 	static PyObject *from(N val)
 	{
-		return (val <= std::numeric_limits<long>::max()) ? PyInt_FromLong(val)
+		return (val <= (unsigned long long)std::numeric_limits<long>::max()) ? PyInt_FromLong(val)
 			: PyLong_FromUnsignedLongLong(val);
 	}
 	static N *asref(PyObject *pyobj)
@@ -252,14 +251,14 @@ private:
 class AddressAdapter : public Adapter
 {
 public:
-	AddressAdapter(Handle<TypeOfArgument> domain);
+	AddressAdapter(Handle<RobinType> domain);
 	virtual ~AddressAdapter() { }
 
 	virtual void put(ArgumentsBuffer& argsbuf, scripting_element value);
 	virtual scripting_element get(basic_block data);
 
 private:
-	Handle<TypeOfArgument> m_domain;
+	Handle<RobinType> m_domain;
 };
 
 
@@ -303,11 +302,15 @@ public:
     }
 };
 
+
 // Python-specific argument types
-extern Handle<TypeOfArgument> ArgumentPythonList;
-extern Handle<TypeOfArgument> ArgumentPythonTuple;
-extern Handle<TypeOfArgument> ArgumentPythonDict;
-extern Handle<TypeOfArgument> ArgumentPythonLong;
+
+
+
+extern Handle<RobinType> ArgumentPythonTuple;
+extern Handle<RobinType> EmptyPythonDict;
+extern Handle<RobinType> ArgumentPythonLong;
+
 
 
 } // end of namespace Python

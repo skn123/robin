@@ -6,10 +6,15 @@
 
 namespace Simple {
 
-
-void Element::dbgout() const
+std::ostream& operator<<(std::ostream& os, const Simple::Element& e)
 {
-  std::cerr << "?";
+    	e.dbgout(os);
+    	return os;
+}
+
+void Element::dbgout(std::ostream &out) const
+{
+  out << "?";
 }
 
 Element::~Element()
@@ -17,27 +22,37 @@ Element::~Element()
 }
 
 
-void Integer::dbgout() const
+void Integer::dbgout(std::ostream &out) const
 {
-  std::cerr << value;
+  out << value;
 }
 
 
-void Long::dbgout() const
+void Long::dbgout(std::ostream &out) const
 {
-  std::cerr << value;
+  out << value;
 }
 
 
-void Float::dbgout() const
+void Float::dbgout(std::ostream &out) const
 {
-  std::cerr << value;
+  out << value;
 }
 
 
-void String::dbgout() const
+void String::dbgout(std::ostream &out) const
 {
-  std::cerr << "\"" << value << "\"";
+  out << "\"" << value << "\"";
+}
+
+void Char::dbgout(std::ostream &out) const
+{
+  out << "\"" << value << "\"";
+}
+
+void Object::dbgout(std::ostream &out) const
+{
+  out << "\"" << value << "\"";
 }
 
 } // end of namespace Simple

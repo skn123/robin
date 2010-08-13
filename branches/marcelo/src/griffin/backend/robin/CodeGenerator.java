@@ -2,7 +2,6 @@ package backend.robin;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,13 +13,28 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.InappropriateKindException;
+import sourceanalysis.InheritanceConnection;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.SourceFile;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateArgument;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateArgument;
 import sourceanalysis.hints.Artificial;
 import sourceanalysis.hints.IncludedViaHeader;
 import backend.Utils;
-import backend.robin.model.ConstructCopy;
-import backend.robin.model.DeleteSelf;
-import backend.robin.model.Dereference;
 import backend.robin.model.ElementKind;
 import backend.robin.model.NopExpression;
 import backend.robin.model.RegData;
@@ -969,15 +983,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			generateSpecialDestructor(subject);
 		}
 		
-		// Generate wrappers for encapsulated aliases
-		for (Iterator aliasIter = m_typedefs.iterator(); aliasIter.hasNext();)
-		{
-			Alias alias = (Alias)aliasIter.next();
-			if (Filters.needsEncapsulation(alias)) {
-				generateFlatWrapper(alias);
-				generateRegistrationPrototype(alias);
-			}
-		}
 		
 		// Generated global function wrappers
 		for (Iterator funcIter = m_globalFuncs.iterator(); funcIter.hasNext() ;)
@@ -1075,15 +1080,10 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 			if (aliased.isFlat()) {
 				m_output.write("\t{\"");
 				m_output.write(Utils.cleanFullName(subject));
-				if (Filters.needsEncapsulation(subject,false)) {
-					m_output.write("\", \"class\", alias_" + uid(subject));
-					m_output.write("},\n");
-				}
-				else {
-					m_output.write("\", \"=");
-					m_output.write(Utils.actualBaseName(aliased));
-					m_output.write("\", 0},\n");
-				}
+				m_output.write("\", \"=");
+				m_output.write(Utils.actualBaseName(aliased));
+				m_output.write("\", 0},\n");
+
 			}
 		}
 		// - enter classes
@@ -1329,38 +1329,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.flush();
 	}
 	
-	/**
-	 * Generate routines for typedef - aliasing/unaliasing of types. 
-	 * @param alias
-	 * @throws IOException
-	 */
-	private void generateFlatWrapper(Alias alias) throws IOException, MissingInformationException
-	{
-		m_output.write("/*\n * typedef ");
-		m_output.write(alias.getFullName());
-		m_output.write("\n */\n");
-		// Create a constructor from aliased type
-		ParameterTransformer valf = 
-			RoutineDeduction.deduceParameterTransformer(alias.getAliasedType());
-		ParameterTransformer retf =
-			new ParameterTransformer(TypeToolbox.makePointer(alias),
-					new ConstructCopy(alias), new SimpleType(alias, null, "*"));
-		List<RoutineDeduction.ParameterTransformer> paramf = new ArrayList<RoutineDeduction.ParameterTransformer>();
-		paramf.add(valf);
-		String ctor = "routine_alias_" + uid(alias);
-		m_output.write(Formatters.formatFunction(alias, ctor, retf, paramf,
-				new NopExpression()));
-		// Create an access method to retrieve stored type
-		valf = new ParameterTransformer(TypeToolbox.makePointer(alias), new Dereference(), new SimpleType(alias, null, "*"));
-		retf = RoutineDeduction.deduceReturnTransformer(alias.getAliasedType(), ElementKind.VARIABLE);
-		paramf.set(0, valf);
-		String as = "routine_unalias_" + uid(alias);
-		m_output.write(Formatters.formatFunction(null, as, retf, paramf, new NopExpression()));
-		// Create a destructor
-		retf = RoutineDeduction.deduceReturnTransformer(new Type(new Type.TypeNode(Primitive.VOID)));
-		String dtor = "dtor_alias_" + uid(alias);
-		m_output.write(Formatters.formatFunction(null, dtor, retf, paramf, new DeleteSelf()));
-	}
 	
 
 	
@@ -1530,32 +1498,6 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		m_output.flush();
 	}
 	
-	/**
-	 * Generates a proxy class registration prototype for an encapsulated
-	 * typedef.
-	 * @param alias typedef element to describe
-	 * @throws IOException if an output error occurs
-	 * @see needsEncapsulation()
-	 */
-	private void generateRegistrationPrototype(Alias alias)
-		throws IOException
-	{
-		// Register a proxy class
-		m_output.write("RegData alias_" + uid(alias) + "[] = {\n");
-		// - ctor
-		m_output.write("\t{ \"^\", \"constructor\", routine_alias_" 
-			+ uid(alias) + "_proto, (void*)&routine_alias_"
-			+ uid(alias) + "},\n");
-		// - accessor
-		m_output.write("\t{ \"as\", \""
-			+ Utils.cleanFullName(alias.getAliasedType().getBaseType()));
-		m_output.write("\", routine_unalias_" + uid(alias)
-			 + "_proto, (void*)&routine_unalias_" + uid(alias) + "},\n");
-		// - dtor
-		m_output.write("\t{ \".\", \"destructor\", 0, (void*)&dtor_alias_" + uid(alias));
-		m_output.write(" },\n");
-		m_output.write(END_OF_LIST);
-	}
 	
 	/**
 	 * Generates a compiler-generated default constructor wrapper for a class.

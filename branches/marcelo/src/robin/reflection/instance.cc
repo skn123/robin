@@ -12,9 +12,8 @@
 
 #include "instance.h"
 
-#include <assert.h>
-#include "boundmethod.h"
-
+#include <robin/debug/assert.h>
+#include <stdexcept>
 
 namespace Robin {
 
@@ -67,7 +66,7 @@ void *Instance::getObject() const
  */
 Handle<Class> Instance::getClass() const
 {
-	assert(m_class);
+	assert_true(m_class);
     return m_class;
 }
 
@@ -86,56 +85,26 @@ Handle<Instance> Instance::clone() const
 	return m_class->createInstance(*this);
 }
 
-/**
- * Finds a method routine in the class, binds it with
- * the current instance and returns a <classref>BoundMethod</classref>
- * object which implements <classref>Callable</classref>.
- *
- * @throws LookupFailureException if there is no method with the
- * given name.
- */
-Handle<Callable> Instance::bindMethod(std::string methodname) const
-{
-	// Find the callable object in the class specifier
-	Handle<CallableWithInstance> methcore = 
-		m_class->findInstanceMethod(methodname);
 
-	// Create a bound method object.
-	// Note that a bound method requires a handle to the instance
-	// object. This is impossible because plain handles cannot
-	// provide a handle to 'this' without creating reference cycles.
-	// So the instance is duplicated.
-	Handle<Instance> duplica(new Instance(*this));
-	duplica->m_autodestruct = false;
-
-	return Handle<Callable>(new BoundMethod(duplica, methcore));
-}
 
 /**
  * Turns this instance into a common type for use in
  * the scripting environment.
+ *
+ * Notice that this method always creates a new scripting_element, thus
+ * assuming that it was never called before. There is no sense that
+ * two scripting elements represent the same Instance object, because
+ * they will be treated as different in the scripting environment
+ * ( 'a==b' will return false).
+ *
  * Ownership is <b>stolen</b> from the original instance object and the
  * newly created scripting element <b>now owns</b> the C++ instance.
  */
-scripting_element Instance::scriptify(Owner)
+scripting_element Instance::scriptify()
 {
 	m_autodestruct = false;
 	// Utilize the class' pointer argument adapter
-	return m_class->getPtrArg()->get((basic_block)m_cppinstance);
-}
-
-/**
- * Turns this instance into a common type for use in
- * the scripting environment.
- * The new object <b>"borrows"</b> a reference to the C++ instance, so 
- * ownership resposibilities are not changed as a result of this act, but
- * the caller must guarantee that this new object is not used after the
- * original object has been deleted.
- */
-scripting_element Instance::scriptify(Borrower)
-{
-	// Utilize the class' reference argument adapter
-	return m_class->getRefArg()->get((basic_block)m_cppinstance);
+	return m_class->getPtrType()->get((basic_block)m_cppinstance);
 }
 
 /**

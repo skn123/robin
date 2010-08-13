@@ -36,7 +36,13 @@ public:
 
     virtual const char *title() const = 0;
     virtual void report() const = 0;
+    virtual ~AbstractTest() =0 ;
 };
+
+inline AbstractTest::~AbstractTest()
+{
+
+}
 
 /**
  * @class Test
@@ -81,7 +87,11 @@ private:
 
 public:
     static void registerUnit(AbstractTest *test);
-    static void engage(const char *criteria = NULL);
+    /**
+     * Runs the test, returns true only if everything
+     * went OK
+     */
+    static bool engage(const char *criteria = NULL);
 };
 
 

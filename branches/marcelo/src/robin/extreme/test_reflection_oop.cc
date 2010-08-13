@@ -54,10 +54,11 @@ public:
 			simpleInstanceElement(enterprise_string, &hotel_name);
 		Simple::Element *elocation = 
 			simpleInstanceElement(enterprise_Location, &hotel_location);
-		Robin::ActualArgumentList args;
-		args.push_back((Robin::scripting_element)ename);
-		args.push_back((Robin::scripting_element)elocation);
-		ihotel = enterprise_Hotel->createInstance(args);
+		Handle<Robin::ActualArgumentList> args(new Robin::ActualArgumentList);
+		Robin::KeywordArgumentMap empty;
+		args->push_back((Robin::scripting_element)ename);
+		args->push_back((Robin::scripting_element)elocation);
+		ihotel = enterprise_Hotel->createInstance(args,empty);
 		// Some cleanup
 		delete ename;
 		delete elocation;
@@ -108,7 +109,7 @@ private:
 	Location hotel_location;
 	Handle<Hotel> hotel;
 	Room room01;
-	Handle<Robin::Instance> ihotel;
+	Handle<Robin::SimpleInstanceObjectElement> ihotel;
 
 	std::string ename;
 	Room eroom;
@@ -128,21 +129,28 @@ public:
 		room01.m_poolside = false;
 		hotel->m_rooms.push_back(room01);
 		// Create an instance out of the sample
-		ihotel = Handle<Robin::Instance>(
-			new Robin::Instance(enterprise_Hotel, &*hotel));
+
+		Handle<Robin::Instance> ihotel_instance = Handle<Robin::Instance>(
+								new Robin::Instance(enterprise_Hotel, &*hotel));
+
+		ihotel = Handle<Robin::SimpleInstanceObjectElement>(
+				new Robin::SimpleInstanceObjectElement(ihotel_instance));
 		notification("HOTEL-NAME", hotel_name);
 		notification("ROOM01", room01);
 	}
 
 	void go() {
+		Robin::KeywordArgumentMap empty;
 		// Get the name using getName()
-		Handle<Robin::Callable> getName = ihotel->bindMethod("getName");
-		Robin::ActualArgumentList args;
-		ename = Gstring | getName->call(args);
+		Handle<Robin::Class> klass  = ihotel->value->getClass();
+		Handle<Robin::CallableWithInstance> getName = klass->findInstanceMethod("getName");
+		Handle<Robin::ActualArgumentList> args(new Robin::ActualArgumentList);
+		ename = Gstring | getName->callUpon(&*ihotel,*args,empty);
 		// Get room no. 1 using getRoomNo(i)
-		Handle<Robin::Callable> getRoomNo = ihotel->bindMethod("getRoomNo");
-		args.push_back((Robin::scripting_element)Simple::build(0));
-		eroom = *((Room*)(Ginstance | getRoomNo->call(args))->getObject());
+		Handle<Robin::CallableWithInstance> getRoomNo = klass->findInstanceMethod("getRoomNo");
+
+		args->push_back((Robin::scripting_element)Simple::build(0));
+		eroom = *((Room*)(Ginstance | getRoomNo->callUpon(&*ihotel,*args,empty))->getObject());
 		notification("ENAME", ename);
 		notification("EROOM", eroom);
 	}
@@ -164,7 +172,7 @@ class TestEnumeratedInteraction : public ReflectionTest
 {
 private:
 	RoomType roomlevel;
-	Handle<Robin::Instance> iroom;
+	Handle<Robin::SimpleInstanceObjectElement> iroom;
 	Room* room;
 
 	RoomType eroomlevel;
@@ -178,15 +186,19 @@ public:
 	}
 
 	void go() {
-		Robin::ActualArgumentList ctor_args;
-		ctor_args.push_back((Robin::scripting_element)
+		Handle<Robin::ActualArgumentList> ctor_args(new Robin::ActualArgumentList);
+		Robin::KeywordArgumentMap empty;
+		ctor_args->push_back((Robin::scripting_element)
 		  (new Robin::SimpleEnumeratedConstantElement(enterprise_RoomType,
 														roomlevel)));
-		iroom = enterprise_Room->createInstance(ctor_args);
+		Handle<Robin::Instance> iroom_instance = enterprise_Room->createInstance(ctor_args,empty);
+		iroom = Handle<Robin::SimpleInstanceObjectElement> (
+				new Robin::SimpleInstanceObjectElement(iroom_instance));
+
 		// Get the level of the room by indirectly calling Room::getLevel
-		Handle<Robin::Callable> getLevel = iroom->bindMethod("getLevel");
-		Robin::ActualArgumentList args;
-		eroomlevel = (RoomType)(Genum | getLevel->call(args));
+		Handle<Robin::CallableWithInstance> getLevel = iroom_instance->getClass()->findInstanceMethod("getLevel");
+		Handle<Robin::ActualArgumentList> args(new Robin::ActualArgumentList);
+		eroomlevel = (RoomType)(Genum | getLevel->callUpon(&*iroom,*args,empty));
 		notification("EROOMLEVEL", eroomlevel);
 	}
 

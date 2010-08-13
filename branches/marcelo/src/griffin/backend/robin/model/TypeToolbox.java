@@ -1,7 +1,5 @@
 package backend.robin.model;
 
-import backend.robin.Filters;
-
 import sourceanalysis.Alias;
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.Entity;
@@ -111,7 +109,7 @@ public class TypeToolbox {
 		Type passedType = type; // to get the modifiers
 		Entity base = type.getBaseType();
 		Entity prev = null;
-		while (base instanceof Alias && base != prev && !Filters.needsEncapsulation((Alias)base, true)) {
+		while (base instanceof Alias && base != prev) {
 			type = ((Alias)base).getAliasedType();
 			prev = base; // - avoid singular loops "typedef struct A A;"
 			base = type.getBaseType();

@@ -1,3 +1,3 @@
-import robin, stl
+import robin_v1_1, stl
 import os.path
-robin.loadLibrary(__name__, os.path.join(os.path.dirname(__file__), "libautocollect.so"))
+robin_v1_1.loadLibrary(__name__, os.path.join(os.path.dirname(__file__), "libautocollect.so"))

@@ -23,6 +23,7 @@
 // STL includes
 #include <string>
 #include <exception>
+#include <ostream>
 
 // Pattern includes
 #include <pattern/handle.h>
@@ -57,7 +58,7 @@ class Callable;
 class Namespace
 {
 public:
-	Namespace();
+	Namespace(const std::string &name);
 	~Namespace();
 
 	/**
@@ -99,10 +100,17 @@ public:
 	Handle<NameIterator> enumerateAliases() const;
 	//@}
 
+    /**
+     * @name debug
+     */
+	 //@{
+		friend std::ostream &operator<<(std::ostream &out, const Namespace &nameSpace);
+	 //@}
+
 private:
 	struct Imp;
 	Imp *imp;
-
+	std::string m_name;
 };
 
 /**

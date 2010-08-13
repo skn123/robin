@@ -23,16 +23,10 @@ namespace Robin {
 
 
 /**
- * Creates the library without a name.
- */
-Library::Library() : m_name("<>"), m_global(new Namespace)
-{ }
-
-/**
  * Creates a library and assigns a name to it.
  */
 Library::Library(std::string name)
-	: m_name(name), m_global(new Namespace)
+	: m_name(name), m_global(new Namespace(name))
 {
 }
 

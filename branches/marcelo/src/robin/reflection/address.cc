@@ -21,7 +21,7 @@ namespace Robin {
  * @param pointedTo the type of the datum referenced by the address
  * @param address a C++ void pointer
  */
-Address::Address(Handle<TypeOfArgument> pointedType, void *address)
+Address::Address(Handle<RobinType> pointedType, void *address)
     : m_pointedType(pointedType), m_address(address)
 {
 }
@@ -30,9 +30,9 @@ Address::Address(Handle<TypeOfArgument> pointedType, void *address)
  * Returns the type of the datum referenced by the Address.
  * For example, if the address is a pointer to an integer, this
  * call will return 'int' (ArgumentInt).
- * @return a TypeOfArgument corresponding to the pointed type
+ * @return a RobinType corresponding to the pointed type
  */
-Handle<TypeOfArgument> Address::getPointedType() const
+Handle<RobinType> Address::getPointedType() const
 {
     return m_pointedType;
 }
@@ -42,9 +42,9 @@ Handle<TypeOfArgument> Address::getPointedType() const
  * For example, if the address is a pointer to an integer, this
  * call will return 'int*'.
  *
- * @return a TypeOfArgument corresponding to the pointer type
+ * @return a RobinType corresponding to the pointer type
  */
-Handle<TypeOfArgument> Address::getPointerType() const
+Handle<RobinType> Address::getPointerType() const
 {
     return m_pointedType->pointer();
 }

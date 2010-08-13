@@ -1,4 +1,7 @@
 <program>
+  <class name="std::bitset">
+    <template-parameter name="N"/>
+  </class>
   <class name="std::vector">
     <template-parameter name="T"/>
   </class>

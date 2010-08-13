@@ -1,47 +1,62 @@
-ver = 1.0
-minor = 4
+ver = v1_1
+minor = 0
 
 ###
 # Installation
 ###
-
 prefix = /usr/local
 exec_prefix = /usr/local
 site-packages = /usr/local/lib/python2.4/site-packages
-python = python
+python = python2.4
 jython = jython
 -include config.mak
 
 cxx ?= g++
-shared ?= -shared
+cxx_flags = $(cxx) -g
 
-pydir = $(site-packages)/robin
+shared ?= -shared -fPIC
+
 libdir = $(exec_prefix)/lib
 scriptdir = $(prefix)/bin
 jardir = $(libdir)/griffin
-sopre := ${shell $(python) -c "import griffin; print griffin.sopre"}
-soext := ${shell $(python) -c "import griffin; print griffin.soext"}
+
+platformval  = ${shell $(python) -c "import sys; sys.path[:0] = ['./src/robin/modules']; import robinlib.platform; print robinlib.platform.$(1)"}
+
+
+sopre := ${call platformval, sopre}
+soext := ${call platformval, soext}
 cpu = ${shell uname -m}
-target = ${shell $(python) -c "import griffin; print griffin.arch"}
+target = ${call platformval, arch} 
+
 
 ifeq ($(multi-platform),1)
-plat := ${shell $(python) -c "import griffin; print griffin.platspec"}
-py := ${shell $(python) -c "import griffin; print griffin.pyspec"}
+plat := ${call platformval, platspec}
+py := ${call platformval, pyspec}
 endif
 
 install = install -d ${dir $2} && install $1 $2
 cp-r = cp -fr
 sed = sed
 echo = echo
+suffix = $(plat)_$(ver)$(py)$(soext)
 
+
+INSTALLABLE_CALLGRIND = \
+	$(libdir)/$(vpath)$(sopre)robin_callgrind$(suffix) \
+	$(pydir)/callgrind.py 
+	
 INSTALLABLE_FILES = \
-	$(libdir)/$(vpath)$(sopre)robin$(plat)-$(ver)$(py)$(soext) \
-	$(libdir)/$(vpath)$(sopre)robin_pyfe$(plat)-$(ver)$(py)$(soext) \
-	$(libdir)/$(vpath)$(sopre)robin_stl$(plat)-$(ver)$(py)$(soext) \
+	$(libdir)/$(vpath)$(sopre)robin$(suffix) \
+	$(libdir)/$(vpath)$(sopre)robin_stl$(suffix) \
+	$(pydir)/$(sopre)stl_py$(suffix) \
+	$(libdir)/$(vpath)$(sopre)stl_py$(suffix) \
 	$(scriptdir)/griffin \
 	$(jardir)/Griffin.jar \
+	$(jardir)/pydoc.tmpl \
+	$(pydir)/$(sopre)robin_pyfe$(suffix) \
+	$(libdir)/$(vpath)$(sopre)robin_pyfe$(suffix) \
 	$(pydir).pth \
-	$(pydir)/robin.py $(pydir)/griffin.py \
+	$(pydir)/robin.py $(pydir)/robin_$(ver).py $(pydir)/griffin.py \
 	$(pydir)/stl.py \
 	${addprefix $(pydir)/robinlib/, \
 		__init__.py platform.py \
@@ -60,15 +75,35 @@ default all:
 
 install: $(INSTALLABLE_FILES) $(INSTALLABLE_DIRS) ;
 
+install-callgrind: $(INSTALLABLE_CALLGRIND)
+
 $(pydir)/robin.py: robin.py
+	$(call install, $<, $@)
+
+$(pydir)/robin_v1_1.py: robin_v1_1.py
 	$(call install, $<, $@)
 	$(sed) -i -e 's@libdir =.*@libdir = "$(libdir)"@' $@
 
 $(pydir)/griffin.py: griffin.py
 	$(call install, $<, $@)
 
-$(pydir)/%.py: src/robin/modules/%.py
+$(pydir)/%.py: %.py
 	$(call install, $<, $@)
+
+$(pydir)/$(sopre)robin_pyfe$(suffix): $(sopre)robin_pyfe$(suffix)
+	$(call install, $<, $@)
+
+$(libdir)/$(vpath)$(sopre)robin_pyfe$(suffix): $(pydir)/$(sopre)robin_pyfe$(suffix)
+	ln -s $< $@
+
+
+$(pydir)/$(sopre)stl_py$(suffix): $(sopre)stl_py$(suffix)
+	$(call install, $<, $@)
+
+
+$(libdir)/$(vpath)$(sopre)stl_py$(suffix): $(pydir)/$(sopre)stl_py$(suffix)
+	ln -s $< $@
+
 
 $(pydir).pth:
 	$(echo) robin > $@
@@ -86,6 +121,9 @@ $(jardir)/Griffin.jar: Griffin.jar
 
 $(jardir)/premises: $(jardir)/Griffin.jar premises
 	$(cp-r) premises $@
+
+$(jardir)/pydoc.tmpl: pydoc.tmpl
+	$(call install, $<, $@)
 
 $(jardir)/stl.st.xml: src/griffin/modules/stl/stl.st.xml
 	$(call install, $<, $@)
@@ -113,7 +151,7 @@ SELF = PATH=$(PWD):$(PWD)/src/robin/modules:$$PATH \
 . = .
 
 language-test@%:
-	$($*)/griffin $G --include --in $(extreme_python)/language.h     \
+	$($*)/griffin -v $G --include --in $(extreme_python)/language.h     \
                 $(extreme_python)/kwargs.h                               \
                 $(extreme_python)/samename/1/samename.h                  \
 	        --out $(extreme_python)/liblanguage_robin.cc             \
@@ -121,57 +159,74 @@ language-test@%:
 	        DerivedFromAlias Inners Constructors AssignmentOperator  \
 	        Conversions Exceptions Interface Abstract NonAbstract    \
 	        Primitives Pointers StandardLibrary Typedefs             \
-	        PublicDouble KwClass --module language
-	$(cxx) $(shared) $(extreme_python)/liblanguage_robin.cc          \
+	        PublicDouble KwClass --module language                   \
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/liblanguage_robin.cc          \
                 $(extreme_python)/language.cc                            \
 	        -o $(extreme_python)/liblanguage.so
 
 protocols-test@%:
-	$($*)/griffin $G --in $(extreme_python)/protocols.h              \
+	$($*)/griffin -v $G --in $(extreme_python)/protocols.h              \
                 $(extreme_python)/samename/2/samename.h                  \
 	        --out $(extreme_python)/libprotocols_robin.cc            \
-	        Times --import language
-	$(cxx) $(shared) $(extreme_python)/libprotocols_robin.cc         \
+	        Times --import language					\
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/libprotocols_robin.cc         \
 	        $(extreme_python)/protocols.cc                           \
 	        -o $(extreme_python)/libprotocols.so
 
+threading-test@%:
+	$($*)/griffin -v $G --in $(extreme_python)/threads.h              \
+	        --out $(extreme_python)/libthreads_robin.cc            \
+	        ThreadList					\
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/libthreads_robin.cc         \
+	        -o $(extreme_python)/libthreads.so
+
+
+
 templates-test@%:
-	$($*)/griffin $G --in $(extreme_python)/templates.h              \
-	        --out $(extreme_python)/libtemplates_robin.cc
-	$(cxx) $(shared) $(extreme_python)/libtemplates_robin.cc         \
+	$($*)/griffin -v $G --in $(extreme_python)/templates.h              \
+	        --out $(extreme_python)/libtemplates_robin.cc		\
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/libtemplates_robin.cc         \
 		-o $(extreme_python)/libtemplates.so
 
 inheritance-test@%:
-	$($*)/griffin $G --in $(extreme_python)/inheritance.h            \
+	$($*)/griffin -v $G --in $(extreme_python)/inheritance.h            \
 	        --out $(extreme_python)/libinheritance_robin.cc          \
-	        --interceptors Functor FunctorImpl mapper mul TaintedVirtual
-	$(cxx) $(shared) $(extreme_python)/libinheritance_robin.cc       \
+	        --interceptors Functor FunctorImpl mapper mul TaintedVirtual \
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/libinheritance_robin.cc       \
 		-o $(extreme_python)/libinheritance.so
 
 hints-test@%:
-	$($*)/griffin $G --in $(extreme_python)/hinted.h --include       \
+	$($*)/griffin -v $G --in $(extreme_python)/hinted.h --include       \
 	        --out $(extreme_python)/libhints_robin.cc                \
 		--import language                                        \
-	        --hints=$(extreme_python)/hint.py Clue Templates
-	$(cxx) $(shared) $(extreme_python)/libhints_robin.cc             \
+	        --hints=$(extreme_python)/hint.py Clue Templates	\
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/libhints_robin.cc             \
 		-o $(extreme_python)/libhints.so -I$(extreme_python)
 
 autocollect-test@%:
-	$($*)/griffin $G --in $(extreme_python)/autocollect.h            \
-	        --out $(extreme_python)/libautocollect_robin.cc
-	$(cxx) $(shared) $(extreme_python)/libautocollect_robin.cc       \
+	$($*)/griffin -v $G --in $(extreme_python)/autocollect.h            \
+	        --out $(extreme_python)/libautocollect_robin.cc		\
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/libautocollect_robin.cc       \
 		-o $(extreme_python)/libautocollect.so
 
 
 memprof-test@%:
-	$($*)/griffin $G --in $(extreme_python)/memory.h                 \
-	        --out $(extreme_python)/libmemprof_robin.cc
-	$(cxx) $(shared) $(extreme_python)/libmemprof_robin.cc           \
+	$($*)/griffin -v $G --in $(extreme_python)/memory.h                 \
+	        --out $(extreme_python)/libmemprof_robin.cc		\
+	        --doxygen_executable $(doxygen_executable)
+	$(cxx_flags) $(shared) $(extreme_python)/libmemprof_robin.cc           \
 	        -o $(extreme_python)/libmemprof.so
 
 
-TESTS = language-test templates-test protocols-test inheritance-test hints-test autocollect-test memprof-test
-TEST_SUITES = LanguageTest STLTest TemplatesTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
+TESTS = language-test templates-test protocols-test inheritance-test hints-test autocollect-test memprof-test threading-test 
+#TEST_SUITES = LanguageTest STLTest TemplatesTest ProtocolsTest InheritanceTest HintsTest KwargsTest MemoryManagementTest
 TESTING_PYTHON = cd $(extreme_python) && $(SELF) $(python)
 TESTING_PYTHON_GDB = cd $(extreme_python) && $(SELF) gdb --args $(python)
 TESTING_PYTHON_VG = cd $(extreme_python) && $(SELF) valgrind --tool=memcheck $(python)
@@ -219,7 +274,7 @@ distrib: manifest
 	@rm -rf distrib/robin
 	mkdir -p distrib/robin
 	tar cf - --files-from manifest | ( cd distrib/robin && tar xf - )
-	tar zcf distrib/robin-$(ver).$(minor).$(cpu).$(target).tar.gz \
+	tar zcf distrib/robin_$(ver).$(minor).$(cpu).$(target).tar.gz \
 		-C distrib robin
 
 srcdistrib:
@@ -227,4 +282,4 @@ srcdistrib:
 	mkdir -p distrib
 	svn export . distrib/robin
 	rm -rf distrib/robin/premises
-	tar zcf distrib/robin-$(ver).$(minor).src.tar.gz -C distrib robin
+	tar zcf distrib/robin_$(ver).$(minor).src.tar.gz -C distrib robin

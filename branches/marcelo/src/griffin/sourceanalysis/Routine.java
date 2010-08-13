@@ -1,5 +1,6 @@
 package sourceanalysis;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,9 +30,10 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	public Routine()
 	{
 		super();
-		m_formalArguments = new Vector();
+		m_formalArguments = new Vector<Parameter>();
 		m_hasThrows = false;
 		m_throws = new LinkedList();
+		m_throwsDesc = new LinkedList();
 		m_routineType = RoutineType.REGULAR;
 	}
 
@@ -129,6 +131,16 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	public void addThrows(Aggregate exception)
 	{
 		m_throws.add(exception);
+	}
+	
+	/**
+	 * Attaches a description for a thrown exception type.
+	 * @param exception name of exception type described
+	 * @param description textual description for this exception
+	 */
+	public void addThrowsDesc(String exception, String description)
+	{
+		m_throwsDesc.add(new Property(exception, description));
 	}
 	
 	/*@}*/
@@ -268,6 +280,11 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 		return m_formalArguments.iterator();
 	}
 	
+	public Collection<Parameter> getFormalArguments()
+	{
+		return m_formalArguments;
+	}
+	
 	public void removeParameters() {
 		m_formalArguments = new Vector();
 	}
@@ -282,6 +299,16 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	{
 		return m_throws.iterator();
 	}
+	
+	/**
+	 * Access exception descriptions from this function's documentation.
+	 * 
+	 * @return an iterator over Property objects.
+	 */
+	public Iterator throwsDescIterator()
+	{
+		return m_throwsDesc.iterator();
+	}
 
     public boolean isCompatible(Routine other)
         throws MissingInformationException
@@ -292,7 +319,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
         Iterator my, his;
         for (my = parameterIterator(), his = other.parameterIterator();
                 my.hasNext() && his.hasNext(); ) {
-        	
+        
         		final Type myType = ((Parameter)my.next()).getType();
         		final Type hisType = ((Parameter)his.next()).getType();
             if(!myType.isCompatible(hisType, true)) {
@@ -321,8 +348,9 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	private boolean m_isExplicit;      ///< refers to constructors
 	private boolean m_hasThrows;
 	private Type m_returnType;
-	private Vector m_formalArguments;
+	private Vector<Parameter> m_formalArguments;
 	private List m_throws;
+	private List m_throwsDesc;
 	
 	private RoutineType m_routineType; // real / static wrapper
 

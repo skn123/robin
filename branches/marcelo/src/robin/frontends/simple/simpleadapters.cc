@@ -12,7 +12,7 @@
 
 #include "simpleadapters.h"
 
-#include <assert.h>
+#include <robin/debug/assert.h>
 #include "instanceelement.h"
 
 #include <robin/reflection/instance.h>
@@ -65,7 +65,7 @@ scripting_element SimplePascalStringAdapter::get(basic_block data)
 {   
 	PascalString *pascal_str = reinterpret_cast<PascalString*>(data);
 	scripting_element el = (scripting_element)(Simple::build(pascal_str->chars));
-	free(pascal_str);
+	delete pascal_str;
 	return el;
 }
 
@@ -111,7 +111,7 @@ scripting_element SimpleInstanceAdapter::get(basic_block data)
  * Builds an instance adapter, which handles instances
  * of the class 'domain'.
  */
-SimpleAddressAdapter::SimpleAddressAdapter(Handle<TypeOfArgument> domain)
+SimpleAddressAdapter::SimpleAddressAdapter(Handle<RobinType> domain)
   : m_domain(domain)
 {
 }

@@ -28,12 +28,11 @@
 
 // Package includes
 #include "adapter.h"
-#include "../reflection/insight.h"
 
 
 namespace Robin {
 
-class TypeOfArgument;
+class RobinType;
 class Library;
 class LowLevel;
 class Interceptor;
@@ -71,6 +70,9 @@ class ErrorHandler;
 class Frontend
 {
 public:
+
+	virtual ~Frontend() = 0;
+
 	/**
 	 * @name Deployment
 	 */
@@ -98,17 +100,17 @@ public:
 	/**
 	 * Describes the type of a scripting element
 	 * in terms of the internal reflection, that is, 
-	 * <classref>TypeOfArgument</classref> objects. The return
+	 * <classref>RobinType</classref> objects. The return
 	 * type can be one of the intrinsic type arguments, a class
 	 * instance type, or a frontend-specialized type.
+	 *
+	 * If the object belongs
+	 * to several types it will report the most specific of those types.
+	 *  (a type which is a subtype of all the other types of the object).
 	 */
 	virtual 
-	Handle<TypeOfArgument> detectType(scripting_element element) const = 0;
+	Handle<RobinType> detectType_mostSpecific(scripting_element element) const = 0;
 
-	/**
-	 * Gives additional information on a value besides its type.
-	 */
-	virtual Insight detectInsight(scripting_element element) const = 0;
 	//@}
 
 	/**
@@ -127,7 +129,7 @@ public:
 	 * references to instances of them when requested.
 	 */
 	virtual
-	Handle<Adapter> giveAdapterFor(const TypeOfArgument& type) const = 0;
+	Handle<Adapter> giveAdapterFor(const RobinType& type) const = 0;
 	//@}
 
 	/**
@@ -229,7 +231,8 @@ class UserDefinedTranslator
 {
 public:
 	virtual
-	Handle<TypeOfArgument> detectType(scripting_element element) = 0;
+	Handle<RobinType> detectType(scripting_element element) = 0;
+	virtual ~UserDefinedTranslator() = 0;
 };
 
 

@@ -31,7 +31,7 @@
 #include <pattern/handle.h>
 
 // Package includes
-#include <robin/reflection/typeofargument.h>
+#include <robin/reflection/robintype.h>
 
 
 namespace Robin {
@@ -84,11 +84,11 @@ public:
 	 *
 	 * In order to use this enumerated type as
 	 * an argument type and return type for functions, an
-	 * approperiate <classref>TypeOfArgument</classref> is supplied.
+	 * approperiate <classref>RobinType</classref> is supplied.
 	 */
 
 	//@{
-	Handle<TypeOfArgument> getArg() const;
+	Handle<RobinType> getType() const;
 	//@}
 
 private:
@@ -97,7 +97,7 @@ private:
 	typedef std::map<int, std::string> literalmap;
 	literalmap m_literals;
 
-	Handle<TypeOfArgument> m_arg;
+	Handle<RobinType> m_type;
 };
 
 

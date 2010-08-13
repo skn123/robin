@@ -917,7 +917,7 @@ public class Type extends DefaultTreeModel {
 	 * If 'expandTypedefs' is true, then typedefs are expanded into a typenode tree
 	 */
 	
-	private boolean equalTypenodes(TypeNode first, TypeNode second, boolean expandTypedefs) {
+	private static boolean equalTypenodes(TypeNode first, TypeNode second, boolean expandTypedefs) {
 		
 		// trivial case, same nodes
 		if(first == second) {
@@ -1006,7 +1006,7 @@ public class Type extends DefaultTreeModel {
 	 * @param expandTypedefs whether to expand typedefs during comparison
 	 * @return true if the objects are equal w.r.t above
 	 */
-	private boolean compareTypenodeUserObjects(Object first, Object second, boolean expandTypedefs) {
+	private static boolean compareTypenodeUserObjects(Object first, Object second, boolean expandTypedefs) {
 		if(first instanceof TemplateArgument && second instanceof TemplateArgument) {
 			if(first instanceof DataTemplateArgument && second instanceof DataTemplateArgument) {
 				return ((DataTemplateArgument)first).getValueString().equals(((DataTemplateArgument)second).getValueString());

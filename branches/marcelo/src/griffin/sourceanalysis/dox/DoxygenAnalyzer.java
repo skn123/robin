@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -26,7 +24,6 @@ import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.Entity;
 import sourceanalysis.Field;
 import sourceanalysis.Group;
-import sourceanalysis.InappropriateKindException;
 import sourceanalysis.InheritanceConnection;
 import sourceanalysis.Macro;
 import sourceanalysis.MissingInformationException;
@@ -132,8 +129,9 @@ public class DoxygenAnalyzer {
 		public static final String TYPENAMETYPE = "typename";
 		public static final String TYPE_ARRAYDIM = "array";
 		public static final String FRIEND = "friend";
-		
+
 		public static final String BRIEFDESC = "briefdescription";
+		public static final String DESC = "description";
 		public static final String DETAILEDDESC = "detaileddescription";
 		public static final String PARA = "para";
 		public static final String SIMPLESECT = "simplesect";
@@ -598,9 +596,25 @@ public class DoxygenAnalyzer {
             return false;
         }
         Type type = parseType(typenode, arrnode);
-        if (!(type.getBaseType() instanceof Alias)) {
-            return false;
-        }
+   //     try {
+        		if (!(type.getBaseType() instanceof Alias)) {
+        			return false;
+        		}
+       /* 		if(true) {
+             			throw new java.util.NoSuchElementException();
+        		}
+     
+      } catch(java.util.NoSuchElementException e) {
+        		System.err.println(type);
+        		System.err.println(typenode);
+        		System.err.println(arrnode);
+        		System.err.println(xmlnode);
+        		for (int i = 0 ; i < xmlnode.getChildNodes().getLength(); i++) {
+        			System.err.println("" + i + ": " + xmlnode.getChildNodes().item(i) );	        			
+        		}
+        		System.err.println("definition = " +xmlnode.getChildNodes().item(3).getTextContent());
+        		throw e;
+        }*/
         Alias alias = (Alias)type.getBaseType();
         if (alias.getAliasedType().getRootNode().getKind() == TypeNode.NODE_FUNCTION) {
             return true;
@@ -726,6 +740,8 @@ public class DoxygenAnalyzer {
 		
 		// Translate the name of the entity
 		Node namenode = XML.subNode(xmlnode, Tags.COMPOUNDNAME);
+
+		
 		if (namenode == null)
 			throw new XMLFormatException("no compoundname", xmlnode);
 		else
@@ -869,13 +885,19 @@ public class DoxygenAnalyzer {
 					
 					if (base.isTemplated()) {
 						// Remember template arguments if they are needed
-						TemplateArgument[] targs =
-							parseType(basenode).getTemplateArguments();
-						inheritance =
-							derived.addBase((Aggregate)base, targs,
-							                translateVisibility(vis));
-						// - remember to update inheritance later
-						m_inheritanceForRepair.add(inheritance);
+						try {
+							TemplateArgument[] targs =
+								parseType(basenode).getTemplateArguments();
+							inheritance =
+								derived.addBase((Aggregate)base, targs,
+								                translateVisibility(vis));
+							// - remember to update inheritance later
+							m_inheritanceForRepair.add(inheritance);
+						} catch (RuntimeException e) {
+							System.out.println("Exception while taking care of " + compound + " inherthing from " + base);
+							throw e;
+						}
+
 					}
 					else {
 						inheritance =
@@ -1035,6 +1057,7 @@ public class DoxygenAnalyzer {
 				}
 				groupscope = group.getScope();
 			}
+			translateDescription(xmlnode, group);
 			return group;
 		}
 		else
@@ -1219,6 +1242,9 @@ public class DoxygenAnalyzer {
 		}
 		// Get the detailed description
 		Node detailednode = XML.subNode(xmlnode, Tags.DETAILEDDESC);
+		if (detailednode == null) {
+			detailednode = XML.subNode(xmlnode, Tags.DESC);
+		}
 		if (detailednode != null) {
 			Collection pars = XML.subNodes(detailednode, Tags.PARA);
 			// Collect text from all <para> nodes
@@ -1235,12 +1261,7 @@ public class DoxygenAnalyzer {
 						// The <title> node contains property name, whereas the
 						// text which is to be the value of the property is placed
 						// in a <para> element.
-						Node titlenode = XML.subNode(fragment, Tags.TITLE);
-						Node subparnode = XML.subNode(fragment, Tags.PARA);
-						if (titlenode != null && subparnode != null) {
-							entity.addProperty(new Entity.Property(
-								XML.collectText(titlenode), XML.copyText(subparnode)));
-						}
+						translateDescriptionSection(entity, fragment);
 					}
 					else if (fragment.getNodeType() == Node.ELEMENT_NODE &&
 						fragment.getNodeName().equals(Tags.PARAMETERLIST)) {
@@ -1264,6 +1285,27 @@ public class DoxygenAnalyzer {
 		}
 	}
 	
+	private void translateDescriptionSection(Entity entity, Node fragment)
+	{
+		Node titlenode = XML.subNode(fragment, Tags.TITLE);
+		Node subparnode = XML.subNode(fragment, Tags.PARA);
+		String kind = XML.attribute(fragment, Tags.KIND, "");
+		
+		if (subparnode != null) {
+			String name = null;
+			String value = XML.copyText(subparnode);
+			if (kind.equals("return")) {
+				name = "return";
+			}
+			else if (titlenode != null && subparnode != null) {
+				name = XML.collectText(titlenode);
+			}
+			if (name != null) {
+				entity.addProperty(new Entity.Property(name, value));
+			}
+		}
+	}
+	
 	private void translateParameterDescriptions(Node xmlnode, Routine routine)
 	{
 		// Here, <parametername> nodes are translated into
@@ -1271,7 +1313,9 @@ public class DoxygenAnalyzer {
 		// it is a routine); translate them.
 		NodeList paramnodes = xmlnode.getChildNodes();
 		String current = null;
-		
+
+		String kind = XML.attribute(xmlnode, "kind", "param");
+
 		for (int pi = 0; pi < paramnodes.getLength(); ++pi) {
 			Node paramnode = paramnodes.item(pi);
 			if (paramnode.getNodeType() == Node.ELEMENT_NODE) {
@@ -1282,15 +1326,22 @@ public class DoxygenAnalyzer {
 						&& current != null) {
 					// - get the description
 					String desc = XML.collectText(paramnode);
-					// - find a parameter baring the name 'current' and add
-					//   the description to it
-					for (Iterator rpi = routine.parameterIterator(); 
-						rpi.hasNext(); ) {
-						Parameter param = (Parameter)rpi.next();
-						if (param.getName().equals(current)) {
-							param.addProperty(
-								new Entity.Property("description", desc));
+					
+					if (kind.equals("param")) {
+						// - find a parameter baring the name 'current' and add
+						//   the description to it
+						for (Iterator rpi = routine.parameterIterator(); 
+							rpi.hasNext(); ) {
+							Parameter param = (Parameter)rpi.next();
+							if (param.getName().equals(current)) {
+								param.addProperty(
+									new Entity.Property("description", desc));
+							}
 						}
+					}
+					else if (kind.equals("exception")) {
+						// - add 'throws' description
+						routine.addThrowsDesc(current, desc);
 					}
 				}
 			}
@@ -1446,12 +1497,16 @@ public class DoxygenAnalyzer {
 			String arrtext = XML.collectText(arrnode);
 			if (arrtext.startsWith("[") || arrtext.startsWith(")"))
 				exprtext += arrtext;
+			/*
+			 * This was a strange bugfix but its not legal 
+			 * 
 			// This is most probably a function typedef
-			if (arrtext.startsWith("(") && arrtext.endsWith(")") && !exprtext.endsWith("*")) {
+			if (arrtext.startsWith("(") && arrtext.endsWith(")") && !exprtext.endsWith("*")) {	
 				return new Type(new TypeNode(TypeNode.NODE_FUNCTION));
-			}
+			}*/
 		}
-		return parseType(exprtext, reference_map);
+		Type parseType = parseType(exprtext, reference_map);			
+		return parseType;
 	}
 	
 	public Type parseType(Node xmlnode) throws XMLFormatException

@@ -7,6 +7,10 @@
 class ThreadList {
 public:
 
+	ThreadList() {
+
+	}
+
 	void writeChar(char c, long times) {
 		for(long i = 0; i < times; ++i) {
 			usleep(10);

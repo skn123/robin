@@ -6,7 +6,7 @@
 
 typedef unsigned int hinted_size_t;
 
-#include <language.h>
+#include "language.h"
 #include "hinting.h"
 
 #undef INSIDE_HINTED_H

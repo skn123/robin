@@ -27,7 +27,7 @@ public:
 	void push_back(const T &element);
 	void insert(iterator pos, const T &element);
 	void erase(iterator pos);
-	
+	bool operator==(const list &)const;	
 	~vector();
 };
 

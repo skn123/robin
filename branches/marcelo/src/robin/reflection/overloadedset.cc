@@ -10,49 +10,77 @@
  * Robin
  */
 
+
+
 #include "overloadedset.h"
 
 #include <algorithm>
 #include <map>
 #include <vector>
 #include <string>
-#include <assert.h>
+#include <sstream>
+#include <algorithm>
+#include <robin/debug/assert.h>
 #include <pattern/cache.h>
 #include <pattern/singleton.h>
 
+#include "callresolution.h"
 #include "conversion.h"
 #include "conversiontable.h"
 #include "memorymanager.h"
 #include "../frontends/framework.h"
-
+#include "preresolveoverloadedset.h"
 #include "../debug/trace.h"
 
-#   define msize nargs
 
 
 namespace Robin {
 
-enum overloading_relationship {
-	OL_BETTER,
-	OL_WORSE,
-	OL_EQUIVALENT,
-	OL_AMBIGUOUS 
-};
-
-typedef std::vector<Handle<ConversionRoute> > ListConversion;
-typedef std::vector<Conversion::Weight>       WeightList;
-typedef std::vector<Insight>                  Insights;
-typedef std::vector<Conversion::Weight>       WeightList;
-typedef std::vector<Handle<TypeOfArgument> > TypeOfArguments;
-
 
 
 const char *OverloadingNoMatchException::what() const throw() {
-	return "no overloaded member matches arguments.";
+	return m_message.c_str();
+}
+
+OverloadingNoMatchException::OverloadingNoMatchException(const Robin::OverloadedSet &overloadedmethod, const Robin::CallRequest &req) throw()
+{
+	std::ostringstream err;
+
+	err << "OverloadingNoMatchException: "
+			"No overloaded member matches arguments. Will print signatures and passed args. "
+			"For conversion costs please use the 'robin.weighConversion' function.\n"
+			"Parameters are: ";
+	err << req;
+	err << "\n"
+		   "Candidates are:\n";
+	overloadedmethod.printCandidates(err);
+	m_message = err.str();
+}
+
+OverloadingNoMatchException::~OverloadingNoMatchException() throw()
+{
+
+}
+
+OverloadingAmbiguityException::OverloadingAmbiguityException(const Robin::OverloadedSet &overloadedmethod, const OverloadedSet::altlist &competingAlternatives) throw()
+{
+	std::ostringstream err;
+
+	err << "OverloadingAmbiguityException:\n"
+		   "There is no winner between all the possible signatures of the functions.\n"
+		   "The competing signatures are:\n";
+
+	OverloadedSet::printCandidates(err, competingAlternatives);
+	m_message = err.str();
+}
+
+OverloadingAmbiguityException::~OverloadingAmbiguityException() throw()
+{
+
 }
 
 const char *OverloadingAmbiguityException::what() const throw() {
-	return "call is ambiguous with given arguments.";
+	return m_message.c_str();
 }
 
 const char *ArgumentArrayLimitExceededException::what() const throw() {
@@ -60,10 +88,252 @@ const char *ArgumentArrayLimitExceededException::what() const throw() {
 }
 
 #ifdef IS_ARGUMENT_LIMIT
-const int OverloadedSet::ARGUMENT_ARRAY_LIMIT = 12;
+const size_t OverloadedSet::ARGUMENT_ARRAY_LIMIT = 12;
 #endif
 
-#define I Conversion::Weight::INFINITE /* nasty shortcut */
+namespace {
+
+
+Handle<ArgumentIndices> arrangeKWArgumentsFromFunction(const std::vector<std::string> &arg_names, size_t firstKwarg);
+void convertSequence(const ActualArgumentList& original, const ConversionRoutes& conversions, ActualArgumentList& converted, GarbageCollection& gc);
+void applyEdgeConversions(Handle<RobinType> type, scripting_element& value);
+
+/**
+ * Reorders an list given the names for every list element (in order of their appearance in the list)
+ * and mapping of names to final indices
+ * First n - kwargIndices.size() arguments are simply copied
+ */
+template <class T>
+Handle< T > reorderArguments(const T& args,
+                             const std::vector<std::string>& argumentNames,
+                             Handle<ArgumentIndices> kwargIndices)
+{
+    dbg::trace << "// @REORDER_ARGUMENTS: Total of " << args.size() << " arguments, " << kwargIndices->size() << " will be reordered" << dbg::endl;
+    Handle< T > reordered_list(new T(args.size()));
+
+    size_t numNonKwargs = args.size() - kwargIndices->size();
+    dbg::trace << "// @REORDER_ARGUMENTS: Copying " << numNonKwargs << " non-kw arguments" << dbg::endl;
+    for(size_t i=0; i < numNonKwargs; i++) {
+            (*reordered_list)[i] = args[i];
+    }
+
+    for(size_t i= numNonKwargs; i<args.size(); i++) {
+            dbg::trace << "\t- The argument '" << argumentNames[i] << "'" << dbg::endl;
+            dbg::trace << "\t\tappears at index " << i << dbg::endl;
+            dbg::trace << "\t\tand will be now at index " << (*kwargIndices)[argumentNames[i]] + numNonKwargs << dbg::endl;
+            (*reordered_list)[(*kwargIndices)[argumentNames[i]] + numNonKwargs] = args[i];
+    }
+    return reordered_list;
+
+}
+
+
+
+/**
+ * Takes an ActualArgumentList <b>list</b>, a KeywordArgumentMap <b>map</b> and an order
+ * for kwargs, and produces an ordered argument list consisting of args, followed by arranged kwargs
+ */
+Handle<ActualArgumentList> orderArguments(const ActualArgumentList& args,
+                                          const KeywordArgumentMap& kwargs,
+                                          Handle<ArgumentIndices> indices)
+{
+        dbg::trace << "// @ORDER_ARGUMENTS: starting" << dbg::endl;
+        Handle<ActualArgumentList> ordered_args(new ActualArgumentList(args.size() + kwargs.size()));
+
+        dbg::trace << "// @ORDER_ARGUMENTS: copying " << args.size() << " arguments as-is" << dbg::endl;
+        size_t i;
+        for(i = 0; i < args.size(); i++)
+        {
+            (*ordered_args)[i] = args[i];
+        }
+
+        for(ArgumentIndices::const_iterator ii = indices->begin(); ii != indices->end(); ii++)
+        {
+            (*ordered_args)[i + ii->second] = (kwargs.find(ii->first))->second;
+            dbg::trace << "//\targument at index " << i + ii->second << " is named '" << ii->first << "'" << dbg::endl;
+        }
+
+        return ordered_args;
+}
+
+
+} //
+
+
+OverloadedSet::CallResolution::CallResolution( Handle<CallRequest> &req,
+							const Handle<CFunction> &calledFunc)
+	: m_function(calledFunc), m_request(req), m_weights(new WeightList)
+{
+
+	if(req->m_nargsPassedByName > 0) {
+	m_reordered_signature =
+		reorderArguments(calledFunc->signature(),
+						 calledFunc->argNames(),
+						 req->m_kwargOrder);
+
+	m_reordered_signature_names =
+			reorderArguments(calledFunc->argNames(),
+							 calledFunc->argNames(),
+							 req->m_kwargOrder);
+	} else {
+		m_reordered_signature = Handle<RobinTypes>(new RobinTypes(calledFunc->signature()));
+		m_reordered_signature_names = Handle<std::vector<std::string> >(new std::vector<std::string>(calledFunc->argNames()));
+	}
+
+
+	m_routes.resize(req->m_nargs);
+
+	m_weights->resize(req->m_nargs);
+	ConversionRoutes::iterator          res_it = m_routes.begin(); // An iterator over all the result conversions
+	WeightList::iterator			   weight_it = m_weights->begin();
+	RobinTypes::const_iterator from_it = req->m_types.begin(); // An iterator over all the passed types
+	RobinTypes::const_iterator from_end = req->m_types.end();
+	RobinTypes::const_iterator   to_it = m_reordered_signature->begin(); // An iterator over all the formal types of the function
+	RobinTypes::const_iterator   to_end = m_reordered_signature->end();
+
+
+	ConversionTable *conversionTable  = ConversionTableSingleton::getInstance();
+
+	for (	int i =0;
+		 from_it != from_end && to_it != to_end;
+		 ++from_it, ++to_it,  ++weight_it, ++res_it, ++i) {
+		/* Calculate each 'best' set of conversions */
+		dbg::trace << "parameter #" << i << dbg::endl;
+		*res_it = conversionTable->bestSingleRoute(**from_it, **to_it);
+		*weight_it = (*res_it)->totalWeight();
+	}
+
+	if(dbg::trace.on()) {
+		Handle<RobinType> retType = calledFunc->returnType();
+		if(retType) {
+			dbg::trace << "return type: " << *retType << dbg::endl;
+		}
+	}
+
+	m_allConversionsAreEmpty = m_routes.areAllEmptyConversions();
+
+	assert_true(from_it == from_end);
+	assert_true(to_it == to_end);
+}
+
+
+scripting_element OverloadedSet::CallResolution::call(const Handle<ActualArgumentList>& args,
+		const KeywordArgumentMap &kwargs, scripting_element owner) const {
+
+	  if (m_function) {
+	        GarbageCollection gc;                    // temporary objects to clean up
+	        Handle<ActualArgumentList> orderArgumentsReturnValue;
+	        /*
+	         * canonic_args will have the types passed by name ordered
+	         * lexycographically.
+	         */
+	        const ActualArgumentList *canonic_args;
+
+	        // The keyword arguments will be concatenated to the regular arguments
+        	// Also the arguments will be ordered according to the call request order
+	        if(kwargs.size() != 0)
+	        {
+	        	orderArgumentsReturnValue = orderArguments(*args, kwargs, m_request->m_kwargOrder);
+	        	canonic_args = &*orderArgumentsReturnValue;
+	        } else {
+	        	 canonic_args = &*args;
+	        }
+
+
+        	ActualArgumentList converted_args;
+	        const ActualArgumentList *passed_args;//will be equal to converted_args except in the
+											// case that no conversion is needed.
+	        if(!m_allConversionsAreEmpty)
+	        {
+	        	passed_args = &converted_args;
+	        	convertSequence(*canonic_args, m_routes, converted_args, gc);
+	        } else {
+				passed_args = canonic_args;
+	        }
+
+	        scripting_element result;
+	        if (kwargs.size() == 0) {
+	            result = m_function->call(*passed_args, owner);
+	        }
+	        else {
+
+
+	            Handle<ActualArgumentList> function_order_args =
+	                reorderArguments(*passed_args,
+	                                 *m_reordered_signature_names,
+	                                 arrangeKWArgumentsFromFunction(m_function->argNames(),
+	                                                                args->size()));
+
+	            result = m_function->call(*function_order_args, owner);
+	        }
+	        if (m_function->m_allow_edge)
+	        {
+	        	Handle<RobinType> type = m_function->returnType();
+	        	if(type) {
+	        		applyEdgeConversions(m_function->returnType(), result);
+	        	}
+	        }
+	        gc.cleanUp();
+	        return result;
+	    }
+	    else {
+	        throw OverloadingNoMatchException(*m_request->m_calledFunc,*m_request);
+	    }
+}
+
+/**
+ * Compares the cost of call convertions in this call resolution with the cost
+ * in another call resolution, to see which is cheaper.
+ * @param proposed the CallResolution to compare with 'this'
+ *
+ * <p>The return value is:
+ * <ul>
+ *  <li>OL_PROPOSED_BETTER - if 'proposed' is better (cheap) than 'this';</li>
+ *  <li>OL_PROPOSED_WORSE - if 'proposed' is worse (expensive) than 'this';</li>
+ *  <li>OL_EQUIVALENT - if all the weights are the same;</li>
+ *  <li>OL_AMBIGIOUS - if there is no way to decide either way.
+ *  		(each one wins in a different parameter)</li>
+ * </ul>
+ * </p>
+ */
+OverloadedSet::CallResolution::overloading_relationship OverloadedSet::CallResolution::compareCost(
+											 const OverloadedSet::CallResolution & proposedResolution)
+{
+	WeightList::const_iterator known_iter;
+	WeightList::const_iterator suggested_iter;
+
+
+	assert_true(proposedResolution.m_weights->size() == m_weights->size());
+
+	bool worse_witness = false;   /* did we encounter a location which
+								   * indicates that 'known' is better? */
+	bool better_witness = false;  /* did we encounter a location which
+								   * indicates that 'suggested' is better? */
+
+	if (m_weights->size() == 0) return OL_PROPOSED_BETTER;  /* optimization */
+
+	int i=0; // A counter to know which parameter are we checking
+
+	/* Go through both vectors in parallel and search for witnesses for
+	 * either side */
+	for (known_iter = m_weights->begin(), suggested_iter = proposedResolution.m_weights->begin();
+		 known_iter != m_weights->end() && suggested_iter != proposedResolution.m_weights->end();
+		 ++known_iter, ++suggested_iter, i++)
+	{
+		dbg::trace << "For parameter " << i << ':' <<  dbg::endl;
+		dbg::trace ("    - known:     " , *known_iter);
+		dbg::trace ("    - proposed: ", *suggested_iter);
+		if (*known_iter < *suggested_iter)
+			worse_witness = true;
+		else if (*suggested_iter < *known_iter)
+			better_witness = true;
+	}
+
+	if (worse_witness != better_witness)
+		return better_witness ? OL_PROPOSED_BETTER : OL_PROPOSED_WORSE;
+	else
+		return better_witness ? OL_AMBIGUOUS : OL_EQUIVALENT;
+}
 
 /**
  * Remembers latest routes that were calculated during the existance of
@@ -71,172 +341,134 @@ const int OverloadedSet::ARGUMENT_ARRAY_LIMIT = 12;
  */
 class OverloadedSet::Cache
 {
+
+private:
+	/**
+		 * CacheTraits is a template parameter for Pattern::Cache
+		 */
+		struct CacheTraits {
+			typedef Handle<CallRequest> Key;
+			typedef Handle<OverloadedSet::CallResolution> Value;
+			class KeyCompareFunctor
+			{
+			public:
+				bool operator()(const Handle<CallRequest>& key1,
+								const Handle<CallRequest>& key2) const
+				{
+					return *key1 < *key2;
+				}
+			};
+
+			class KeyIdentityFunctor
+			{
+			public:
+				bool operator()(const Handle<CallRequest>& key1,
+								const Handle<CallRequest>& key2) const
+				{
+					return *key1 == *key2;
+				}
+			};
+
+			class KeyHashFunctor
+			{
+			public:
+				size_t operator()(const Handle<CallRequest>& key) const
+				{
+					return key->hashify();
+				}
+			};
+
+
+
+			/// Needed for memory management. Cannot be private because Pattern::Cache
+			/// has to call it.
+			static inline void dispose(const Handle<CallRequest> &req)
+			{
+					//need to do nothing, the handle object knows how to remove its contents
+			}
+
+			static inline const Handle<OverloadedSet::CallResolution> &getMissedElement()
+			{
+				return Cache::MISSED;
+			}
+
+		}; // end of CacheTraits
 public:
-	struct Key {
-		const OverloadedSet *group;
-		size_t nargs;
-		const Handle<TypeOfArgument> *args;
-		const Insight* insights;
-	};
-
-    struct Value {
-        size_t                                  alt_index;
-        std::vector<Handle<ConversionRoute> >   lightroutes;
-    };
-
-	class KeyHashFunctor
-	{
-	public:
-		size_t operator()(const Key& key) const
-		{
-			size_t accum = (size_t)key.group;
-			for (size_t i = 0; i < key.nargs; ++i)
-				accum += (size_t)&*(key.args[i]);
-			return accum;
-		}
-	};
-
-	class KeyIdentityFunctor
-	{
-	public:
-		bool operator()(const Key& key1,
-						const Key& key2) const
-		{
-			if (key1.group != key2.group) return false;
-			if (key1.nargs != key2.nargs) return false;
-			for (size_t i = 0; i < key1.nargs; ++i) {
-				if (&*(key1.args[i]) != &*(key2.args[i])) return false;
-				if (key1.insights[i] != key2.insights[i]) return false;
-			}
-			return true;
-		}
-	};
-
-	class KeyCompareFunctor
-	{
-	public:
-		bool operator()(const Key& key1,
-						const Key& key2) const
-		{
-			if (key1.group < key2.group) return true;
-			if (key1.group > key2.group) return false;
-			if (key1.nargs < key2.nargs) return true;
-			if (key1.nargs > key2.nargs) return false;
-			for (size_t i = 0; i < key1.nargs; ++i) {
-				if (&*(key1.args[i]) < &*(key2.args[i])) return true;
-				if (&*(key1.args[i]) > &*(key2.args[i])) return false;
-				if (key1.insights[i] < key2.insights[i]) return true;
-				if (key1.insights[i] > key2.insights[i]) return false;
-			}
-			return false;
-		}
-	};
-
-	typedef Pattern::Cache<Key, Value, OverloadedSet::Cache> Internal;
-	Internal actual_cache;
-
 	/**
 	 * Store an entry in the cache.
 	 */
-	inline void remember(const OverloadedSet *me,
-						 const size_t nargs, const Handle<TypeOfArgument> args[],
-						 const Insight insights[],
-						 size_t chosenAlternative,
-                         const std::vector<Handle<ConversionRoute> >& convs)
+	inline void remember(const Handle<CallRequest> &req,
+			Handle<OverloadedSet::CallResolution> value)
 	{
-		Handle<TypeOfArgument> *args_clone = cloneArgsArray(nargs, args);
-		Insight *insights_clone = cloneInsightsArray(nargs, insights);
-
-		const Key key = { me, nargs, args_clone, insights_clone };
-        const Value value = { chosenAlternative, convs };
-		actual_cache.remember(key, value);
+		emptyCacheIfFlushed();
+		actual_cache.remember(req, value);
 	}
 
 	/**
 	 * Fetch an entry in the cache.
 	 */
-	inline const Value& recall(const OverloadedSet *me, 
-                               size_t nargs,
-                               const Handle<TypeOfArgument> args[],
-                               const Insight insights[])
+	inline const Handle<OverloadedSet::CallResolution>& recall(const Handle<CallRequest> &req)
 	{
-		const Key key = { me, nargs, args, insights };
-		return actual_cache.recall(key);
+		emptyCacheIfFlushed();
+		return actual_cache.recall(req);
 	}
 
 	/**
 	 * Relinquish cache contents.
 	 */
-	inline void flush() { actual_cache.flush(); }
+	static inline void flush() {
+		m_globalRoundNumber++;
 
-	/// Needed for memory management. Cannot be private because Pattern::Cache
-	/// has to call it.
-	static inline void dispose(const Key& key) 
-	{ 
-		delete[] key.args; delete[] key.insights; 
 	}
 
-	static const unsigned int IMPOSSIBLE;
-	static const Value MISSED;
 
+	inline Cache() {
+		m_thisCacheUpdatedRound = m_globalRoundNumber;
+	}
 private:
-	/**
-	 * Copy args array for store in cache key.
-	 */
-	Handle<TypeOfArgument>
-		*cloneArgsArray(int nargs, const Handle<TypeOfArgument> args[]) 
-	{
-		Handle<TypeOfArgument> *args_clone = new Handle<TypeOfArgument>[nargs];
-		for (int i = 0; i < nargs; ++i) args_clone[i] = args[i];
-		return args_clone;
-	}
 
 	/**
-	 * Copy insights array for store in cache key.
+	 * When information that regards function resolution caches is updated
+	 * then a new "round" starts, which means that all the cache information
+	 * that was generated in a previous round is invalid.
+	 * The counter helps in knowing which is the current round.
 	 */
-	Insight *cloneInsightsArray(int nargs, const Insight insights[]) 
-	{
-		Insight *insights_clone = new Insight[nargs];
-		for (int i = 0; i < nargs; ++i) insights_clone[i] = insights[i];
-		return insights_clone;
+	static size_t m_globalRoundNumber;
+
+	/**
+	 * This is the round number which was valid the last time this cache
+	 * was updated. If the number is not equal to the global  round number then
+	 * the contents of this cache are invalid.
+	 */
+	size_t m_thisCacheUpdatedRound;
+
+	/**
+	 *  Since the caches are flushed lazily then
+	 */
+	inline void emptyCacheIfFlushed() {
+		if(m_globalRoundNumber != m_thisCacheUpdatedRound) {
+			m_thisCacheUpdatedRound = m_globalRoundNumber;
+			actual_cache.flush();
+		}
 	}
+
+	// Importing the cache pattern
+	Pattern::Cache<CacheTraits> actual_cache;
+
+	static const Handle<OverloadedSet::CallResolution> MISSED; // Missed is a null pointer
 };
 
-const unsigned int OverloadedSet::Cache::IMPOSSIBLE = (unsigned int)-1;
-const OverloadedSet::Cache::Value OverloadedSet::Cache::MISSED = { (unsigned int)-9 };
+const Handle<OverloadedSet::CallResolution> OverloadedSet::Cache::MISSED = Handle<OverloadedSet::CallResolution>(0);
+size_t OverloadedSet::Cache::m_globalRoundNumber = 0;
 
-
-class OverloadedSet::CacheSingleton 
-	: public Pattern::Singleton<OverloadedSet::Cache>
-{
-};
 
 
 namespace {
 
-typedef std::map<std::string, size_t> ArgumentIndices;
 
 
-/**
- * Takes a KeywordArgumentMap and produces a map of its keys in sorted order
- * This relies on the invariant that keys in an std::map are iterated on in sorted order
- */
-Handle<ArgumentIndices> arrangeKWArguments(const KeywordArgumentMap& kwargs) {
 
-        Handle<ArgumentIndices> indices(new ArgumentIndices);
-       
-        int index = 0;
-        dbg::trace << "// @ARRANGE_KW_ARGUMENTS: asked to arrange " << kwargs.size() << " kwargs" << dbg::endl;
-        for(KeywordArgumentMap::const_iterator i = kwargs.begin(); i != kwargs.end();
-                                               ++i, ++index)
-        {
-                dbg::trace << "//\t---- arg '" << i->first << "' is at index " << index << dbg::endl;
-                (*indices)[i->first] = index;
-        }
 
-        return indices;
-
-}
 
 /**
  * Produces a mapping in order of argument appearance in the vector
@@ -253,165 +485,6 @@ Handle<ArgumentIndices> arrangeKWArgumentsFromFunction(const std::vector<std::st
         return indices;
 }
 
-/**
- * Takes an ActualArgumentList <b>list</b>, a KeywordArgumentMap <b>map</b> and an order
- * for kwargs, and produces an ordered argument list consisting of args, followed by arranged kwargs
- */
-Handle<ActualArgumentList> orderArguments(const ActualArgumentList& args, 
-                                          const KeywordArgumentMap& kwargs,
-                                          Handle<ArgumentIndices> indices)
-{
-        dbg::trace << "// @ORDER_ARGUMENTS: starting" << dbg::endl;
-        Handle<ActualArgumentList> ordered_args(new ActualArgumentList(args.size() + kwargs.size()));
-
-        dbg::trace << "// @ORDER_ARGUMENTS: copying " << args.size() << " arguments as-is" << dbg::endl;
-        size_t i;
-        for(i = 0; i < args.size(); i++) 
-        {
-            (*ordered_args)[i] = args[i];
-        }
-        
-        for(ArgumentIndices::const_iterator ii = indices->begin(); ii != indices->end(); ii++)
-        {
-            (*ordered_args)[i + ii->second] = (kwargs.find(ii->first))->second;
-            dbg::trace << "//\targument at index " << i + ii->second << " is named '" << ii->first << "'" << dbg::endl;
-        }
-
-        return ordered_args;
-}
-
-/**
- * Reorders an list given the names for every list element (in order of their appearance in the list)
- * and mapping of names to final indices
- * First n - kwargIndices.size() arguments are simply copied
- */
-
-template <class T>
-Handle< T > reorderArguments(const T& args, 
-                             const std::vector<std::string>& argumentNames, 
-                             Handle<ArgumentIndices> kwargIndices)
-{
-    dbg::trace << "// @REORDER_ARGUMENTS: Total of " << args.size() << " arguments, " << kwargIndices->size() << " will be reordered" << dbg::endl;
-    Handle< T > reordered_list(new T(args.size()));
-
-    size_t numNonKwargs = args.size() - kwargIndices->size();
-    dbg::trace << "// @REORDER_ARGUMENTS: Copying " << numNonKwargs << " non-kw arguments" << dbg::endl;
-    for(size_t i=0; i < numNonKwargs; i++) {
-            (*reordered_list)[i] = args[i];
-    }
-
-    for(size_t i= numNonKwargs; i<args.size(); i++) {
-            dbg::trace << "\t- The argument '" << argumentNames[i] << "'" << dbg::endl;
-            dbg::trace << "\t\tappears at index " << (*kwargIndices)[argumentNames[i]] + numNonKwargs << dbg::endl;
-            dbg::trace << "\t\tand will be now at index " << i << dbg::endl;
-            (*reordered_list)[i] = args[(*kwargIndices)[argumentNames[i]] + numNonKwargs];
-    }
-
-    return reordered_list;
-
-}
-/**
- * Compares a pair of sequence conversion suggestions
- * to determine which of them is cheaper. The formal arguments should
- * have had the same type, but implementation issues dictate that
- * one of them is represented by a series of ConversionRoutes, while
- * the other - plainly by a list of weights.
- * <p>The return value is:
- * <ul>
- *  <li>OL_BETTER - if 'suggested' is better (smaller) than 'known';</li>
- *  <li>OL_WORSE - if 'suggested' is worse (greater) than 'known';</li>
- *  <li>OL_EQUIVALENT - if all the weights are the same;</li>
- *  <li>OL_AMBIGIOUS - if there is no way to decide either way.</li>
- * </ul>
- * </p>
- * (vector version)
- */
-overloading_relationship compareAlternatives(const WeightList& known,
-											 const ListConversion& suggested,
-											 const Insights& insights)
-{
-	WeightList::const_iterator known_iter;
-	ListConversion::const_iterator suggested_iter;
-	Insights::const_iterator insight_iter;
-
-	assert(known.size() == suggested.size());
-
-	bool worse_witness = false;   /* did we encounter a location which
-								   * indicates that 'known' is better? */
-	bool better_witness = false;  /* did we encounter a location which
-								   * indicates that 'suggested' is better? */
-
-	if (known.size() == 0) return OL_BETTER;  /* optimization */
-
-	/* Go through both vectors in parallel and search for witnesses for
-	 * either side */
-	for (known_iter = known.begin(), suggested_iter = suggested.begin(),
-			 insight_iter = insights.begin();
-		 known_iter != known.end() && suggested_iter != suggested.end();
-		 ++known_iter, ++suggested_iter, ++insight_iter) {
-		/* Compare the two corresponding elements of the two vectors */
-		Conversion::Weight suggested_weight = 
-			(*suggested_iter)->totalWeight(*insight_iter);
-		dbg::trace("    - known:     ", *known_iter);
-		dbg::trace("    - suggested: ", suggested_weight);
-		if (*known_iter < suggested_weight)
-			worse_witness = true;
-		else if (suggested_weight < *known_iter)
-			better_witness = true;
-	}
-
-	if (worse_witness != better_witness)
-		return better_witness ? OL_BETTER : OL_WORSE;
-	else
-		return better_witness ? OL_AMBIGUOUS : OL_EQUIVALENT;
-}
-
-/**
- * Compares a pair of sequence conversion suggestions
- * to determine which of them is cheaper. The formal arguments should
- * have had the same type, but implementation issues dictate that
- * one of them is represented by a series of ConversionRoutes, while
- * the other - plainly by a list of weights.
- * <p>The return value is:
- * <ul>
- *  <li>OL_BETTER - if 'suggested' is better (smaller) than 'known';</li>
- *  <li>OL_WORSE - if 'suggested' is worse (greater) than 'known';</li>
- *  <li>OL_EQUIVALENT - if all the weights are the same;</li>
- *  <li>OL_AMBIGIOUS - if there is no way to decide either way.</li>
- * </ul>
- * </p>
- * (array version)
- */
-overloading_relationship compareAlternatives(size_t nargs,
-											 Conversion::Weight known[],
-											 Handle<ConversionRoute>
-											    suggested[],
-											 Insight insights[])
-{
-	bool worse_witness = false;   /* did we encounter a location which
-								   * indicates that 'known' is better? */
-	bool better_witness = false;  /* did we encounter a location which
-								   * indicates that 'suggested' is better? */
-
-	if (nargs == 0) return OL_BETTER;  /* optimization */
-
-	/* Go through both vectors in parallel and search for witnesses for
-	 * either side */
-	for (size_t index = 0; index < nargs; ++index) {
-		/* Compare the two corresponding elements of the two vectors */
-		Conversion::Weight suggested_weight = 
-			suggested[index]->totalWeight(insights[index]);
-		if (known[index] < suggested_weight)
-			worse_witness = true;
-		else if (suggested_weight < known[index])
-			better_witness = true;
-	}
-
-	if (worse_witness != better_witness)
-		return better_witness ? OL_BETTER : OL_WORSE;
-	else
-		return better_witness ? OL_AMBIGUOUS : OL_EQUIVALENT;
-}
 
 
 /**
@@ -421,13 +494,13 @@ overloading_relationship compareAlternatives(size_t nargs,
  */
 bool identicalAlternatives(Handle<CFunction> alt1, Handle<CFunction> alt2)
 {
-	const FormalArgumentList& args1 = alt1->signature();
-	const FormalArgumentList& args2 = alt2->signature();
+	const RobinTypes& args1 = alt1->signature();
+	const RobinTypes& args2 = alt2->signature();
 
 	// Compare lengths
 	if (args1.size() != args2.size()) return false;
 
-	for (FormalArgumentList::const_iterator arg1_iter = args1.begin(),
+	for (RobinTypes::const_iterator arg1_iter = args1.begin(),
 			 arg2_iter = args2.begin();
 		 arg1_iter != args1.end(); ++arg1_iter, ++arg2_iter) {
 		// Compare args
@@ -437,62 +510,7 @@ bool identicalAlternatives(Handle<CFunction> alt1, Handle<CFunction> alt2)
 	return true;
 }
 
-/**
- * Gets the weights of ConversionRoutes from a vector
- * of such. (vector version)
- */
-void rememberWeights(const ListConversion& list,
-					 const Insights& insights,
-					 WeightList& weights)
-{
-	weights.resize(list.size());
-	for (size_t i = 0; i < list.size(); ++i) {
-		weights[i] = list[i]->totalWeight(insights[i]);
-	}
-}
 
-/**
- * Gets the weights of ConversionRoutes from an array
- * of such. (array version)
- */
-void rememberWeights(size_t nargs,
-					 Handle<ConversionRoute> list[],
-					 Insight insights[],
-					 Conversion::Weight weights[])
-{
-	for (size_t i = 0; i < nargs; ++i) {
-		weights[i] = list[i]->totalWeight(insights[i]);
-	}
-}
-
-/**
- * (vector version)
- */
-bool conversionPossible(const WeightList& weights)
-{
-	for (WeightList::const_iterator iter = weights.begin();
-		 iter != weights.end(); ++iter) {
-		/* Is this possible? */
-		if (! iter->isPossible())
-			return false;   /* definitely not */
-	}
-
-	return true; /* Yeea! */
-}
-
-/**
- * (array version)
- */
-bool conversionPossible(size_t nargs, Conversion::Weight weights[])
-{
-	for (size_t i = 0; i < nargs; ++i) {
-		/* Is this possible? */
-		if (! weights[i].isPossible())
-			return false;   /* definitely not */
-	}
-
-	return true; /* Yeea! */
-}
 
 /**
  * Applies a series of conversion routes to a list
@@ -501,42 +519,25 @@ bool conversionPossible(size_t nargs, Conversion::Weight weights[])
  * (vector version)
  */
 void convertSequence(const ActualArgumentList& original,
-					 const ListConversion& conversions,
+					 const ConversionRoutes& conversions,
 					 ActualArgumentList& converted,
 					 GarbageCollection& gc)
 {
-	assert(original.size() == conversions.size());
+	assert_true(original.size() == conversions.size());
 	converted.resize(original.size());
-	// Apply each conversion route independantly
+	// Apply each conversion route independently
 	for (size_t i = 0; i < original.size(); ++i) {
 		converted[i] = conversions[i]->apply(original[i], gc);
 	}
 }
 
-/**
- * Applies a series of conversion routes to a list
- * of actual arguments to produce a secondary list suitable for
- * calling a function directly.
- * (array version)
- */
-void convertSequence(size_t nargs,
-					 const ActualArgumentArray original,
-					 Handle<ConversionRoute> conversions[],
-					 ActualArgumentArray converted,
-					 GarbageCollection& gc)
-{
-	// Apply each conversion route independantly
-	for (size_t i = 0; i < nargs; ++i) {
-		converted[i] = conversions[i]->apply(original[i], gc);
-	}
-}
 
 /**
  * Applies a possible edge conversion which is associated with a given
  * type. The parameter 'value' initially contains the original value, and
  * is assigned the new value if a conversion actually takes place.
  */
-void applyEdgeConversions(Handle<TypeOfArgument> type, 
+void applyEdgeConversions(Handle<RobinType> type,
 						  scripting_element& value)
 {
 	Handle<Conversion> exit = ConversionTableSingleton::getInstance()
@@ -555,15 +556,35 @@ void applyEdgeConversions(Handle<TypeOfArgument> type,
 } // end of anonymous namespace
 
 
+
 /**
- * Default constructor - builds a set with no
- * alternatives. Add alternatives with 
+ * Constructor - builds a set with no
+ * alternatives. Add alternatives with
  * <methodref>addAlternative()</methodref>.
+ *
  */
-OverloadedSet::OverloadedSet()
-	: m_allow_edge(true)
+OverloadedSet::OverloadedSet(const char *name)
+	: m_refcount(new int(0)),m_name(name),m_cache(new Cache())
 {
+
 }
+
+inline Handle<OverloadedSet> OverloadedSet::get_handler()
+{
+	return Handle<OverloadedSet>(this,this->m_refcount);
+}
+
+inline Handle<OverloadedSet> OverloadedSet::get_handler() const
+{
+	return Handle<OverloadedSet>(const_cast<OverloadedSet *>(this),this->m_refcount);
+}
+
+
+Handle<OverloadedSet> OverloadedSet::create_new(const char *name) {
+	OverloadedSet *over = new OverloadedSet(name);
+	return over->get_handler();
+}
+
 
 OverloadedSet::~OverloadedSet()
 {
@@ -595,14 +616,143 @@ void OverloadedSet::addAlternatives(const OverloadedSet& more)
 			  std::back_inserter<altvec>(m_alternatives));
 }
 
+
 /**
- * Determines whether edge conversions will be applied to the return 
- * value of the function before passing it on to the interpreter.
+ * It finds the appropriate signature from all the available in the function,
+ * for a specific call.
+ * @param  req A CallRequest parameter which specifies the types of the
+ * parameters, they order and which parameters were passed by name.
+ * @returns A CallResolution object which specifies which of the signatures will be
+ * called and which type conversions will be applied.
+ *
+ *
+ * @param req It determines which types were passed to each parameter
  */
-void OverloadedSet::setAllowEdgeConversions(bool allow)
-{
-	m_allow_edge = allow;
+Handle<OverloadedSet::CallResolution> OverloadedSet::resolveCall(
+		Handle<CallRequest> &req) const {
+
+	const int nargs = req->m_nargs;
+
+
+	// The return value
+	Handle<CallResolution> select;
+
+
+    // Locate applicable alternative from m_alternatives.
+    //   Look in the cache first, and if this call is not there, perform
+    //   a complete overload resolution.
+
+	dbg::trace << "resolving call" << dbg::endl;
+
+    // Trying to read the resolution from the cache.
+    if (req->m_kwargOrder->size() == 0) {
+
+    	Handle<CallResolution> select =
+    			m_cache->recall(req);
+
+        if(select) {
+        	dbg::trace << "it was cached." << dbg::endl;
+        	return select;
+        } else {
+        	dbg::trace << "it is not in the cache." << dbg::endl;
+        }
+    }
+
+	// Now find the best sequence-route from actual_types to any of
+	// the alternative prototypes
+	bool ambiguity_alert = false;
+
+
+	int selectedAlternativeNumber = -1;
+
+	// When the call is ambiguos we will store a vector
+	// with all the competing signatures.
+	altlist otherEquivalentSignatures;
+
+
+	for (altvec::const_iterator alt_iter = m_alternatives.begin();
+		alt_iter != m_alternatives.end();
+		++alt_iter) {
+
+		/* Check this one out */
+		int alternativeNumber =  alt_iter - m_alternatives.begin();
+		dbg::trace << "// Trying signature #"
+					  <<  alternativeNumber << dbg::endl;
+		dbg::IndentationGuard guard(dbg::trace);
+
+		if(! (*alt_iter)->checkProperArgumentsPassed(*req) ) {
+			continue;
+		}
+
+		try {
+			Handle<CallResolution> proposed(new CallResolution(req,*alt_iter));
+
+			/* Compare the set of conversions needed to make this call
+			 * with the set needed for the lightest known alternative
+			 * so far */
+			if(select)
+			{
+				switch (select->compareCost(*proposed)) {
+				case CallResolution::OL_PROPOSED_BETTER:
+					select = proposed;
+					selectedAlternativeNumber = alternativeNumber;
+					ambiguity_alert = false;
+					dbg::trace << "The best signature so far." << dbg::endl;
+					break;
+				case CallResolution::OL_EQUIVALENT:
+				case CallResolution::OL_AMBIGUOUS:
+					if (!identicalAlternatives(select->m_function, *alt_iter))
+					{
+						if(!ambiguity_alert) {
+							otherEquivalentSignatures.clear();
+							ambiguity_alert = true;
+						}
+						otherEquivalentSignatures.push_back(*alt_iter);
+
+					}
+					break;
+				case CallResolution::OL_PROPOSED_WORSE:
+					break;
+				}
+			} else {
+				// Found the first resolution (since no exception was thrown)
+				select = proposed;
+				selectedAlternativeNumber = alternativeNumber;
+				ambiguity_alert = false;
+				dbg::trace << "Signature is Ok." << dbg::endl;
+			}
+		}
+		catch (NoApplicableConversionException& ) {
+			dbg::trace << "Impossible to call this signature." << dbg::endl;
+		}
+	}
+
+
+	// Now, if a valid alternative was found, issue the call.
+	// Otherwise, issue an exception.
+	if (!select) {
+		dbg::trace << "Found no signatures to call.";
+		throw OverloadingNoMatchException(*this,*req);
+	}
+	else if (ambiguity_alert) {
+		dbg::trace << "Found more than one signature, cannot decide.";
+		otherEquivalentSignatures.push_back(m_alternatives[selectedAlternativeNumber]);
+		throw OverloadingAmbiguityException(*this,otherEquivalentSignatures);
+	}
+	else {
+		dbg::trace << "The lightest signature was #" << selectedAlternativeNumber << dbg::endl;
+		dbg::IndentationGuard guard(dbg::trace);
+		for(int i =0;i<nargs;i++) {
+			dbg::trace << "Conversion weight for param " << i << ": " << (*select->m_weights)[i] << dbg::endl;
+		}
+		if(req->m_kwargOrder->size() == 0) {
+		   m_cache->remember(req,select);
+		}
+	}
+    return select;
+
 }
+
 
 
 /**
@@ -618,175 +768,54 @@ void OverloadedSet::setAllowEdgeConversions(bool allow)
  * is thrown if the smallest weight is shared among more than one
  * alternative.
  */
-scripting_element OverloadedSet::call(const ActualArgumentList& args, 
-		const KeywordArgumentMap &kwargs, scripting_element owner) const 
-{ 
-    const int nargs = args.size() + kwargs.size();
-    #   define msize nargs
-    
-    typedef std::vector<Handle<ConversionRoute> > ConversionRoutes;
-    typedef std::vector<Handle<TypeOfArgument> > TypeOfArguments;
-    
-    Handle<CFunction> match;                 // matched alternative
-    Cache            *cache;
-    size_t            cached_alt;            // index fetched/stored in cache
-    ActualArgumentList converted_args(msize); // arguments for final call
-    
-    GarbageCollection gc;                    // temporary objects to clean up
-    
-#ifdef IS_ARGUMENT_LIMIT
-    // - we intend to use arrays, make sure the array limit is not exceeded
-    if (nargs > ARGUMENT_ARRAY_LIMIT)
-        throw ArgumentArrayLimitExceededException();
-#endif
-    
-    // - acquire the cache
-    cache = CacheSingleton::getInstance();
-    
-    // Get the types of the actual parameters using Passive Translation
-    TypeOfArguments              actual_types(msize);
-    TypeOfArguments::iterator    typei = actual_types.begin();
-    Insights                     actual_insights(msize);
-    Insights::iterator           insighti = actual_insights.begin();
+scripting_element OverloadedSet::call(const Handle<ActualArgumentList>& args,
+		const KeywordArgumentMap &kwargs, scripting_element owner) const
+{
+	scripting_element ret;
+	dbg::trace << "Calling overloaded function " << m_name << dbg::endl;
+	dbg::IndentationGuard guard(dbg::trace);
+	Handle<CallRequest> req(new CallRequest(*args, kwargs,this));
+	Handle<CallResolution> selection = resolveCall(req);
+	ret =  selection->call(args,kwargs,owner);
 
-    Handle<ArgumentIndices> kwargOrder = arrangeKWArguments(kwargs);
-    Handle<ActualArgumentList> canonic_args = orderArguments(args, kwargs, kwargOrder); 
+	return ret;
+}
 
-    ActualArgumentList::const_iterator argi;
-    for (argi = canonic_args->begin(); argi != canonic_args->end();
-         ++argi, ++typei, ++insighti) {
-        // Get type and insight and put them in the actual_... vectors
-        *typei    = FrontendsFramework::activeFrontend()->detectType(*argi);
-        *insighti = FrontendsFramework::activeFrontend()->detectInsight(*argi);
-    }
-    
-    // Locate applicable alternative from m_alternatives.
-    //   Look in the cache first, and if this call is not there, perform
-    //   a complete overload resolution.
-    const Cache::Value& cached_entry = 
-        cache->recall(this, nargs, (nargs==0)?0:&actual_types[0], 
-                      (nargs==0)?0:&actual_insights[0]);
-    if (kwargs.size() == 0 && &cached_entry != &Cache::MISSED) {
-        // Found cached alternative, use it (optimization)
-        dbg::trace << "Got value from cache, running alternative #" 
-                      << cached_alt << dbg::endl;
-        match = m_alternatives[cached_entry.alt_index];
-        convertSequence(*canonic_args, cached_entry.lightroutes,
-                        converted_args, gc);
-    }
-    else {
-        // Now find the best sequence-route from actual_types to any of
-        // the alternative prototypes
-        bool ambiguity_alert = false;
-        Handle<CFunction>                     lightest;
-        ConversionRoutes                      lightroutes(msize);
-        WeightList                            lightweight(nargs, I);
-        ConversionRoutes  needed(msize);   // required conversions
-    
-        for (altvec::const_iterator alt_iter = m_alternatives.begin();
-             alt_iter != m_alternatives.end(); ++alt_iter) {
-            if ((kwargs.size() != 0) && !isKwargsValid(**alt_iter, args, kwargs)) {
-                continue;
-            }
+Handle<WeightList> OverloadedSet::weight(const Handle<ActualArgumentList>& args,
+		const KeywordArgumentMap &kwargs) const
+{
+	Handle<WeightList> ret;
+	try{
+		dbg::trace << "Weighting overloaded function " << m_name << dbg::endl;
+		dbg::trace.increaseIndent();
+		Handle<CallRequest> req(new CallRequest(*args, kwargs,this));
+		try {
+			Handle<CallResolution> selection = resolveCall(req);
+			ret = selection->m_weights;
+		}catch (const OverloadingNoMatchException &exc) {
+			ret =  Handle<WeightList>(new WeightList(args->size() + kwargs.size(),Conversion::Weight::INFINITE));
+		}
+		catch (const OverloadingAmbiguityException &exc) {
+			ret = Handle<WeightList>(new WeightList(args->size() + kwargs.size(),Conversion::Weight::INFINITE));
+		}
+		catch(const NoApplicableConversionException &exc) {
+			ret = Handle<WeightList>(new WeightList(args->size() + kwargs.size(),Conversion::Weight::INFINITE));
+		}
+		dbg::trace.decreaseIndent();
+	}
+	catch(...) {
+		dbg::trace.decreaseIndent();
+		throw;
+	}
+	return ret;
+}
 
-            /* Check this one out */
-            dbg::trace << "// Trying alternative #"
-                          << (alt_iter - m_alternatives.begin()) << dbg::endl;
-            if ((*alt_iter)->signature().size() == nargs) {
+Handle<Callable> OverloadedSet::preResolveCallable() const
+{
 
+	PreResolveOverloadedSet *caching = new PreResolveOverloadedSet(this->get_handler());
+	return Handle<Callable>(caching);
 
-                try {
-                    dbg::trace << "// @CHECKING: alternative at "
-							   << &(**alt_iter) << dbg::endl;
-   
-                    Handle<FormalArgumentList> canonic_signature =
-						reorderArguments((*alt_iter)->signature(), 
-										 (*alt_iter)->argNames(), kwargOrder);
-                    ConversionTableSingleton::getInstance()->
-                        bestSequenceRoute(actual_types, actual_insights,
-                                          *canonic_signature,
-                                          needed);
-    
-                    /* Compare the set of conversions needed to make this call
-                     * with the set needed for the lightest known alternative 
-                     * so far */
-                    switch (compareAlternatives(lightweight, needed, 
-                                                actual_insights)) {
-                    case OL_BETTER: 
-                        lightest = *alt_iter;
-                        cached_alt = alt_iter - m_alternatives.begin();
-                        for (size_t argi = 0; argi < nargs; ++argi)
-                            lightroutes[argi] = needed[argi];
-                        rememberWeights(needed, actual_insights, lightweight);
-                        ambiguity_alert = false;
-                        dbg::trace << "// better!" << dbg::endl;
-                        break;
-                    case OL_EQUIVALENT:
-                    case OL_AMBIGUOUS:
-                        if (!identicalAlternatives(lightest, *alt_iter))
-                            ambiguity_alert = true;
-                        break;
-                    }
-                }
-                catch (NoApplicableConversionException& ) {
-                    dbg::trace << "// impossible!" << dbg::endl;
-                }
-            }
-        }
-    
-    
-        dbg::trace << "// @LIGHTEST: " << &(*lightest) << dbg::endl;
-        if (nargs > 0)
-            dbg::trace("@LIGHTWEIGHT: ", lightweight[0]);
-    
-        // Now, if a valid alternative was found, issue the call.
-        // Otherwise, issue an exception.
-        if (!conversionPossible(lightweight) || !lightest) {
-            throw OverloadingNoMatchException();
-        }
-        else if (ambiguity_alert) {
-            throw OverloadingAmbiguityException();
-        }
-        else {
-            if(kwargs.size() == 0) {
-               cache->remember(this, nargs, (nargs==0)?0:&actual_types[0], 
-			       (nargs==0)?0:&actual_insights[0],
-                               cached_alt, lightroutes);
-            }
-            match = lightest;
-            convertSequence(*canonic_args, lightroutes, converted_args, gc);
-        }
-    }
-    
-    
-    if (match) {
-        scripting_element result;
-        if (kwargs.size() == 0) {
-            result = match->call(converted_args, owner);
-        }
-        else {
-            // reverse the order of canonic arguments to match function call
-            std::vector<std::string> canon_arg_names = match->argNames();
-            std::sort(canon_arg_names.begin() + args.size(), 
-                      canon_arg_names.end());
-
-            Handle<ActualArgumentList> function_order_args =
-                reorderArguments(converted_args, 
-                                 canon_arg_names, 
-                                 arrangeKWArgumentsFromFunction(match->argNames(), 
-                                                                args.size()));
-            
-            result = match->call(*function_order_args, owner);
-        }
-
-        if (m_allow_edge)
-            applyEdgeConversions(match->returnType(), result);
-        gc.cleanUp();
-        return result;
-    }
-    else {
-        throw OverloadingNoMatchException();
-    }
 }
 
 
@@ -796,7 +825,7 @@ scripting_element OverloadedSet::call(const ActualArgumentList& args,
  * <p>The return value is 'null' if no prototype matched.</p>
  */
 Handle<CFunction>
-OverloadedSet::seekAlternative(const FormalArgumentList& prototype) const
+OverloadedSet::seekAlternative(const RobinTypes& prototype) const
 {
 	for (altvec::const_iterator alt_iter = m_alternatives.begin();
 		 alt_iter != m_alternatives.end(); ++alt_iter) {
@@ -809,21 +838,40 @@ OverloadedSet::seekAlternative(const FormalArgumentList& prototype) const
 }
 
 
-bool OverloadedSet::isKwargsValid(const CFunction& cfunc, const ActualArgumentList& args,
-                                  const KeywordArgumentMap &kwargs) const 
+bool OverloadedSet::is_empty() const
 {
-    try {
-        cfunc.mergeWithKeywordArguments(args, kwargs);
-        return true;
-    } catch(InvalidArgumentsException &e) {
-        return false;
-    }
+	return m_alternatives.empty();
 }
 
 
 void OverloadedSet::forceRecompute()
 {
-	CacheSingleton::getInstance()->flush();
+	OverloadedSet::Cache::flush();
+}
+
+
+void OverloadedSet::printCandidates(std::ostream &o) const
+{
+	printCandidates(o,m_alternatives);
+}
+
+void OverloadedSet::printCandidates(std::ostream &o, const OverloadedSet::altlist &candidates)
+{
+	for(altlist::const_iterator it = candidates.begin();
+		it != candidates.end();
+		it++)
+	{
+		o << **it << "\n";
+	}
+
+}
+
+void OverloadedSet::printCandidates(std::ostream &o, const OverloadedSet::altvec &candidates)
+{
+	for(size_t i =0;i<candidates.size();i++)
+	{
+		o << *candidates[i] << "\n";
+	}
 }
 
 

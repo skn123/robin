@@ -63,10 +63,10 @@ def debian_package(env, robin, stl, pyfe, jar, stl_dox, fullver, Copy):
         (bindir + "griffin",            "griffin"),
         (pycdir + "robin.py",           "robin.py"),
         (pycdir + "griffin.py",         "griffin.py"),
-        (pycdir + "stl.py",             "src/robin/modules/stl.py"),
+        (pycdir + "stl.py",             "stl.py"),
     ] + (
       getDebFilesListForDir("build/dox-xml", robindir + "dox-xml/") +
-      getDebFilesListForDir("src/robin/modules/robinlib", pycdir + "robinlib/"))
+      getDebFilesListForDir("robinlib", pycdir + "robinlib/"))
 
     # This is the debian package we're going to create
     debpkg = '#%s_%s.deb' % (DEBNAME, fullver)

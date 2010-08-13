@@ -39,13 +39,32 @@ public:
 	TraceSink();
 
 	/**
+	 * A constructor which makes this traceSink a more specific
+	 * versions of the general one.
+	 * This tracesink will be "on" if it was enabled specifically enabled
+	 * or the general (parent) sink will be enabled.
+	 */
+	TraceSink(TraceSink &general);
+
+	/**
 	 * @name Facet Control
 	 */
 
 	//@{
 	void enable();
 	void disable();
-	bool on() const;
+	/**
+	 * Reports the state of the facet.
+	 */
+	inline bool TraceSink::on() const
+	{
+		if(m_general && m_general->on())
+		{
+			return true;
+		}
+		return m_active;
+	}
+
 
 	//@}
 	/**
@@ -54,27 +73,84 @@ public:
 
 	//@{
 
+	inline void newLine() {
+		if(on()) {
+			std::cerr << std::endl;
+			m_recentNewLine = true;
+		}
+	}
+
 	class EndLine { };
+	inline TraceSink& operator << (const EndLine& endl) {
+		newLine();
+		return *this;
+	}
 
-	TraceSink& operator << (const EndLine& endl);
 
 	template < class OUT >
-	TraceSink& operator << (const OUT& out)
-		{ if (m_active) std::cerr << out; return *this; }
-	template < class OUT >
-	void operator() (const char *label, const OUT& out) 
-	{  if (m_active) {
-		std::cerr << "// " << label;
-		out.dbgout();
-		std::cerr << std::endl;
-	} }
+	inline TraceSink& operator << (const OUT& out)
+	{
+		if (on()) {
+			if(m_recentNewLine) {
+				m_recentNewLine = false;
+				for(int i=0;i<get_indentation();i++) {
+					std::cerr << "   ";
+				}
+			}
+			std::cerr << out;
+		}
+		return *this;
+	}
 
+	template < class OUT >
+	void operator() (const char *label, const OUT& out)
+	{
+		if (on()) {
+			*this << "// " << label;
+			out.dbgout();
+			newLine();
+		}
+	}
+
+	/**
+	 * Shift all debug prints right
+	 */
+	void increaseIndent();
+
+	/**
+	 * Shift all debug prints left;
+	 */
+	void decreaseIndent();
 	//@}
 
 private:
 	bool m_active;
 
+	/**
+	 * How much indentation is needed.
+	 */
+	int m_indentation;
+
+	inline int get_indentation() {
+		if(m_general) {
+			return m_general->get_indentation() + m_indentation;
+		} else {
+			return m_indentation;
+		}
+	}
+
+
+	/**
+	 * Whatever nothing was printed since the last new line
+	 */
+	bool m_recentNewLine;
 	friend class Guard;
+
+	/**
+	 *  A sink which debugs a more general section of the programm
+	 *  This sink will be on automatically if the general sink is on.
+	 */
+	TraceSink *m_general;
 };
 
 /**
@@ -95,7 +171,19 @@ private:
 	bool m_restore;
 };
 
+class IndentationGuard
+{
+public:
+	IndentationGuard(TraceSink& sink);
+	~IndentationGuard();
+
+private:
+	TraceSink& m_sink;
+};
+
 extern TraceSink trace;
+extern TraceSink traceRegistration;
+extern TraceSink traceClassRegistration;
 extern TraceSink::EndLine endl;
 
 } // end of namespace dbg

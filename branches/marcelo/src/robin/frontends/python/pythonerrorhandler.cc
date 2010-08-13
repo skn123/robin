@@ -97,7 +97,7 @@ void PythonErrorHandler::setError(const std::exception &exc,
 	                              const Backtrace &trace)
 {
 	// add all functions to traceback
-	for (int i = 0; i < trace.size(); ++i) {
+	for (size_t i = 0; i < trace.size(); ++i) {
 		if (trace[i].function.find("Robin") < trace[i].function.length() ||
 		    trace[i].function.find("Py")    < trace[i].function.length())
 			continue;

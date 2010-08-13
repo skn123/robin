@@ -4,8 +4,8 @@
 %option c++
 
 %{
-#include "syntax.h"
-#include "inclusion.h"
+#include <robin/extreme/interactive/syntax.h>
+#include <robin/extreme/interactive/inclusion.h>
 using std::cin;
 using std::cout;
 using std::cerr;

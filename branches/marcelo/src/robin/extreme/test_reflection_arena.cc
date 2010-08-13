@@ -13,7 +13,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <assert.h>
+#include <robin/debug/assert.h>
 
 #include "test_reflection_arena.h"
 
@@ -39,8 +39,8 @@ Handle<Robin::Class> enterprise_Room;
 Handle<Robin::Class> enterprise_Hotel;
 
 // function prototypes
-void introduceConversion(Handle<Robin::TypeOfArgument> from,
-						 Handle<Robin::TypeOfArgument> to,
+void introduceConversion(Handle<Robin::RobinType> from,
+						 Handle<Robin::RobinType> to,
 						 Robin::Conversion *conv_type);
 
 
@@ -92,12 +92,11 @@ public:
  */
 Handle<Robin::Class> declareClass(const char *name)
 {
-	Handle<Robin::Class> decl(new Robin::Class(name));
-	decl->activate(decl);
+	Handle<Robin::Class> decl = Robin::Class::create_new(name);
 	// Enable converting from a reference to a pointer (trivially).
 	// This is needed so any functions accepting pointers can ever
 	// be called.
-	introduceConversion(decl->getRefArg(), decl->getPtrArg(),
+	introduceConversion(decl->getType(), decl->getPtrType(),
 						new Robin::TrivialConversion);
 	
 	return decl;
@@ -105,8 +104,8 @@ Handle<Robin::Class> declareClass(const char *name)
 
 /**
  */
-void introduceConversion(Handle<Robin::TypeOfArgument> from,
-						 Handle<Robin::TypeOfArgument> to,
+void introduceConversion(Handle<Robin::RobinType> from,
+						 Handle<Robin::RobinType> to,
 						 Robin::Conversion *conv_type)
 {
 	Handle<Robin::Conversion> hconv(conv_type);
@@ -118,10 +117,9 @@ void introduceConversion(Handle<Robin::TypeOfArgument> from,
 
 /**
  */
-void fillAdapter(Handle<Robin::TypeOfArgument> toa)
+void fillAdapter(Handle<Robin::RobinType> toa)
 {
 	assert(toa);
-	Robin::TypeOfArgument::handleMap.registerHandle(toa);
 	toa->assignAdapter(
 	    Robin::FrontendsFramework::activeFrontend()->giveAdapterFor(*toa));
 }
@@ -132,7 +130,7 @@ void fillAdapter(Handle<Robin::TypeOfArgument> toa)
  */
 Handle<Robin::Namespace> registerEnterprise()
 {
-	Handle<Robin::Namespace> ns(new Robin::Namespace);
+	Handle<Robin::Namespace> ns(new Robin::Namespace("<default>"));
 
 	enterprise_string =   declareClass("std::string");
 	enterprise_Location = declareClass("Location");
@@ -141,33 +139,33 @@ Handle<Robin::Namespace> registerEnterprise()
 	enterprise_RoomType->activate(enterprise_RoomType);
 
 	// Register string
-	Handle<CFunction> hstr(new CFunction((symbol)&string_new));
+	Handle<CFunction> hstr(new CFunction((symbol)&string_new,"string_new",CFunction::Constructor,"std::string"));
 
 	hstr->addFormalArgument(Robin::ArgumentCString);
 
 	enterprise_string->addConstructor(hstr);
 
 	// Register Hotel
-	Handle<CFunction> hnew(new CFunction((symbol)&Hotel_new));
-	Handle<CFunction> hcpy(new CFunction((symbol)&Hotel_copy));
-	Handle<CFunction> hname(new CFunction((symbol)&Hotel_getName));
-	Handle<CFunction> hloc(new CFunction((symbol)&Hotel_getLocation));
-	Handle<CFunction> hroom(new CFunction((symbol)&Hotel_getRoomNo));
+	Handle<CFunction> hnew(new CFunction((symbol)&Hotel_new,"Hotel_new",CFunction::Constructor,enterprise_Hotel->name()));
+	Handle<CFunction> hcpy(new CFunction((symbol)&Hotel_copy,"Hotel_copy",CFunction::Constructor,enterprise_Hotel->name()));
+	Handle<CFunction> hname(new CFunction((symbol)&Hotel_getName,"Hotel_getName",CFunction::Method,enterprise_Hotel->name()));
+	Handle<CFunction> hloc(new CFunction((symbol)&Hotel_getLocation,"Hotel_getLocation",CFunction::Method,enterprise_Hotel->name()));
+	Handle<CFunction> hroom(new CFunction((symbol)&Hotel_getRoomNo,"Hotel_getRoomNo",CFunction::Method,enterprise_Hotel->name()));
 
-	hnew->addFormalArgument(enterprise_string->getRefArg());
-	hnew->addFormalArgument(enterprise_Location->getRefArg());
+	hnew->addFormalArgument(enterprise_string->getConstType());
+	hnew->addFormalArgument(enterprise_Location->getConstType());
 
-	hcpy->addFormalArgument(enterprise_Hotel->getRefArg());
+	hcpy->addFormalArgument(enterprise_Hotel->getConstType());
 
-	hname->addFormalArgument(enterprise_Hotel->getPtrArg());
+	hname->addFormalArgument(enterprise_Hotel->getPtrType());
 	hname->specifyReturnType(Robin::ArgumentCString);
 
-	hloc->addFormalArgument(enterprise_Hotel->getPtrArg());
-	hloc->specifyReturnType(enterprise_Location->getRefArg());
+	hloc->addFormalArgument(enterprise_Hotel->getPtrType());
+	hloc->specifyReturnType(enterprise_Location->getConstType());
 
-	hroom->addFormalArgument(enterprise_Hotel->getPtrArg());
+	hroom->addFormalArgument(enterprise_Hotel->getPtrType());
 	hroom->addFormalArgument(Robin::ArgumentInt);
-	hroom->specifyReturnType(enterprise_Room->getRefArg());
+	hroom->specifyReturnType(enterprise_Room->getConstType());
 
 	enterprise_Hotel->addConstructor(hnew);
 	enterprise_Hotel->addConstructor(hcpy);
@@ -176,33 +174,33 @@ Handle<Robin::Namespace> registerEnterprise()
 	enterprise_Hotel->addInstanceMethod("getRoomNo", hroom);
 
 	// Register Room
-	Handle<CFunction> hroomnew(new CFunction((symbol)&Room_new));
-	Handle<CFunction> hlevel(new CFunction((symbol)&Room_getLevel));
+	Handle<CFunction> hroomnew(new CFunction((symbol)&Room_new,"Room_new",CFunction::Constructor,enterprise_Hotel->name()));
+	Handle<CFunction> hlevel(new CFunction((symbol)&Room_getLevel,"Romm_getLevel",CFunction::Method,enterprise_Hotel->name()));
 
-	hroomnew->addFormalArgument(enterprise_RoomType->getArg());
+	hroomnew->addFormalArgument(enterprise_RoomType->getType());
 
-	hlevel->addFormalArgument(enterprise_Room->getPtrArg());
-	hlevel->specifyReturnType(enterprise_RoomType->getArg());
+	hlevel->addFormalArgument(enterprise_Room->getPtrType());
+	hlevel->specifyReturnType(enterprise_RoomType->getType());
 
 	enterprise_Room->addConstructor(hroomnew);
 	enterprise_Room->addInstanceMethod("getLevel", hlevel);
 
-	introduceConversion(enterprise_Room->getRefArg(),
+	introduceConversion(enterprise_Room->getConstType(),
 						Robin::ArgumentInt,
 						new SampleConversionRoom2Int);
 	introduceConversion(Robin::ArgumentCString,
-						enterprise_string->getRefArg(),
+						enterprise_string->getConstType(),
 						new SampleConversionCString2stdstring);
 
 	// Register Location
 	{
-		Handle<CFunction> hloc(new CFunction((symbol)&Location_new));
-		Handle<CFunction> hprint(new CFunction((symbol)&Location_print));
+		Handle<CFunction> hloc(new CFunction((symbol)&Location_new,"Location_new",CFunction::Constructor,enterprise_Hotel->name()));
+		Handle<CFunction> hprint(new CFunction((symbol)&Location_print,"Location_print",CFunction::Method,enterprise_Hotel->name()));
 
-		hloc->addFormalArgument(enterprise_string->getRefArg());
-		hloc->addFormalArgument(enterprise_string->getRefArg());
+		hloc->addFormalArgument(enterprise_string->getConstType());
+		hloc->addFormalArgument(enterprise_string->getConstType());
 
-		hprint->addFormalArgument(enterprise_Location->getPtrArg());
+		hprint->addFormalArgument(enterprise_Location->getPtrType());
 
 		enterprise_Location->addConstructor(hloc);
 		enterprise_Location->addInstanceMethod("print", hprint);
@@ -215,22 +213,22 @@ Handle<Robin::Namespace> registerEnterprise()
 	enterprise_RoomType->addConstant("EMBASSY", (int)EMBASSY);
 
 	// Register global functions
-	Handle<CFunction> hbuy(new CFunction((symbol)&global_buy));
-	Handle<CFunction> hlist(new CFunction((symbol)&global_list));
+	Handle<CFunction> hbuy(new CFunction((symbol)&global_buy,"global_buy",CFunction::GlobalFunction));
+	Handle<CFunction> hlist(new CFunction((symbol)&global_list,"global_list",CFunction::GlobalFunction));
 
-	hbuy->addFormalArgument(enterprise_Hotel->getRefArg());
+	hbuy->addFormalArgument(enterprise_Hotel->getConstType());
 
 	// Apply adapters
 	// (ordinarily, this is done by the Registration Mechanism)
-	fillAdapter(enterprise_Hotel->getPtrArg());
-	fillAdapter(enterprise_Hotel->getRefArg());
-	fillAdapter(enterprise_Location->getPtrArg());
-	fillAdapter(enterprise_Location->getRefArg());
-	fillAdapter(enterprise_Room->getPtrArg());
-	fillAdapter(enterprise_Room->getRefArg());
-	fillAdapter(enterprise_string->getPtrArg());
-	fillAdapter(enterprise_string->getRefArg());
-	fillAdapter(enterprise_RoomType->getArg());
+	fillAdapter(enterprise_Hotel->getPtrType());
+	fillAdapter(enterprise_Hotel->getConstType());
+	fillAdapter(enterprise_Location->getPtrType());
+	fillAdapter(enterprise_Location->getConstType());
+	fillAdapter(enterprise_Room->getPtrType());
+	fillAdapter(enterprise_Room->getConstType());
+	fillAdapter(enterprise_string->getPtrType());
+	fillAdapter(enterprise_string->getConstType());
+	fillAdapter(enterprise_RoomType->getType());
 
 	// No - put everything in the namespace and off we go
 	ns->declare("Hotel", enterprise_Hotel);
@@ -239,8 +237,11 @@ Handle<Robin::Namespace> registerEnterprise()
 	ns->declare("string", enterprise_string);
 	ns->declare("RoomType", enterprise_RoomType);
 
-	ns->declare("buy", static_hcast<Robin::Callable>(hbuy));
-	ns->declare("list", static_hcast<Robin::Callable>(hlist));
+	Handle<Robin::OverloadedSet> hbug_over = Robin::OverloadedSet::create_new("buy");
+	ns->declare("buy", static_hcast<Robin::Callable>(hbug_over));
+
+	Handle<Robin::OverloadedSet> hlist_over = Robin::OverloadedSet::create_new("list");
+	ns->declare("list", static_hcast<Robin::Callable>(hlist_over));
 
 	return ns;
 }

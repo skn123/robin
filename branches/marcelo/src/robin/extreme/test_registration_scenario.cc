@@ -25,6 +25,7 @@
 #include <sstream>
 
 #include <pattern/attached_fstream.h>
+#include <pattern/compiler.h>
 
 #include <robin/reflection/library.h>
 #include <robin/frontends/simple/elements.h>
@@ -80,7 +81,7 @@ public:
 		struct Grd {
 			TestRegistrationScenario1 *scenario; 
 			~Grd() { scenario->interpret(")"); } 
-		} body_guard = { this };
+		} body_guard _UNUSEDVAR_ = { this };
 		// Rent one room in each hotel
 		interpret("(findHotel \"Fujiyama\")  checkin RoomType TOURIST 2.");
 		interpret("(findHotel \"Royal\")     checkin RoomType EMBASSY 1.");

@@ -14,6 +14,7 @@
  */
 
 #include "pythonobjects.h"
+#include "wrappedrobintype.h"
 
 // Robin includes
 #include <robin/reflection/cfunction.h>
@@ -24,6 +25,7 @@
 #include <robin/reflection/conversiontable.h>
 #include <robin/reflection/intrinsic_type_arguments.h>
 #include <robin/frontends/framework.h>
+#include <robin/frontends/framework.h>
 
 // Python frontend includes
 #include "enhancements.h"
@@ -31,6 +33,7 @@
 #include "pythonfrontend.h"
 #include "pythonerrorhandler.h"
 #include "inheritance.h"
+#include "robinpyobject.h"
 
 namespace {
 
@@ -82,10 +85,10 @@ PyTypeObject FunctionTypeObject = {
     "Robin::Python::FunctionObject",
     sizeof(FunctionObject),
     0,
-    FunctionObject::__dealloc__, /*tp_dealloc*/
+    RobinPyObject::__dealloc__, /*tp_dealloc*/
     0,                           /*tp_print*/
     FunctionObject::__getattr__, /*tp_getattr*/
-    0,                           /*tp_setattr*/
+    FunctionObject::__setattr__, /*tp_setattr*/
     0,                           /*tp_compare*/
 	FunctionObject::__repr__,    /*tp_repr*/
     0,                           /*tp_as_number*/
@@ -120,7 +123,7 @@ PyTypeObject AddressTypeObject = {
 	0,                                    /*tp_getattro*/
 	0,                                    /*tp_setattro*/
 	0,                                    /*tp_as_buffer*/
-	Py_TPFLAGS_BASETYPE | 
+	Py_TPFLAGS_BASETYPE |
 	Py_TPFLAGS_HAVE_CLASS,                /*tp_flags*/
 	"",                                   /*tp_doc*/
 	0,                                    /*tp_traverse*/
@@ -137,10 +140,10 @@ PyTypeObject AddressTypeObject = {
 	0, /* tp_descr_get */
 	0, /* tp_descr_set */
 	0, /* tp_dictoffset */
-	0, /* tp_init */ 
+	0, /* tp_init */
 	0, /* tp_alloc */
 	0, /* tp_new */
-	0, 0, 
+	0, 0,
 	0
 };
 
@@ -149,10 +152,10 @@ PyNumberMethods EnumeratedConstantNumberMethods = {
 	0, 0, 0,
 	0, 0, 0,
 	0, 0, 0,
-	0, 0, 
+	0, 0,
 	EnumeratedConstantObject::__and__,
-	EnumeratedConstantObject::__xor__, 
-	EnumeratedConstantObject::__or__, 
+	EnumeratedConstantObject::__xor__,
+	EnumeratedConstantObject::__or__,
 	dummy_coerce,
 	EnumeratedConstantObject::__int__
 };
@@ -209,19 +212,6 @@ namespace {
 		return Handle<PyCallableWithInstance>();
 	}
 
-	/**
-	 * Stores a reference to 'self' in 'keeper'.
-	 *
-	 * @param self object to keep reference to
-	 * @param keeper an instance object which will hold the reference.
-	 * If 'keeper' is not an InstanceObject, the operation fails silently.
-	 */
-	void keepMeAlive(PyObject *self, PyObject *keeper)
-	{
-		if (InstanceObject_Check(keeper)) {
-			((InstanceObject*)keeper)->keepAlive(self);
-		}
-	}
 
 }
 
@@ -231,9 +221,9 @@ namespace {
  * FunctionObject constructor.
  */
 FunctionObject::FunctionObject(Handle<Callable> underlying)
-	: m_underlying(underlying), m_self(NULL), m_in_module(NULL)
+	: RobinPyObject(&FunctionTypeObject), m_underlying(underlying), m_self(NULL), m_in_module(NULL)
 {
-	PyObject_Init(this, &FunctionTypeObject);
+
 }
 
 /**
@@ -241,9 +231,8 @@ FunctionObject::FunctionObject(Handle<Callable> underlying)
  */
 FunctionObject::FunctionObject(Handle<CallableWithInstance> underlying,
 							   InstanceObject *self)
-	: m_underlying_thiscall(underlying), m_self(self), m_in_module(NULL)
+	: RobinPyObject(&FunctionTypeObject), m_underlying_thiscall(underlying), m_self(self), m_in_module(NULL)
 {
-	PyObject_Init(this, &FunctionTypeObject);
 	Py_XINCREF(self);
 }
 
@@ -253,7 +242,6 @@ FunctionObject::FunctionObject(Handle<CallableWithInstance> underlying,
 FunctionObject::~FunctionObject()
 {
 	Py_XDECREF(m_self);
-	Py_XDECREF(m_in_module);
 }
 
 void FunctionObject::setName(const std::string& name)
@@ -270,9 +258,10 @@ void FunctionObject::setName(const std::string& name)
  */
 void FunctionObject::setSelf(InstanceObject *self)
 {
+	Py_XINCREF(self);
 	Py_XDECREF(m_self);
 	m_self = self;
-	Py_XINCREF(m_self);
+
 }
 
 /**
@@ -281,24 +270,15 @@ void FunctionObject::setSelf(InstanceObject *self)
  */
 void FunctionObject::inModule(PyObject *module)
 {
-	Py_XDECREF(m_in_module);
-	Py_XINCREF(module);
 	m_in_module = module;
 }
 
-/**
- * Deallocator - called by Python when the object is destroyed.
- */
-void FunctionObject::__dealloc__(PyObject *self)
-{
-	delete (FunctionObject*)self;
-}
 
 /**
  * (static) Call protocol - invokes call on 'self', which is assumed to be
  * a function, with given arguments.
  */
-PyObject *FunctionObject::__call__(PyObject *self, PyObject *args, 
+PyObject *FunctionObject::__call__(PyObject *self, PyObject *args,
 								   PyObject *kw)
 {
 	// Perform the call
@@ -311,17 +291,17 @@ PyObject *FunctionObject::__call__(PyObject *self, PyObject *args,
 PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 {
 	// Construct arguments
-	int nargs = PyTuple_Size(args);
-	ActualArgumentList pass_args(nargs);
-	for (int argindex = 0; argindex < nargs; ++argindex)
-		pass_args[argindex] = PyTuple_GetItem(args, argindex);
+	Py_ssize_t nargs = PyTuple_Size(args);
+	Handle<ActualArgumentList> pass_args(new ActualArgumentList(nargs));
+	for (Py_ssize_t argindex = 0; argindex < nargs; ++argindex)
+		(*pass_args)[argindex] = PyTuple_GetItem(args, argindex);
 
 
     // XXX: initialize from kw
     KeywordArgumentMap kwargs;
 
     if(kw != NULL && kw != Py_None) {
-        assert(PyDict_Check(kw));
+		assert_true(PyDict_Check(kw));
         PyObject *key, *value;
         Py_ssize_t pos = 0;
         while(PyDict_Next(kw, &pos, &key, &value)) {
@@ -335,7 +315,7 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 	try {
 		if (m_self)
 			return_value = m_underlying_thiscall->
-				callUpon(*m_self->getUnderlying(), pass_args, kwargs, m_self);
+				callUpon(m_self, *pass_args, kwargs, m_self);
 		else
 			return_value = m_underlying->call(pass_args, kwargs);
 	}
@@ -370,6 +350,44 @@ PyObject *FunctionObject::__call__(PyObject *args, PyObject *kw)
 	else {
 		return (PyObject*)return_value;
 	}
+}
+
+
+Handle<WeightList> FunctionObject::weight(Handle<ActualArgumentList> &args, KeywordArgumentMap &kwargs)
+{
+	// Invoke callable item
+	Handle<WeightList> return_value;
+	try {
+		if (m_self)
+			return_value = m_underlying_thiscall->
+				weightUpon(m_self, args, kwargs);
+		else
+			return_value = m_underlying->weight(args, kwargs);
+	}
+	catch (const UserExceptionOccurredException& e) {
+		// - retrieve the current error information, if possible
+		PyObject *errinfo = (PyObject*)
+			FrontendsFramework::activeFrontend()->
+				getErrorHandler().getError();
+		FrontendsFramework::activeFrontend()->getErrorHandler().setError(NULL);
+		if (errinfo) {
+			// - restore previous error information
+			PyObject *exc_type, *exc_value, *exc_tb;
+			PyArg_ParseTuple(errinfo, "OOO", &exc_type, &exc_value, &exc_tb);
+			PyErr_Restore(exc_type, exc_value, exc_tb);
+			return Handle<WeightList>();
+		}
+		else {
+			// - translate exception to Python
+			PyErr_SetString(PyExc_RuntimeError, e.user_what.c_str());
+			return Handle<WeightList>();
+		}
+	}
+	catch (const std::exception& e) {
+		PyErr_SetString(PyExc_RuntimeError, e.what());
+		return Handle<WeightList>();
+	}
+	return return_value;
 }
 
 /**
@@ -407,9 +425,42 @@ PyObject *FunctionObject::__getattr__(const char *name)
 	else if (strcmp(name, "__name__") == 0) {
 		return PyString_FromString(m_name.c_str());
 	}
-	else {
+	else if (strcmp(name, "__doc__") == 0) {
+			if(m_doc) {
+				return pyowned(m_doc.pointer());
+			} else {
+				return pyowned(Py_None);
+			}
+
+	} else if (strcmp(name, "__call__") == 0) {
+		return pyowned((PyObject *)this);
+	} else {
 		PyErr_SetString(PyExc_AttributeError, name);
 		return 0;
+	}
+}
+
+
+
+int FunctionObject::__setattr__(PyObject *self, char *name, PyObject *val)
+{
+	return ((FunctionObject*)self)->__setattr__(name, val);
+}
+
+/**
+ * Currently it allows to set the __doc__ variable.
+ */
+int FunctionObject::__setattr__(char *name, PyObject *val)
+{
+
+	if (strcmp(name, "__doc__") == 0) {
+		PyReferenceCreate<PyObject> temp(val);
+		m_doc = temp;
+		return 0;
+	} else {
+		PyErr_SetString(PyExc_AttributeError, "invalid slot name for class "
+						"enhancement.");
+		return -1;
 	}
 }
 
@@ -442,11 +493,23 @@ PyObject *FunctionObject::__repr__()
     return fmt;
 }
 
+PyReferenceSteal<FunctionObject>  FunctionObject::preResolver() {
+	if(m_self) {
+		PyReferenceSteal<FunctionObject> func(new FunctionObject(this->m_underlying_thiscall->preResolveCallableWithInstance(),m_self));
+		func->setName(m_name);
+		return func;
+	} else {
+		PyReferenceSteal<FunctionObject> func(new FunctionObject(this->m_underlying->preResolveCallable()));
+		func->setName(m_name);
+		return func;
+	}
+}
+
 /**
  * ClassObject constructor.
  */
 ClassObject::ClassObject(Handle<Class> underlying)
-	: m_underlying(underlying), m_in_module(NULL), m_x_methods(NULL)
+	: m_underlying(underlying), m_in_module(NULL),  m_optimized(false)
 {
 	(PyTypeObject&)(*this) = NullTypeObject;
 
@@ -478,9 +541,11 @@ ClassObject::ClassObject(Handle<Class> underlying)
 	tp_as_buffer = NULL;
 
 	// Support the new class model
-	tp_flags = Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_CLASS | 
+	tp_flags = Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_CLASS |
 		       Py_TPFLAGS_CHECKTYPES | Py_TPFLAGS_HAVE_WEAKREFS;
 	tp_base = &PyBaseObject_Type;
+    tp_bases = PyTuple_New(1);
+    PyTuple_SET_ITEM(tp_bases, 0, pyowned((PyObject*)tp_base));
 
 	tp_mro = NULL;
 	tp_new = __new__;
@@ -491,7 +556,7 @@ ClassObject::ClassObject(Handle<Class> underlying)
 
 ClassObject::~ClassObject()
 {
-	if (m_x_methods) x_releaseMethodTable();
+	x_releaseMethodTable();
 	Py_XDECREF(m_in_module);
 }
 
@@ -516,10 +581,10 @@ PyObject *ClassObject::__init__(PyObject *self, PyObject *args)
  */
 PyObject *ClassObject::__init_ex__(PyObject *, PyObject *self_and_args)
 {
-	assert(PyTuple_Check(self_and_args));
-	assert(PyTuple_Size(self_and_args) >= 1);
+	assert_true(PyTuple_Check(self_and_args));
+	assert_true(PyTuple_Size(self_and_args) >= 1);
 	PyObject *self = PyTuple_GetItem(self_and_args, 0);
-	PyObject *args = PyTuple_GetSlice(self_and_args, 1, 
+	PyObject *args = PyTuple_GetSlice(self_and_args, 1,
 									  PyTuple_Size(self_and_args));
 	PyObject *ret = __init__(self, args);
 	Py_XDECREF(args);
@@ -558,14 +623,24 @@ PyObject *ClassObject::__call__(PyObject *args, PyObject *kw)
 Handle<Instance> ClassObject::construct(PyObject *args, PyObject *kw)
 {
 	// Construct arguments
-	int nargs = PyTuple_Size(args);
-	ActualArgumentList pass_args(nargs);
-	for (int argindex = 0; argindex < nargs; ++argindex)
-		pass_args[argindex] = PyTuple_GetItem(args, argindex);
+	Py_ssize_t nargs = PyTuple_Size(args);
+	Handle<ActualArgumentList> pass_args(new ActualArgumentList(nargs));
+	for (Py_ssize_t argindex = 0; argindex < nargs; ++argindex)
+		(*pass_args)[argindex] = PyTuple_GetItem(args, argindex);
 
 
     // XXX: Initialize from kw
     KeywordArgumentMap kwargs;
+
+    if(kw != NULL && kw != Py_None) {
+   		assert_true(PyDict_Check(kw));
+        PyObject *key, *value;
+        Py_ssize_t pos = 0;
+        while(PyDict_Next(kw, &pos, &key, &value)) {
+            std::string kwmap_key(PyString_AsString(key));
+            kwargs[kwmap_key] = value;
+        }
+    }
 
 	// Invoke callable item
 	try {
@@ -633,24 +708,32 @@ PyObject *ClassObject::__getattr__(const char *name)
 		Py_INCREF(dict);
 		return dict;
 	}
+	else if (strcmp(name, "__mro__") == 0) {
+		PyObject* mro = this->getMro();
+		Py_XINCREF(mro);
+		return mro;
+	}
     // return C++ instance __init__ only if the tp_dict doesn't have __init__
     // already
 	else if (strcmp(name, "__init__") == 0 && (tp_dict == NULL ||
                 !PyDict_GetItemString(tp_dict, (char*)name))) {
 		static PyMethodDef method = {
-			"__init__", 
-			__init_ex__, 
+			"__init__",
+			__init_ex__,
 #if PY_VERSION_HEX >= 0x02030000
-			METH_VARARGS | METH_CLASS, 
+			METH_VARARGS | METH_CLASS,
 #else
 			METH_VARARGS,
 #endif
-			"initializes C instance" 
+			"initializes C instance"
 		};
 		return PyMethod_New(PyCFunction_New(&method,0), NULL, (PyObject*)this);
 	}
 	else if (strcmp(name, "__bases__") == 0) {
 		return Py_BuildValue("(O)", &PyBaseObject_Type);
+	}
+	else if (strcmp(name, "__call__") == 0) {
+			return pyowned((PyObject *)this);
 	}
 	else {
 
@@ -660,7 +743,7 @@ PyObject *ClassObject::__getattr__(const char *name)
             PyObject* dictmember = PyDict_GetItemString(tp_dict, (char*)name);
             if(dictmember) {
                 if(PyMethod_Check(dictmember) || PyFunction_Check(dictmember)) {
-                    return PyMethod_New(dictmember, NULL, (PyObject*)this); 
+                    return PyMethod_New(dictmember, NULL, (PyObject*)this);
                 } else {
                     Py_XINCREF(dictmember);
                     return dictmember;
@@ -714,12 +797,16 @@ int ClassObject::__setattr__(char *name, PyObject *value)
 			// Register an edge conversion
 			Handle<Conversion> ptr_exit(new PythonConversion(handler));
 			Handle<Conversion> ref_exit(new PythonConversion(handler));
-			ptr_exit->setSourceType(getUnderlying()->getPtrArg());
-			ref_exit->setSourceType(getUnderlying()->getRefArg());
+			Handle<Conversion> const_exit(new PythonConversion(handler));
+			ptr_exit->setSourceType(getUnderlying()->getPtrType());
+			ref_exit->setSourceType(getUnderlying()->getType());
+			const_exit->setSourceType(getUnderlying()->getConstType());
 			ConversionTableSingleton::getInstance()
 				->registerEdgeConversion(ptr_exit);
 			ConversionTableSingleton::getInstance()
 				->registerEdgeConversion(ref_exit);
+			ConversionTableSingleton::getInstance()
+				->registerEdgeConversion(const_exit);
 		}
 		else {
 			// Deploy functor as handler for requested protocol
@@ -765,6 +852,7 @@ PyObject *ClassObject::__repr__()
  */
 void ClassObject::__dealloc__(PyObject *self)
 {
+
 	delete (ClassObject*)self;
 }
 
@@ -812,13 +900,23 @@ PyObject *ClassObject::getDict() const
 	return m_inners;
 }
 
+PyObject *ClassObject::getMro() const {
+	// This is a nasty workaround that wouldn't be needed if the mro had
+	// actually reflected the inheritance tree
+	if (tp_mro == NULL) {
+		return PyTuple_New(0);
+	}
+
+	return tp_mro;
+}
+
 /**
  * Looks up an instance method in this class.
  */
 Handle<CallableWithInstance> ClassObject::
 findInstanceMethod(const char *name, const char **internal_name) const
 {
-	if (m_x_methods == NULL) x_optimizeMethodTable();
+	if (!m_optimized) x_optimizeMethodTable();
 
 	Handle<CallableWithInstance> method = x_findMethod(name, internal_name);
 	if (method)
@@ -859,7 +957,8 @@ void ClassObject::x_optimizeMethodTable() const
 	std::vector<std::string> method_names = m_underlying->listConciseMethods();
 
 	// Allocate the table
-	m_x_methods = new MethodDef[method_names.size() + 1];
+	m_optimized = true;
+	m_x_methods.resize(method_names.size());
 
 	// Fill table with information about each method by looking it up
 	for (size_t methindex = 0; methindex < method_names.size(); ++methindex) {
@@ -872,18 +971,18 @@ void ClassObject::x_optimizeMethodTable() const
 		// - the internal name holds this method's Robin-given name
 		m_x_methods[methindex].internal_name = name;
 		// - a handle to the method's implementation is associated
-		m_x_methods[methindex].meth = 
+		m_x_methods[methindex].meth =
 			m_underlying->findInstanceMethod(method_names[methindex]);
 	}
 
-	// Sentinel
-	m_x_methods[method_names.size()].name = NULL;
 }
 
 Handle<CallableWithInstance> ClassObject::
 x_findMethod(const char *name, const char **internal_name) const
 {
-	for (MethodDef *def = m_x_methods; def->name; ++def) {
+	typedef std::vector<MethodDef>::iterator MethodIterator;
+	MethodIterator end = m_x_methods.end();
+	for (MethodIterator def = m_x_methods.begin(); def != end; ++def) {
 		if (name[0] == def->name[0] && strcmp(name, def->name) == 0) {
 			*internal_name = def->internal_name;
 			return def->meth;
@@ -898,38 +997,87 @@ x_findMethod(const char *name, const char **internal_name) const
  */
 void ClassObject::x_releaseMethodTable()
 {
-	for (MethodDef *def = m_x_methods; def->name; ++def) {
+	typedef std::vector<MethodDef>::iterator MethodIterator;
+	MethodIterator end = m_x_methods.end();
+	for (MethodIterator def = m_x_methods.begin(); def != end; ++def) {
 		free((void*)def->internal_name);
 	}
-	delete[] m_x_methods;
-	m_x_methods = 0;
 }
 
 /**
  * InstanceObject constructor.
  */
-InstanceObject::InstanceObject(ClassObject *classobj, 
+InstanceObject::InstanceObject(ClassObject *classobj,
 							   Handle<Instance> underlying)
 	: m_underlying(underlying), m_ownership_keep(0), m_ob_weak(0)
 {
 	PyObject_Init(this, classobj);
 }
 
-InstanceObject::InstanceObject() 
+InstanceObject::InstanceObject()
 	: m_ownership_keep(0), m_ob_weak(0)
 {
 }
 
 void InstanceObject::init(Handle<Instance> underlying)
 {
-	assert(!m_underlying);
+	assert_true(!m_underlying);
 	m_underlying = underlying;
 }
 
 InstanceObject::~InstanceObject()
 {
 	if (m_ownership_keep) {
+		/*
+		 * The next line is a dirty trick which is part of robin quite a long time.
+		 * Now i finally discovered the reason.
+		 * The code is: Py_INCREF(this)
+		 * You will ask yourself: why would the object increment the reference counting
+		 * of itself in the destructor when everything is already lost, the reference
+		 * counting reached zero and the object has to destroy itself?
+		 * The answer is tricky. We are keeping ownership of m_ownership_keep, another
+		 * python object. Now we are decrementing the reference count of m_ownership_keep
+		 * thus possibly calling its destructor. Because of that code will be called which
+		 * might access 'this' (for example through a weak reference). The
+		 * refcounter of 'this' is zero and the destructor might be called again recursively,
+		 * thus producing horrible errors.
+		 * Increasing the reference count would save the day.
+		 * In spite of this currently working there are a number of hidden implementation
+		 * assumptions about python which are being ignored:
+		 * 	1> how do we know that all the data of the Pyobject is still valid before
+		 *     the destructor is called the second time (or even tables pointing to 'this' might be
+		 *     already cleaned).
+		 *  2> How do we know that Py_INCREF works at all?
+		 *  3> How is it that those weak references are still valid and pointing to this
+		 *  	object??
+		 *  The last point is the worst because in python weak references usually have to
+		 *  be cleaned automatically when the object is destroyed, and allways the
+		 *  destructor of internal objects could cause the original object to be dereferenced.
+		 *  This is not working in this case because InstanceObject supports weak-references incorrectly.
+		 *  Weakreferences should be reset by this destructor itself and that is done at the
+		 *  end of this destructor, but it should be done at the beggining.
+		 *
+		 *  Note: IF THE WEAK REFERENCES WILL BE CLEANED AUTOMATICALLY THEN THE USE
+		 *  OF THIS MECHANISM WILL NOT WORK AT ALL, THEY DEPEND ON THE ACCESS TO THE
+		 *  OBJECT.
+		 *
+		 *  Uses of this m_ownership_keep mechanism
+		 *  ========================================
+		 *
+		 *  1) In robin, passing a parameter by a non-const reference when a conversion
+		 *  is performed generates a temporary value. The value needs to be copied back to
+		 *  the original reference after the call.
+		 *  How is this done?
+		 *  After the function was called the temporary object
+		 *  is deleted and thus destroys m_ownership_keep which knows how to
+		 *  copy from the temporary to the original object.
+		 *  This whole thing could be changed by code that directly applies_back a conversion
+		 *  when this is needed. Instead of just applying code as a result of a destructor.
+		 *
+		 *  2) there might be other uses, investigate.
+		 */
 		Py_INCREF(this);
+
 		Py_XDECREF(m_ownership_keep);
 	}
 	if (m_ob_weak != NULL)
@@ -958,7 +1106,7 @@ bool InstanceObject::isInitialized() const
  */
 Handle<Instance> InstanceObject::getUnderlying() const
 {
-	assert(m_underlying);
+	assert_true(m_underlying);
 	return m_underlying;
 }
 
@@ -1061,14 +1209,14 @@ int InstanceObject::__setattr__(char *name, PyObject *val)
 		const std::string &SINKMEMBER_PREFIX = PythonFrontend::SINKMEMBER_PREFIX;
 		try {
 			Handle<CallableWithInstance> meth =
-                findFieldWrapper(SINKMEMBER_PREFIX, name); 
+                findFieldWrapper(SINKMEMBER_PREFIX, name);
 
 			// - data member setter
 			ActualArgumentList args;
 			args.push_back(val);
 
             KeywordArgumentMap nokwargs;
-			meth->callUpon(*m_underlying, args, nokwargs);
+			meth->callUpon(this, args, nokwargs);
 			return 0;
 		}
 		catch (const std::exception &e) {
@@ -1081,12 +1229,12 @@ int InstanceObject::__setattr__(char *name, PyObject *val)
 }
 
 
-Handle<CallableWithInstance> InstanceObject::findFieldWrapper(const std::string &prefix, const char* name) 
+Handle<CallableWithInstance> InstanceObject::findFieldWrapper(const std::string &prefix, const char* name)
 {
 
     std::string full_name = prefix + name;
-    const char *internal_name;    
-    Handle<CallableWithInstance> meth = 
+    const char *internal_name;
+    Handle<CallableWithInstance> meth =
         ((ClassObject*)ob_type)->findInstanceMethod(
             full_name.c_str(), &internal_name);
     if (!meth) throw NoSuchMethodException();
@@ -1094,7 +1242,7 @@ Handle<CallableWithInstance> InstanceObject::findFieldWrapper(const std::string 
     return meth;
 
 }
-        
+
 
 /**
  * Tries to find an instance method and bind it with the current instance.
@@ -1106,7 +1254,7 @@ PyObject *InstanceObject::getBoundMethodOrDataMember(const char *name)
 	const char *internal_name;
 
 	try {
-		Handle<CallableWithInstance> meth = 
+		Handle<CallableWithInstance> meth =
 			((ClassObject*)ob_type)->findInstanceMethod(name, &internal_name);
 		if (!meth) throw NoSuchMethodException();
 
@@ -1114,16 +1262,13 @@ PyObject *InstanceObject::getBoundMethodOrDataMember(const char *name)
 			// - data member
 			ActualArgumentList noargs;
             KeywordArgumentMap nokwargs;
-			PyObject *member = 
-				(PyObject*)meth->callUpon(*m_underlying, noargs, nokwargs);
-			keepMeAlive(this, member);
-			return member;
+			return (PyObject*)meth->callUpon(this, noargs, nokwargs,this);
 		}
 		else {
 			// - instance method
-			FunctionObject *boundobj = new FunctionObject(meth, this);
+			PyReferenceSteal<FunctionObject> boundobj = FunctionObject::construct(meth, this);
 			boundobj->setName(name);
-			return boundobj;
+			return boundobj.release();
 		}
 	}
 	catch (const std::exception& e) {
@@ -1143,7 +1288,7 @@ PyObject *InstanceObject::__repr__(PyObject *self)
 
 /**
  * Generates a most basic textual representation of the instance object
- * of the form 
+ * of the form
  * <code>"&lt;Robin::Python::InstanceObject of 'classname' at 0xXXXX&gt;"
  * </code>
  */
@@ -1158,14 +1303,14 @@ PyObject *InstanceObject::__repr__()
     } else {
         classname = getUnderlying()->getClass()->name();
     }
-    
+
 	// Format the string
 	char *buffer = new char[strlen(format) + classname.size() + 2 + 16];
 	sprintf(buffer, format, classname.c_str());
 	// Return string to Python
 	PyObject *fmt = PyString_FromString(buffer);
 	delete[] buffer;
-	return fmt;	
+	return fmt;
 }
 
 /**
@@ -1179,7 +1324,7 @@ AddressObject::AddressObject(Handle<Address> underlying)
 	PyObject_Init(this, &AddressTypeObject);
 }
 
-AddressObject::~AddressObject() 
+AddressObject::~AddressObject()
 {
 }
 
@@ -1210,6 +1355,8 @@ Handle<Address> AddressObject::getUnderlying() const
 EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 	: m_underlying(underlying)
 {
+	(PyTypeObject&)(*this) = NullTypeObject;
+
 	PyObject_Init((PyObject*)this, EnumeratedTypeTypeObject);
 
 	ob_size = sizeof(EnumeratedTypeObject);
@@ -1239,9 +1386,11 @@ EnumeratedTypeObject::EnumeratedTypeObject(Handle<EnumeratedType> underlying)
 	tp_as_buffer = NULL;
 
 	// Support the new class model
-	tp_flags = Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_CLASS | 
+	tp_flags = Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_CLASS |
 	           Py_TPFLAGS_CHECKTYPES | Py_TPFLAGS_HAVE_RICHCOMPARE;
 	tp_base = &PyBaseObject_Type;
+    tp_bases = PyTuple_New(1);
+    PyTuple_SET_ITEM(tp_bases, 0, pyowned((PyObject*)tp_base));
 
 	tp_new = &EnumeratedTypeObject::__new__;
 	tp_mro = NULL;
@@ -1361,7 +1510,7 @@ PyObject *EnumeratedConstantObject::__repr__()
 	std::string typedesc = getUnderlying()->getType()->name();
 	std::string literal = getUnderlying()->getLiteral();
 	std::string repr = "(enum " + typedesc + ")" + literal;
-	return PyString_FromStringAndSize(repr.c_str(), int(repr.size()));
+	return PyString_FromStringAndSize(repr.c_str(), Py_ssize_t(repr.size()));
 }
 
 /**
@@ -1383,7 +1532,7 @@ PyObject *EnumeratedConstantObject::__richcmp__(PyObject *self,
 		else
 			decision = Py_False;
 	}
-	else 
+	else
 		decision = Py_False;
 
 	Py_XINCREF(decision);
@@ -1453,10 +1602,10 @@ PyObject *EnumeratedConstantObject::__or__(PyObject *self, PyObject *other)
  *
  */
 PyObject *EnumeratedConstantObject::__aop__(PyObject *self, PyObject *other,
-		                                    long (*arith)(long,long), 
+		                                    long (*arith)(long,long),
 											const char *opname)
 {
-	int self_value, other_value;
+	long self_value, other_value;
 	bool typeerror = false;
 
 	// Translate 'self' to an integer value
@@ -1468,6 +1617,7 @@ PyObject *EnumeratedConstantObject::__aop__(PyObject *self, PyObject *other,
 		self_value = PyInt_AsLong(self);
 	}
 	else {
+		self_value = 0;
 		typeerror = true;
 	}
 
@@ -1484,7 +1634,7 @@ PyObject *EnumeratedConstantObject::__aop__(PyObject *self, PyObject *other,
 	}
 
 	if (typeerror) {
-		PyErr_Format(PyExc_TypeError, 
+		PyErr_Format(PyExc_TypeError,
 				     "unsupported operands types for '%s'", opname);
 		return NULL;
 	}
@@ -1519,7 +1669,7 @@ ConversionHookObject::~ConversionHookObject()
 /**
  * (static) Set-subscript protocol function - invokes __setsubscript__.
  */
-int ConversionHookObject::__setsubscript__(PyObject *self, 
+int ConversionHookObject::__setsubscript__(PyObject *self,
 										   PyObject *sub, PyObject *val)
 {
 	return ((ConversionHookObject*)self)->__setsubscript__(sub, val);
@@ -1544,19 +1694,17 @@ int ConversionHookObject::__setsubscript__(PyObject *sub, PyObject *val)
 	// Check if the given value is a tuple, and if so parse it
 	PyObject *callable  = val;
 	PyObject *pyweight  = NULL;
-	PyObject *pyweigher = NULL;
 	int       weight    = 1;
 	int       promotion = 0;
 
 	if (PyTuple_Check(val)) {
 		callable  = PyTuple_GetItem(val, 0);
-		if (PyTuple_Size(val) > 1) {
+		if (PyTuple_Size(val) == 2) {
 			pyweight  = PyTuple_GetItem(val, 1);
 			weight    = 0;
 			promotion = (int)PyInt_AsLong(pyweight);
-			if (PyTuple_Size(val) > 2) {
-				pyweigher = PyTuple_GetItem(val, 2);
-			}
+		} else if(PyTuple_Size(val) > 2){
+			PyErr_SetString(PyExc_TypeError,"Too many parameters passed while setting conversion");
 		}
 	}
 
@@ -1567,14 +1715,22 @@ int ConversionHookObject::__setsubscript__(PyObject *sub, PyObject *val)
 	}
 
 	// Assign to applicable conversion slot
-	Handle<Conversion> conv(pyweigher 
-						? new PythonConversionWithWeigher(handler, pyweigher)
-						: new PythonConversion(handler));
+	Handle<Conversion> conv(new PythonConversion(handler));
 	try {
-		conv->setSourceType(FrontendsFramework::activeFrontend()
-						       ->detectType(sub));
-		conv->setTargetType((m_kind == VOLATILE) ? m_underlying->getOutArg() 
-							                     : m_underlying->getRefArg());
+		if(PyObject_TypeCheck(sub,&WrappedRobinTypeTypeObject))
+		{
+			WrappedRobinType *wrappedType = static_cast<WrappedRobinType*>(sub);
+			conv->setSourceType(wrappedType->m_underlying);
+		}else {
+			conv->setSourceType(
+					((PythonFrontend*)FrontendsFramework::activeFrontend())
+								   ->detectType_asPython(sub));
+		}
+
+		dbg::trace << "conversion registration from : " << *conv->sourceType() << dbg::endl;
+
+		conv->setTargetType((m_kind == VOLATILE) ? m_underlying->getType()
+							                     : m_underlying->getConstType());
 		Conversion::Weight conv_weight(0, promotion, 0, weight);
 		conv->setWeight(conv_weight);
 		ConversionTableSingleton::getInstance()
@@ -1643,7 +1799,7 @@ bool AddressObject_Check(PyObject *object)
 }
 
 /**
- * Service routine, checks whether a Python object is an 
+ * Service routine, checks whether a Python object is an
  *EnumeratedConstantObject.
  *
  * @param object a Python object to check
@@ -1654,28 +1810,6 @@ bool EnumeratedConstantObject_Check(PyObject *object)
 							  EnumeratedTypeTypeObject);
 }
 
-/**
- * Frees a Pascal string, used as a deallocator when creating a PyCObject
- * holding a Pascal string. This function is called automatically by Python
- * when the object is destroyed.
- *
- * @param ppascal an opaque pointer to the Pascal string object, received from
- * the Python runtime.
- */
-void PyPascalString_deallocator(void *ppascal)
-{
-	free(ppascal);
-}
-
-/**
- * Service routine, checks whether a Python object holds a Pascal string.
- *
- * @param object a Python object to check
- */
-bool PyPascalString_Check(PyObject *object)
-{
-	return (PyCObject_Check(object));
-}
 
 
 PyTypeObject *makeMetaclassType(const char *name, PyTypeObject *base)
@@ -1698,7 +1832,7 @@ PyTypeObject *makeMetaclassType(const char *name, PyTypeObject *base)
 void initObjects()
 {
 	// Initialize ClassTypeObject
-	ClassTypeObject = makeMetaclassType("Robin::Python::ClassObject",
+	ClassTypeObject = makeMetaclassType("ClassType",
 										&PyType_Type);
 	ClassTypeObject->tp_dealloc = ClassObject::__dealloc__;
 	ClassTypeObject->tp_getattr = ClassObject::__getattr__;
@@ -1710,7 +1844,7 @@ void initObjects()
 	ClassTypeObject->tp_new = HybridObject::__new_hybrid__;
 
 	// Initialize HybridTypeObject
-	HybridTypeObject = makeMetaclassType("Robin::Python::HybridObject",
+	HybridTypeObject = makeMetaclassType("HybridObject",
 										 ClassTypeObject);
 	HybridTypeObject->tp_dealloc = ClassObject::__dealloc__;
     HybridTypeObject->tp_getattr = ClassObject::__getattr__;
@@ -1722,8 +1856,7 @@ void initObjects()
 #endif
 
 	// Initialize EnumeratedTypeTypeObject
-	EnumeratedTypeTypeObject = makeMetaclassType("Robin::Python::"
-												 "EnumeratedTypeObject",
+	EnumeratedTypeTypeObject = makeMetaclassType("EnumeratedTypeType",
 												 &PyType_Type);
 	EnumeratedTypeTypeObject->tp_dealloc = EnumeratedTypeObject::__dealloc__;
 	EnumeratedTypeTypeObject->tp_repr = EnumeratedTypeObject::__repr__;

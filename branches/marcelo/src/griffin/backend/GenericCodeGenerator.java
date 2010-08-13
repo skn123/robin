@@ -221,6 +221,7 @@ public class GenericCodeGenerator
 		List names = new ArrayList();
 		// add the trivial names
 		names.add(entity.getName());
+		names.add(entity.getFullName());
 		names.add(Utils.cleanFullName(entity));
 		// if this is a template instantiation - add the template name as well
 		if ((entity instanceof TemplateEnabledEntity) && ((TemplateEnabledEntity)entity).isSpecialized()) {

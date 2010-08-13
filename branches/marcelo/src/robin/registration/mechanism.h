@@ -37,7 +37,7 @@ class Library;
 class Class;
 class Namespace;
 class CFunction;
-class TypeOfArgument;
+class RobinType;
 class EnumeratedType;
 struct Signature;
 
@@ -70,6 +70,17 @@ public:
 	Handle<Library> import(const std::string& library, 
 						   const std::string& name);
 
+
+	/**
+	 * It finds the class in the global namespace if it exists.
+	 */
+	Handle<Class> findClass(const std::string& name);
+
+	/**
+	 * It unaliases according to the global namespace.
+	 */
+	void unalias(std::string &name);
+
 protected:
 	RegData *acquireRegData_impl(std::string library);
 
@@ -81,9 +92,9 @@ protected:
 						Namespace &container);
 	void admitEnum(const RegData *rbase,
 				   Handle<EnumeratedType> etype);
-	void admitTrivialConversion(Handle<TypeOfArgument> from, 
-								Handle<TypeOfArgument> to);
-	void admitUserDefinedConversion(Handle<CFunction> ctor, 
+	void admitTrivialConversion(Handle<RobinType> from,
+								Handle<RobinType> to);
+	void admitConstructorConversion(Handle<CFunction> ctor,
 									Handle<Class> klass, bool promotion);
 	void admitUpCastConversion(Handle<Class> derived, Handle<Class> base,
 							   void *transformsym);
@@ -91,7 +102,7 @@ protected:
 									  Namespace &container);
 	Handle<EnumeratedType> touchEnum (const std::string& name,
 									  Namespace &container);
-	Handle<TypeOfArgument> interpretType(const char *type, Namespace&);
+	Handle<RobinType> interpretType(const char *type, Namespace&);
 	void normalizeName(RegData *reg) const;
 
 	Robin::Namespace m_ns_common;
@@ -104,10 +115,17 @@ protected:
  *
  * Supplies the one and only registration mechanism
  * object.
+ *
+ * NOTICE: there is a class called RegistrationMechanismDeallocator
+ *  which takes care of freeing the memory when robin is unloaded.
+ *  Maybe there is a better way of implementing this in Pattern::Singleton.
+ *
  */
 class RegistrationMechanismSingleton 
 	: public Pattern::Singleton<RegistrationMechanism>
-{ };
+{
+
+};
 
 /**
  * @class DynamicLibraryOpenException

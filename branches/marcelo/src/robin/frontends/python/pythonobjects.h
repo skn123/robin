@@ -24,8 +24,10 @@
 
 // Robin includes
 #include <robin/reflection/callable.h>
+#include <robin/reflection/enumeratedtype.h>
 #include "enhancements.h"
-
+#include "robinpyobject.h"
+#include "pyhandle.h"
 #include "xrefdebug.h"
 
 namespace Robin {
@@ -41,38 +43,96 @@ class InstanceObject;
 
 /**
  * Exposes a routine to the Python interpreter.
- * Supports the __call__ protocol, and delegates invocation to a 
+ * Supports the __call__ protocol, and delegates invocation to a
  * <classref>Callable</classref> object.
  */
-class FunctionObject : public PyObject
+class FunctionObject : public RobinPyObject
 {
-public:
+private:
 	FunctionObject(Handle<Callable> underlying);
+
 	FunctionObject(Handle<CallableWithInstance> underlying,
 				   InstanceObject *self);
-	~FunctionObject();
+
+public:
+	/**
+	 * Used as a constructor
+	 */
+	inline static PyReferenceSteal<FunctionObject> construct(Handle<Callable> underlying);
+
+
+	/**
+	 * Used as a constructor
+	 */
+	inline static PyReferenceSteal<FunctionObject> construct(Handle<CallableWithInstance> underlying,
+			   InstanceObject *self);
+
+	virtual ~FunctionObject();
 
 	void setName(const std::string& name);
 	void setSelf(InstanceObject *self);
 	void inModule(PyObject *module);
 
 	PyObject *__call__(PyObject *args, PyObject *kw);
+	Handle<WeightList> weight(Handle<ActualArgumentList> &args, KeywordArgumentMap &kwargs);
 	PyObject *__getattr__(const char *name);
+	int __setattr__(char *name, PyObject *val);
 	PyObject *__repr__();
+	PyReferenceSteal<FunctionObject> preResolver();
+
+
+
+
+
+
 
 	static PyObject *__call__(PyObject *self, PyObject *args, PyObject *kw);
 	static PyObject *__getattr__(PyObject *self, char *name);
+	static int __setattr__(PyObject *self, char *name, PyObject *val);
 	static PyObject *__repr__(PyObject *self);
-	static void __dealloc__(PyObject *self);
+
 
 private:
+	/*
+	 * Docstring set by the user by calling
+	 * obj.__doc__ = "this is obj! nice"
+	 */
+	PyReferenceSteal<PyObject> m_doc;
+
 	Handle<Callable>             m_underlying;
 	Handle<CallableWithInstance> m_underlying_thiscall;
+
+	/*
+	 * It is the instance in case this is a bound method.
+	 * The reference has to be hold to make sure that python
+	 * does not release the object while the bounded method still
+	 * exists.
+	 */
 	InstanceObject              *m_self;
+
+	/*
+	 * It is a weak pointer to the module we belong to.
+	 */
 	PyObject                    *m_in_module;
 
 	std::string                  m_name;
 };
+
+
+
+template class PyReferenceCreate<FunctionObject>;
+template class PyReferenceSteal<FunctionObject>;
+template class PyReferenceBorrow<FunctionObject>;
+
+PyReferenceSteal<FunctionObject> FunctionObject::construct(Handle<Callable> underlying) {
+	    FunctionObject *funcObj = new FunctionObject(underlying);
+		return PyReferenceSteal<FunctionObject>(funcObj);
+	}
+PyReferenceSteal<FunctionObject> FunctionObject::construct(Handle<CallableWithInstance> underlying,
+		   InstanceObject *self) {
+
+	return PyReferenceSteal<FunctionObject>(new FunctionObject(underlying,self));
+}
 
 /**
  * Represents a class in the internal reflection.
@@ -93,7 +153,7 @@ public:
 
 	static PyObject *__init__   (PyObject *self, PyObject *args);
 	static PyObject *__init_ex__(PyObject *,     PyObject *self_and_args);
-	static PyObject *__new__    (PyTypeObject *self, 
+	static PyObject *__new__    (PyTypeObject *self,
 								 PyObject *args, PyObject *kw);
 	static PyObject *__call__   (PyObject *self, PyObject *args, PyObject *kw);
 	static PyObject *__getattr__(PyObject *self, char *attrname);
@@ -112,6 +172,7 @@ public:
 	Handle<Class>   getUnderlying() const;
 	PyObject       *getContainingModule() const;
 	PyObject       *getDict() const;
+	PyObject       *getMro() const;
 
 	Handle<CallableWithInstance> findInstanceMethod(const char *name,
 													const char **internal_name)
@@ -138,7 +199,9 @@ private:
 		const char *internal_name;
 		Handle<CallableWithInstance> meth;
 	};
-	mutable MethodDef *m_x_methods;
+
+	mutable std::vector<MethodDef> m_x_methods;
+	mutable bool m_optimized; //whatever m_c_methods has been constructed or not
 
 	void x_optimizeMethodTable() const;
 	inline Handle<CallableWithInstance> x_findMethod(const char *name,
@@ -148,7 +211,20 @@ private:
 };
 
 /**
- * Represents a class instance.
+ * Wraps an Robin::Instance. Which means is an instance of a
+ * ClassObject.
+ *
+ * Implements all the Python interface, enables to call methods,
+ * access attributes and set slots.
+ *
+ * Notice on implementation
+ * ========================
+ * Currently there is specific support in InstanceObject to be able
+ * to be passed by non-const reference.
+ * The implementation performs some dark operations which break
+ * several python abstractions. This code needs to go by new methods.
+ * Please read the comments in the destructor ~InstanceObject()
+ *
  */
 class InstanceObject : public PyObject
 {
@@ -185,10 +261,24 @@ protected:
 	friend class ClassObject;
 
 private:
+	/**
+	 * The instance object we are wrapping
+	 */
 	Handle<Instance> m_underlying;
+
+	/**
+	 * An object which is kept alive as long as 'this'
+	 * InstanceObject lives.
+	 *
+	 * It can be set from python with the field '__owner__'
+	 * of the instance.
+	 */
 	PyObject        *m_ownership_keep;
 
 public:
+	/**
+	 * A field for support for weak references to 'this' InstanceObject
+	 */
 	PyObject        *m_ob_weak;
 };
 
@@ -230,9 +320,9 @@ public:
 	PyObject *__new__(PyObject *args, PyObject *kw);
 	PyObject *__repr__();
 
-	static PyObject *__new__    (PyTypeObject *self, 
+	static PyObject *__new__    (PyTypeObject *self,
 								 PyObject *args, PyObject *kw);
-	static PyObject *__call__   (PyObject *self, 
+	static PyObject *__call__   (PyObject *self,
 								 PyObject *args, PyObject *kw);
 	static PyObject *__repr__(PyObject *self);
 	static void      __dealloc__(PyObject *self);
@@ -336,8 +426,5 @@ extern void initObjects();
 } // end of namespace Robin
 
 
-#ifndef PY_SSIZE_T_MAX
-typedef int Py_ssize_t;
-#endif
 
 #endif

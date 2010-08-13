@@ -29,6 +29,10 @@ public:
 	virtual void next() = 0;
 	virtual bool done() const = 0;
 	virtual ELEMENT value() const = 0;
+	virtual ~AbstractIterator()
+	{
+
+	}
 };
 
 /**
@@ -40,6 +44,12 @@ class MapIterator : public AbstractIterator<ELEMENT>
 public:
 	MapIterator(const MAP& usermap) 
 		: m_map(usermap), m_iter(usermap.begin()) { }
+
+
+	virtual ~MapIterator()
+	{
+
+	}
 
 	virtual void next() {
 		++m_iter;
@@ -62,6 +72,11 @@ class MapKeyIterator: public MapIterator<ELEMENT,MAP>
 {
 public:
 	MapKeyIterator(const MAP& usermap) : MapIterator<ELEMENT,MAP>(usermap) { }
+
+	virtual ~MapKeyIterator()
+	{
+
+	}
 
 	virtual ELEMENT value() const {
 		return this->m_iter->first;

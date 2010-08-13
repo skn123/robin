@@ -25,6 +25,7 @@ import sourceanalysis.DataTemplateParameter;
 import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.Entity;
 import sourceanalysis.Field;
+import sourceanalysis.Group;
 import sourceanalysis.InappropriateKindException;
 import sourceanalysis.IncompleteTemplateInstance;
 import sourceanalysis.InheritanceConnection;
@@ -42,6 +43,7 @@ import sourceanalysis.TemplateParameter;
 import sourceanalysis.Type;
 import sourceanalysis.TypenameTemplateArgument;
 import sourceanalysis.TypenameTemplateParameter;
+import sourceanalysis.Entity.Property;
 import sourceanalysis.Type.TypeNode;
 import sourceanalysis.view.Traverse;
 
@@ -752,11 +754,10 @@ public class Utils {
 		TemplateArgument[] typeTemplateArguments = templateType.getTemplateArguments();
 		
 		
-		
 		if(!typeEntity.isTemplated() || ! (typeEntity instanceof Aggregate) || typeTemplateArguments == null) {
 			return typeEntity;
 		}
-		
+				
 		Aggregate typeAggregate = (Aggregate)typeEntity;
 		
 		
@@ -792,6 +793,7 @@ public class Utils {
 	}
 	
 	/**
+	 * This is the instantiateTemplate, version for Aggregates.
 	 * Generates a specialization for a template class, given actual
 	 * values for the template parameters.
 	 * @param template a templated Aggregate entity
@@ -830,6 +832,7 @@ public class Utils {
 		// - these final variables are for use inside anonymous classes
 		final Aggregate fin_template = template;
 		final Map fin_substitution = substitution;
+		final Map fin_macros = macros;
 		final List fin_targs = new ArrayList();
 		final Map fin_existingInstancesMap = existingInstancesMap;
 		
@@ -869,6 +872,7 @@ public class Utils {
 				// - get the replaced and the replacing
 				Entity replace = typenameParameter.getDelegate();
 				Type with = ((TypenameTemplateArgument)templateArgument).getValue();
+				with = instantiateTemplate(with, substitution, macros);
 				substitution.put(replace, with); 
 			}
 			else if (templateParameter instanceof DataTemplateParameter) {
@@ -885,6 +889,7 @@ public class Utils {
 						fin_template, 
 						fin_targs, 
 						fin_substitution,
+						fin_macros,
 						fin_existingInstancesMap);
 			}
 		};
@@ -1002,12 +1007,18 @@ public class Utils {
 		// ----------------------------
 		for (Iterator mi = template.getScope().routineIterator(); 
 			mi.hasNext();) {
-			// - get a method
+			// - get a method			
 			ContainedConnection connection = (ContainedConnection)mi.next();
 			Routine method = (Routine)connection.getContained();
 			Routine methodinst = new Routine();
 			methodinst.setName(method.getName());
 			methodinst.setConst(method.isConst());
+			methodinst.setExternal(method.isExternal());
+			methodinst.setExplicit(method.isExplicitConstructor());
+			methodinst.setInline(method.isInline());
+			methodinst.setDeclarationAt(method.getDeclaration());
+			methodinst.setDefinitionAt(method.getDefinition());
+			methodinst.setThrows(method.hasThrowClause());
 			// - copy properties
 			for (Iterator propi = method.propertyIterator(); propi.hasNext();)
 			{
@@ -1045,6 +1056,16 @@ public class Utils {
 					parameterinst.setDefault(parameter.getDefaultString());										
 				}
 				methodinst.addParameter(parameterinst);
+			}
+			// - substitute in exception types
+			for (Iterator pi = method.throwsIterator(); pi.hasNext();) {
+				Aggregate thrown = (Aggregate) pi.next();
+				methodinst.addThrows(instantiateTemplate(thrown, arguments, existingInstancesMap));
+			}
+			// - copy thrown exception descriptions
+			for (Iterator pi = method.throwsDescIterator(); pi.hasNext();) {
+				Property thrownDesc = (Property)pi.next();
+				methodinst.addThrowsDesc(thrownDesc.getName(), thrownDesc.getValue());
 			}
 			// - add instantiated method to new class
 			templateInstance.getScope().addMember(methodinst, 
@@ -1095,8 +1116,12 @@ public class Utils {
 	}
 	
 	/**
+	 * This is the instantiateTemplate, version for Types.
 	 * Substitutes template parameters for actual arguments in a
 	 * type expression.
+	 * It does not instantiate Aggregate pointed by the type expression.
+	 * For example instantiationg the expression 'A&lt;T&gt;' with 'T=int' will not create a new
+	 * a new aggregate representing 'A&lt;int&gt;'.
 	 * @param type
 	 * @param substitution type substitution map (Entity -&gt; Type)
 	 * @param macros textual substitution map (String -&gt; String)
@@ -1219,6 +1244,8 @@ public class Utils {
 	{
 		Alias instance = new Alias();
 		instance.setName(inner.getName());
+		instance.setDeclarationAt(inner.getDeclaration());
+		instance.setDefinitionAt(inner.getDefinition());
 		instance.setAliasedType(
 			instantiateTemplate(inner.getAliasedType(), substitution, macros));
 		return instance;
@@ -1233,10 +1260,11 @@ public class Utils {
 	 * @param substitution accumulates the inner entities collected
 	 */
 	private static void collectInnersOfTemplateParameter(Type type, 
-		Aggregate template, List arguments, Map substitution, Map existingInstancesMap)
+		Aggregate template, List arguments, Map substitution, Map macros, Map existingInstancesMap)
 	{
 		final Aggregate fin_template = template;
 		final Map fin_substitution = substitution;
+		final Map fin_macros = macros;
 		final TemplateArgument[] fin_targs =
 			(TemplateArgument[])arguments.toArray(new TemplateArgument[] { });
 		final Map fin_existingInstancesMap = existingInstancesMap;
@@ -1264,7 +1292,7 @@ public class Utils {
 							// - replace with actual argument string and 
 							//  create a substitution in the map
 							String traitSpec = name.substring(parameterName.length() + 2);
-							Entity entity = trait(argument, traitSpec, fin_existingInstancesMap);
+							Entity entity = trait(argument, traitSpec, fin_substitution, fin_macros, fin_existingInstancesMap);
 							fin_substitution.put(typeNode.getBase(), 
 								new Type(new Type.TypeNode(entity)));
 						}
@@ -1283,10 +1311,12 @@ public class Utils {
 		}
 	}
 
-	private static Entity trait(TemplateArgument traitsHolder, String field, Map existingInstancesMap)
+	private static Entity trait(TemplateArgument traitsHolder, String field, 
+			Map substitution, Map macros, Map existingInstancesMap) throws InappropriateKindException
 	{
 		if (traitsHolder instanceof TypenameTemplateArgument) {
 			Type val = ((TypenameTemplateArgument)traitsHolder).getValue();
+			val = instantiateTemplate(val, substitution, macros);
 			Entity traitsEntity = val.getBaseType();
 			TemplateArgument[] targs = val.getTemplateArguments();
 			// - if the referenced entity is a class, look for a member there
@@ -1666,22 +1696,108 @@ public class Utils {
 	 * @throws MissingInformationException
 	 */
 	public static Collection virtualMethods(Aggregate subject,
-			Map instanceMap, boolean withDestructors) throws MissingInformationException
+			Map instanceMap, final boolean withDestructors) throws MissingInformationException
 	{
-		List virtual = new LinkedList();
 		
-		// Add virtual methods declared in this class
-		for (Iterator subjectMethodIter = subject.getScope().routineIterator();
-		     subjectMethodIter.hasNext(); ) {
+		Condition<ContainedConnection> condition = new Condition<ContainedConnection>() {
 
-			ContainedConnection rconnection =
-				(ContainedConnection)subjectMethodIter.next();
-			Routine myMethod = (Routine)rconnection.getContained();
+			public boolean accepted(ContainedConnection rconnection) {
+				Routine routine = (Routine)rconnection.getContained();
+				return 
+					rconnection.getVirtuality() != Specifiers.Virtuality.NON_VIRTUAL 
+					&& 	(withDestructors || !routine.isDestructor());
+			}
+			
+		};
+		
+		return accesibleMethodsWithCondition(subject,instanceMap,condition);
 
-			if (rconnection.getVirtuality() 
-			    != Specifiers.Virtuality.NON_VIRTUAL &&
-				(withDestructors || !myMethod.isDestructor())) {
-			    virtual.add(myMethod); 
+	}
+	
+	/**
+	 * A condition which indicates if the object is selected or not 
+	 * (if it complies with the condition)
+	 * 
+	 * @author Marcelo Taube
+	 *
+	 * @param <T> The type of the object filtered
+	 */
+	private interface Condition<T> {
+		boolean accepted(T element);
+	}
+	
+	/**
+	 * Collects all the methods that are in the given class - including
+	 * those inherited from base classes.
+	 * @param subject a class to observe
+	 * @param instanceMap a map containing mappings from template expressions
+	 * (in the format returned by templateExpression) to Aggregate entities
+	 * that have been instantiated for them
+	 * @return a collection of Routine objects which are in 
+	 * the subject, or in any of it's ancestors
+	 * @throws MissingInformationException
+	 */
+	public static Collection<Routine> accesibleMethods(Aggregate subject,
+			Map instanceMap) throws MissingInformationException
+	{
+		Condition<ContainedConnection> alwaysTrue = new Condition<ContainedConnection>() {
+			public boolean accepted(ContainedConnection rconnection) {
+				return true;
+			}
+		};
+		
+		return accesibleMethodsWithCondition(subject,instanceMap, alwaysTrue);
+	}
+	
+	/**
+	 * Collects all the public methods that are in the given class - including
+	 * those inherited from base classes.
+	 * @param subject a class to observe
+	 * @param instanceMap a map containing mappings from template expressions
+	 * (in the format returned by templateExpression) to Aggregate entities
+	 * that have been instantiated for them
+	 * @return a collection of Routine objects which are declared public in 
+	 * the subject, or in any of it's ancestors
+	 * @throws MissingInformationException
+	 */
+	public static Collection<Routine> publicAccesibleMethods(Aggregate subject,
+			Map instanceMap) throws MissingInformationException
+	{
+		Condition<ContainedConnection> alwaysTrue = new Condition<ContainedConnection>() {
+			public boolean accepted(ContainedConnection rconnection) {
+				return rconnection.getVisibility() == Specifiers.Visibility.PUBLIC; 
+			}
+		};
+
+		
+		Collection<Routine> accesibleMethods = accesibleMethodsWithCondition(subject,instanceMap, alwaysTrue);
+
+		
+		return accesibleMethods;
+	}
+	
+	/**
+	 * Collects all the  methods that are in the given class - including
+	 * those inherited from base classes.
+	 * @param subject a class to observe
+	 * @param instanceMap a map containing mappings from template expressions
+	 * (in the format returned by templateExpression) to Aggregate entities
+	 * that have been instantiated for them
+	 * @return a collection of Routine objects which are declared virtual in 
+	 * the subject, or in any of it's ancestors
+	 * @throws MissingInformationException
+	 */
+	public static Collection<Routine> accesibleMethodsWithCondition(Aggregate subject,
+			Map instanceMap, Condition<ContainedConnection> acceptCondition) throws MissingInformationException
+	{
+		Collection<Routine> routines = new LinkedList();
+		
+		// Add methods declared in this class
+		for (ContainedConnection rconnection : subject.getScope().getRoutines()) 
+		{		
+			if (acceptCondition.accepted(rconnection)) {
+				Routine myMethod = (Routine)rconnection.getContained();
+			    routines.add(myMethod); 
 			}
 		}
 		
@@ -1698,31 +1814,163 @@ public class Utils {
 					base = (Aggregate)instanceMap.get(expr);
 			}
 			if (base == null) continue;
-			// - recursively fetch the virtual methods in the base class
-			Collection baseVirtual = virtualMethods(base, instanceMap, withDestructors);
-			for (Iterator baseVirtIter = baseVirtual.iterator(); 
-                 baseVirtIter.hasNext(); ) {
-                Routine baseMethod = (Routine)baseVirtIter.next();
-
+			// - recursively fetch the methods in the base class
+			Collection<Routine> baseReturn = accesibleMethodsWithCondition(base, instanceMap, acceptCondition);
+			for ( Routine baseMethod : baseReturn ) {
                 // - ensure that a compatible method has not previously 
                 //  occurred
-				boolean found = false;
-				
-				for (Iterator virtIter = virtual.iterator(); virtIter.hasNext(); ) {
-					Routine virtMethod = (Routine)virtIter.next();
-					if (virtMethod.isCompatible(baseMethod)) {
-						found = true;
-						break;
-					}
-				}
-				
-				if (!found) {
-				    virtual.add(baseMethod);
+				Routine found = findCompatibleRoutine(routines, baseMethod);
+				if (found==null) {
+				    routines.add(baseMethod);
                 }
             }
 		}
 
-		return virtual;
+		return routines;
+	}
+
+	
+	/**
+	 * Search within a list of routines a routine which is compatible with the given one.
+	 * Where compatible is defined by the method Routine.isCompatible (if it has the same name and parameters).
+	 * @param routines The list of routines to search in
+	 * @param baseMethod The method to compare with
+	 * @return the found compatible routine or null
+	 * @throws MissingInformationException If some of the routine parameters has not been properly initialized
+	 * 									(this is an error in griffins logic)
+	 */
+	protected static Routine findCompatibleRoutine(
+			Collection<Routine> routines, Routine baseMethod)
+			throws MissingInformationException {
+
+		for (Routine method :  routines) {
+			if (method.isCompatible(baseMethod)) {
+				return method;
+			}
+		}
+		return null;
+	}
+
+	
+	/**
+	 *  It returns all the groups which are a direct subgroup of the parameter 'group'.
+	 *  'group' should be a group defined in the class 'subject'. In spite of that the 
+	 *  subgroups could also be defined in a base class of subject, because they are
+	 *  considered to be inherited to 'group'.
+	 *  The difference between the method accesibleGrups and accessibleGroupsAndSubgroups is 
+	 *  that the last one also brings the internal subgroups recursively.
+	 */
+	public static Collection<Group> accesibleGroups(Aggregate subject, Group group,
+			Map instanceMap)
+	{
+		Collection<Group> options = accesibleGroupsAndSubGroups(subject,instanceMap);
+		Collection<Group> result = new Vector<Group>();
+		for (Group considered: options) {
+			Group parentOfConsidered = considered.getGroup();
+			boolean consideredIsPartOfResult = false;
+			if(parentOfConsidered == null && group == null) {
+				consideredIsPartOfResult = true;
+			} else if(parentOfConsidered != null && group != null 
+					&& parentOfConsidered.getFullGroupHierarchyName().equals( group.getFullGroupHierarchyName()  )) {
+				consideredIsPartOfResult = true;
+			}
+			if(consideredIsPartOfResult) {
+				result.add(considered);
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * Collects all the groups and subgroups defined in a given class, including
+	 * those inherited from base classes.
+	 * Notice: There is a accesibleGroups method to get the internal subgroups
+	 * of a group which is recursive and does search in base classes.
+	 * @param subject a class to observe
+	 * @param instanceMap a map containing mappings from template expressions
+	 * (in the format returned by templateExpression) to Aggregate entities
+	 * that have been instantiated for them
+	 * @return a collection of Routine objects which are declared virtual in 
+	 * the subject, or in any of it's ancestors
+	 * @throws MissingInformationException
+	 */
+	public static Collection<Group> accesibleGroupsAndSubGroups(Aggregate subject,
+			Map instanceMap)
+	{
+		// Get all the groups declared in this class
+		Collection<Group> groups = accesibleGroupsAndSubGroups(subject.getScope());
+		
+		// Get groups from base classes
+		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
+		{
+			InheritanceConnection bconnection =
+				(InheritanceConnection)baseIter.next();
+			Aggregate base = bconnection.getBase();
+			TemplateArgument targs[] = bconnection.getBaseTemplateArguments();
+			if (targs != null) {
+				String expr = templateExpression(base, targs);
+				if (instanceMap != null) 
+					base = (Aggregate)instanceMap.get(expr);
+			}
+			if (base == null) continue;
+			// - recursively fetch the groups in the base class
+			Collection<Group> baseReturn = accesibleGroupsAndSubGroups(base, instanceMap);
+			for ( Group baseGroup : baseReturn ) {
+                // - ensure that a compatible method has not previously 
+                //  occurred
+				Group found = findEquivalentGroup(groups, baseGroup);
+				if (found==null) {
+				    groups.add(baseGroup);
+                }
+            }
+		}
+		
+		return groups;
+	}
+	
+	/**
+	 * Given a scope this methods searches recursively for all the groups and subgroups declared
+	 * within it.
+	 * @param scope The scope where to search for groups
+	 * @return A collection of the found groups
+	 */
+	public static Collection<Group> accesibleGroupsAndSubGroups(Scope scope) 
+	{
+		Collection<Group> groups = new LinkedList<Group>();
+		
+		// Add groups declared in this scope
+		for (ContainedConnection rconnection : scope.getGroups()) 
+		{		
+				Group subGroup = (Group)rconnection.getContained();
+			    groups.add(subGroup); 
+			    Collection<Group> internalGroups = accesibleGroupsAndSubGroups(subGroup.getScope());
+			    	groups.addAll(internalGroups);	    
+		}
+		return groups;
+	}
+	
+	
+	/**
+	 * Two groups are equivalent if only one copy of them should be displayed to the user when browsing the
+	 * help of a class. For example an hypothetic class Collection&lt;T> might have a group called 'accessors', and 
+	 * an inheriting class Vector&lt;T&gt; might also have a group called 'accessors'. In that case, the two groups are equivalent and are
+	 * joined to one group when browsing the Vector&lt;T&gt; help.
+	 * Formally, two groups are equivalent if they have the same name and their containing groups are also equivalent. 
+	 * 
+	 * Given a group, this method searches within a list of groups an equivalent group.
+	 * 
+	 * @param groups The list of groups to search in
+	 * @param baseGroup The groups to compare with
+	 * @return the found equivalent group or null
+	 */
+	protected static Group findEquivalentGroup(
+			Collection<Group> groups, Group baseGroup) {
+		for (Group group :  groups) {
+			if (group.getFullGroupHierarchyName().equals(baseGroup.getFullGroupHierarchyName())) {
+				return group;
+			}
+		}
+		return null;
 	}
 	
 	/**

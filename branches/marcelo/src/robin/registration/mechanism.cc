@@ -25,10 +25,11 @@
 #endif
 
 #include <errno.h>
-#include <assert.h>
+#include <robin/debug/assert.h>
 
-#include "../reflection/library.h"
-#include "../reflection/class.h"
+#include <robin/reflection/library.h>
+#include <robin/reflection/class.h>
+#include <robin/reflection/pointer.h>
 
 #include "../reflection/cfunction.h"
 #include "../reflection/overloadedset.h"
@@ -53,6 +54,7 @@ namespace Robin {
  * singleton object, <classref>RegistrationMechanismSingleton</classref>.
  */
 RegistrationMechanism::RegistrationMechanism()
+	: m_ns_common("<common>")
 {
 }
 
@@ -68,7 +70,7 @@ RegData *RegistrationMechanism::acquireRegData(std::string library)
 		return acquireRegData_impl(library);
 	}
 	catch (DynamicLibraryOpenException& e) {
-		dbg::trace << "// " << library << ": " << e.dlerror_at
+		dbg::traceRegistration << "// " << library << ": " << e.dlerror_at
 				   << dbg::endl;
 		throw e;
 	}
@@ -90,6 +92,16 @@ Handle<Library> RegistrationMechanism::import(const std::string& library,
 	admit(reg_entry, Handle<Class>(), *(lib->globalNamespace()));
 	return lib;
 }
+Handle<Class> RegistrationMechanism::findClass(const std::string &name)
+{
+	return m_ns_common.lookupClass(name);
+}
+
+void RegistrationMechanism::unalias(std::string &name)
+{
+	return m_ns_common.unalias(name);
+}
+
 
 /**
  * Opens a library and builds a corresponding
@@ -110,12 +122,13 @@ Handle<Library> RegistrationMechanism::import(const std::string& library)
 void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 								  Namespace& container)
 {
+	dbg::traceRegistration <<  "admit." << container << dbg::endl;
 	if (!rbase) return;
 	if (klass && !klass->isEmpty()) return;  /* avoid double loading */
 
-	for (RegData *pdata = rbase; 
+	for (RegData *pdata = rbase;
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
-		
+
 		normalizeName(pdata);
 
 		if (strcmp(pdata->type, "enum") == 0) {             /* type = enum */
@@ -126,6 +139,7 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 			// recursively admit
 			Handle<Class> subclass = touchClass(pdata->name, m_ns_common);
 			container.declare(pdata->name, subclass);
+			dbg::traceClassRegistration << "Registering class " << pdata->name << dbg::endl;
 			admit(pdata->prototype, subclass, container);
 		}
 		else if (strcmp(pdata->type, "extends") == 0) {     /* type = extend */
@@ -140,7 +154,8 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 			}
 		}
 		else if (strcmp(pdata->type, "constructor") == 0) { /* type = ctor */
-			Handle<CFunction> cfun(new CFunction((symbol)pdata->sym));
+			dbg::traceRegistration << "registering constructor for type" << klass->name() <<dbg::endl;
+			Handle<CFunction> cfun(new CFunction((symbol)pdata->sym,klass->name(),Robin::CFunction::Constructor,klass->name()));
 			admitArguments(pdata->prototype, cfun, container);
 			char symbol = pdata->name[0];
 			// symbol indicates the conversion type implied by this
@@ -148,16 +163,17 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 			//   '%' = no conversion ("explicit")
 			//   '*' = user-defined conversion
 			//   '^' = promotion
-			if (cfun->signature().size() == 1 && symbol != '%') 
-				admitUserDefinedConversion(cfun, klass,
+			if (cfun->signature().size() == 1 && symbol != '%')
+				admitConstructorConversion(cfun, klass,
 										   symbol == '^');
-			assert(klass);
+			assert_true(klass);
 			klass->addConstructor(cfun);
+			dbg::traceRegistration << "finish registering constructor" << dbg::endl;
 		}
 		else if (strcmp(pdata->type, "destructor") == 0) { /* type = dtor */
-			Handle<CFunction> cfun(new CFunction((symbol)pdata->sym));
+			Handle<CFunction> cfun(new CFunction((symbol)pdata->sym,std::string("~")+klass->name(),Robin::CFunction::Destructor,klass->name()));
 			if (klass) {
-				cfun->addFormalArgument(klass->getPtrArg());
+				cfun->addFormalArgument(klass->getPtrType());
 				klass->setDestructor(cfun);
 			}
 		}
@@ -169,18 +185,31 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 				container.declare(actual, self_struct);
 			}
 			else {
+				dbg::traceClassRegistration << "Registering alias " << pdata->name << dbg::endl;
 				container.alias(pdata->type + 1, pdata->name);
+				m_ns_common.alias(pdata->type + 1, pdata->name);
 			}
 		}
 		else /* assume it's a function */ {             /* type = function */
+			dbg::traceRegistration << "Registering function " << pdata->name <<dbg::endl;
 			symbol sym = (symbol)pdata->sym;
-
 			if (sym != 0) {
+
+				CFunction::FunctionKind kind;
+				std::string klassName;
+				if(klass)
+				{
+					kind = CFunction::Method;
+					klassName = klass->name();
+				} else {
+					kind = CFunction::GlobalFunction;
+				}
+
 				// Build a CFunction with the symbol as a flat wrapper
-				Handle<CFunction> cfun(new CFunction(sym));
+				Handle<CFunction> cfun(new CFunction(sym,pdata->name,kind,klassName));
 				// set the return type
 				if (strcmp(pdata->type, "void") != 0) {
-					Handle<TypeOfArgument> ret =
+					Handle<RobinType> ret =
 						interpretType(pdata->type, container);
 					cfun->specifyReturnType(ret);
 					if (ret->isReference())
@@ -189,46 +218,50 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 				// set arguments
 				if (klass) {
 					// - instance method
-					cfun->addFormalArgument(klass->getPtrArg());
+					cfun->addFormalArgument(klass->getType());
 				}
 				admitArguments(pdata->prototype, cfun, container);
 				// add function to namespace or class
 				if (klass) {
 					if (pdata->name[0] == '!')
-						klass->addInstanceMethod(pdata->name+1, cfun, false);
+					{
+						cfun->m_allow_edge = false;
+						klass->addInstanceMethod(pdata->name+1, cfun);
+					}
 					else
+					{
+						cfun->m_allow_edge = true;
 						klass->addInstanceMethod(pdata->name, cfun);
+					}
 				}
 				else {
-					OverloadedSet *ols;
+					Handle<OverloadedSet> ols;
 					// See if any overloaded set exists with this name
 					try {
-						Handle<Callable> existing = 
-							container.lookupFunction(pdata->name);
-						ols = dynamic_cast<OverloadedSet*>(&*existing);
+						ols = static_hcast<OverloadedSet>(container.lookupFunction(pdata->name));
 					}
 					catch (LookupFailureException& ) {
 						// No? create a new one.
-						Handle<Callable> prepare(ols = new OverloadedSet);
-						container.declare(pdata->name, prepare);
+						ols = OverloadedSet::create_new(pdata->name);
+						container.declare(pdata->name, static_hcast<Callable>(ols));
 					}
 					// now add cfun
-					dbg::trace << "// @FUNC: " << pdata->name << " with "
-							   << int(cfun->signature().size()) 
+					dbg::traceRegistration << "// @FUNC: " << pdata->name << " with "
+							   << int(cfun->signature().size())
 							   << " arguments." << dbg::endl;
 					ols->addAlternative(cfun);
 				}
 			}
 			else {
 				// A pure virtual function (sym = 0)
-				Signature *signature = new Signature;
+				Handle<Signature> signature( new Signature);
 				signature->name = pdata->name;
 				if (strcmp(pdata->type, "void") != 0)
 					signature->returnType = interpretType(pdata->type, container);
 				else
-					signature->returnType = Handle<TypeOfArgument>();
+					signature->returnType = Handle<RobinType>();
 				admitArguments(pdata->prototype, *signature, container);
-				pdata->sym = signature;
+				pdata->sym = signature.release();
 			}
 		}
 	}
@@ -237,18 +270,21 @@ void RegistrationMechanism::admit(RegData *rbase, Handle<Class> klass,
 /**
  * Registers the formal arguments of a function.
  */
-void RegistrationMechanism::admitArguments(const RegData *rbase, 
+void RegistrationMechanism::admitArguments(const RegData *rbase,
 										   Handle<CFunction> cfun,
 										   Namespace &container)
 {
+	dbg::traceRegistration << "Admitting parameters" <<dbg::endl;
+	dbg::IndentationGuard grd(dbg::traceRegistration);
 	if (!rbase) return;
 
-	for (const RegData *pdata = rbase; 
+	for (const RegData *pdata = rbase;
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
 		// Create an argument of this type
-		Handle<TypeOfArgument> argtype = interpretType(pdata->type, container);
+		Handle<RobinType> argtype = interpretType(pdata->type, container);
+		dbg::traceRegistration << "adding parameter" << *argtype << dbg::endl;
 		cfun->addFormalArgument(pdata->name, argtype);
-	}	
+	}
 }
 
 /**
@@ -260,12 +296,12 @@ void RegistrationMechanism::admitArguments(const RegData *rbase,
 {
 	if (!rbase) return;
 
-	for (const RegData *pdata = rbase; 
+	for (const RegData *pdata = rbase;
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
 		// Create an argument of this type
-		Handle<TypeOfArgument> argtype = interpretType(pdata->type, container);
+		Handle<RobinType> argtype = interpretType(pdata->type, container);
 		signature.argumentTypes.push_back(argtype);
-	}	
+	}
 }
 
 /**
@@ -277,7 +313,7 @@ void RegistrationMechanism::admitEnum(const RegData *rbase,
 {
 	if (!rbase) return;
 
-	for (const RegData *pdata = rbase; 
+	for (const RegData *pdata = rbase;
 		 pdata->name != 0 /* null indicates end of list */; ++pdata) {
 		// Refer to current item as constant definition (name and value)
 		const int *pvalue = reinterpret_cast<const int*>(pdata->sym);
@@ -286,7 +322,7 @@ void RegistrationMechanism::admitEnum(const RegData *rbase,
 }
 
 /**
- * Service; returns a handle to a <classref>TypeOfArgument
+ * Service; returns a handle to a <classref>RobinType
  * </classref> which denotes the type that the string indicates:
  * <ul>
  *  <li><tt>int</tt>,<tt>float</tt>, etc. - the corresponding intrinsic
@@ -296,10 +332,10 @@ void RegistrationMechanism::admitEnum(const RegData *rbase,
  *  <li><tt>*</tt><i>class-name</i> - pointer to class instance.</li>
  * </ul>
  */
-Handle<TypeOfArgument> RegistrationMechanism::interpretType
+Handle<RobinType> RegistrationMechanism::interpretType
     (const char *type, Namespace& container)
 {
-	struct entry { const char *keyword; Handle<TypeOfArgument> toa; }
+	struct entry { const char *keyword; Handle<RobinType> toa; }
 	intrinsics[] =
 		{ { "int", ArgumentInt },
 		  { "unsigned int", ArgumentUInt },
@@ -322,51 +358,50 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
 		  { "scripting_element", ArgumentScriptingElementNewRef },
           { "&scripting_element", ArgumentScriptingElementBorrowedRef },
 		  { "#scripting_element", ArgumentScriptingElementNewRef }, // @@@
-		  { 0 } };
+		  { 0, Handle<Robin::RobinType>(0) } };
 
-	Handle<TypeOfArgument> rtype;
-	enum { ARG, PTRARG, REFARG, OUTARG } modif = ARG;
+	Handle<RobinType> rtype;
+	enum { ARG, PTRTYPE, CONSTTYPE, REGULARTYPE } modif = ARG;
 	int redir_count = 0;
 
 	while (!rtype) {
 		// Is an intrinsic type?
 		for (entry *ei = intrinsics; ei->keyword != 0; ++ei)
 			if (strcmp(ei->keyword, type) == 0) rtype = ei->toa;
-	
+
 		// Enumerated type?
 		if (!rtype && type[0] == '#')
-			rtype = touchEnum(type + 1, container)->getArg();
+			rtype = touchEnum(type + 1, container)->getType();
 
 		if (!rtype) {
 			// Reference or pointer?
-			if (type[0] == '*') { modif = PTRARG; redir_count++; }
-			else if (type[0] == '&') { modif = REFARG; redir_count++; }
-			else if (type[0] == '>') modif = OUTARG;
+			if (type[0] == '*') { modif = PTRTYPE; redir_count++; }
+			else if (type[0] == '&') { modif = CONSTTYPE;  }
+			else if (type[0] == '>') modif = REGULARTYPE;
 			else break;
-	
+
 			type++;  /* skip ref/ptr symbol */
 		}
 	}
 
 	if (!rtype) {
 		// Class reference or pointer
-		Handle<Class> klass = touchClass(type, m_ns_common);
-
-		if (redir_count > 1 && modif == PTRARG) modif = REFARG;
+		std::string typeString(type);
+		Handle<Class> klass = touchClass(typeString, m_ns_common);
 
 		switch (modif) {
-		case ARG:    throw LookupFailureException(type);
-		case PTRARG: rtype = klass->getPtrArg(); --redir_count;      break;
-		case REFARG: rtype = klass->getRefArg(); --redir_count;      break;
-		case OUTARG: rtype = klass->getOutArg();                     break;
+		case ARG:    throw LookupFailureException(typeString);
+		case PTRTYPE: rtype = klass->getPtrType(); --redir_count;      break;
+		case CONSTTYPE: rtype = klass->getConstType();      break;
+		case REGULARTYPE: rtype = klass->getType();                   break;
 		default:
-			assert(false);
+			assert_true(false);
 		};
 	}
 
 	while (redir_count-- > 0) {
 		FrontendsFramework::fillAdapter(rtype);
-		rtype = rtype->pointer();
+		rtype =  rtype->pointer();
 	}
 
 	FrontendsFramework::fillAdapter(rtype);
@@ -378,8 +413,8 @@ Handle<TypeOfArgument> RegistrationMechanism::interpretType
  * Registers a trivial conversion between arbitrary source and destination
  * types.
  */
-void RegistrationMechanism::admitTrivialConversion(Handle<TypeOfArgument> from,
-												   Handle<TypeOfArgument> to)
+void RegistrationMechanism::admitTrivialConversion(Handle<RobinType> from,
+												   Handle<RobinType> to)
 {
 	Handle<Conversion> trivial(new TrivialConversion);
 	trivial->setSourceType(from);
@@ -391,13 +426,13 @@ void RegistrationMechanism::admitTrivialConversion(Handle<TypeOfArgument> from,
  * Allows constructors with one argument to become
  * conversions.
  */
-void RegistrationMechanism::admitUserDefinedConversion(Handle<CFunction> ctor,
+void RegistrationMechanism::admitConstructorConversion(Handle<CFunction> ctor,
 													   Handle<Class> klass,
 													   bool promotion)
 {
 	Handle<Conversion> udc(new ConversionViaConstruction);
 	udc->setSourceType(ctor->signature()[0]);
-	udc->setTargetType(klass->getRefArg());
+	udc->setTargetType(klass->getConstType());
 	if (promotion)
 		udc->setWeight(Conversion::Weight(0,1,0,0));
 	ConversionTableSingleton::getInstance()->registerConversion(udc);
@@ -415,16 +450,21 @@ void RegistrationMechanism::admitUpCastConversion(Handle<Class> derived,
 												  Handle<Class> base,
 												  void *transformsym)
 {
-	UpCastConversion::transformfunc upfunc = 
+	UpCastConversion::transformfunc upfunc =
 		(UpCastConversion::transformfunc)transformsym;
-	upfunc(0);
+
 	// Construct conversion object with given transform func
 	Handle<Conversion> upcast(new UpCastConversion(upfunc));
-	// Set attributes
-	upcast->setSourceType(derived->getRefArg());
-	upcast->setTargetType(base->getRefArg());
-	// Register
+	upcast->setSourceType(derived->getType());
+	upcast->setTargetType(base->getType());
 	ConversionTableSingleton::getInstance()->registerConversion(upcast);
+
+	// Construct conversion for the const type
+	Handle<Conversion> upcastConst(new UpCastConversion(upfunc));
+	upcastConst->setSourceType(derived->getConstType());
+	upcastConst->setTargetType(base->getConstType());
+	ConversionTableSingleton::getInstance()->registerConversion(upcastConst);
+
 }
 
 /**
@@ -442,14 +482,13 @@ Handle<Class> RegistrationMechanism::touchClass(const std::string& name,
 	}
 	catch (LookupFailureException& e) {
 		// Create a new class with that name
-		klass = Handle<Class>(new Class(name));
-		klass->activate(klass);
+		klass = Class::create_new(name);
 		FrontendsFramework::fillAdapters(klass);
 		container.declare(e.look, klass);
-		// Add a trivial conversion from ref to ptr
-		admitTrivialConversion(klass->getRefArg(), klass->getPtrArg());
+		// Add a trivial conversion from regular type to pointer type
+		admitTrivialConversion(klass->getType(), klass->getPtrType());
 		// Add a trivial conversion from ref to out
-		admitTrivialConversion(klass->getRefArg(), klass->getOutArg());
+		admitTrivialConversion(klass->getType(), klass->getConstType());
 	}
 
 	return klass;
@@ -473,7 +512,7 @@ Handle<EnumeratedType> RegistrationMechanism::touchEnum(const std::string&
 		// Create a new class with that name
 		kenum = Handle<EnumeratedType>(new EnumeratedType(name));
 		kenum->activate(kenum);
-		FrontendsFramework::fillAdapter(kenum->getArg());
+		FrontendsFramework::fillAdapter(kenum->getType());
 		container.declare(e.look, kenum);
 	}
 
@@ -512,9 +551,9 @@ RegData *RegistrationMechanism::acquireRegData_impl(std::string library)
 	}
 	catch (DynamicLibraryOpenException& e) {
 		LPVOID lpMsgBuf;
-		if (FormatMessage( 
-		    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-		    FORMAT_MESSAGE_FROM_SYSTEM | 
+		if (FormatMessage(
+		    FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		    FORMAT_MESSAGE_FROM_SYSTEM |
 		    FORMAT_MESSAGE_IGNORE_INSERTS,
 		    NULL,
 		    GetLastError(),
@@ -548,7 +587,7 @@ RegData *RegistrationMechanism::acquireRegData_impl(std::string library)
 		void *libhandle = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 		if (libhandle == 0) throw DynamicLibraryOpenException(errno);
 		// fetch callback symbol
-		Interface::callback_t *__callback = 
+		Interface::callback_t *__callback =
 			(Interface::callback_t*)dlsym(libhandle, "__robin_callback");
 		if (__callback)
 			*__callback = &Interface::global_callback;
@@ -583,5 +622,23 @@ const char *DynamicLibraryOpenException::what() const throw()
 {
 	return "invalid or malformed module library.";
 }
+
+namespace {
+	/**
+	 * A dummy class.
+	 * When the library is unloaded, deletes the instance of the
+	 * registration mechanism.
+	 * NOTE: might be there is a way of doing this in Pattern::Singelton,
+	 *      but need to explore the consequences.
+	 */
+	class RegistrationMechanismDeallocator
+	{
+	public:
+		~RegistrationMechanismDeallocator() {
+			delete RegistrationMechanismSingleton::getInstance();
+		}
+	} _rmdealloc;
+}
+
 
 } // end of namespace Robin
