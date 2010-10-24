@@ -38,7 +38,7 @@ ArgumentsBuffer::ArgumentsBuffer()
  */
 void ArgumentsBuffer::push(void *data, int datasize)
 {
-	assert(false); // not implemented
+	assert_true(false); // not implemented
 }
 
 
@@ -87,11 +87,19 @@ void ArgumentsBuffer::pushFloat(float value)
 /**
  * Pushes a 'void *' value on the stack.
  */
-void ArgumentsBuffer::pushPointer(const void * value)
+void ArgumentsBuffer::pushPointer(void * value)
 {
 	(*m_pend++) = (basic_block)value;
 }
 
+
+/**
+ * Pushes a 'void *' value on the stack.
+ */
+void ArgumentsBuffer::pushPointer(const void * value)
+{
+	(*m_pend++) = (basic_block)const_cast<void *>(value);
+}
 
 
 /**

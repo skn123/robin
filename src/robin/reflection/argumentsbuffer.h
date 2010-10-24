@@ -67,6 +67,7 @@ public:
     void pushChar(char value);
     void pushLong(long value);
 	void pushFloat(float value);
+	void pushPointer(void *value);
 	void pushPointer(const void *value);
 
 	inline void push(int value)            { pushInt(value); }
@@ -75,7 +76,8 @@ public:
 	inline void push(unsigned long value)  { pushLong(value); }
 	inline void push(char value)           { pushChar(value); }
 	inline void push(float value)          { pushFloat(value); }
-	inline void push(const void *value)    { pushPointer(value); }
+	inline void push(void *value)    { pushPointer(value); }
+	inline void push(const void *value) { pushPointer(value); }
     //@}
     
     size_t size() const { return m_pend - m_buffer; }

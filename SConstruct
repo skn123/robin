@@ -5,6 +5,10 @@
 #
 ##################################################
 
+import sys
+sys.path.insert(0,".")
+print sys.path
+
 ver = "v1_1"
 fullver = "1.1" #It has format x.y.z
 
@@ -108,7 +112,9 @@ robin_opts.Add(BoolOption('clsux',
 
 if conf.arch != "windows":
 	# other possible flags: -Winline -Wextra
-	env.Append(CXXFLAGS = "-Wall -Woverloaded-virtual -Wparentheses -Wsequence-point -Wcast-qual -Wconversion -fmessage-length=0")
+	# notice that python errors forces us to use -fno-strict-aliasing and -Wno-write-strings 
+	#   but maybe in the future this will no longer be necessary, so check it once in a while.
+	env.Append(CXXFLAGS = "-Wall -Woverloaded-virtual -Wparentheses -Wsequence-point -Wcast-qual -Wconversion -fmessage-length=0 -fno-strict-aliasing -Wno-write-strings")
 
 if ARGUMENTS.get('clsux', 0):
 	env = Environment()
@@ -223,7 +229,9 @@ else:
 if not configure.CheckCXXHeader("Python.h"):
 	print "Missing Python.h !"
 	Exit(1)
-if configure.CheckTemplate("__gnu_cxx::hash_map", "#include <ext/hash_map>\n"):
+if configure.CheckTemplate("std::tr1::unordered_map","#include <tr1/unordered_map>\n"):
+	env.Append(CXXFLAGS = '-DWITH_STD_UNORDEREDMAP')
+elif configure.CheckTemplate("__gnu_cxx::hash_map", "#include <ext/hash_map>\n"):
 	env.Append(CXXFLAGS = '-DWITH_EXT_HASHMAP')
 elif configure.CheckTemplate("std::hash_map", "#include <ext/hash_map>\n"):
 	env.Append(CXXFLAGS = '-DWITH_STD_HASHMAP')

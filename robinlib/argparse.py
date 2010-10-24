@@ -766,8 +766,11 @@ class Namespace(_AttributeHolder):
     def __ne__(self, other):
         return not (self == other)
 
+class objectWithFlexibleConstructor(object):
+    def __init__(self,*pars,**kpars):
+	object.__init__(self)
 
-class _ActionsContainer(object):
+class _ActionsContainer(objectWithFlexibleConstructor):
     def __init__(self,
                  description,
                  conflict_handler):

@@ -67,7 +67,7 @@ public:
 		// Extract the value from the element and convert it in C
 		Simple::Element *element = (Simple::Element *)value;
 		SourceElement *selement = dynamic_cast<SourceElement *>(element);
-		assert(selement);
+		assert_true(selement);
 		TargetCType target_val = (TargetCType)(selement->value);
 		// Build an element from this value
 		Simple::Element *telement = Simple::build(target_val);

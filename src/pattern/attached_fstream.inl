@@ -14,6 +14,7 @@
 #include <robin/debug/assert.h>
 #include <errno.h>
 #include <stdexcept>
+#include <string.h>
 
 // Local includes
 
@@ -34,7 +35,7 @@ basic_attached_filebuf(FILE *file, ios_base::openmode om, int buffer_size)
 	:  m_mode(om), m_buffer(0),
 	  m_buffer_size(buffer_size),m_file(file),  m_ended(false)
 {
-	assert(file != 0);
+	assert_true(file != 0);
 }
 
 //-------------------------------------------------------------------
