@@ -26,6 +26,7 @@
 #include "fwtesting.h"
 #include "reflectiontest.h"
 #include "test_reflection_arena.h"
+#include <string.h>
 
 using namespace Extreme;
 

@@ -23,6 +23,8 @@ class DefaultConfig:
 	  ([""] + [x for x in sys.path if x.endswith("site-packages")])[-1]
 	java = 'java'
 	has_liberty = False
+	includedir = ''
+	libdir = ''
 	
 try:
 	import config

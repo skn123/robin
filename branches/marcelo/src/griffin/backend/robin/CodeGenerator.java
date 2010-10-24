@@ -1590,6 +1590,16 @@ public class CodeGenerator extends backend.GenericCodeGenerator {
 		                 + "namespace " + m_randomNamespace + " {\n\n");
 			m_included_snippets.add("sstream");
 		}
+
+		// Include stdlib.h
+		if (!m_included_snippets.contains("string_h")) {
+			m_output.write("}\n\n"
+		                 + "#include <string.h>\n\n"
+		                 + "namespace " + m_randomNamespace + " {\n\n");
+			m_included_snippets.add("string_h");
+		}
+		
+		
 		// Define conversion to Pascal string
 		if (!m_included_snippets.contains("pascalstring_ctor")) {
 			m_output.write("inline struct PascalString *toPascal(const std::string& cpp)\n"

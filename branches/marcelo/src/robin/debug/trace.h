@@ -56,7 +56,7 @@ public:
 	/**
 	 * Reports the state of the facet.
 	 */
-	inline bool TraceSink::on() const
+	inline bool on() const
 	{
 		if(m_general && m_general->on())
 		{

@@ -160,7 +160,7 @@ inline bool Handle<T>::operator<(const Handle<T> &other) const
 template < class T >
 T* Handle<T>::release()
 {
-	assert(*m_refcapsule < 2); // This function can be called if there is no other handle
+	assert_true(*m_refcapsule < 2); // This function can be called if there is no other handle
 							   // which will delete the pointer
 
 	T*instance = m_instance;

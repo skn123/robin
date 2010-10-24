@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-
+#include <string.h>
 
 class gluebuf : public std::streambuf
 {

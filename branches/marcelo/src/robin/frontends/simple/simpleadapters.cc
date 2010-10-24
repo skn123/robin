@@ -31,7 +31,7 @@ void SimpleCStringAdapter::put(ArgumentsBuffer& argsbuf,
 {
 	Simple::Element *e = reinterpret_cast<Simple::Element *>(value);
 	Simple::String *ste = dynamic_cast<Simple::String *>(e);
-	assert(ste);
+	assert_true(ste);
 	argsbuf.push(ste->value.c_str());
 }
 
@@ -165,7 +165,7 @@ void SimpleEnumeratedAdapter::put(ArgumentsBuffer& argsbuf,
 	Simple::Element *element = (Simple::Element *)value;
 	SimpleEnumeratedConstantElement *enumobj = 
 		dynamic_cast<SimpleEnumeratedConstantElement *>(element);
-	assert(enumobj);
+	assert_true(enumobj);
 	argsbuf.push(enumobj->value.getValue());
 }
 

@@ -39,12 +39,12 @@ class PySignedNumTraits {
 public:
 	static N as(PyObject *pyobj)
 	{
-		return PyLong_Check(pyobj) ? PyLong_AsLongLong(pyobj) 
-		                           : PyInt_AsLong(pyobj);
+		return (N) (PyLong_Check(pyobj) ? PyLong_AsLongLong(pyobj) 
+		                           : PyInt_AsLong(pyobj));
 	}
 	static PyObject *from(N val)
 	{
-		return (val <= std::numeric_limits<long>::max()) ? PyInt_FromLong(val)
+		return (val <= std::numeric_limits<long>::max()) ? PyInt_FromLong((long)val)
 			: PyLong_FromLongLong(val);
 	}
 	static N *asref(PyObject *pyobj)
@@ -61,12 +61,12 @@ public:
 #endif
 	static N as(PyObject *pyobj)
 	{
-		return PyLong_Check(pyobj) ? PyLong_AsUnsignedLongLongMask(pyobj) 
-		                           : PyInt_AsLong(pyobj);
+		return (N) (PyLong_Check(pyobj) ? PyLong_AsUnsignedLongLongMask(pyobj) 
+		                           : PyInt_AsLong(pyobj));
 	}
 	static PyObject *from(N val)
 	{
-		return (val <= (unsigned long long)std::numeric_limits<long>::max()) ? PyInt_FromLong(val)
+		return (val <= (unsigned long long)std::numeric_limits<long>::max()) ? PyInt_FromLong((long)val)
 			: PyLong_FromUnsignedLongLong(val);
 	}
 	static N *asref(PyObject *pyobj)
@@ -88,8 +88,8 @@ public:
 
 class PyStringTraits {
 public:
-	static const char *as(PyObject *pyobj) { return PyString_AsString(pyobj); }
-	static PyObject *from(const char *s)   { if (!s) s = "";
+	static char *as(PyObject *pyobj) { return PyString_AsString(pyobj); }
+	static PyObject *from(char *s)   { if (!s) s = "";
 	                                         return PyString_FromString(s); }
 };
 

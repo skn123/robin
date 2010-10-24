@@ -77,15 +77,8 @@ class Configure:
 			(varname.replace("-", "_"), value)
 
 	def _site_packages_dir(self):
-		syspath = sys.path
-		syspath.reverse()
-		for element in syspath:
-			if element.endswith("/site-packages"):
-				return element
-		# Failed to find site-packages directory
-		print "** Error: couldn't locate 'site-packages' in your Python " \
-			  "installation"
-		sys.exit(1)
+		from distutils.sysconfig import get_python_lib 
+		return get_python_lib()
 
 	def _cleanup(self, filename):
 		if os.path.isfile(filename):
@@ -157,10 +150,8 @@ class Configure:
 			self._set_var("ranlib", options.ranlib)
 		if options.flex != "":
 			self._set_var("flex", options.flex)
-		if options.includedir != "":
-			self._set_var("includedir", options.includedir)
-		if options.libdir != "":
-			self._set_var("libdir", options.libdir)
+		self._set_var("includedir", options.includedir)
+		self._set_var("libdir", options.libdir)
 		if options.javac != "":
 			self._set_var("javac", options.javac)
 		if conf.arch == "darwin":

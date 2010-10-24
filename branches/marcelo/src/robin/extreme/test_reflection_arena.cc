@@ -55,9 +55,9 @@ public:
 		Simple::Element *element = (Simple::Element *)value;
 		Robin::SimpleInstanceObjectElement *ioelement =
 			dynamic_cast<Robin::SimpleInstanceObjectElement *>(element);
-		assert(ioelement);
+		assert_true(ioelement);
 		// Now - this must be a Room! Get it.
-		assert(ioelement->value->getClass() == enterprise_Room);
+		assert_true(ioelement->value->getClass() == enterprise_Room);
 		Room *room = (Room *)(ioelement->value->getObject());
 		// Build an integer
 		Simple::Element *converted = Simple::build((int)room->m_capacity);
@@ -76,7 +76,7 @@ public:
 	{
 		Simple::Element *element = (Simple::Element *)value;
 		Simple::String *str = dynamic_cast<Simple::String*>(element);
-		assert(str);
+		assert_true(str);
 		// Now - create an std::string
 		std::string *strinstance = new std::string(str->value);
 		// Build an instance
@@ -119,7 +119,7 @@ void introduceConversion(Handle<Robin::RobinType> from,
  */
 void fillAdapter(Handle<Robin::RobinType> toa)
 {
-	assert(toa);
+	assert_true(toa);
 	toa->assignAdapter(
 	    Robin::FrontendsFramework::activeFrontend()->giveAdapterFor(*toa));
 }

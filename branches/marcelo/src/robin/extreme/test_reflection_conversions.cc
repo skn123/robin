@@ -55,7 +55,7 @@ public:
 		Handle<Robin::ConversionRoute> route =
 			Robin::ConversionTableSingleton::getInstance()
 			->bestSingleRoute(*Robin::ArgumentInt, *Robin::ArgumentLong);
-		assert(route);
+		assert_true(route);
 		// Apply conversion
 		converted_element = route->apply(source_element, gc);
 		// Grab value from within

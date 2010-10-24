@@ -101,7 +101,7 @@ namespace {
 			 ci != fullname.end(); ++ci) {
 			if (*ci == ':' && bracket_balance == 0) {
 				PyList_Append(pylist, 
-							  PyString_FromStringAndSize((char*)&*start,
+							PyString_FromStringAndSize(const_cast<char*>(&*start),
 									  Py_ssize_t(ci - start)));
 				++ci;
 				start = ci + 1;
@@ -122,7 +122,7 @@ namespace {
 		}
 
 		// - append last part of name
-		PyList_Append(pylist, PyString_FromString((char*)&*start));
+		PyList_Append(pylist, PyString_FromString(const_cast<char*>(&*start)));
 
 		return pylist;
 	}
@@ -152,7 +152,7 @@ namespace {
 			char *submodulename = PyString_AsString(pyname);
 			std::string submodule_fullname = fullname + "." + submodulename;
 			// - try "import" first, "init" new module if fails
-			char *c_submodulename = (char*)submodule_fullname.c_str();
+			char *c_submodulename = const_cast<char*>(submodule_fullname.c_str());
 			PyObject *submodule = PyImport_ImportModule(c_submodulename);
 			if (submodule == NULL) {
 				PyErr_Clear();
@@ -286,17 +286,6 @@ namespace {
 	}
 
 	/* Integer bit sizes */
-	const int L = std::numeric_limits<long>::digits;
-	const int LL = std::numeric_limits<long long>::digits;
-	const int UL = std::numeric_limits<unsigned long>::digits;
-	const int ULL = std::numeric_limits<unsigned long long>::digits;
-
-
-	const long MAX_LONG = std::numeric_limits<long>::max();
-	const long long MAX_LONGLONG = std::numeric_limits<long long>::max();
-	const unsigned long MAX_ULONG = std::numeric_limits<unsigned long>::max();
-	//const um MAX_ULONGLONG = std::numeric_limits<unsigned long long>::max();
-	const long MIN_LONG = std::numeric_limits<long>::min();
 }
 
 
@@ -692,7 +681,7 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const RobinType& type)
 	else if (basetype.category == TYPE_CATEGORY_EXTENDED) {
 		if (basetype.spec == TYPE_EXTENDED_CSTRING)
 			return Handle<Adapter>
-				(new SmallPrimitivePythonAdapter<const char *, PyStringTraits>
+				(new SmallPrimitivePythonAdapter<char *, PyStringTraits>
 				 ());
 		else if (basetype.spec == TYPE_EXTENDED_PASCALSTRING)
 			return Handle<Adapter>(new PascalStringAdapter);
@@ -737,7 +726,7 @@ Handle<Adapter> PythonFrontend::giveAdapterFor(const RobinType& type)
 void PythonFrontend::exposeLibrary(const Library& newcomer)
 {
 	static PyMethodDef meth[] = { { 0 } };
-	PyObject *module = Py_InitModule((char*)(newcomer.name().c_str()), meth);
+	PyObject *module = Py_InitModule(const_cast<char*>(newcomer.name().c_str()), meth);
 
 	Handle<Namespace> globals = newcomer.globalNamespace();
 

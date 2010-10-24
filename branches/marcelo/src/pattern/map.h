@@ -8,7 +8,9 @@
 #ifndef PATTERN_MAP_H
 #define PATTERN_MAP_H
 
-#	if defined(WITH_STD_HASHMAP)
+#	if defined(WITH_STD_UNORDEREDMAP)
+#		include <tr1/unordered_map>
+#	elif defined(WITH_STD_HASHMAP)
 #		include <ext/hash_map>
 
 #	elif defined(WITH_EXT_HASHMAP)
@@ -69,7 +71,16 @@ class TreeMultiMap : public std::multimap<typename MapTraits::Key,
 
 };
 
-#if defined(WITH_STD_HASHMAP)
+#if defined(WITH_STD_UNORDEREDMAP)
+	template < typename MapTraits >
+	class Map : public std::tr1::unordered_map<typename MapTraits::Key,
+									typename MapTraits::Value,
+									typename MapTraits::KeyHashFunctor,
+									typename MapTraits::KeyIdentityFunctor>
+	{
+
+	};
+#elif defined(WITH_STD_HASHMAP)
 	template < typename MapTraits >
 	class Map : public std::hash_map<typename MapTraits::Key,
 									typename MapTraits::Value,
@@ -103,7 +114,22 @@ class TreeMultiMap : public std::multimap<typename MapTraits::Key,
 
 #endif
 
-#if defined(WITH_STD_HASHMAP)
+#if defined(WITH_STD_UNORDEREDMAP)
+
+template < typename MapTraits >
+class MultiMap : public std::tr1::unordered_multimap<typename MapTraits::Key,
+								typename MapTraits::Value,
+								typename MapTraits::KeyHashFunctor,
+								typename MapTraits::KeyIdentityFunctor>
+{
+	typedef typename std::tr1::unordered_multimap<
+		typename MapTraits::Key,
+		typename MapTraits::Value,
+		typename MapTraits::KeyHashFunctor,
+		typename MapTraits::KeyIdentityFunctor
+		>::iterator iterator;
+
+#elif defined(WITH_STD_HASHMAP)
 
 template < typename MapTraits >
 class MultiMap : public std::hash_multimap<typename MapTraits::Key,
@@ -194,3 +220,4 @@ public:
 } //end of namespace Pattern
 
 #endif // PATTERN_MAP_H
+

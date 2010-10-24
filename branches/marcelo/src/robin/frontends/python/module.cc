@@ -315,7 +315,7 @@ public:
 			(new ByTypeTranslator((PyTypeObject*)pyobj));
 		fe->addUserDefinedType(translate);
 		
-		Py_XINCREF(Py_None);
+		Py_INCREF(Py_None);
 		return Py_None;
 	}
 
@@ -372,7 +372,7 @@ public:
 			}
 		}
 		catch (std::exception& e) {
-			PyErr_SetString(PyExc_RuntimeError, (char*)e.what());
+			PyErr_SetString(PyExc_RuntimeError, const_cast<char*>(e.what()));
 			return NULL;
 		}
 	}
@@ -565,7 +565,7 @@ public:
 	static PyObject * py_nothing(PyObject *self, PyObject *args, PyObject *kw)
 	{
 		nothing();
-		Py_XINCREF(Py_None);
+		Py_INCREF(Py_None);
 		return Py_None;
 	}
 
@@ -742,7 +742,7 @@ void initlibrobin_pyfe()
 
 
 	// Add some stuff to the module
-	Py_XINCREF(&Robin::Python::FunctionTypeObject);
+	Py_INCREF(&Robin::Python::FunctionTypeObject);
 	Py_XINCREF(Robin::Python::ClassTypeObject);
 	Py_XINCREF(Robin::Python::EnumeratedTypeTypeObject);
 
@@ -767,7 +767,7 @@ void initlibrobin_pyfe()
 	addWrappedType(module, "ushort", ArgumentShort, c_ushort);
 	addWrappedType(module, "c_float", ArgumentFloat, c_float);
 
-	Py_XINCREF(&Robin::Python::WrappedRobinTypeTypeObject);
+	Py_INCREF(&Robin::Python::WrappedRobinTypeTypeObject);
 	PyModule_AddObject(module,"RobinType",(PyObject*)&Robin::Python::WrappedRobinTypeTypeObject);
 
 #define _QUOTE(X) (#X)

@@ -79,8 +79,8 @@ InstanceAdapter::InstanceAdapter(ClassObject *classobj, bool owned)
  */
 void InstanceAdapter::put(ArgumentsBuffer& args, scripting_element value)
 {
-	const InstanceObject *instobj = reinterpret_cast<InstanceObject*>(value);
-	const void *instptr = instobj->getUnderlying()->getObject();
+	InstanceObject *instobj = reinterpret_cast<InstanceObject*>(value);
+	void *instptr = instobj->getUnderlying()->getObject();
 	args.pushPointer(instptr);
 
 	if (m_owned) instobj->getUnderlying()->disown();

@@ -42,7 +42,7 @@
 #include "../frontends/framework.h"
 
 #include "../debug/trace.h"
-
+#include <string.h>
 
 namespace Robin {
 
