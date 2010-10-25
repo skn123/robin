@@ -1,6 +1,5 @@
 package sourceanalysis;
 
-import java.util.Iterator;
 
 /**
  * Represents a template instance which has not yet been instantiated. 
@@ -43,24 +42,22 @@ public class IncompleteTemplateInstance extends Aggregate {
      * @param templateScope template.getScope() where template is the template
      * being instantiated
      */
-    public void assimilate(Scope templateScope)
+    public void assimilate(Scope<Aggregate> templateScope)
     {
         copyInnerCompoundsFromTemplate(templateScope);
         copyInnerAliasesFromTemplate(templateScope);
     }
 
-    private void copyInnerCompoundsFromTemplate(Scope templateScope) {
-        for (Iterator ai = templateScope.aggregateIterator(); ai.hasNext();) {
-            ContainedConnection connection = (ContainedConnection)ai.next();
+    private void copyInnerCompoundsFromTemplate(Scope<Aggregate> templateScope) {
+        for (ContainedConnection<Aggregate, Aggregate> connection: templateScope.getAggregates()) {
 
-            copyInnerAggregate( (Aggregate)connection.getContained(), connection.getVisibility() );
+            copyInnerAggregate( connection.getContained(), connection.getVisibility() );
         }
     }
 
-    private void copyInnerAliasesFromTemplate(Scope templateScope) {
-        for (Iterator ai = templateScope.aliasIterator(); ai.hasNext();) {
-            ContainedConnection connection = (ContainedConnection)ai.next();
-            copyInnerAlias( (Alias)connection.getContained(), connection.getVisibility() );
+    private void copyInnerAliasesFromTemplate(Scope<Aggregate> templateScope) {
+        for (ContainedConnection<Aggregate, Alias> connection: templateScope.getAliass()) {
+            copyInnerAlias( connection.getContained(), connection.getVisibility() );
         }
     }
 

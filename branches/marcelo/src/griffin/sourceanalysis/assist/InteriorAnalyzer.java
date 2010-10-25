@@ -2,7 +2,6 @@ package sourceanalysis.assist;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -12,7 +11,24 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import sourceanalysis.*;
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.DataTemplateParameter;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.Routine;
+import sourceanalysis.Scope;
+import sourceanalysis.Specifiers;
+import sourceanalysis.TemplateParameter;
+import sourceanalysis.Type;
+import sourceanalysis.TypenameTemplateArgument;
+import sourceanalysis.TypenameTemplateParameter;
 import sourceanalysis.xml.XML;
 import sourceanalysis.xml.XMLFormatException;
 
@@ -487,14 +503,14 @@ public class InteriorAnalyzer {
 	private Entity lookupContainer(String[] name, int level, boolean force)
 	{
 		Entity container = m_program.getGlobalNamespace();
-		Scope containerScope = m_program.getGlobalNamespace().getScope();
+		Scope<? extends Entity> containerScope = m_program.getGlobalNamespace().getScope();
 		
 		for (int i = 0; i < level; ++i) {
 			if (name[i].equals("")) continue;
 			// - find a container in current scope
 			Entity subcontainer = findContainer(containerScope, name[i]);
 			if (subcontainer == null && container instanceof Aggregate)
-				subcontainer = findTypenameTemplateParameter((Aggregate)container, name[i]);
+				subcontainer = findTypenameTemplateParameter(container, name[i]);
 			// - check if container exists, if not, create one
 			if (subcontainer != null) {
 				// - The entity found must be an aggregate or a namespace
@@ -537,22 +553,18 @@ public class InteriorAnalyzer {
 	 * @param name expected (short) name of container
 	 * @return requested container, if found, <b>null</b> otherwise.
 	 */
-	private static Entity findContainer(Scope inside, String name)
+	private static Entity findContainer(Scope<? extends Entity> inside, String name)
 	{
 		// Search for classes
-		for (Iterator ai = inside.aggregateIterator(); ai.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ai.next();
-			Aggregate aggregate = (Aggregate)connection.getContained();
+		for (ContainedConnection<? extends Entity, Aggregate> connection: inside.getAggregates()) {
+			Aggregate aggregate = connection.getContained();
 			if (aggregate.getName().equals(name)) {
 				return aggregate;
 			}
 		}
 		// Search for namespaces
-		for (Iterator ni = inside.namespaceIterator(); ni.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)ni.next();
-			Namespace ns = (Namespace)connection.getContained();
+		for (ContainedConnection<? extends Entity, Namespace> connection: inside.getNamespaces()) {
+			Namespace ns = connection.getContained();
 			if (ns.getName().equals(name)) {
 				return ns;
 			}
@@ -570,9 +582,7 @@ public class InteriorAnalyzer {
 	private static Aggregate findTypenameTemplateParameter(Entity inside, 
 		String name)
 	{
-		for (Iterator pi = inside.templateParameterIterator(); pi.hasNext();)
-		{
-			TemplateParameter parameter = (TemplateParameter)pi.next();
+		for (TemplateParameter parameter: inside.getTemplateParameters()) {
 			if (parameter instanceof TypenameTemplateParameter &&
 				parameter.getName().equals(name)) {
 				Aggregate delegate = ((TypenameTemplateParameter)parameter)

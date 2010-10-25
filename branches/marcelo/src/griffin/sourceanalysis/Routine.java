@@ -32,8 +32,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 		super();
 		m_formalArguments = new Vector<Parameter>();
 		m_hasThrows = false;
-		m_throws = new LinkedList();
-		m_throwsDesc = new LinkedList();
+		m_throwsDesc = new LinkedList<Property>();
+		m_throws = new LinkedList<Aggregate>();
 		m_routineType = RoutineType.REGULAR;
 	}
 
@@ -275,18 +275,17 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 * @return Iterator an iterator over Parameter. Parameters do not have
 	 *  extra attributes in this connection.
 	 */
-	public Iterator parameterIterator()
-	{
-		return m_formalArguments.iterator();
+	public ConstCollection<Parameter> getParameters() {
+		return new ConstCollection<Parameter>(m_formalArguments);
 	}
 	
-	public Collection<Parameter> getFormalArguments()
+	public ConstCollection<Parameter> getFormalArguments()
 	{
-		return m_formalArguments;
+		return new ConstCollection<Parameter>(m_formalArguments);
 	}
 	
 	public void removeParameters() {
-		m_formalArguments = new Vector();
+		m_formalArguments = new Vector<Parameter>();
 	}
 	
 	/**
@@ -295,9 +294,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 * @return an iterator over Aggregate. Thrown exceptions do not have
 	 * extra attributes in this connection. 
 	 */
-	public Iterator throwsIterator()
-	{
-		return m_throws.iterator();
+	public ConstCollection<Aggregate> getThrows() {
+		return new ConstCollection<Aggregate>(m_throws);
 	}
 	
 	/**
@@ -305,9 +303,9 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	 * 
 	 * @return an iterator over Property objects.
 	 */
-	public Iterator throwsDescIterator()
+	public ConstCollection<Property> getThrowsDesc()
 	{
-		return m_throwsDesc.iterator();
+		return new ConstCollection<Property>(m_throwsDesc);
 	}
 
     public boolean isCompatible(Routine other)
@@ -316,8 +314,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
         if (!getName().equals(other.getName())) return false;
         if (isConst() != other.isConst()) return false;
 
-        Iterator my, his;
-        for (my = parameterIterator(), his = other.parameterIterator();
+        Iterator<Parameter> my, his;
+        for (my = getParameters().iterator(), his = other.getParameters().iterator();
                 my.hasNext() && his.hasNext(); ) {
         
         		final Type myType = ((Parameter)my.next()).getType();
@@ -332,6 +330,7 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	/**
 	 * @see java.lang.Object#clone()
 	 */
+	@Override
 	public Object clone() {
 		try {
 			return super.clone();
@@ -349,8 +348,8 @@ public class Routine extends TemplateEnabledEntity implements Cloneable {
 	private boolean m_hasThrows;
 	private Type m_returnType;
 	private Vector<Parameter> m_formalArguments;
-	private List m_throws;
-	private List m_throwsDesc;
+	private List<Aggregate> m_throws;
+	private List<Property> m_throwsDesc;
 	
 	private RoutineType m_routineType; // real / static wrapper
 

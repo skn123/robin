@@ -26,6 +26,7 @@
 
 #include <errno.h>
 #include <robin/debug/assert.h>
+#include <cstring>
 
 #include <robin/reflection/library.h>
 #include <robin/reflection/class.h>

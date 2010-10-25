@@ -7,7 +7,7 @@ minor = 0
 prefix = /usr/local
 exec_prefix = /usr/local
 site-packages = /usr/local/lib/python2.4/site-packages
-python = python2.4
+python = python
 jython = jython
 -include config.mak
 

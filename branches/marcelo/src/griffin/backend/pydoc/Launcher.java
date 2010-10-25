@@ -8,16 +8,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.ProgramDatabase;
+import sourceanalysis.view.TemplateBank;
+import sourceanalysis.view.TemplateReader;
 import backend.Backend;
 import backend.PropertyPage;
 import backend.annotations.BackendDescription;
 import backend.annotations.PropertyDescription;
 import backend.configuration.PropertyData;
-
-import sourceanalysis.MissingInformationException;
-import sourceanalysis.ProgramDatabase;
-import sourceanalysis.view.TemplateBank;
-import sourceanalysis.view.TemplateReader;
 
 @BackendDescription(backendName = "pydoc", backendDescription = "Generate PyDoc documentation for the classes")
 public class Launcher implements Backend {

@@ -3,8 +3,6 @@
  */
 package unittest.backend.configuration;
 
-import java.util.Collection;
-
 import junit.framework.TestCase;
 import backend.configuration.BackendData;
 import backend.configuration.PropertyData;
@@ -19,7 +17,8 @@ public class TestBackendData extends TestCase {
    /* (non-Javadoc)
     * @see junit.framework.TestCase#setUp()
     */
-   protected void setUp() throws Exception {
+   @Override
+protected void setUp() throws Exception {
        super.setUp();
        bd = new BackendData(unittest.backend.configuration.examplebackend.Launcher.class);
    }
@@ -27,7 +26,8 @@ public class TestBackendData extends TestCase {
    /* (non-Javadoc)
     * @see junit.framework.TestCase#tearDown()
     */
-   protected void tearDown() throws Exception {
+   @Override
+protected void tearDown() throws Exception {
        super.tearDown();
    }
 
@@ -80,7 +80,7 @@ public class TestBackendData extends TestCase {
        
        assertEquals(1, inputData.getNumArguments());
        
-       PropertyData mixinData = bd.getPropertyData(BackendData.DEFAULT_MIXINS_PROPERTY.getPropertyName());
+       bd.getPropertyData(BackendData.DEFAULT_MIXINS_PROPERTY.getPropertyName());
        
    }
 
@@ -89,7 +89,7 @@ public class TestBackendData extends TestCase {
     * Test method for {@link backend.configuration.BackendData#getPropertiesData()}.
     */
    public void testGetPropertiesData() {
-       Collection<PropertyData> c = bd.getPropertiesData();
+       bd.getPropertiesData();
        assertEquals("Should have 4 properties", 4, bd.getPropertiesData().size());
    }
    

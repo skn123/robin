@@ -68,6 +68,7 @@ public class TypenameTemplateParameter extends TemplateParameter {
 	 * Checks if the template parameter has a default.
 	 * @return boolean
 	 */
+	@Override
 	public boolean hasDefault()
 	{
 		return (m_default != null);
@@ -78,6 +79,7 @@ public class TypenameTemplateParameter extends TemplateParameter {
 	 * type for this parameter.
 	 * @return a TypenameTemplateArgument holding the default Type.
 	 */
+	@Override
 	public TemplateArgument getDefaultValue()
 	{
 		if (hasDefault())
@@ -89,17 +91,18 @@ public class TypenameTemplateParameter extends TemplateParameter {
 	/**
 	 * @see sourceanalysis.TemplateParameter#getDefaultValue(java.util.Iterator, java.util.Iterator)
 	 */
+	@Override
 	public TemplateArgument getDefaultValue(
-		Iterator parameterIterator,
-		Iterator argumentIterator) throws InappropriateKindException
+		Iterator<TemplateParameter> parameterIterator,
+		Iterator<TemplateArgument> argumentIterator) throws InappropriateKindException
 	{
 		if (!hasDefault()) return null;
 		
 		Type deflt = getDefault();
 		
 		while (parameterIterator.hasNext() && argumentIterator.hasNext()) {
-			final TemplateParameter parameter = (TemplateParameter)parameterIterator.next();
-			final TemplateArgument argument = (TemplateArgument)argumentIterator.next();
+			final TemplateParameter parameter = parameterIterator.next();
+			final TemplateArgument argument = argumentIterator.next();
 			// - transform type
 			Type.Transformation transformer = new Type.Transformation() {
 				public TypeNode transform(TypeNode original)
@@ -140,6 +143,7 @@ public class TypenameTemplateParameter extends TemplateParameter {
 	 * @name Utilities
 	 */
 	/*@{*/
+	@Override
 	public Object clone()
 	{
 		TypenameTemplateParameter duplica = new TypenameTemplateParameter();

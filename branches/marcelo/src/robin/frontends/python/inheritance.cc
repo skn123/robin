@@ -133,7 +133,7 @@ PyObject *HybridObject::__new__(PyTypeObject *classtype,
 void HybridObject::__del__(PyObject *object)
 {
 	object->ob_refcnt = 99; // hack to prevent infinite loop
-	PyObject *r = PyObject_CallMethod(object, "__del__", "");
+	PyObject *r = PyObject_CallMethod(object, (char*)"__del__", (char*)"");
 	Py_XDECREF(r);
 	PyErr_Clear();
 	delete (HybridObject*)object;
@@ -215,7 +215,7 @@ PyObject *HybridObject::__new_hybrid__(PyTypeObject *metaclasstype,
 									   PyObject *args, PyObject *kw) 
 {
 	char *name;
-	static char *kwlist[] = {"name", "bases", "dict", 0};
+	static char *kwlist[] = {(char*)"name", (char*)"bases", (char*)"dict", 0};
 	PyObject *bases, *dict;
 
 	PyArg_ParseTupleAndKeywords(args, kw, "sOO", kwlist,

@@ -1,8 +1,7 @@
 package sourceanalysis;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Holds contained entities in a Container. Containers are:
@@ -25,27 +24,27 @@ import java.util.LinkedList;
  *  <li>Group - scope.groupIterator()</li>
  * </ul>
  */
-public class Scope {
+public class Scope<Owner extends Entity> {
 
 	/**
 	 * Constructor for Scope.
      * @param owner the Entity which holds the Scope (must be Aggregate or
      * Namespace), required for a proper setting of connections
 	 */
-	public Scope(Entity owner) {
+	public Scope(Owner owner) {
 		super();
         assert owner != null;
         m_owner = owner;
 
 		// Prepare empty lists for all slots
-		m_routines = new LinkedList();
-		m_fields = new LinkedList();
-		m_aggregates = new LinkedList();
-		m_namespaces = new LinkedList();
-		m_groups = new LinkedList();
-		m_enums = new LinkedList();
-		m_aliases = new LinkedList();
-		m_friends = new LinkedList();
+		m_routines = new LinkedList<ContainedConnection<Owner, Routine>>();
+		m_fields = new LinkedList<ContainedConnection<Owner, Field>>();
+		m_aggregates = new LinkedList<ContainedConnection<Owner, Aggregate>>();
+		m_namespaces = new LinkedList<ContainedConnection<Owner, Namespace>>();
+		m_groups = new LinkedList<ContainedConnection<Owner, Group>>();
+		m_enums = new LinkedList<ContainedConnection<Owner, sourceanalysis.Enum>>();
+		m_aliases = new LinkedList<ContainedConnection<Owner, Alias>>();
+		m_friends = new LinkedList<FriendConnection>();
 	}
 	
 	
@@ -68,8 +67,8 @@ public class Scope {
 	public void addMember(Routine routine, int visibility, int virtuality,	int storage)
 	{
 		// Create a contained-connection
-		ContainedConnection connection = 
-			new ContainedConnection(m_owner, visibility, virtuality, storage, routine);
+		ContainedConnection<Owner, Routine> connection = 
+			new ContainedConnection<Owner, Routine>(m_owner, visibility, virtuality, storage, routine);
 		// Add connection to list of connected routines
 		m_routines.add(connection);
 		// Connect member to the owner of this scope
@@ -88,8 +87,8 @@ public class Scope {
 	public void addMember(Field field, int visibility, int storage)
 	{
 		// Create a contained-connection
-		ContainedConnection connection = 
-			new ContainedConnection(m_owner, visibility, Specifiers.DONT_CARE,
+		ContainedConnection<Owner, Field> connection = 
+			new ContainedConnection<Owner, Field>(m_owner, visibility, Specifiers.DONT_CARE,
 			storage, field);
 		// Add connection to list of connected routines
 		m_fields.add(connection);
@@ -106,8 +105,8 @@ public class Scope {
 	public void addMember(Aggregate inner, int visibility)
 	{
 		// Create a contained-connection
-		ContainedConnection connection = 
-			new ContainedConnection(m_owner, visibility, Specifiers.DONT_CARE,
+		ContainedConnection<Owner, Aggregate> connection = 
+			new ContainedConnection<Owner, Aggregate>(m_owner, visibility, Specifiers.DONT_CARE,
 			Specifiers.DONT_CARE, inner);
 		// Add connection to list of connected aggregates
 		m_aggregates.add(connection);
@@ -123,8 +122,8 @@ public class Scope {
 	public void addMember(sourceanalysis.Enum enume, int visibility)
 	{
 		// Create a contained-connection
-		ContainedConnection connection = 
-			new ContainedConnection(m_owner, visibility, Specifiers.DONT_CARE,
+		ContainedConnection<Owner, sourceanalysis.Enum> connection = 
+			new ContainedConnection<Owner, sourceanalysis.Enum>(m_owner, visibility, Specifiers.DONT_CARE,
 			Specifiers.DONT_CARE, enume);
 		// Add connection to list of connected enums
 		m_enums.add(connection);
@@ -140,8 +139,8 @@ public class Scope {
 	public void addMember(Alias alias, int visibility)
 	{
 		// Create a contained-connection
-		ContainedConnection connection = 
-			new ContainedConnection(m_owner, visibility, Specifiers.DONT_CARE,
+		ContainedConnection<Owner, Alias> connection = 
+			new ContainedConnection<Owner, Alias>(m_owner, visibility, Specifiers.DONT_CARE,
 			Specifiers.DONT_CARE, alias);
 		// Add connection to list of connected aliases
 		m_aliases.add(connection);
@@ -158,8 +157,8 @@ public class Scope {
 	public void addMember(Namespace inner)
 	{
 		// Create a contained-connection
-		ContainedConnection connection = 
-			new ContainedConnection(m_owner, Specifiers.DONT_CARE,
+		ContainedConnection<Owner, Namespace> connection = 
+			new ContainedConnection<Owner, Namespace>(m_owner, Specifiers.DONT_CARE,
 			Specifiers.DONT_CARE, Specifiers.DONT_CARE, inner);
 		// Add connection to list of connected inner namespaces
 		m_namespaces.add(connection);
@@ -176,8 +175,8 @@ public class Scope {
 	public void addGroup(Group group)
 	{
 		// Create a contained-connection
-		ContainedConnection connection = 
-			new ContainedConnection(m_owner, Specifiers.DONT_CARE,
+		ContainedConnection<Owner, Group> connection = 
+			new ContainedConnection<Owner, Group>(m_owner, Specifiers.DONT_CARE,
 			Specifiers.DONT_CARE, Specifiers.DONT_CARE, group);
 		// Add connection to list of connected groups
 		m_groups.add(connection);
@@ -233,27 +232,18 @@ public class Scope {
 	 * @return Iterator an iterator over ContainedConnection, referring to
 	 * each member routine in turn.
 	 */
-	public Iterator routineIterator()
-	{
-		return m_routines.iterator();
+	public ConstCollection<ContainedConnection<Owner, Routine>> getRoutines() {
+		return new ConstCollection<ContainedConnection<Owner, Routine>>(m_routines);
 	}
 
-	/**
-	 * @return all the routines defined in this scope
-	 */
-	public Collection<ContainedConnection> getRoutines() 
-	{
-		return m_routines;
-	}
 	
 	/**
 	 * Access fields of the Scope.
 	 * @return Iterator and iterator over ContainedConnection, referring to
 	 * each member field in turn.
 	 */
-	public Iterator fieldIterator()
-	{
-		return m_fields.iterator();
+	public ConstCollection<ContainedConnection<Owner, Field>> getFields() {
+		return new ConstCollection<ContainedConnection<Owner, Field>>(m_fields);
 	}
 	
 	/**
@@ -261,27 +251,24 @@ public class Scope {
 	 * @return Iterator an iterator over ContainedConnection, referring to
 	 * each inner construct in turn.
 	 */
-	public Iterator aggregateIterator()
-	{
-		return m_aggregates.iterator();
+	public ConstCollection<ContainedConnection<Owner, Aggregate>> getAggregates() {
+		return new ConstCollection<ContainedConnection<Owner, Aggregate>>(m_aggregates);
 	}
 
 	/**
 	 * Access enumerated types in this Scope.
 	 * @return Iterator an iterator over ContainedConnection.
 	 */
-	public Iterator enumIterator()
-	{
-		return m_enums.iterator();
+	public ConstCollection<ContainedConnection<Owner, sourceanalysis.Enum>> getEnums() {
+		return new ConstCollection<ContainedConnection<Owner, sourceanalysis.Enum>>(m_enums);
 	}
 
 	/**
 	 * Access alias objects in this Scope.
 	 * @return Iterator an iterator over ContainedConnection.
 	 */
-	public Iterator aliasIterator()
-	{
-		return m_aliases.iterator();
+	public ConstCollection<ContainedConnection<Owner, Alias>> getAliass() {
+		return new ConstCollection<ContainedConnection<Owner, Alias>>(m_aliases);
 	}
 
 	/**
@@ -291,9 +278,8 @@ public class Scope {
 	 * @return Iterator an iterator over ContainedConnection, referring to
 	 * each inner namespace in turn.
 	 */
-	public Iterator namespaceIterator()
-	{
-		return m_namespaces.iterator();
+	public ConstCollection<ContainedConnection<Owner, Namespace>> getNamespaces() {
+		return new ConstCollection<ContainedConnection<Owner, Namespace>>(m_namespaces);
 	}
 	
 	/**
@@ -304,23 +290,17 @@ public class Scope {
 	 * each inner Group in turn, but only those directly under this scope, not
 	 * nested groups.
 	 */
-	public Iterator groupIterator()
-	{
-		return m_groups.iterator();
+	public ConstCollection<ContainedConnection<Owner, Group>> getGroups() {
+		return new ConstCollection<ContainedConnection<Owner, Group>>(m_groups);
 	}
-	
-	public Collection<ContainedConnection> getGroups()
-	{
-		return m_groups;
-	}
+
 	
 	/**
 	 * 
 	 * 
 	 */
-	public Iterator friendIterator()
-	{
-		return m_friends.iterator();
+	public ConstCollection<FriendConnection> getFriends() {
+		return new ConstCollection<FriendConnection>(m_friends);
 	}
 	
 	/**
@@ -332,9 +312,8 @@ public class Scope {
 	public Group groupByName(String groupName) throws ElementNotFoundException
 	{
         assert m_owner != null; // was burned by this before
-		for (Iterator groupiter = groupIterator(); groupiter.hasNext(); ) {
-			ContainedConnection conn = (ContainedConnection)groupiter.next();
-			Group group = (Group)conn.getContained();
+        for (ContainedConnection<Owner, Group> conn: m_groups) {
+			Group group = conn.getContained();
 			// Check name of group
 			if (group.getName().equals(groupName)) {
 				return group;
@@ -364,7 +343,7 @@ public class Scope {
 	 * @param connection the newly created ContainedConnection for it
 	 */
 	protected void mirrorRelationToMember(Entity contained, 
-		ContainedConnection connection)
+		ContainedConnection<Owner, ? extends Entity> connection)
 	{
 		contained.connectToContainer(connection);
 	}
@@ -384,15 +363,15 @@ public class Scope {
 	/*@}*/
 	
 	// Ownership - entity which holds this scope
-	private Entity m_owner;
+	private Owner m_owner;
 
 	// Private members - internal representation of Scope's contents
-	private Collection<ContainedConnection> m_routines;
-	private Collection<ContainedConnection> m_fields;
-	private Collection<ContainedConnection> m_aggregates;
-	private Collection<ContainedConnection> m_namespaces;
-	private Collection<ContainedConnection> m_enums;
-	private Collection<ContainedConnection> m_aliases;
-	private Collection<ContainedConnection> m_groups;
-	private Collection<FriendConnection> m_friends;
+	private List<ContainedConnection<Owner, Routine>> m_routines;
+	private List<ContainedConnection<Owner, Field>> m_fields;
+	private List<ContainedConnection<Owner, Aggregate>> m_aggregates;
+	private List<ContainedConnection<Owner, Namespace>> m_namespaces;
+	private List<ContainedConnection<Owner, sourceanalysis.Enum>> m_enums;
+	private List<ContainedConnection<Owner, Alias>> m_aliases;
+	private List<ContainedConnection<Owner, Group>> m_groups;
+	private List<FriendConnection> m_friends;
 }

@@ -17,6 +17,7 @@
 
 #include <string>
 #include <stdexcept>
+#include <cstdlib>
 #include "pythonadapters.h"
 #include "pythonfrontend.h"
 #include "pythonobjects.h"
@@ -61,8 +62,8 @@ public:
 			// Load and register library
 			RegistrationMechanism *mech =
 				RegistrationMechanismSingleton::getInstance();
-			Handle<Library> library = 
-				(libname == 0) ? mech->import(libfile) 
+			Handle<Library> library =
+				(libname == 0) ? mech->import(libfile)
 							   : mech->import(libfile, libname);
 			// Expose library
 			fe->exposeLibrary(*library);
@@ -205,8 +206,8 @@ public:
 
 
 		PyObject* wtuple =
-			Py_BuildValue("(iiii)", 
-					w.getEpsilon(), w.getPromotion(), 
+			Py_BuildValue("(iiii)",
+					w.getEpsilon(), w.getPromotion(),
 					w.getUpcast(), w.getUserDefined());
 		return wtuple;
 	}
@@ -251,7 +252,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:obscure", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:obscure", &pyobj))
 			return NULL;
 
 		Py_XINCREF(pyobj);
@@ -265,7 +266,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:disown", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:disown", &pyobj))
 			return NULL;
 
 		if (InstanceObject_Check(pyobj)) {
@@ -284,7 +285,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:own", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:own", &pyobj))
 			return NULL;
 
 		if (InstanceObject_Check(pyobj)) {
@@ -303,7 +304,7 @@ public:
 	{
 		PyObject *pyobj;
 
-		if (!PyArg_ParseTuple(args, "O:familiarize", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:familiarize", &pyobj))
 			return NULL;
 
 		if (!PyType_Check(pyobj)) {
@@ -330,7 +331,7 @@ public:
 		PyObject *pyobj;
 		Handle<Robin::RobinType> rtype;
 
-		if (!PyArg_ParseTuple(args, "O:pointer", &pyobj)) 
+		if (!PyArg_ParseTuple(args, "O:pointer", &pyobj))
 			return NULL;
 
 		try {
@@ -356,7 +357,7 @@ public:
 				rtype = fe->detectType((PyTypeObject*)pyobj);
 
 				int *ptr = new int(0);
-				Handle<Robin::Address> haddress(new Robin::Address(rtype, 
+				Handle<Robin::Address> haddress(new Robin::Address(rtype,
 																   ptr));
 				return new Robin::Python::AddressObject(haddress);
 			}
@@ -386,7 +387,7 @@ public:
 		PyObject *pyobj;
 		long subscript = 0;
 
-		if (!PyArg_ParseTuple(args, "O|i:dereference", &pyobj, &subscript)) 
+		if (!PyArg_ParseTuple(args, "O|i:dereference", &pyobj, &subscript))
 			return NULL;
 
 		return (PyObject*)((Robin::Python::AddressObject*)pyobj)->getUnderlying()->dereference(subscript);
@@ -574,10 +575,10 @@ public:
 
 
 PyMethodDef PythonFrontend::Module::methods[] = {
-	{ "loadLibrary", &py_loadLibrary, METH_VARARGS, 
+	{ "loadLibrary", &py_loadLibrary, METH_VARARGS,
 	  "loadLibrary([libname], libfile)\nloads a library "
 	  "using Robin's registration mechanism." },
-	{ "classByName", &py_classByName, METH_VARARGS, 
+	{ "classByName", &py_classByName, METH_VARARGS,
 	  "classByName(classname)\nFetches a registered class from Robin's "
 	  "internal registry." },
 	{ "declareTemplate", &py_setTemplateObject, METH_VARARGS,
@@ -603,7 +604,7 @@ PyMethodDef PythonFrontend::Module::methods[] = {
 	  "familiarize(type)\n"
 	  "Makes the given Python type known to Robin, allowing user to define\n"
 	  "custom conversions to/from it." },
-	{ "debugOn", &py_debugOn, METH_VARARGS, 
+	{ "debugOn", &py_debugOn, METH_VARARGS,
 	  "debugOn()\nTurns on Robin's internal debug flag." },
 	{ "debugRegistrationOn", &py_debugRegistrationOn, METH_VARARGS,
 	  "debugRegistrationOn()\nTurns on Robin's internal debug flag for events related to registration of any entity." },
@@ -749,9 +750,9 @@ void initlibrobin_pyfe()
 
 	PyModule_AddObject(module, "FunctionType", 
 					   (PyObject*)&Robin::Python::FunctionTypeObject);
-	PyModule_AddObject(module, "ClassType", 
+	PyModule_AddObject(module, "ClassType",
 					   (PyObject*)Robin::Python::ClassTypeObject);
-	PyModule_AddObject(module, "EnumeratedTypeType", 
+	PyModule_AddObject(module, "EnumeratedTypeType",
 					   (PyObject*)Robin::Python::EnumeratedTypeTypeObject);
 	addWrappedType(module, "double", ArgumentDouble, pydouble);
 	addWrappedType(module, "longlong", ArgumentLongLong, pylong_long);
@@ -772,7 +773,7 @@ void initlibrobin_pyfe()
 
 #define _QUOTE(X) (#X)
 #define QUOTE(X) (_QUOTE(X))
-	PyModule_AddObject(module, "VERSION", 
+	PyModule_AddObject(module, "VERSION",
 					   PyString_FromString(QUOTE(_VERSION)));
 
 	Py_XINCREF(Py_True);
