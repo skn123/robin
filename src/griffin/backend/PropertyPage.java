@@ -12,7 +12,7 @@ import java.util.Map;
 public class PropertyPage {
    
    public PropertyPage() {
-       m_properties = new HashMap();
+       m_properties = new HashMap<String, Object>();
    }
    
 
@@ -80,5 +80,5 @@ public class PropertyPage {
        return m_properties.containsKey(name);
    }
    
-   private Map m_properties;
+   private Map<String, Object> m_properties;
 }

@@ -15,9 +15,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
-/*
- * Created on 12/10/2005 by Misha.
- */
 
 public class FilesPage extends WizardPage {
     public static final String DESCRIPTION_STR = "Choose the files to wrap and the output file";

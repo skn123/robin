@@ -35,6 +35,7 @@ public class DataTemplateArgument extends TemplateArgument {
 	/**
 	 * Returns the value string.
 	 */
+	@Override
 	public String toCpp()
 	{
 		return m_value;
@@ -43,6 +44,7 @@ public class DataTemplateArgument extends TemplateArgument {
 	/**
 	 * Returns the value string.
 	 */
+	@Override
 	public String toString()
 	{
 		return m_value;

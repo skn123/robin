@@ -1,15 +1,15 @@
 #error this file should never be included
 
-namespace std {
+namespace __gnu_cxx {
 
 template <class KEY, class VALUE>
-class map
+class hash_map
 {
 public:
 	class iterator
 	{
 	public:
-		pair<KEY,VALUE> operator*();
+		std::pair<KEY,VALUE> operator*();
 		iterator& operator++();
 		bool operator==(const iterator &i) const;
 		bool operator!=(const iterator &i) const;
@@ -18,14 +18,14 @@ public:
 	class const_iterator
 	{
 	public:
-		const pair<KEY,VALUE> operator*();
+		const std::pair<KEY,VALUE> operator*();
 		const_iterator& operator++();
 		bool operator==(const const_iterator &i) const;
 		bool operator!=(const const_iterator &i) const;
 	};
 		
-	map();
-	map(const map<KEY,VALUE> &other);
+	hash_map();
+	hash_map(const hash_map<KEY,VALUE> &other);
 
 	iterator begin();
 	iterator end();
@@ -36,9 +36,9 @@ public:
 	iterator find(const KEY &key);
 	
 	int erase(const KEY &key);
-	void insert(const pair<KEY,VALUE> &val);
-	bool operator==(const map  &) const;
-	~map();
+	void insert(const std::pair<KEY,VALUE> &val);
+
+	~hash_map();
 };
 
 }

@@ -35,12 +35,13 @@ public abstract class TemplateParameter extends Entity {
 	 * @return a TemplateArgument derivative which should be placed in place
 	 * of this templates, when an actual argument is not provided
 	 */
-	public abstract TemplateArgument getDefaultValue(Iterator parameterIterator,
-													 Iterator argumentIterator)
+	public abstract TemplateArgument getDefaultValue(Iterator<TemplateParameter> parameterIterator,
+													 Iterator<TemplateArgument> argumentIterator)
 		throws InappropriateKindException;
 	
 	/**
 	 * Creates an identical duplicate of the template parameter.
 	 */
+	@Override
 	public abstract Object clone();
 }

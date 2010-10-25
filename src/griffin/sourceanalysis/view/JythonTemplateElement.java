@@ -2,13 +2,13 @@ package sourceanalysis.view;
 
 import java.util.Iterator;
 
+import org.python.core.PyObject;
+import org.python.core.PySequence;
 import org.python.util.PythonInterpreter;
 
 import sourceanalysis.ContainedConnection;
 import sourceanalysis.ElementNotFoundException;
 import sourceanalysis.Entity;
-import org.python.core.PyObject;
-import org.python.core.PySequence;
 
 /**
  * enclosing_type - undocumented.
@@ -40,6 +40,7 @@ public class JythonTemplateElement extends ScriptingTemplateElement {
 				.fillTemplate(templatekey, nested_scope, m_perspective);
 		}
 		
+		@SuppressWarnings("unchecked")
 		public String refill(String templatekey, String addition, Iterator iterator)
 			throws ElementNotFoundException
 		{
@@ -86,12 +87,10 @@ public class JythonTemplateElement extends ScriptingTemplateElement {
 	 */
 	public String extractText(AbstractScope context, Perspective perspective) {
 		// Add members of the scope as variables to the interpreter environment
-		java.util.Iterator memberi = context.declIterator();
-		while (memberi.hasNext()) {
+		for (java.util.Map.Entry<String, Entity> entry: context.getDecls()) {
 			try {
-				java.util.Map.Entry entry = (java.util.Map.Entry)(memberi.next());
-				String varname = (String)entry.getKey();
-				Entity varobj = (Entity)entry.getValue();
+				String varname = entry.getKey();
+				Entity varobj = entry.getValue();
 				// Set variable
 				m_interp.set(varname, varobj);
 			}

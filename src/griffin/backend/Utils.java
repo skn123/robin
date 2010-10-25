@@ -80,6 +80,7 @@ public class Utils {
 	 * @throws InappropriateKindException if the given type-node is
 	 * not a NODE_TEMPLATE_INSTANTIATION node.
 	 */
+	@SuppressWarnings("unchecked")
 	public static Aggregate extractTemplate(Type.TypeNode root) 
 	throws InappropriateKindException
 	{
@@ -103,10 +104,11 @@ public class Utils {
 	 * @throws InappropriateKindException if the given type-node is
 	 * not a NODE_TEMPLATE_INSTANTIATION node.
 	 */
-	public static List extractTemplateArguments(Type.TypeNode root)
+	@SuppressWarnings("unchecked")
+	public static List<TemplateArgument> extractTemplateArguments(Type.TypeNode root)
 	throws InappropriateKindException
 	{
-		List targs = new ArrayList();
+		List<TemplateArgument> targs = new ArrayList<TemplateArgument>();
 		
 		if (root.getKind() == Type.TypeNode.NODE_TEMPLATE_INSTANTIATION) {
 			// Get the template
@@ -170,10 +172,10 @@ public class Utils {
 		if (root.getKind() == Type.TypeNode.NODE_TEMPLATE_INSTANTIATION) {
 			// Get the template arguments
 			try {
-				List arguments = extractTemplateArguments(root);
+				List<TemplateArgument> arguments = extractTemplateArguments(root);
 				// Make sure that all the template arguments are accessible
-				for (Iterator tai = arguments.iterator(); tai.hasNext(); ) {
-					if (!isAccessible((TemplateArgument)tai.next()))
+				for (TemplateArgument ta: arguments) {
+					if (!isAccessible(ta))
 						return false;
 				}
 				return true;
@@ -216,8 +218,7 @@ public class Utils {
 				if (!rtype.isFlat()) return false;
 			}
 			// Iterate parameters and check the flatness of each
-			for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
-				Parameter param = (Parameter)pi.next(); 
+			for (Parameter param: routine.getParameters()) {
 				if (!param.getType().isFlat()) return false;
 			}
 			return true;
@@ -238,8 +239,7 @@ public class Utils {
 	public static boolean hasAnyArrays(Routine routine)
 	{
 		// Iterate parameters and check the flatness of each
-		for (Iterator pi = routine.parameterIterator(); pi.hasNext(); ) {
-			Parameter param = (Parameter)pi.next();
+		for (Parameter param: routine.getParameters()) {
 			try {
 				if (hasAnyArrays(param.getType())) return true;
 			}
@@ -291,12 +291,9 @@ public class Utils {
         if (!entity.getContainer().isTemplated())
             return false;
 
-        for (Iterator tpi = entity.getContainer().templateParameterIterator();
-            tpi.hasNext(); ) {
+        for (TemplateParameter templateParameter: entity.getContainer().getTemplateParameters()) {
             // Check if this is a typename argument, and if this
             // argument's delegate entity is 'entity'
-            TemplateParameter templateParameter =
-                (TemplateParameter)tpi.next();
             if (templateParameter instanceof TypenameTemplateParameter) {
                 // Exploit TypenameTemplateParameter's interface
                 TypenameTemplateParameter typename =
@@ -408,8 +405,7 @@ public class Utils {
 	{
 		int counter = 0;
 		// Iterate through parameters and increment counter
-		for (Iterator iter = routine.parameterIterator(); iter.hasNext(); ) {
-			iter.next();
+		for (@SuppressWarnings("unused") Parameter param: routine.getParameters()) {
 			++counter;
 		}		
 		return counter;
@@ -425,8 +421,7 @@ public class Utils {
 		int counter = 0;
 		// Iterate through parameters and increment counter only if
 		// parameter does not have a default value
-		for (Iterator iter = routine.parameterIterator(); iter.hasNext(); ) {
-			Parameter parameter = (Parameter)iter.next();
+		for (Parameter parameter: routine.getParameters()) {
 			if (!parameter.hasDefault()) ++counter;
 		}		
 		return counter;
@@ -456,17 +451,17 @@ public class Utils {
 		}
 
 		proto += "(";	
-		for (Iterator iter = routine.parameterIterator(); iter.hasNext();) {
-			Parameter param = (Parameter)iter.next();
-			
+		boolean first = true;
+		for (Parameter param: routine.getParameters()) {
+			if (!first) {
+				proto += ", ";
+			}
+			first = false;
 			proto += Utils.cleanFormatCpp(param.getType(), 
 				 param.getName());
 			if(param.hasDefault()) {
 				proto += " = " + param.getDefaultString();
 			}
-			if(iter.hasNext()) {
-				proto += ", ";
-			} 
 		}
 		
 		proto += ")";
@@ -506,12 +501,11 @@ public class Utils {
      */
     public static boolean hasOnlyPrivateConstructors(Aggregate entity)
     {
-        Scope scope = entity.getScope();
+        Scope<Aggregate> scope = entity.getScope();
         boolean hasNoPrivateConstructors = false;
 
-        for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
-            ContainedConnection connection = (ContainedConnection)ri.next();
-            Routine routine = (Routine)connection.getContained();
+        for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
+            Routine routine = connection.getContained();
             if (routine.isConstructor()) {
                 if (connection.getVisibility() != Specifiers.Visibility.PRIVATE) {
                     return false;
@@ -532,18 +526,17 @@ public class Utils {
 	public static boolean hasDefaultConstructor(Aggregate entity)
 		throws MissingInformationException
 	{
-		Scope scope = entity.getScope();
+		Scope<Aggregate> scope = entity.getScope();
 		boolean anyConstructor = false;
 	
 		if (entity instanceof Primitive) return true;
 		if (entity.getDeclaration() == null) return false;
 		
-		for (Iterator ri = scope.routineIterator(); ri.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)ri.next();
-			Routine routine = (Routine)connection.getContained();
+		for (ContainedConnection<Aggregate, Routine> connection: scope.getRoutines()) {
+			Routine routine = connection.getContained();
 			
 			if (routine.isConstructor()
-				&& !routine.parameterIterator().hasNext()) {
+				&& !routine.getParameters().iterator().hasNext()) {
 				// This is a default constructor.
 				// Return true if it's public, false otherwise
 				return connection.getVisibility() == Specifiers.Visibility.PUBLIC;
@@ -553,9 +546,8 @@ public class Utils {
 		
         boolean membersHaveDefaultConstructors = true;
 
-        for(Iterator fi = scope.fieldIterator(); fi.hasNext(); ) {
-            ContainedConnection connection = (ContainedConnection)fi.next();
-            Field field = (Field)connection.getContained();
+		for (ContainedConnection<Aggregate, Field> connection: scope.getFields()) {
+            Field field = connection.getContained();
             
             Type fieldType = flatUnalias(field.getType());
             Entity fieldBaseType = fieldType.getBaseType();
@@ -594,23 +586,18 @@ public class Utils {
 		Entity metaEntity = seekOriginalTemplate(entity);
 		
 		// Scan each and every routine in the global namespace
-		for (Iterator globalri = program.getGlobalNamespace()
-				.getScope().routineIterator(); 
-			 globalri.hasNext() ; )
-		{
-			ContainedConnection connection = 
-				(ContainedConnection)globalri.next();
-			Routine fcn = (Routine)connection.getContained();
+		for (ContainedConnection<Namespace, Routine> connection: program.getGlobalNamespace().getScope().getRoutines()) {
+			Routine fcn = connection.getContained();
 			
 			// Filter "operator<<"
 			if (fcn.getName().equals("operator<<")) {
-				Iterator pi = fcn.parameterIterator();
+				Iterator<Parameter> pi = fcn.getParameters().iterator();
 				if (pi.hasNext()) {
 					// Obtain left operand type
-					Parameter left = (Parameter)pi.next();
+					Parameter left = pi.next();
 					if (pi.hasNext()) {
 						// Obtain right operand type
-						Parameter right = (Parameter)pi.next();
+						Parameter right = pi.next();
 						// Check types
 						if (left.getType().isFlat()
 							&& left.getType().getBaseType()
@@ -637,28 +624,23 @@ public class Utils {
 	 * @throws MissingInformationException if information contained in the
 	 * program database is insufficient for carrying out this operation.
 	 */
-	public static List findGloballyScopedOperators(Entity with, 
+	public static List<Routine> findGloballyScopedOperators(Entity with, 
 											ProgramDatabase program)
 		throws MissingInformationException
 	{
 		// Scan each and every routine in the global namespace
-		List matches = new LinkedList();
+		List<Routine> matches = new LinkedList<Routine>();
 		if (with.isTemplated()) return matches;
 		
-		for (Iterator globalri = program.getGlobalNamespace()
-				.getScope().routineIterator(); 
-				globalri.hasNext() ; )
-		{
-			ContainedConnection connection = 
-				(ContainedConnection)globalri.next();
-			Routine fcn = (Routine)connection.getContained();
+		for (ContainedConnection<Namespace, Routine> connection: program.getGlobalNamespace().getScope().getRoutines()) {
+			Routine fcn = connection.getContained();
 			
 			// Filter operators
 			if (fcn.isOperator() && !fcn.isTemplated()) {
-				Iterator pi = fcn.parameterIterator();
+				Iterator<Parameter> pi = fcn.getParameters().iterator();
 				if (pi.hasNext()) {
 					// Obtain left operand type
-					Parameter left = (Parameter)pi.next();
+					Parameter left = pi.next();
 					// Check types
 					if (left.getType().isFlat()
 							&& left.getType().getBaseType() == with
@@ -683,7 +665,7 @@ public class Utils {
 	 * @return <b>true</b> if at least one method here is pure virtual;
 	 * <b>false</b> if none are.
 	 */
-	public static boolean isAbstract(Aggregate entity, Map instanceMap)
+	public static boolean isAbstract(Aggregate entity, Map<String, Aggregate> instanceMap)
 		throws MissingInformationException
 	{
 		return ! unimplementedMethods(entity, instanceMap).isEmpty();
@@ -722,18 +704,12 @@ public class Utils {
 	{
 		// Go over the methods of the aggregate and for each one, check if
 		// it is virtual or pure virtual
-		for (Iterator methodIter = subject.getScope().routineIterator();
-			 methodIter.hasNext(); ) {
-			ContainedConnection connection =
-				(ContainedConnection)methodIter.next();
+		for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
 			if (connection.getVirtuality() != Specifiers.Virtuality.NON_VIRTUAL)
 				return true;
 		}
 		// Perform check recursively for all base classes
-		for (Iterator baseIter = subject.baseIterator();
-			 baseIter.hasNext(); ) {
-			InheritanceConnection connection =
-				(InheritanceConnection)baseIter.next();
+		for (InheritanceConnection connection: subject.getBases()) {
 			if (isPolymorphic(connection.getBase()))
 				return true;
 		}
@@ -746,7 +722,7 @@ public class Utils {
 	 * @throws InappropriateKindException 
 	 * @throws MissingInformationException 
 	 */
-	public static Entity instantiateTemplate(Type templateType, Map existingInstancesMap) 
+	public static Entity instantiateTemplate(Type templateType, Map<String, Aggregate> existingInstancesMap) 
 		throws MissingInformationException, InappropriateKindException 
 	{
 		
@@ -763,8 +739,6 @@ public class Utils {
 		
 		
 		return instantiateTemplate(typeAggregate, typeTemplateArguments, existingInstancesMap);
-		
-		
 	}
 	
 	
@@ -786,7 +760,7 @@ public class Utils {
 	 * is encountered
 	 */
 	public static Aggregate instantiateTemplate(Aggregate template,
-		TemplateArgument[] arguments, Map existingInstancesMap)
+		TemplateArgument[] arguments, Map<String, Aggregate> existingInstancesMap)
 		throws MissingInformationException, InappropriateKindException
 	{
 		return instantiateTemplate(template, arguments, null, null, existingInstancesMap);
@@ -815,26 +789,26 @@ public class Utils {
 	 * is encountered
 	 */
 	public static Aggregate instantiateTemplate(Aggregate template,
-		TemplateArgument[] arguments, Map institute, Aggregate d, Map existingInstancesMap)
+		TemplateArgument[] arguments, Map<Entity, Type> institute, Aggregate d, Map<String, Aggregate> existingInstancesMap)
 		throws MissingInformationException, InappropriateKindException
 	{
 		// Don't instantiate the same template twice
 		String existingExpression =
 			templateExpression((d==null) ? template : d, arguments);
 		if(existingInstancesMap.containsKey(existingExpression)) {
-			return (Aggregate)existingInstancesMap.get(existingExpression);
+			return existingInstancesMap.get(existingExpression);
 		}
 		
 		
-		Map substitution = (institute != null) ? institute : new HashMap();
-		Map macros = new HashMap();
+		Map<Entity, Type> substitution = (institute != null) ? institute : new HashMap<Entity, Type>();
+		Map<String, TemplateArgument> macros = new HashMap<String, TemplateArgument>();
 	    //System.err.println("Started instantiation for " + template + " with arguments " + java.util.Arrays.toString(arguments));
 		// - these final variables are for use inside anonymous classes
 		final Aggregate fin_template = template;
-		final Map fin_substitution = substitution;
-		final Map fin_macros = macros;
-		final List fin_targs = new ArrayList();
-		final Map fin_existingInstancesMap = existingInstancesMap;
+		final Map<String, TemplateArgument> fin_macros = macros;
+		final Map<Entity, Type> fin_substitution = substitution;
+		final List<TemplateArgument> fin_targs = new ArrayList<TemplateArgument>();
+		final Map<String, Aggregate> fin_existingInstancesMap = existingInstancesMap;
 		
 		// ---------------------------
 		// Create instantiations for template arguments
@@ -850,13 +824,11 @@ public class Utils {
 		// ---------------------------
 		// 1. Collect template parameters and their actual agruments
 		int argIndex = 0;
-		for (Iterator tpi = template.templateParameterIterator(); 
-			 tpi.hasNext(); ++argIndex) {
+		for (TemplateParameter templateParameter: template.getTemplateParameters()) {
 			// - get current parameter and argument (use default if needed)
-			TemplateParameter templateParameter = (TemplateParameter)tpi.next();
 			TemplateArgument templateArgument = argIndex < arguments.length ? 
 				arguments[argIndex] : templateParameter
-					.getDefaultValue(template.templateParameterIterator(),
+					.getDefaultValue(template.getTemplateParameters().iterator(),
 										fin_targs.iterator());
 			fin_targs.add(templateArgument);
 			// - if not enough arguments were supplied and there is no
@@ -878,6 +850,7 @@ public class Utils {
 			else if (templateParameter instanceof DataTemplateParameter) {
 				macros.put(templateParameter.getName(), templateArgument);
 			}
+			argIndex++;
 		}
 		// 2. Locate possible use of traits - that is, expressions where the
 		//    template parameter is used as a container (Traits::SIZE)
@@ -903,7 +876,7 @@ public class Utils {
 		templateInstance.setName(template.getName());
 		if (arguments.length > 0) {
 			templateInstance.setGeneralTemplateForSpecialization(template, 
-					new Vector(Arrays.asList(arguments)));
+					new Vector<TemplateArgument>(Arrays.asList(arguments)));
 		}
 		if (template.getDeclaration() != null) {
 			// - copy declaration locator
@@ -917,9 +890,7 @@ public class Utils {
 			}
 		}
 		// - copy properties
-		for (Iterator propi = template.propertyIterator(); propi.hasNext();)
-		{
-			Entity.Property property = (Entity.Property)propi.next();
+		for (Property property: template.getProperties()) {
 			templateInstance.addProperty(property);
 		}
 		// - insert entity to the same namespace where the template lives
@@ -940,9 +911,7 @@ public class Utils {
 		// ----------------------------
 		// Copy inheritance information
 		// ----------------------------
-		for (Iterator bi = template.baseIterator(); bi.hasNext(); ) {
-			InheritanceConnection connection =
-				(InheritanceConnection)bi.next();
+		for (InheritanceConnection connection: template.getBases()) {
 			TemplateArgument[] baseTemplateArgs =
 				connection.getBaseTemplateArguments();
 			// Possibly substitute template arguments in base type-expression
@@ -955,13 +924,10 @@ public class Utils {
 		// ------------------------------------
 		// Instantiate inner class declarations
 		// ------------------------------------
-		List inners = new LinkedList();
-		for (Iterator ci = template.getScope().aggregateIterator(); 
-		      ci.hasNext(); ) {
-			ContainedConnection connection = 
-				(ContainedConnection)ci.next();
+		List<Aggregate[]> inners = new LinkedList<Aggregate[]>();
+		for (ContainedConnection<Aggregate, Aggregate> connection: template.getScope().getAggregates()) {
 			Aggregate innerClass = 
-				(Aggregate)connection.getContained();
+				connection.getContained();
 			if (!isATemplateParameter(innerClass)) {
 				// Create a class by the same name in templateInstance
 				Aggregate instance = new Aggregate();
@@ -971,17 +937,14 @@ public class Utils {
 				// - register inner class for substitution
 				substitution.put(
 						innerClass, new Type(new Type.TypeNode(instance)));
-				inners.add(new Object[] { innerClass, instance });
+				inners.add(new Aggregate[] { innerClass, instance });
 			}
 		}
 		// --------------------------
 		// Instantiate inner typedefs
 		// --------------------------		
-		for (Iterator ai = template.getScope().aliasIterator();
-			ai.hasNext(); ) {
-			// - get an inner
-			ContainedConnection connection = (ContainedConnection)ai.next();
-			Alias alias = (Alias)connection.getContained();
+		for (ContainedConnection<Aggregate, Alias> connection: template.getScope().getAliass()) {
+			Alias alias = connection.getContained();
 			Alias instance = instantiateTemplate(alias, substitution, macros);
 			templateInstance.getScope().addMember(
 				instance, connection.getVisibility());
@@ -991,11 +954,8 @@ public class Utils {
 		// -----------------------
 		// Instantiate inner enums
 		// -----------------------
-		for (Iterator ei = template.getScope().enumIterator();
-			ei.hasNext(); ) {
-			// - get an inner
-			ContainedConnection connection = (ContainedConnection)ei.next();
-			sourceanalysis.Enum enume = (sourceanalysis.Enum)connection.getContained();
+		for (ContainedConnection<Aggregate, sourceanalysis.Enum> connection: template.getScope().getEnums()) {
+			sourceanalysis.Enum enume = connection.getContained();
 			sourceanalysis.Enum instance = (sourceanalysis.Enum)enume.clone();
 			templateInstance.getScope().addMember(
 				instance, connection.getVisibility());
@@ -1005,11 +965,8 @@ public class Utils {
 		// ----------------------------
 		// Instantiate member functions
 		// ----------------------------
-		for (Iterator mi = template.getScope().routineIterator(); 
-			mi.hasNext();) {
-			// - get a method			
-			ContainedConnection connection = (ContainedConnection)mi.next();
-			Routine method = (Routine)connection.getContained();
+		for (ContainedConnection<Aggregate, Routine> connection: template.getScope().getRoutines()) {
+			Routine method = connection.getContained();
 			Routine methodinst = new Routine();
 			methodinst.setName(method.getName());
 			methodinst.setConst(method.isConst());
@@ -1020,24 +977,17 @@ public class Utils {
 			methodinst.setDefinitionAt(method.getDefinition());
 			methodinst.setThrows(method.hasThrowClause());
 			// - copy properties
-			for (Iterator propi = method.propertyIterator(); propi.hasNext();)
-			{
-				Entity.Property property = (Entity.Property)propi.next();
+			for (Entity.Property property: method.getProperties()) {
 				methodinst.addProperty(property);
 			}
 			// - copy template arguments if any
 			if (method.isTemplated()) {
-				for (Iterator templi = method.templateParameterIterator(); 
-					templi.hasNext(); ) {
-					TemplateParameter tparameter = 
-						(TemplateParameter)templi.next();
+				for (TemplateParameter tparameter: method.getTemplateParameters()) {
 					methodinst.addTemplateParameter(
 						(TemplateParameter)tparameter.clone());
 				}
 			}
-			for (Iterator propi = method.propertyIterator(); propi.hasNext();)
-			{
-				Entity.Property property = (Entity.Property)propi.next();
+			for (Entity.Property property: method.getProperties()) {
 				methodinst.addProperty(property);
 			}
 			// - substitute in return type of method
@@ -1047,8 +997,7 @@ public class Utils {
 					cleanFormatCpp(methodinst.getReturnType(), ""));
 			}
 			// - substitute in parameter types 
-			for (Iterator pi = method.parameterIterator(); pi.hasNext();) {
-				Parameter parameter = (Parameter)pi.next();
+			for (Parameter parameter: method.getParameters()) {
 				Parameter parameterinst = new Parameter();
 				parameterinst.setName(parameter.getName());
 				parameterinst.setType(instantiateTemplate(parameter.getType(), substitution,macros));
@@ -1058,13 +1007,11 @@ public class Utils {
 				methodinst.addParameter(parameterinst);
 			}
 			// - substitute in exception types
-			for (Iterator pi = method.throwsIterator(); pi.hasNext();) {
-				Aggregate thrown = (Aggregate) pi.next();
+			for (Aggregate thrown : method.getThrows()) {
 				methodinst.addThrows(instantiateTemplate(thrown, arguments, existingInstancesMap));
 			}
 			// - copy thrown exception descriptions
-			for (Iterator pi = method.throwsDescIterator(); pi.hasNext();) {
-				Property thrownDesc = (Property)pi.next();
+			for (Property thrownDesc : method.getThrowsDesc()) {
 				methodinst.addThrowsDesc(thrownDesc.getName(), thrownDesc.getValue());
 			}
 			// - add instantiated method to new class
@@ -1076,17 +1023,12 @@ public class Utils {
 		// ------------------------
 		// Instantiate data members
 		// ------------------------
-		for (Iterator mi = template.getScope().fieldIterator(); 
-			mi.hasNext();) {
-			// - get a field
-			ContainedConnection connection = (ContainedConnection)mi.next();
-			Field field = (Field)connection.getContained();
+		for (ContainedConnection<Aggregate, Field> connection: template.getScope().getFields()) {
+			Field field = connection.getContained();
 			Field instance = new Field();
 			instance.setName(field.getName());
 			// - copy properties
-			for (Iterator propi = field.propertyIterator(); propi.hasNext();)
-			{
-				Entity.Property property = (Entity.Property)propi.next();
+			for (Entity.Property property: field.getProperties()) {
 				instance.addProperty(property);
 			}
 			// - substitute in variable type
@@ -1099,10 +1041,9 @@ public class Utils {
 		// -------------------------------
 		// Fill inner class instantiations
 		// -------------------------------
-		for (Iterator ci = inners.iterator(); ci.hasNext(); ) {
-			Object[] element = (Object[])ci.next();
-			Aggregate innerClass = (Aggregate)element[0];
-			Aggregate instance = (Aggregate)element[1];
+		for (Aggregate[] element: inners) {
+			Aggregate innerClass = element[0];
+			Aggregate instance = element[1];
 			instantiateTemplate(innerClass, new TemplateArgument[0],
 					substitution, instance, existingInstancesMap);
 		}
@@ -1128,11 +1069,11 @@ public class Utils {
 	 * @return transformed type
 	 * @throws InappropriateKindException
 	 */
-	private static Type instantiateTemplate(Type type, Map substitution, Map macros)
+	private static Type instantiateTemplate(Type type, Map<Entity, Type> substitution, Map<String, TemplateArgument> macros)
 		throws InappropriateKindException
 	{
-		final Map final_substitution = substitution;
-		final Map final_macros = macros;
+		final Map<Entity, Type> final_substitution = substitution;
+		final Map<String, TemplateArgument> final_macros = macros;
 		
 		Type.ExtendedTransformation ttransform = 
 		new Type.ExtendedTransformation() {
@@ -1199,14 +1140,14 @@ public class Utils {
 	}
 	
 	private static TemplateArgument[] instantiateTemplate
-		(TemplateArgument[] types, Map substitution, Map macros) 
+		(TemplateArgument[] types, Map<Entity, Type> substitution, Map<String, TemplateArgument> macros) 
 		throws InappropriateKindException
 	{
 		TemplateArgument[] transformedTypes = 
 			new TemplateArgument[types.length];
 		// Transform TypenameTemplateArgument elements, copy the rest
 		for (int index = 0; index < types.length; ++index) {
-			TemplateArgument element = (TemplateArgument)types[index];
+			TemplateArgument element = types[index];
 			if (element instanceof TypenameTemplateArgument) {
 				// Substitute T in argument
 				Type value = ((TypenameTemplateArgument)element).getValue();
@@ -1238,8 +1179,8 @@ public class Utils {
 	 * @return
 	 * @throws InappropriateKindException
 	 */
-	private static Alias instantiateTemplate(Alias inner, Map substitution, 
-		Map macros)
+	private static Alias instantiateTemplate(Alias inner, Map<Entity, Type> substitution, 
+		Map<String, TemplateArgument> macros)
 		throws InappropriateKindException
 	{
 		Alias instance = new Alias();
@@ -1260,14 +1201,14 @@ public class Utils {
 	 * @param substitution accumulates the inner entities collected
 	 */
 	private static void collectInnersOfTemplateParameter(Type type, 
-		Aggregate template, List arguments, Map substitution, Map macros, Map existingInstancesMap)
+		Aggregate template, List<TemplateArgument> arguments, Map<Entity, Type> substitution,Map<String, TemplateArgument> macros, Map<String, Aggregate> existingInstancesMap)
 	{
 		final Aggregate fin_template = template;
-		final Map fin_substitution = substitution;
-		final Map fin_macros = macros;
+		final Map<Entity, Type> fin_substitution = substitution;
+		final Map<String, TemplateArgument> fin_macros = macros;
 		final TemplateArgument[] fin_targs =
-			(TemplateArgument[])arguments.toArray(new TemplateArgument[] { });
-		final Map fin_existingInstancesMap = existingInstancesMap;
+			arguments.toArray(new TemplateArgument[] { });
+		final Map<String, Aggregate> fin_existingInstancesMap = existingInstancesMap;
 		
 		Type.Transformation collect = new Type.Transformation() {
 			public TypeNode transform(TypeNode typeNode) 
@@ -1280,11 +1221,7 @@ public class Utils {
 					// - check whether 'name' begins with one of the template
 					//   parameters of 'template'
 					int index = 0;
-					for (Iterator tpi = fin_template.templateParameterIterator();
-						 tpi.hasNext(); ++index) {
-						// - get names of template parameter and argument
-						TemplateParameter parameter = 
-							(TemplateParameter)tpi.next();
+					for (TemplateParameter parameter: fin_template.getTemplateParameters()) {
 						String parameterName = parameter.getName();
 						TemplateArgument argument = fin_targs[index];
 						// - check criteria
@@ -1296,6 +1233,7 @@ public class Utils {
 							fin_substitution.put(typeNode.getBase(), 
 								new Type(new Type.TypeNode(entity)));
 						}
+						index++;
 					}
 				}
 				return null;
@@ -1312,7 +1250,7 @@ public class Utils {
 	}
 
 	private static Entity trait(TemplateArgument traitsHolder, String field, 
-			Map substitution, Map macros, Map existingInstancesMap) throws InappropriateKindException
+	        Map<Entity, Type> substitution, Map<String, TemplateArgument> macros, Map<String, Aggregate> existingInstancesMap)  throws InappropriateKindException	        
 	{
 		if (traitsHolder instanceof TypenameTemplateArgument) {
 			Type val = ((TypenameTemplateArgument)traitsHolder).getValue();
@@ -1327,7 +1265,7 @@ public class Utils {
 					String expression = templateExpression(traitsClass, targs);
 					if (existingInstancesMap != null 
 							&& existingInstancesMap.containsKey(expression)) {
-						traitsClass = (Aggregate)existingInstancesMap.get(expression);
+						traitsClass = existingInstancesMap.get(expression);
 						foundInstantiation = true;
 						//System.err.println("Found instantiation for " + expression + ": " + traitsClass);
 					}
@@ -1354,34 +1292,30 @@ public class Utils {
 	 * @return and Entity by the given name. If no such entity is found, 
 	 * <b>null</b> is returned.
 	 */
-	public static Entity lookup(Scope scope, String componentname)
+	public static Entity lookup(Scope<? extends Entity> scope, String componentname)
 	{
 		// Find aggregates
-		for (Iterator aggiter = scope.aggregateIterator(); aggiter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)aggiter.next();
-			Aggregate agg = (Aggregate)connection.getContained();
+		for (ContainedConnection<? extends Entity, Aggregate> connection: scope.getAggregates()) {
+			Aggregate agg = connection.getContained();
 			if (agg.getName().equals(componentname))
 				return agg;
 		}
 		// Find namespaces
-		for (Iterator nsiter = scope.namespaceIterator(); nsiter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)nsiter.next();
-			Namespace ns = (Namespace)connection.getContained();
+		for (ContainedConnection<? extends Entity, Namespace> connection: scope.getNamespaces()) {
+			Namespace ns = connection.getContained();
 			if (ns.getName().equals(componentname))
 				return ns;
 		}
 		// Find enums
-		for (Iterator enumiter = scope.enumIterator(); enumiter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)enumiter.next();
-			sourceanalysis.Enum enume = (sourceanalysis.Enum)connection.getContained();
+		for (ContainedConnection<? extends Entity, sourceanalysis.Enum> connection: scope.getEnums()) {
+			sourceanalysis.Enum enume = connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& enume.getName().equals(componentname))
 				return enume;
 		}
 		// Find typedefs
-		for (Iterator aliter = scope.aliasIterator(); aliter.hasNext(); ) {
-			ContainedConnection connection = (ContainedConnection)aliter.next();
-			Alias alias = (Alias)connection.getContained();
+		for (ContainedConnection<? extends Entity, Alias> connection: scope.getAliass()) {
+			Alias alias = connection.getContained();
 			if (connection.getVisibility() == Specifiers.Visibility.PUBLIC
 					&& alias.getName().equals(componentname))
 				return alias;
@@ -1519,16 +1453,16 @@ public class Utils {
 			return false;
 
 		// Compare all arguments types
-		Iterator fiter = first.parameterIterator();
-		Iterator siter = second.parameterIterator();
+		Iterator<Parameter> fiter = first.getParameters().iterator();
+		Iterator<Parameter> siter = second.getParameters().iterator();
 		while( fiter.hasNext() || siter.hasNext() ) {
 			
 			if( ! fiter.hasNext() || ! siter.hasNext() ) {
 				return false;
 			}
 			
-			Parameter fparam = (Parameter)fiter.next();
-			Parameter sparam = (Parameter)siter.next();
+			Parameter fparam = fiter.next();
+			Parameter sparam = siter.next();
 			
 			String firstArg = fparam.getType().formatCpp();
 			String secondArg = sparam.getType().formatCpp();
@@ -1587,18 +1521,15 @@ public class Utils {
 	/**
 	 * Collects all of the public inheritance-accessible fields in the given class
 	 */
-	public static Collection accessibleFields(Aggregate subject, Map instanceMap, 
+	public static Collection<Field> accessibleFields(Aggregate subject, Map<String, Aggregate> instanceMap, 
 			int minimumAllowedVisibility)
 		throws MissingInformationException
 	{
 		
-		List accessible = new LinkedList();
+		List<Field> accessible = new LinkedList<Field>();
 		
-		for(Iterator subjectFieldIter = subject.getScope().fieldIterator(); 
-			subjectFieldIter.hasNext();) 
-		{
-			ContainedConnection fieldConnection = (ContainedConnection)subjectFieldIter.next();
-			Field myField = (Field)fieldConnection.getContained();
+		for (ContainedConnection<Aggregate, Field> fieldConnection: subject.getScope().getFields()) {
+			Field myField = fieldConnection.getContained();
 			
 			if(isVisible(minimumAllowedVisibility, fieldConnection.getVisibility())) {
 				accessible.add(myField);
@@ -1607,16 +1538,13 @@ public class Utils {
 		}
 		
 		// Get virtual methods from base classes
-		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
-		{
-			InheritanceConnection bconnection =
-				(InheritanceConnection)baseIter.next();
+		for (InheritanceConnection bconnection: subject.getBases()) {
 			Aggregate base = bconnection.getBase();
 			TemplateArgument targs[] = bconnection.getBaseTemplateArguments();
 			if (targs != null) {
 				String expr = templateExpression(base, targs);
 				if (instanceMap != null) 
-					base = (Aggregate)instanceMap.get(expr);
+					base = instanceMap.get(expr);
 			}
 			if (base == null) continue;
 			
@@ -1658,17 +1586,13 @@ public class Utils {
 				continue;
 			}
 			
-			Collection baseVisibleFields = accessibleFields(base, instanceMap, baseMinimumAllowedVisibility);
-			for (Iterator baseFieldIter = baseVisibleFields.iterator(); 
-			baseFieldIter.hasNext(); ) {
-                Field baseField = (Field)baseFieldIter.next();
-
+			Collection<Field> baseVisibleFields = accessibleFields(base, instanceMap, baseMinimumAllowedVisibility);
+			for (Field baseField: baseVisibleFields) {
                 // - ensure that a compatible method has not previously 
                 //  occurred
 				boolean found = false;
 				
-				for (Iterator accessIter = accessible.iterator(); accessIter.hasNext(); ) {
-					Field childField = (Field)accessIter.next();
+				for (Field childField: accessible) {
 					if (childField.getName().equals(baseField.getName())) {
 						found = true;
 						break;
@@ -1695,14 +1619,14 @@ public class Utils {
 	 * the subject, or in any of it's ancestors
 	 * @throws MissingInformationException
 	 */
-	public static Collection virtualMethods(Aggregate subject,
-			Map instanceMap, final boolean withDestructors) throws MissingInformationException
+	public static Collection<Routine> virtualMethods(Aggregate subject,
+			Map<String, Aggregate> instanceMap, final boolean withDestructors) throws MissingInformationException
 	{
 		
-		Condition<ContainedConnection> condition = new Condition<ContainedConnection>() {
+		Condition<ContainedConnection<Aggregate, Routine> > condition = new Condition<ContainedConnection<Aggregate, Routine> >() {
 
-			public boolean accepted(ContainedConnection rconnection) {
-				Routine routine = (Routine)rconnection.getContained();
+			public boolean accepted(ContainedConnection<Aggregate, Routine>  rconnection) {
+				Routine routine = rconnection.getContained();
 				return 
 					rconnection.getVirtuality() != Specifiers.Virtuality.NON_VIRTUAL 
 					&& 	(withDestructors || !routine.isDestructor());
@@ -1738,10 +1662,10 @@ public class Utils {
 	 * @throws MissingInformationException
 	 */
 	public static Collection<Routine> accesibleMethods(Aggregate subject,
-			Map instanceMap) throws MissingInformationException
+			Map<String, Aggregate> instanceMap) throws MissingInformationException
 	{
-		Condition<ContainedConnection> alwaysTrue = new Condition<ContainedConnection>() {
-			public boolean accepted(ContainedConnection rconnection) {
+		Condition<ContainedConnection<Aggregate, Routine> > alwaysTrue = new Condition<ContainedConnection<Aggregate, Routine> >() {
+			public boolean accepted(ContainedConnection<Aggregate, Routine>  rconnection) {
 				return true;
 			}
 		};
@@ -1761,10 +1685,10 @@ public class Utils {
 	 * @throws MissingInformationException
 	 */
 	public static Collection<Routine> publicAccesibleMethods(Aggregate subject,
-			Map instanceMap) throws MissingInformationException
+			Map<String, Aggregate> instanceMap) throws MissingInformationException
 	{
-		Condition<ContainedConnection> alwaysTrue = new Condition<ContainedConnection>() {
-			public boolean accepted(ContainedConnection rconnection) {
+		Condition<ContainedConnection<Aggregate, Routine> > alwaysTrue = new Condition<ContainedConnection<Aggregate, Routine> >() {
+			public boolean accepted(ContainedConnection<Aggregate, Routine>  rconnection) {
 				return rconnection.getVisibility() == Specifiers.Visibility.PUBLIC; 
 			}
 		};
@@ -1788,30 +1712,27 @@ public class Utils {
 	 * @throws MissingInformationException
 	 */
 	public static Collection<Routine> accesibleMethodsWithCondition(Aggregate subject,
-			Map instanceMap, Condition<ContainedConnection> acceptCondition) throws MissingInformationException
+			Map<String, Aggregate> instanceMap, Condition<ContainedConnection<Aggregate, Routine> > acceptCondition) throws MissingInformationException
 	{
 		Collection<Routine> routines = new LinkedList();
 		
 		// Add methods declared in this class
-		for (ContainedConnection rconnection : subject.getScope().getRoutines()) 
+		for (ContainedConnection<Aggregate, Routine>  rconnection : subject.getScope().getRoutines()) 
 		{		
 			if (acceptCondition.accepted(rconnection)) {
-				Routine myMethod = (Routine)rconnection.getContained();
+				Routine myMethod = rconnection.getContained();
 			    routines.add(myMethod); 
 			}
 		}
 		
 		// Get virtual methods from base classes
-		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
-		{
-			InheritanceConnection bconnection =
-				(InheritanceConnection)baseIter.next();
+		for (InheritanceConnection bconnection: subject.getBases()) {
 			Aggregate base = bconnection.getBase();
 			TemplateArgument targs[] = bconnection.getBaseTemplateArguments();
 			if (targs != null) {
 				String expr = templateExpression(base, targs);
 				if (instanceMap != null) 
-					base = (Aggregate)instanceMap.get(expr);
+					base = instanceMap.get(expr);
 			}
 			if (base == null) continue;
 			// - recursively fetch the methods in the base class
@@ -1861,7 +1782,7 @@ public class Utils {
 	 *  that the last one also brings the internal subgroups recursively.
 	 */
 	public static Collection<Group> accesibleGroups(Aggregate subject, Group group,
-			Map instanceMap)
+			Map<String, Aggregate> instanceMap)
 	{
 		Collection<Group> options = accesibleGroupsAndSubGroups(subject,instanceMap);
 		Collection<Group> result = new Vector<Group>();
@@ -1895,22 +1816,20 @@ public class Utils {
 	 * @throws MissingInformationException
 	 */
 	public static Collection<Group> accesibleGroupsAndSubGroups(Aggregate subject,
-			Map instanceMap)
+			Map<String, Aggregate> instanceMap)
 	{
 		// Get all the groups declared in this class
 		Collection<Group> groups = accesibleGroupsAndSubGroups(subject.getScope());
 		
 		// Get groups from base classes
-		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
+		for (InheritanceConnection bconnection: subject.getBases()) 
 		{
-			InheritanceConnection bconnection =
-				(InheritanceConnection)baseIter.next();
 			Aggregate base = bconnection.getBase();
 			TemplateArgument targs[] = bconnection.getBaseTemplateArguments();
 			if (targs != null) {
 				String expr = templateExpression(base, targs);
 				if (instanceMap != null) 
-					base = (Aggregate)instanceMap.get(expr);
+					base = instanceMap.get(expr);
 			}
 			if (base == null) continue;
 			// - recursively fetch the groups in the base class
@@ -1934,14 +1853,14 @@ public class Utils {
 	 * @param scope The scope where to search for groups
 	 * @return A collection of the found groups
 	 */
-	public static Collection<Group> accesibleGroupsAndSubGroups(Scope scope) 
+	public static Collection<Group> accesibleGroupsAndSubGroups(Scope<?> scope) 
 	{
 		Collection<Group> groups = new LinkedList<Group>();
 		
 		// Add groups declared in this scope
-		for (ContainedConnection rconnection : scope.getGroups()) 
+		for (ContainedConnection<?, Group>  rconnection : scope.getGroups()) 
 		{		
-				Group subGroup = (Group)rconnection.getContained();
+				Group subGroup = rconnection.getContained();
 			    groups.add(subGroup); 
 			    Collection<Group> internalGroups = accesibleGroupsAndSubGroups(subGroup.getScope());
 			    	groups.addAll(internalGroups);	    
@@ -1986,38 +1905,30 @@ public class Utils {
 	 * any of its ancestors.
 	 * @throws MissingInformationException
 	 */
-	public static Collection unimplementedMethods(Aggregate subject,
-			Map instanceMap) throws MissingInformationException
+	public static Collection<Routine> unimplementedMethods(Aggregate subject,
+			Map<String, Aggregate> instanceMap) throws MissingInformationException
 	{
-		List unimplemented = new LinkedList();
+		List<Routine> unimplemented = new LinkedList<Routine>();
 		
 		// Get unimplemented methods from base classes
-		for (Iterator baseIter = subject.baseIterator(); baseIter.hasNext(); )
-		{
-			InheritanceConnection bconnection =
-				(InheritanceConnection)baseIter.next();
+		for (InheritanceConnection bconnection: subject.getBases()) {
 			Aggregate base = bconnection.getBase();
 			TemplateArgument targs[] = bconnection.getBaseTemplateArguments();
 			if (targs != null) {
 				String expr = templateExpression(base, targs);
 				if (instanceMap != null) 
-					base = (Aggregate)instanceMap.get(expr);
+					base = instanceMap.get(expr);
 			}
 			if (base == null) continue;
 			// - recursively fetch the unimplemented methods in the base class
-			Collection baseUnimplemented = unimplementedMethods(base, instanceMap);
-			for (Iterator unimpIter = baseUnimplemented.iterator();
-				 unimpIter.hasNext(); ) {
-				Routine baseMethod = (Routine)unimpIter.next();
+			Collection<Routine> baseUnimplemented = unimplementedMethods(base, instanceMap);
+			for (Routine baseMethod: baseUnimplemented) {
 				// - search this method in subject to check that the method is
 				//   still unimplemented in derived class
 				boolean found = false;
 				
-				for (Iterator subjectMethodIter = subject.getScope()
-					.routineIterator(); subjectMethodIter.hasNext(); ) {
-					ContainedConnection rconnection =
-						(ContainedConnection)subjectMethodIter.next();
-					Routine myMethod = (Routine)rconnection.getContained();
+				for (ContainedConnection<Aggregate, Routine> rconnection: subject.getScope().getRoutines()) {
+					Routine myMethod = rconnection.getContained();
 					// - compare unimplemented method in parent and method in
 					//   derived
 					if (rconnection.getVirtuality() 
@@ -2035,14 +1946,10 @@ public class Utils {
 		}
 
 		// Add pure virtual methods declared in this class
-		for (Iterator subjectMethodIter = subject.getScope()
-			.routineIterator(); subjectMethodIter.hasNext(); ) {
-
-			ContainedConnection rconnection =
-				(ContainedConnection)subjectMethodIter.next();
-			Routine myMethod = (Routine)rconnection.getContained();
+		for (ContainedConnection<Aggregate, Routine> connection: subject.getScope().getRoutines()) {
+			Routine myMethod = connection.getContained();
 	
-			if (rconnection.getVirtuality() 
+			if (connection.getVirtuality() 
 				== Specifiers.Virtuality.PURE_VIRTUAL) {
 				unimplemented.add(myMethod); 
 			}
@@ -2066,7 +1973,7 @@ public class Utils {
 	 * @throws MissingInformationException if there is not enough information
 	 * in the program database to process the request.
 	 */
-	public static Collection unimplementedMethods(Aggregate subject)
+	public static Collection<Routine> unimplementedMethods(Aggregate subject)
 			throws MissingInformationException
 	{
 		return unimplementedMethods(subject, defaultInstanceMap);
@@ -2173,13 +2080,10 @@ public class Utils {
 
         Aggregate derived = (Aggregate)container;
 
-        for (Iterator baseIter = derived.baseIterator(); baseIter.hasNext(); ) {
-            Aggregate base = ((InheritanceConnection)baseIter.next()).getBase();
-            for (Iterator routineIter = base.getScope().routineIterator();
-                 routineIter.hasNext(); ) {
-                ContainedConnection conn = 
-                    (ContainedConnection)routineIter.next();
-                Routine candidate = (Routine)conn.getContained();
+        for (InheritanceConnection ic: derived.getBases()) {
+            Aggregate base = (ic).getBase();
+    		for (ContainedConnection<Aggregate, Routine> connection: base.getScope().getRoutines()) {
+                Routine candidate = connection.getContained();
                 //System.err.println("candidate " + candidate.getFullName());
                 if (routine.isCompatible(candidate))
                     return candidate;
@@ -2195,9 +2099,9 @@ public class Utils {
 		 * @param file a file
 		 * @return a List of File objects
 		 */
-		public static List pathElements(File file)
+		public static List<File> pathElements(File file)
 		{
-			List elements = new LinkedList();
+			List<File> elements = new LinkedList<File>();
 			// Scan the tree towards the top
 			File fileRef = null;
 			
@@ -2225,15 +2129,15 @@ public class Utils {
 		 */
 		public static File absoluteToRelative(File target, File directory)
 		{
-			List targetPathElements = pathElements(target);
-			List directoryPathElements = pathElements(directory);
+			List<File> targetPathElements = pathElements(target);
+			List<File> directoryPathElements = pathElements(directory);
 			directoryPathElements.add(new File("."));
 			// Find the longest common prefix of the two paths
-			Iterator targetIter = targetPathElements.iterator();
-			Iterator directoryIter = directoryPathElements.iterator();
+			Iterator<File> targetIter = targetPathElements.iterator();
+			Iterator<File> directoryIter = directoryPathElements.iterator();
 			File last = new File("/");
 			while (targetIter.hasNext() && directoryIter.hasNext()
-					&& (last = (File)targetIter.next()).equals(directoryIter.next())) ;
+					&& (last = targetIter.next()).equals(directoryIter.next())) ;
 			// Write ".." elements for the rest of directoryIter
 			StringBuffer relative = new StringBuffer();
 			while (directoryIter.hasNext()) {
@@ -2243,7 +2147,7 @@ public class Utils {
 			// Return the rest of the elements in targetIter
 			relative.append(last.getName());
 			while (targetIter.hasNext()) {
-				File element = (File)targetIter.next();
+				File element = targetIter.next();
 				relative.append("/" + element.getName());
 			}
 			return new File(relative.toString());
@@ -2269,7 +2173,7 @@ public class Utils {
 			public String formatBase(Entity e) { return cleanFullNameBase(e); }
 		};
 		
-	static public Map defaultInstanceMap = null;
+	static public Map<String, Aggregate> defaultInstanceMap = null;
 
 	public static String getTypeHash(Type type) {
 		return Integer.toHexString(type.formatCpp().hashCode());

@@ -7,11 +7,23 @@ package backend.robin;
 import java.util.HashMap;
 import java.util.Map;
 
+import sourceanalysis.Aggregate;
+import sourceanalysis.Alias;
+import sourceanalysis.ContainedConnection;
+import sourceanalysis.ElementNotFoundException;
+import sourceanalysis.Entity;
+import sourceanalysis.Field;
+import sourceanalysis.MissingInformationException;
+import sourceanalysis.Namespace;
+import sourceanalysis.Parameter;
+import sourceanalysis.Primitive;
+import sourceanalysis.Routine;
+import sourceanalysis.Specifiers;
+import sourceanalysis.Type;
+import sourceanalysis.hints.Artificial;
 import backend.GenericFilters;
 import backend.Utils;
 import backend.robin.model.TypeToolbox;
-import sourceanalysis.*;
-import sourceanalysis.hints.Artificial;
 
 /**
  * This is an auxiliary class for CodeGenerator; it contains some functions
@@ -133,7 +145,7 @@ public class Filters extends GenericFilters {
 	 */
 	public static boolean isAvailableStatic(Routine routine)
 	{
-		ContainedConnection uplink = routine.getContainerConnection();
+		ContainedConnection<? extends Entity, ? extends Entity> uplink = routine.getContainerConnection();
 		
 		return (isAvailable(routine)
 				&& !routine.isConstructor() && !routine.isDestructor()
@@ -185,7 +197,7 @@ public class Filters extends GenericFilters {
 	 * @param up the connection from the field to its container
 	 * @return
 	 */
-	static boolean isAvailable(Field field, ContainedConnection up)
+	static boolean isAvailable(Field field, ContainedConnection<? extends Entity, ? extends Entity> up)
 	{
 		try {
 			return (up.getVisibility() == Specifiers.Visibility.PUBLIC
@@ -201,7 +213,7 @@ public class Filters extends GenericFilters {
 		}
 	}
 
-	static boolean isAvailableStatic(Field field, ContainedConnection up)
+	static boolean isAvailableStatic(Field field, ContainedConnection<? extends Entity, ? extends Entity> up)
 	{
 		try {
 			return (up.getVisibility() == Specifiers.Visibility.PUBLIC
@@ -244,10 +256,14 @@ public class Filters extends GenericFilters {
 	 */
 	static boolean isOutputParameter(Parameter parameter)
 	{
-		// check if this is a non const reference
+		// check if this is a non const reference or pointer
 		try {
 			Type type = parameter.getType();
-			if ( type.isFlat() && type.isReference() &&
+			// We're doing output parameters for references or 1 pointer exactly.
+			// Reason is, that if it's a pointer to pointer, it most likely not an
+			// output parameter, but it makes lots of other problems like that.
+			// TODO: Should see if we want to fix it sometime later.
+			if ( type.isFlat() && (type.isReference() || (type.getPointerDegree() == 1)) &&
 			    !type.isConst() && !(type.getBaseType() instanceof Primitive)) {
 				return true;
 			}
@@ -295,12 +311,12 @@ public class Filters extends GenericFilters {
 	static Type getTouchup(Type returnType)
 	{
 		if (getTouchupsMap().containsKey(returnType)) {
-			return ((Touchup)getTouchupsMap().get(returnType)).m_newType;
+			return (getTouchupsMap().get(returnType)).m_newType;
 		}
 		return null;
 	}
 	
-	static Map getTouchupsMap() {
+	static Map<Type, Filters.Touchup> getTouchupsMap() {
 		return m_touchups;
 	}
 	
@@ -345,7 +361,7 @@ public class Filters extends GenericFilters {
 		public String m_touchupCode;
 	}
 	// The map from function return type to the new type and the touchup code
-	private static Map m_touchups = new HashMap();
+	private static Map<Type, Filters.Touchup> m_touchups = new HashMap<Type, Filters.Touchup>();
 
 	// TODO: should be package protected?
 	public static boolean isPrimitive(Entity base)
