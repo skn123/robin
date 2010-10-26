@@ -7,6 +7,7 @@ minor = 0
 prefix = /usr/local
 exec_prefix = /usr/local
 site-packages = /usr/local/lib/python2.4/site-packages
+pydir = $(site-packages)/robin
 python = python
 jython = jython
 -include config.mak
@@ -73,7 +74,8 @@ INSTALLABLE_DIRS = $(jardir)/dox-xml $(jardir)/premises
 default all:
 	scons
 
-install: $(INSTALLABLE_FILES) $(INSTALLABLE_DIRS) ;
+install: $(INSTALLABLE_FILES) $(INSTALLABLE_DIRS)
+	ldconfig
 
 install-callgrind: $(INSTALLABLE_CALLGRIND)
 
