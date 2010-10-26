@@ -33,7 +33,7 @@ private:
 
 #else
 
-#define assert_true(X) do { if(!X) { throw Robin::AssertException(#X); } } while(0)
+#define assert_true(X) do { if(!(X)) { throw Robin::AssertException(#X); } } while(0)
 
 #endif
 
