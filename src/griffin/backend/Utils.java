@@ -405,7 +405,7 @@ public class Utils {
 	{
 		int counter = 0;
 		// Iterate through parameters and increment counter
-		for (@SuppressWarnings("unused") Parameter param: routine.getParameters()) {
+		for (Parameter param: routine.getParameters()) {
 			++counter;
 		}		
 		return counter;
