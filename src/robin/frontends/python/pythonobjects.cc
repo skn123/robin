@@ -570,7 +570,7 @@ PyObject *ClassObject::__init__(PyObject *self, PyObject *args)
 	Handle<Instance> constructed_value = klass->construct(args, NULL);
 	if (constructed_value) {
 		((InstanceObject*)self)->init(constructed_value);
-		Py_XINCREF(Py_None); return Py_None;
+		Py_INCREF(Py_None); return Py_None;
 	}
 	else
 		return NULL;
@@ -788,6 +788,11 @@ int ClassObject::__setattr__(PyObject *self, char *name, PyObject *value)
 int ClassObject::__setattr__(char *name, PyObject *value)
 {
 	Handle<PyCallableWithInstance> handler;
+
+    if(value == NULL) {
+        PyErr_SetString(PyExc_AttributeError, "Can't delete native attributes");
+        return -1;
+    }
 
 	try {
 		handler = pycallableFactory(value);
@@ -1816,7 +1821,7 @@ PyTypeObject *makeMetaclassType(const char *name, PyTypeObject *base)
 {
   PyObject *bases = PyTuple_New(1);
   PyTuple_SET_ITEM(bases, 0, (PyObject*)base);
-  Py_XINCREF(&PyType_Type);
+  Py_INCREF(&PyType_Type);
 
   PyObject *args = PyTuple_New(3);
   PyTuple_SET_ITEM(args, 0, PyString_FromString(name));
